@@ -1,2 +1,4 @@
 __pycache__
 .*.sw?
+scratch
+.ipynb_checkpoints
