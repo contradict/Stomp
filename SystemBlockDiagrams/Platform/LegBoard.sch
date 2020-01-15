@@ -184,14 +184,14 @@ $Comp
 L Connector:Conn_01x02_Male J?
 U 1 1 5E238EBB
 P 1450 4650
-F 0 "J?" H 1558 4831 50  0000 C CNN
-F 1 "Micro-Fit 3.0 Male Vertical" H 1558 4740 50  0000 C CNN
+F 0 "J?" H 1422 4669 50  0000 R CNN
+F 1 "Micro-Fit 3.0 Male Vertical" H 1422 4578 50  0000 R CNN
 F 2 "" H 1450 4650 50  0001 C CNN
 F 3 "https://www.digikey.com/product-detail/en/molex/0436500228/WM10658-ND/3310542" H 1450 4650 50  0001 C CNN
 F 4 "Molex" H 1450 4650 50  0001 C CNN "Manufacturer"
 F 5 "0436500228" H 1450 4650 50  0001 C CNN "Manufacturer Part Number"
 F 6 "Digi-Key" H 1450 4650 50  0001 C CNN "Supplier"
-F 7 "WM10658-ND" H 1450 4650 50  0001 C CNN "Supplier Part Number"
+F 7 "WM10658-ND" H 1422 4487 50  0000 R CNN "Supplier Part Number"
 	1    1450 4650
 	-1   0    0    -1  
 $EndComp
@@ -199,14 +199,14 @@ $Comp
 L Connector:Conn_01x02_Male J?
 U 1 1 5E2390BD
 P 10300 2600
-F 0 "J?" H 10408 2781 50  0000 C CNN
-F 1 "Micro-Fit 3.0 Male Rt Angle" H 10408 2690 50  0000 C CNN
+F 0 "J?" H 10408 2871 50  0000 C CNN
+F 1 "Micro-Fit 3.0 Male Rt Angle" H 10408 2780 50  0000 C CNN
 F 2 "" H 10300 2600 50  0001 C CNN
 F 3 "https://www.digikey.com/product-detail/en/molex/0436500201/WM1865-ND/268994" H 10300 2600 50  0001 C CNN
 F 4 "Molex" H 10300 2600 50  0001 C CNN "Manufacturer"
 F 5 "0436500201" H 10300 2600 50  0001 C CNN "Manufacturer Part Number"
 F 6 "Digi-Key" H 10300 2600 50  0001 C CNN "Supplier"
-F 7 "WM1865-ND" H 10300 2600 50  0001 C CNN "Supplier Part Number"
+F 7 "WM1865-ND" H 10408 2689 50  0000 C CNN "Supplier Part Number"
 	1    10300 2600
 	1    0    0    -1  
 $EndComp

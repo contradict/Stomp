@@ -24,42 +24,6 @@ F 3 "https://github.com/contradict/Stomp/blob/master/Datasheets/S2_Datasheet.pdf
 	1    1500 1350
 	-1   0    0    -1  
 $EndComp
-Text Notes 2150 800  0    50   ~ 0
-Replace existing connector with\nHirose HR10A-7R-6P(73) \nDigi-Key HR1596-ND
-Text Notes 3500 800  0    50   ~ 0
-Mating connector is\nHirose  HR10A-7P-6S(73) \nDigi-Key HR1588-ND
-$Comp
-L Connector:DIN-6 J?
-U 1 1 5E1C5E68
-P 2500 1450
-F 0 "J?" H 2500 2021 50  0000 C CNN
-F 1 "Hirose 6-Pin Male" H 2500 1930 50  0000 C CNN
-F 2 "" H 2500 1450 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/hirose-electric-co-ltd/HR10A-7R-6P-73/HR1596-ND/1095454" H 2500 1450 50  0001 C CNN
-F 4 "Hirose" H 2500 1450 50  0001 C CNN "Manufaturer"
-F 5 "HR10A-7R-6P(73)" H 2500 1450 50  0001 C CNN "Manufacturer Part Number"
-F 6 "Digi-Key" H 2500 1450 50  0001 C CNN "Supplier"
-F 7 "HR1596-ND" H 2500 1839 50  0000 C CNN "Supplier Part Number"
-	1    2500 1450
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector:DIN-6 J?
-U 1 1 5E1C7296
-P 3850 1450
-F 0 "J?" H 3850 2021 50  0000 C CNN
-F 1 "Hirose 6-Pin Female" H 3850 1930 50  0000 C CNN
-F 2 "" H 3850 1450 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/hirose-electric-co-ltd/HR10A-7P-6S-73/HR1588-ND/1095446" H 3850 1450 50  0001 C CNN
-F 4 "Hirose" H 3850 1450 50  0001 C CNN "Manufaturer"
-F 5 "HR10A-7R-6S(73)" H 3850 1450 50  0001 C CNN "Manufacturer Part Number"
-F 6 "Digi-Key" H 3850 1450 50  0001 C CNN "Supplier"
-F 7 "HR1588-ND" H 3850 1839 50  0000 C CNN "Supplier Part Number"
-	1    3850 1450
-	1    0    0    -1  
-$EndComp
-Text Notes 4700 750  0    50   ~ 0
-S2 to Board Cable\nMcMaster 75985K52
 $Comp
 L Connector_Generic:Conn_02x03_Odd_Even J?
 U 1 1 5E1CE321
@@ -86,7 +50,7 @@ F 3 "https://www.digikey.com/product-detail/en/molex/0436400301/WM1856-ND/268985
 F 4 "Molex" H 7050 2050 50  0001 C CNN "Manufcturer"
 F 5 "0436400301" H 7050 2050 50  0001 C CNN "Manufacturer Part Number"
 F 6 "Digi-Key" H 7050 2050 50  0001 C CNN "Suplier"
-F 7 " WM1856-ND " H 7050 2050 50  0001 C CNN "Supplier Part Number"
+F 7 " WM1856-ND " H 7150 1850 50  0000 C CNN "Supplier Part Number"
 	1    7050 2050
 	1    0    0    -1  
 $EndComp
@@ -118,6 +82,7 @@ F6 "SwingValve" I L 7800 4250 50
 F7 "SwingSensor" I L 7800 4850 50 
 F8 "CommB" I R 10300 6000 50 
 F9 "CommA" I R 10300 1000 50 
+F10 "Power" I L 7800 5750 50 
 $EndSheet
 $Comp
 L Connector_Generic:Conn_02x02_Odd_Even J?
@@ -268,63 +233,65 @@ F 7 " WM1856-ND " H 7100 4850 50  0001 C CNN "Supplier Part Number"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector:DIN-6 J?
-U 1 1 5E21AB4C
-P 2500 2900
-F 0 "J?" H 2500 3471 50  0000 C CNN
-F 1 "Hirose 6-Pin Male" H 2500 3380 50  0000 C CNN
-F 2 "" H 2500 2900 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/hirose-electric-co-ltd/HR10A-7R-6P-73/HR1596-ND/1095454" H 2500 2900 50  0001 C CNN
-F 4 "Hirose" H 2500 2900 50  0001 C CNN "Manufaturer"
-F 5 "HR10A-7R-6P(73)" H 2500 2900 50  0001 C CNN "Manufacturer Part Number"
-F 6 "Digi-Key" H 2500 2900 50  0001 C CNN "Supplier"
-F 7 "HR1596-ND" H 2500 3289 50  0000 C CNN "Supplier Part Number"
-	1    2500 2900
+L Connector:DIN-5 J?
+U 1 1 5E24883E
+P 2600 1250
+F 0 "J?" H 2600 975 50  0000 C CNN
+F 1 "M8 5 Pin" H 2600 884 50  0000 C CNN
+F 2 "" H 2600 1250 50  0001 C CNN
+F 3 "https://www.mcmaster.com/7138k39" H 2600 1250 50  0001 C CNN
+F 4 "McMaster-Carr" H 2600 1250 50  0001 C CNN "Supplier"
+F 5 "7138K39" H 2600 1250 50  0001 C CNN "Supplier Part Number"
+	1    2600 1250
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector:DIN-6 J?
-U 1 1 5E21AB5A
-P 3850 2900
-F 0 "J?" H 3850 3471 50  0000 C CNN
-F 1 "Hirose 6-Pin Female" H 3850 3380 50  0000 C CNN
-F 2 "" H 3850 2900 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/hirose-electric-co-ltd/HR10A-7P-6S-73/HR1588-ND/1095446" H 3850 2900 50  0001 C CNN
-F 4 "Hirose" H 3850 2900 50  0001 C CNN "Manufaturer"
-F 5 "HR10A-7R-6S(73)" H 3850 2900 50  0001 C CNN "Manufacturer Part Number"
-F 6 "Digi-Key" H 3850 2900 50  0001 C CNN "Supplier"
-F 7 "HR1588-ND" H 3850 3289 50  0000 C CNN "Supplier Part Number"
-	1    3850 2900
+L Connector:DIN-5 J?
+U 1 1 5E2490C7
+P 2600 2700
+F 0 "J?" H 2600 2425 50  0000 C CNN
+F 1 "M8 5 Pin" H 2600 2334 50  0000 C CNN
+F 2 "" H 2600 2700 50  0001 C CNN
+F 3 "https://www.mcmaster.com/7138k39" H 2600 2700 50  0001 C CNN
+F 4 "McMaster-Carr" H 2600 2700 50  0001 C CNN "Supplier"
+F 5 "7138K39" H 2600 2700 50  0001 C CNN "Supplier Part Number"
+	1    2600 2700
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector:DIN-6 J?
-U 1 1 5E21D03E
-P 2500 4350
-F 0 "J?" H 2500 4921 50  0000 C CNN
-F 1 "Hirose 6-Pin Male" H 2500 4830 50  0000 C CNN
-F 2 "" H 2500 4350 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/hirose-electric-co-ltd/HR10A-7R-6P-73/HR1596-ND/1095454" H 2500 4350 50  0001 C CNN
-F 4 "Hirose" H 2500 4350 50  0001 C CNN "Manufaturer"
-F 5 "HR10A-7R-6P(73)" H 2500 4350 50  0001 C CNN "Manufacturer Part Number"
-F 6 "Digi-Key" H 2500 4350 50  0001 C CNN "Supplier"
-F 7 "HR1596-ND" H 2500 4739 50  0000 C CNN "Supplier Part Number"
-	1    2500 4350
+L Connector:DIN-5 J?
+U 1 1 5E24A55F
+P 2600 4150
+F 0 "J?" H 2600 3875 50  0000 C CNN
+F 1 "M8 5 Pin" H 2600 3784 50  0000 C CNN
+F 2 "" H 2600 4150 50  0001 C CNN
+F 3 "https://www.mcmaster.com/7138k39" H 2600 4150 50  0001 C CNN
+F 4 "McMaster-Carr" H 2600 4150 50  0001 C CNN "Supplier"
+F 5 "7138K39" H 2600 4150 50  0001 C CNN "Supplier Part Number"
+	1    2600 4150
 	1    0    0    -1  
 $EndComp
+Text Notes 3050 1250 0    50   ~ 0
+Comes with 6ft cable
+Text Notes 4700 3500 0    50   ~ 0
+Sensor cable is\n26AWG 3 conductor\nCooner Wire NMEF 3/26-6544 J
+Text Notes 10900 4450 1    50   ~ 0
+Comms\n26AWG 4 conductor\nCooner Wire NMEF 4/26-6544 J
+Text Notes 5400 6000 0    50   ~ 0
+Power\n20AWG 2 Conductor\nCooner Wire NMEF 2/20-25944 J
 $Comp
-L Connector:DIN-6 J?
-U 1 1 5E21D04C
-P 3850 4350
-F 0 "J?" H 3850 4921 50  0000 C CNN
-F 1 "Hirose 6-Pin Female" H 3850 4830 50  0000 C CNN
-F 2 "" H 3850 4350 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/hirose-electric-co-ltd/HR10A-7P-6S-73/HR1588-ND/1095446" H 3850 4350 50  0001 C CNN
-F 4 "Hirose" H 3850 4350 50  0001 C CNN "Manufaturer"
-F 5 "HR10A-7R-6S(73)" H 3850 4350 50  0001 C CNN "Manufacturer Part Number"
-F 6 "Digi-Key" H 3850 4350 50  0001 C CNN "Supplier"
-F 7 "HR1588-ND" H 3850 4739 50  0000 C CNN "Supplier Part Number"
-	1    3850 4350
+L Connector_Generic:Conn_01x02 J?
+U 1 1 5E24D156
+P 7100 5800
+F 0 "J?" H 7180 5837 50  0000 L CNN
+F 1 "Micro-Fit 3.0 Plug" H 7180 5746 50  0000 L CNN
+F 2 "" H 7100 5800 50  0001 C CNN
+F 3 "https://www.digikey.com/product-detail/en/molex/0436450208/WM11226-ND/4247418" H 7100 5800 50  0001 C CNN
+F 4 "WM10658-ND" H 7180 5655 50  0000 L CNN "Supplier part Number"
+F 5 "Digi-Key" H 7100 5800 50  0001 C CNN "Supplier"
+F 6 "Molex" H 7100 5800 50  0001 C CNN "manufacturer"
+F 7 "0436450208" H 7100 5800 50  0001 C CNN "Manufacturer part Number"
+	1    7100 5800
 	1    0    0    -1  
 $EndComp
 $EndSCHEMATC
