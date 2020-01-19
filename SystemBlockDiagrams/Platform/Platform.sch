@@ -31,14 +31,16 @@ P 7100 1450
 F 0 "J?" H 7150 1857 50  0000 C CNN
 F 1 "Micro-Fit 3.0 Plug" H 7150 1766 50  0000 C CNN
 F 2 "" H 7100 1450 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/molex/0430200601/WM2762-ND/1132438" H 7100 1450 50  0001 C CNN
+F 3 "https://www.digikey.com/product-detail/en/molex/0430250600/WM1785-ND/252498" H 7100 1450 50  0001 C CNN
 F 4 "Digi-Key" H 7100 1450 50  0001 C CNN "Supplier"
-F 5 " WM2762-ND " H 7150 1675 50  0000 C CNN "Supplier Part Number"
+F 5 "WM1785-ND " H 7150 1675 50  0000 C CNN "Supplier Part Number"
+F 6 "Molex" H 7100 1450 50  0001 C CNN "Manufacturer"
+F 7 "0430250600" H 7100 1450 50  0001 C CNN "Manufacturer Part Number"
 	1    7100 1450
 	1    0    0    -1  
 $EndComp
 Text Notes 6200 800  0    50   ~ 0
-Microfit Male Pins 20-24AWG, Gold\nMolex 0430310002\nDigi-Key  WM1127CT-ND 
+Microfit Female Pins 20-24AWG, Gold\nMolex 0430300002\nDigi-Key  WM1125CT-ND 
 $Comp
 L Connector:Conn_01x03_Male J?
 U 1 1 5E1D13D7
@@ -61,11 +63,11 @@ P 10650 1000
 F 0 "J?" H 10700 1307 50  0000 C CNN
 F 1 "Micro-Fit 3.0 Plug" H 10700 1216 50  0000 C CNN
 F 2 "" H 10650 1000 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/molex/0430250400/WM1784-ND/252497" H 10650 1000 50  0001 C CNN
+F 3 "https://www.digikey.com/product-detail/en/molex/0430250408/WM11225-ND/4481508" H 10650 1000 50  0001 C CNN
 F 4 "DigiKey" H 10650 1000 50  0001 C CNN "Supplier"
-F 5 "WM1784-ND" H 10700 1125 50  0000 C CNN "Supplier Part Number"
+F 5 "WM11225-ND" H 10700 1125 50  0000 C CNN "Supplier Part Number"
 F 6 "Molex" H 10650 1000 50  0001 C CNN "Manufacturer"
-F 7 "0430250400" H 10650 1000 50  0001 C CNN "Manufacturer part Number"
+F 7 "0430250408" H 10650 1000 50  0001 C CNN "Manufacturer part Number"
 	1    10650 1000
 	1    0    0    -1  
 $EndComp
@@ -84,21 +86,6 @@ F8 "CommB" I R 10300 6000 50
 F9 "CommA" I R 10300 1000 50 
 F10 "Power" I L 7800 5750 50 
 $EndSheet
-$Comp
-L Connector_Generic:Conn_02x02_Odd_Even J?
-U 1 1 5E1D8173
-P 10700 6000
-F 0 "J?" H 10750 6307 50  0000 C CNN
-F 1 "Micro-Fit 3.0 Plug" H 10750 6216 50  0000 C CNN
-F 2 "" H 10700 6000 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/molex/0430250400/WM1784-ND/252497" H 10700 6000 50  0001 C CNN
-F 4 "DigiKey" H 10700 6000 50  0001 C CNN "Supplier"
-F 5 "WM1784-ND" H 10750 6125 50  0000 C CNN "Supplier Part Number"
-F 6 "Molex" H 10700 6000 50  0001 C CNN "Manufacturer"
-F 7 "0430250400" H 10700 6000 50  0001 C CNN "Manufacturer part Number"
-	1    10700 6000
-	1    0    0    -1  
-$EndComp
 $Comp
 L Stomp:AngleSensor U?
 U 1 1 5E1C2B3D
@@ -175,20 +162,7 @@ F 7 "858-6127V1A45L.5" H 6200 4850 50  0001 C CNN "Supplier Part Number"
 	-1   0    0    -1  
 $EndComp
 Text Notes 5150 1550 0    50   ~ 0
-Micro-Fit Male Pins 26-30AWG, Gold\nMolex 0430310005\nDigi-Key WM3246CT-ND
-$Comp
-L Connector_Generic:Conn_02x03_Odd_Even J?
-U 1 1 5E216DD2
-P 7150 2800
-F 0 "J?" H 7200 3207 50  0000 C CNN
-F 1 "Micro-Fit 3.0 Plug" H 7200 3116 50  0000 C CNN
-F 2 "" H 7150 2800 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/molex/0430200601/WM2762-ND/1132438" H 7150 2800 50  0001 C CNN
-F 4 "Digi-Key" H 7150 2800 50  0001 C CNN "Supplier"
-F 5 " WM2762-ND " H 7200 3025 50  0000 C CNN "Supplier Part Number"
-	1    7150 2800
-	1    0    0    -1  
-$EndComp
+Micro-Fit Female Pins 26-30AWG, Gold\nMolex 0430300005\nDigi-Key WM9169CT-ND
 $Comp
 L Connector:Conn_01x03_Male J?
 U 1 1 5E216DE0
@@ -202,19 +176,6 @@ F 5 "0436400301" H 7100 3400 50  0001 C CNN "Manufacturer Part Number"
 F 6 "Digi-Key" H 7100 3400 50  0001 C CNN "Suplier"
 F 7 " WM1856-ND " H 7100 3400 50  0001 C CNN "Supplier Part Number"
 	1    7100 3400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector_Generic:Conn_02x03_Odd_Even J?
-U 1 1 5E2191A0
-P 7150 4250
-F 0 "J?" H 7200 4657 50  0000 C CNN
-F 1 "Micro-Fit 3.0 Plug" H 7200 4566 50  0000 C CNN
-F 2 "" H 7150 4250 50  0001 C CNN
-F 3 "https://www.digikey.com/product-detail/en/molex/0430200601/WM2762-ND/1132438" H 7150 4250 50  0001 C CNN
-F 4 "Digi-Key" H 7150 4250 50  0001 C CNN "Supplier"
-F 5 " WM2762-ND " H 7200 4475 50  0000 C CNN "Supplier Part Number"
-	1    7150 4250
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -292,6 +253,51 @@ F 5 "Digi-Key" H 7100 5800 50  0001 C CNN "Supplier"
 F 6 "Molex" H 7100 5800 50  0001 C CNN "manufacturer"
 F 7 "0436450208" H 7100 5800 50  0001 C CNN "Manufacturer part Number"
 	1    7100 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x03_Odd_Even J?
+U 1 1 5E24439A
+P 7100 2800
+F 0 "J?" H 7150 3207 50  0000 C CNN
+F 1 "Micro-Fit 3.0 Plug" H 7150 3116 50  0000 C CNN
+F 2 "" H 7100 2800 50  0001 C CNN
+F 3 "https://www.digikey.com/product-detail/en/molex/0430250600/WM1785-ND/252498" H 7100 2800 50  0001 C CNN
+F 4 "Digi-Key" H 7100 2800 50  0001 C CNN "Supplier"
+F 5 "WM1785-ND " H 7150 3025 50  0000 C CNN "Supplier Part Number"
+F 6 "Molex" H 7100 2800 50  0001 C CNN "Manufacturer"
+F 7 "0430250600" H 7100 2800 50  0001 C CNN "Manufacturer Part Number"
+	1    7100 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x03_Odd_Even J?
+U 1 1 5E244DE8
+P 7150 4250
+F 0 "J?" H 7200 4657 50  0000 C CNN
+F 1 "Micro-Fit 3.0 Plug" H 7200 4566 50  0000 C CNN
+F 2 "" H 7150 4250 50  0001 C CNN
+F 3 "https://www.digikey.com/product-detail/en/molex/0430250600/WM1785-ND/252498" H 7150 4250 50  0001 C CNN
+F 4 "Digi-Key" H 7150 4250 50  0001 C CNN "Supplier"
+F 5 "WM1785-ND " H 7200 4475 50  0000 C CNN "Supplier Part Number"
+F 6 "Molex" H 7150 4250 50  0001 C CNN "Manufacturer"
+F 7 "0430250600" H 7150 4250 50  0001 C CNN "Manufacturer Part Number"
+	1    7150 4250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x02_Odd_Even J?
+U 1 1 5E245917
+P 10650 6000
+F 0 "J?" H 10700 6307 50  0000 C CNN
+F 1 "Micro-Fit 3.0 Plug" H 10700 6216 50  0000 C CNN
+F 2 "" H 10650 6000 50  0001 C CNN
+F 3 "https://www.digikey.com/product-detail/en/molex/0430250408/WM11225-ND/4481508" H 10650 6000 50  0001 C CNN
+F 4 "DigiKey" H 10650 6000 50  0001 C CNN "Supplier"
+F 5 "WM11225-ND" H 10700 6125 50  0000 C CNN "Supplier Part Number"
+F 6 "Molex" H 10650 6000 50  0001 C CNN "Manufacturer"
+F 7 "0430250408" H 10650 6000 50  0001 C CNN "Manufacturer part Number"
+	1    10650 6000
 	1    0    0    -1  
 $EndComp
 $EndSCHEMATC
