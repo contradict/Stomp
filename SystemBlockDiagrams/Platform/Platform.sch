@@ -3,7 +3,7 @@ EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 3
+Sheet 1 15
 Title ""
 Date ""
 Rev ""
@@ -367,4 +367,34 @@ F 3 "" H 6900 3350 50  0001 C CNN
 	1    7300 2300
 	1    0    0    -1  
 $EndComp
+Text Notes 4600 3000 0    50   ~ 0
+TODO:\n    IMU\n    IMU Connectors\n    Telem Radio Connectors\n    Ctrl radio connectors\n    Pressure Sensor\n    Pressure Sensor connectors\n
+$Sheet
+S 4900 4000 1450 2000
+U 5E269D05
+F0 "Power Distribution" 50
+F1 "PowerDistribution.sch" 50
+F2 "MCU_5V" I R 6350 4150 50 
+F3 "MCU_GND" I R 6350 4250 50 
+F4 "Ctrl_5V" I R 6350 4400 50 
+F5 "Ctrl_GND" I R 6350 4500 50 
+F6 "Telem_5V" I R 6350 4650 50 
+F7 "Telem_GND" I R 6350 4750 50 
+F8 "Pressure_5V" I R 6350 4900 50 
+F9 "Pressure_GND" I R 6350 5050 50 
+F10 "Leg0_24V" I L 4900 5200 50 
+F11 "Leg0_GND" I L 4900 5300 50 
+F12 "Leg1_24V" I L 4900 5450 50 
+F13 "Leg1_GND" I L 4900 5550 50 
+F14 "Leg2_24V" I L 4900 5700 50 
+F15 "Leg2_GND" I L 4900 5800 50 
+F16 "Leg3_GND" I R 6350 5800 50 
+F17 "Leg3_24V" I R 6350 5700 50 
+F18 "Leg4_GND" I R 6350 5550 50 
+F19 "Leg4_24V" I R 6350 5450 50 
+F20 "Leg5_GND" I R 6350 5300 50 
+F21 "Leg5_24V" I R 6350 5200 50 
+F22 "CAN_A" I L 4900 4150 50 
+F23 "CAN_B" I L 4900 4250 50 
+$EndSheet
 $EndSCHEMATC
