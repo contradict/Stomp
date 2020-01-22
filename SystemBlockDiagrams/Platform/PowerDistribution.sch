@@ -36,4 +36,27 @@ F5 "GND" I R 6100 3350 50
 $EndSheet
 Text Notes 7050 1750 0    50   ~ 0
 TODO:\n    LED Strip\n    Fuses\n    Disconnect Switch\n    Power Connectors
+$Comp
+L Device:LED_Series D?
+U 1 1 5E280DCF
+P 7600 2400
+F 0 "D?" H 7600 2680 50  0000 C CNN
+F 1 "LED_Series" H 7600 2589 50  0000 C CNN
+F 2 "" H 7500 2400 50  0001 C CNN
+F 3 "~" H 7500 2400 50  0001 C CNN
+	1    7600 2400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_DPST SW?
+U 1 1 5E2817A6
+P 7050 3250
+F 0 "SW?" H 7050 3575 50  0000 C CNN
+F 1 "CustomDisconnect" H 7050 3484 50  0000 C CNN
+F 2 "" H 7050 3250 50  0001 C CNN
+F 3 "~" H 7050 3250 50  0001 C CNN
+F 4 "" H 7050 3250 50  0001 C CNN "Field4"
+	1    7050 3250
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

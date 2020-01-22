@@ -20,7 +20,9 @@ P 7950 2350
 F 0 "BMS??" H 8175 3165 50  0000 C CNN
 F 1 "BMS10x0" H 8175 3074 50  0000 C CNN
 F 2 "" H 7950 2350 50  0001 C CNN
-F 3 "" H 7950 2350 50  0001 C CNN
+F 3 "https://www.roboteq.com/index.php/docman/bms-documents-and-files/bms-documents/datasheet/349-bms10x0-datasheet/file" H 7950 2350 50  0001 C CNN
+F 4 "Roboteq" H 7950 2350 50  0001 C CNN "Supplier"
+F 5 "BMS1040" H 7950 2350 50  0001 C CNN "Supplier Part Number"
 	1    7950 2350
 	1    0    0    -1  
 $EndComp
@@ -90,4 +92,40 @@ F 3 "~" V 1750 5110 50  0001 C CNN
 	1    1750 5050
 	1    0    0    -1  
 $EndComp
+Text Notes 4550 1100 0    50   ~ 0
+TODO:\n    Blind-make connector
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J?
+U 1 1 5E27E551
+P 6450 3500
+F 0 "J?" H 6500 4017 50  0000 C CNN
+F 1 "Conn_02x08_Odd_Even" H 6500 3926 50  0000 C CNN
+F 2 "" H 6450 3500 50  0001 C CNN
+F 3 "https://www.molex.com/pdm_docs/sd/039012160_sd.pdf" H 6450 3500 50  0001 C CNN
+F 4 "Molex" H 6450 3500 50  0001 C CNN "Manufacturer"
+F 5 "0039012160" H 6450 3500 50  0001 C CNN "Manufacturer Part Number"
+F 6 "Digi-Key" H 6450 3500 50  0001 C CNN "Supplier"
+F 7 "WM3707-ND" H 6450 3500 50  0001 C CNN "Supplier Part Number"
+	1    6450 3500
+	1    0    0    -1  
+$EndComp
+Text Notes 6100 4350 0    50   ~ 0
+Balance Pins for 22-28AWG\nMolex 0039000046\nDigi-Key WM2503CT-ND
+$Comp
+L Connector_Generic:Conn_02x04_Top_Bottom J?
+U 1 1 5E28024A
+P 9400 3200
+F 0 "J?" H 9450 3517 50  0000 C CNN
+F 1 "Conn_02x04_Top_Bottom" H 9450 3426 50  0000 C CNN
+F 2 "" H 9400 3200 50  0001 C CNN
+F 3 "https://www.molex.com/pdm_docs/sd/039012080_sd.pdf" H 9400 3200 50  0001 C CNN
+F 4 "Molex" H 9400 3200 50  0001 C CNN "Manufacturer"
+F 5 "0039012080" H 9400 3200 50  0001 C CNN "Manufacturer Part Number"
+F 6 "Digi-Key" H 9400 3200 50  0001 C CNN "Supplier"
+F 7 "WM3703-ND" H 9400 3200 50  0001 C CNN "Supplier Part Number"
+	1    9400 3200
+	1    0    0    -1  
+$EndComp
+Text Notes 9050 3900 0    50   ~ 0
+User Pins for 22-28AWG\nMolex 0039000046\nDigi-Key WM2503CT-ND
 $EndSCHEMATC
