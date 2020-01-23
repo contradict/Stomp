@@ -1,9 +1,9 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 3 15
+Sheet 1 1
 Title ""
 Date ""
 Rev ""
@@ -24,6 +24,7 @@ AR Path="/5E2661DC/5E255C6B/5E1D7814" Ref="J?"  Part="1"
 AR Path="/5E269D38/5E255C6B/5E1D7814" Ref="J?"  Part="1" 
 AR Path="/5E26B65F/5E255C6B/5E1D7814" Ref="J?"  Part="1" 
 AR Path="/5E26CFEA/5E255C6B/5E1D7814" Ref="J?"  Part="1" 
+AR Path="/5E1D7814" Ref="J?"  Part="1" 
 F 0 "J?" H 1300 1407 50  0000 C CNN
 F 1 "Micro-Fit 3.0 Socket Vertical" H 1300 1316 50  0000 C CNN
 F 2 "" H 1250 1000 50  0001 C CNN
@@ -46,14 +47,15 @@ AR Path="/5E2661DC/5E255C6B/5E1D7830" Ref="J?"  Part="1"
 AR Path="/5E269D38/5E255C6B/5E1D7830" Ref="J?"  Part="1" 
 AR Path="/5E26B65F/5E255C6B/5E1D7830" Ref="J?"  Part="1" 
 AR Path="/5E26CFEA/5E255C6B/5E1D7830" Ref="J?"  Part="1" 
+AR Path="/5E1D7830" Ref="J?"  Part="1" 
 F 0 "J?" H 1428 1626 50  0000 L CNN
 F 1 "Micro-Fit 3.0 Vertical" H 1050 1850 50  0000 L CNN
 F 2 "" H 1400 1600 50  0001 C CNN
 F 3 "~" H 1400 1600 50  0001 C CNN
-F 4 "Mouser" H 1400 1600 50  0001 C CNN "Supplier"
-F 5 "538-43650-0319" H 1400 1600 50  0001 C CNN "Supplier Part Number"
+F 4 "Digikey" H 1400 1600 50  0001 C CNN "Supplier"
+F 5 "WM1923-ND" H 1400 1600 50  0001 C CNN "Supplier Part Number"
 F 6 "Molex" H 1400 1600 50  0001 C CNN "Manufacturer"
-F 7 "43650-0319" H 1400 1600 50  0001 C CNN "Manufacturer part Number"
+F 7 "43650-0316" H 1400 1600 50  0001 C CNN "Manufacturer part Number"
 	1    1400 1600
 	1    0    0    -1  
 $EndComp
