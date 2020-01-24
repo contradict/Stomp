@@ -1,0 +1,6 @@
+.config.old
+Firmware.bin
+Firmware.elf
+*.cmd
+*.o
+*.d
