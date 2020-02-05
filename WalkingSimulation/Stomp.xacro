@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<!-- vim: set ft=xml sw=2 : -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="Stomp">
+  <xacro:macro name="leg" params="idx parent position orientation">
+    <joint name="leg_pivot_${idx}" type="continuous">
+      <parent link="${parent}"/>
+      <child link="leg_hip_${idx}"/>
+      <axis xyz="0 0 1"/>
+      <origin xyz="${position}" rpy="${orientation}"/>
+    </joint>
+    <link name="leg_hip_${idx}">
+      <visual>
+        <geometry>
+          <mesh filename="Leg 1 Hip Simplified.obj"/>
+        </geometry>
+      </visual>
+      <inertial>
+        <origin xyz="-0.002 -0.004 -0.025"/>
+        <mass value="2.067"/>
+        <inertia ixx="0.009" ixy="0" ixz="0" iyy="0.011" iyz="-0.001" izz="0.007"/>
+      </inertial>
+      <collision>
+        <geometry>
+          <mesh filename="Leg 1 Hip Simplified.obj"/>
+        </geometry>
+      </collision>
+    </link>
+    <!--
+    <joint name="leg_pivot_cylinder_base_${idx}" type="continuous">
+      <parent link="base"/>
+      <child link="leg_pivot_cylinder_${idx}"/>
+      <origin xyz="-0.06543 0.0915 0.135" rpy="0 1.57 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+    <link name="leg_pivot_cylinder_${idx}">
+      <visual>
+        <geometry>
+          <cylinder length="0.10" radius="0.027"/>
+        </geometry>
+        <origin xyz="0 0 -0.05"/>
+      </visual>
+    </link>
+    <joint name="leg_pivot_cylinder_slide_${idx}" type="prismatic">
+      <parent link="leg_pivot_cylinder_${idx}"/>
+      <child link="leg_pivot_rod_${idx}"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+    <link name="leg_pivot_rod_${idx}">
+      <visual>
+        <geometry>
+          <cylinder length="0.10" radius="0.01"/>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="leg_pivot_yoke_${idx}" type="continuous">
+      <parent link="leg_pivot_rod_${idx}"/>
+      <child link="hip"/>
+      <origin xyz="0 0.099 0"/>
+    </joint>
+    -->
+    <joint name="leg_knee_${idx}" type="continuous">
+      <parent link="leg_hip_${idx}" />
+      <child link="leg_thigh_${idx}" />
+      <origin xyz="0 -0.041 0.0" />
+      <axis xyz="1 0 0" />
+    </joint>
+    <link name="leg_thigh_${idx}">
+      <visual>
+        <geometry>
+          <mesh filename="Leg 1 Thigh Simplified.obj"/>
+        </geometry>
+      </visual>
+      <inertial>
+        <origin xyz="0 -0.048 -0.003"/>
+        <mass value="1.512"/>
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.011"/>
+      </inertial>
+      <collision>
+        <geometry>
+          <mesh filename="Leg 1 Thigh Simplified.obj"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="leg_ankle_${idx}" type="continuous">
+      <parent link="leg_thigh_${idx}" />
+      <child link="leg_foot_${idx}" />
+      <origin xyz="0 -0.160 0" />
+      <axis xyz="1 0 0" />
+    </joint>
+    <link name="leg_foot_${idx}">
+      <visual>
+        <geometry>
+          <mesh filename="Leg 1 Foot Simplified.obj"/>
+        </geometry>
+      </visual>
+      <inertial>
+        <origin xyz="0 -0.008 -0.053"/>
+        <mass value="0.600"/>
+        <inertia ixx=".003" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.0003"/>
+      </inertial>
+      <collision>
+        <geometry>
+          <mesh filename="Leg 1 Foot Simplified.obj"/>
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+  <link name="base">
+    <visual>
+      <geometry>
+        <box size="0.72 0.3 0.02"/>
+      </geometry>
+      <origin xyz="0 0 -0.01"/>
+    </visual>
+  </link>
+  <xacro:leg idx="0" parent="base" position=" 0.30 -0.11 0.112" orientation="0 0 0"/>
+  <xacro:leg idx="1" parent="base" position=" 0.00 -0.11 0.112" orientation="0 0 0"/>
+  <xacro:leg idx="2" parent="base" position="-0.30 -0.11 0.112" orientation="0 0 0"/>
+  <xacro:leg idx="3" parent="base" position="-0.30  0.11 0.112" orientation="0 0 ${pi}"/>
+  <xacro:leg idx="4" parent="base" position=" 0.00  0.11 0.112" orientation="0 0 ${pi}"/>
+  <xacro:leg idx="5" parent="base" position=" 0.30  0.11 0.112" orientation="0 0 ${pi}"/>
+</robot>
