@@ -4,3 +4,4 @@ Firmware.elf
 *.cmd
 *.o
 *.d
+openocd.log

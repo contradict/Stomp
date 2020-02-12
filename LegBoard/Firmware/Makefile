@@ -12,3 +12,7 @@ OBJS=$(STARTUP) src/main.o
 # include common make file
 
 include $(TEMPLATEROOT)/Makefile.common
+
+.PHONY: debug
+debug:
+	gdb-multiarch
