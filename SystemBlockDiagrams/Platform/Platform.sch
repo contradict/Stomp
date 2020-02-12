@@ -3,7 +3,7 @@ EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 15
+Sheet 1 16
 Title ""
 Date ""
 Rev ""
@@ -345,71 +345,10 @@ F2 "Power" I L 9300 900 50
 F3 "CommDownstream" I L 9300 1150 50 
 F4 "CommUpstream" I L 9300 700 50 
 $EndSheet
-$Comp
-L Stomp:Tyranis_S.BUS R?
-U 1 1 5E2861EE
-P 7300 1050
-F 0 "R?" V 7513 722 50  0000 R CNN
-F 1 "Tyranis_S.BUS" V 7422 722 50  0000 R CNN
-F 2 "" H 7300 1050 50  0001 C CNN
-F 3 "" H 7300 1050 50  0001 C CNN
-	1    7300 1050
-	0    -1   -1   0   
-$EndComp
-$Comp
-L Stomp:RFD900+ R?
-U 1 1 5E28A674
-P 7300 2300
-F 0 "R?" H 7325 3265 50  0000 C CNN
-F 1 "RFD900+" H 7325 3174 50  0000 C CNN
-F 2 "" H 6900 3350 50  0001 C CNN
-F 3 "" H 6900 3350 50  0001 C CNN
-	1    7300 2300
-	1    0    0    -1  
-$EndComp
-Text Notes 4600 3000 0    50   ~ 0
-TODO:\n    IMU Connectors\n    Telem Radio Connectors\n    Ctrl radio connectors\n    Pressure Sensor\n    Pressure Sensor connectors\n
 $Sheet
-S 3700 5550 1450 2000
-U 5E269D05
-F0 "Power Distribution" 50
-F1 "PowerDistribution.sch" 50
-F2 "MCU_5V" I R 5150 5700 50 
-F3 "MCU_GND" I R 5150 5800 50 
-F4 "Ctrl_5V" I R 5150 5950 50 
-F5 "Ctrl_GND" I R 5150 6050 50 
-F6 "Telem_5V" I R 5150 6200 50 
-F7 "Telem_GND" I R 5150 6300 50 
-F8 "Pressure_5V" I R 5150 6450 50 
-F9 "Pressure_GND" I R 5150 6550 50 
-F10 "Leg0_24V" I L 3700 6750 50 
-F11 "Leg0_GND" I L 3700 6850 50 
-F12 "Leg1_24V" I L 3700 7000 50 
-F13 "Leg1_GND" I L 3700 7100 50 
-F14 "Leg2_24V" I L 3700 7250 50 
-F15 "Leg2_GND" I L 3700 7350 50 
-F16 "Leg3_GND" I R 5150 7350 50 
-F17 "Leg3_24V" I R 5150 7250 50 
-F18 "Leg4_GND" I R 5150 7100 50 
-F19 "Leg4_24V" I R 5150 7000 50 
-F20 "Leg5_GND" I R 5150 6850 50 
-F21 "Leg5_24V" I R 5150 6750 50 
-F22 "CAN_A" I L 3700 5700 50 
-F23 "CAN_B" I L 3700 5800 50 
+S 5050 2800 1850 1500
+U 5E35EB39
+F0 "Electronics Module" 50
+F1 "ElectronicsModule.sch" 50
 $EndSheet
-$Comp
-L Stomp:YostEmbeddedLX IMU?
-U 1 1 5E27BFDD
-P 6100 1200
-F 0 "IMU?" H 6100 1675 50  0000 C CNN
-F 1 "YostEmbeddedLX" H 6100 1584 50  0000 C CNN
-F 2 "" H 5950 1550 50  0001 C CNN
-F 3 "https://yostlabs.com/wp/wp-content/uploads/pdf/3-Space-Sensor-Users-Manual-Embedded-LX.pdf" H 5950 1550 50  0001 C CNN
-F 4 "Yost Labs" H 6100 1200 50  0001 C CNN "Supplier"
-F 5 "TSS_LX" H 6100 1200 50  0001 C CNN "Supplier Part Number"
-	1    6100 1200
-	1    0    0    -1  
-$EndComp
-Text Notes 4200 3950 0    50   ~ 0
-Beagleboard Interface Cards\n    mikroBus Cape https://www.mikroe.com/beaglebone-mikrobus-cape\n      Legs - RS485 Click https://www.mikroe.com/rs485-5v-click\n      Pressure Sensors - ADC Click https://www.mikroe.com/adc-8-click\n      Battery Manager and S.BUS - CAN Click https://www.mikroe.com/can-spi-5v-click\n      Telemetry Radio and IMU - Adapter Click https://www.mikroe.com/adapter-click
 $EndSCHEMATC

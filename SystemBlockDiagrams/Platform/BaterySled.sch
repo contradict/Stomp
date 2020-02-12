@@ -3,7 +3,7 @@ EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 15 15
+Sheet 15 16
 Title ""
 Date ""
 Rev ""
@@ -14,10 +14,10 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Stomp:BMS10x0 BMS??
+L Stomp:BMS10x0 BMS?
 U 1 1 5E270B30
 P 7950 2350
-F 0 "BMS??" H 8175 3165 50  0000 C CNN
+F 0 "BMS?" H 8175 3165 50  0000 C CNN
 F 1 "BMS10x0" H 8175 3074 50  0000 C CNN
 F 2 "" H 7950 2350 50  0001 C CNN
 F 3 "https://www.roboteq.com/index.php/docman/bms-documents-and-files/bms-documents/datasheet/349-bms10x0-datasheet/file" H 7950 2350 50  0001 C CNN
