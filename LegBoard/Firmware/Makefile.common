@@ -299,6 +299,7 @@ ifeq ($(strip $(CONFIG_CMSIS_RTOS_ENABLED)),y)
 	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/timers.o
 	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.o
 	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.o
+	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/FreeRTOS-openocd.o
 	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/include
 	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1
 endif
