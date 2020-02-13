@@ -72,7 +72,7 @@ LD=$(CONFIG_TOOLROOT)arm-none-eabi-gcc
 AR=$(CONFIG_TOOLROOT)arm-none-eabi-ar
 AS=$(CONFIG_TOOLROOT)arm-none-eabi-as
 OBJCOPY=$(CONFIG_TOOLROOT)arm-none-eabi-objcopy
-GDB=$(CONFIG_TOOLROOT)arm-none-eabi-gdb
+GDB=$(CONFIG_TOOLROOT)gdb-multiarch
 
 # Code Paths
 
@@ -123,11 +123,11 @@ LDSCRIPT = $(TEMPLATEROOT)/STM32F722ZETx_ITCM_FLASH.ld
 STARTUP_FOLDER= $(LIBROOT_FILENAME)/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates
 
 ## STARTUP variable will be built along with main.c
-STARTUP = src/system_stm32f7xx.o src/startup_$(PTYPE_FILENAME_LOWERCASE).o src/stm32f7xx_hal_msp.o src/stm32f7xx_it.o
+STARTUP = src/system_stm32f7xx.o src/startup_$(PTYPE_FILENAME_LOWERCASE).o src/stm32f7xx_it.o src/stm32f7xx_hal_timebase_tim.o
 
 ############ BSP
 ifeq ($(strip $(CONFIG_BSP_MODULE_ENABLED)),y)
-	STARTUP += $(BSP)/$(BTYPE_FILENAME).o
+	STARTUP += $(BSP)/$(BTYPE_FILENAME_LOWERCASE).o
 endif
 ifeq ($(strip $(CONFIG_BSP_SDRAM_MODULE_ENABLED)),y)
 	STARTUP += $(BSP)/$(BTYPE_FILENAME)_sdram.o
@@ -429,8 +429,9 @@ FULLASSERT = -DUSE_FULL_ASSERT
 ARCH_FLAGS= -mcpu=cortex-m7 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard 
 LDFLAGS+= -T$(LDSCRIPT) $(ARCH_FLAGS) -specs=nosys.specs
 CFLAGS+= $(ARCH_FLAGS)
-CFLAGS+= -I$(DEVICE)/Include -I$(CORE)/Include -I$(PERIPH)/Inc
+CFLAGS+= -I$(DEVICE)/Include -I$(CORE)/Include -I$(PERIPH)/Inc -I$(BSP)
 CFLAGS+= -D$(PTYPE_FILENAME_UPPERCASE) -D$(CONFIG_BTYPE) -DUSE_HAL_DRIVER $(FULLASSERT) $(USE_LL_DRIVER) -D_TIMEVAL_DEFINED -D_SYS_TIME_H_
+CFLAGS+= -g
 
 # Build executable
 

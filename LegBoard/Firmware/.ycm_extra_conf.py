@@ -11,8 +11,8 @@ BASE_FLAGS = [
     "-fexceptions",
     "-ferror-limit=10000",
     # '-DNDEBUG',
-    "-std=c++11",
-    "-xc++",
+    "-std=c11",
+    "-xc",
     "-mthumb",
     "-DSTM32F722xx",
     "-mmcu=cortex-m7",
@@ -21,8 +21,6 @@ BASE_FLAGS = [
     "-mfloat-abi=hard",
     "--sysroot",
     "/usr/lib/gcc/arm-none-eabi",
-    "-isystem",
-    "/usr/include/newlib/c++/6.3.1/arm-none-eabi",
     "-isystem",
     "/usr/include/newlib/",
     "-isystem",
@@ -36,10 +34,6 @@ BASE_FLAGS = [
     "-I",
     p.join(DIR_OF_THIS_SCRIPT, "Drivers/CMSIS/NN/Include"),
     "-I",
-    p.join(DIR_OF_THIS_SCRIPT, "Drivers/CMSIS/RTOS/Include"),
-    "-I",
-    p.join(DIR_OF_THIS_SCRIPT, "Drivers/CMSIS/RTOS2/Include"),
-    "-I",
     p.join(DIR_OF_THIS_SCRIPT, "Drivers/STM32F7xx_HAL_Driver/Inc"),
     "-I",
     p.join(
@@ -48,8 +42,9 @@ BASE_FLAGS = [
     "-I",
     p.join(DIR_OF_THIS_SCRIPT,
            "Middlewares/Third_Party/FreeRTOS/Source/include/"),
-    "-I",
-    p.join(DIR_OF_THIS_SCRIPT, "inc"),
+    "-I", p.join(DIR_OF_THIS_SCRIPT, "inc"),
+    "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/ChompLegBoard"),
+    "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/STM32F7xx_Nucleo_144"),
 ]
 
 SOURCE_EXTENSIONS = [
