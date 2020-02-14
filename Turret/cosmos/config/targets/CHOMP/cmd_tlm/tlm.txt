@@ -1,0 +1,445 @@
+TELEMETRY CHOMP SNS LITTLE_ENDIAN "Sensor"
+    APPEND_ID_ITEM PKTID 8 UINT 10 "Packet ID which must be 10"
+    APPEND_ITEM PRESSURE 16 INT "Pressure"
+        UNITS "Pounds per Square Inch" "PSI"
+    APPEND_ITEM ANGLE 16 UINT "Angle"
+        UNITS "Degrees" "deg"
+    APPEND_ITEM VACUUM_LEFT 16 INT "Vacuum Left"
+        POLY_READ_CONVERSION -18.7099 0.01973618
+        UNITS "Pounds per square inch" "psi"
+    APPEND_ITEM VACUUM_RIGHT 16 INT "Vacuum Right"
+        POLY_READ_CONVERSION -18.7099 0.01973618
+        UNITS "Pounds per square inch" "psi"
+
+TELEMETRY CHOMP PWM LITTLE_ENDIAN "PWM"
+    APPEND_ID_ITEM PKTID 8 UINT 16 "Packet ID which must be 18"
+    APPEND_ITEM TARGETING_ENABLE 1 UINT "Autosteer"
+    APPEND_ITEM PAD0 7 UINT
+    APPEND_ITEM LEFT_USEC 16 INT "Left pulse"
+        UNITS "microseconds" "us"
+    APPEND_ITEM LEFT_RC 16 INT "Left RC"
+        UNITS "Percent" "%"
+        POLY_READ_CONVERSION 0.0 0.1
+    APPEND_ITEM RIGHT_USEC 16 INT "Right pulse"
+        UNITS "microseconds" "us"
+    APPEND_ITEM RIGHT_RC 16 INT "Right RC"
+        UNITS "Percent" "%"
+        POLY_READ_CONVERSION 0.0 0.1
+    APPEND_ITEM DRIVE_DISTANCE 16 INT "Drive Distance"
+        UNITS "milimeters" "mm"
+
+TELEMETRY CHOMP SYS LITTLE_ENDIAN "System"
+    APPEND_ID_ITEM PKTID 8 UINT 11 "Packet ID which must be 11"
+    APPEND_ITEM WEAPONS_ENABLED 1 UINT "Weapons enabled"
+    APPEND_ITEM FLAGS_PADDING 7 UINT "Padding"
+    APPEND_ITEM LOOP_SPEED_MIN 32 UINT "Loop speed minimum"
+        UNITS "microseconds" "us"
+    APPEND_ITEM LOOP_SPEED_AVG 32 UINT "Loop speed average"
+        UNITS "microseconds" "us"
+    APPEND_ITEM LOOP_SPEED_MAX 32 UINT "Loop speed maximum"
+        UNITS "microseconds" "us"
+    APPEND_ITEM LOOP_COUNT 32 UINT "Loop count"
+    APPEND_ITEM LEDDAR_OVERRUN 16 UINT "LEDDAR buffer overruns"
+    APPEND_ITEM LEDDAR_CRC 16 UINT "LEDDAR CRC errors"
+    APPEND_ITEM SBUS_OVERRUN 16 UINT "S.Bus buffer overruns"
+    APPEND_ITEM LAST_COMMAND 8 UINT "Last received command"
+    APPEND_ITEM COMMAND_OVERRUN 16 UINT "Command buffer overruns"
+    APPEND_ITEM INVALID_COMMAND 16 UINT "Invalid commands"
+    APPEND_ITEM VALID_COMMAND 16 UINT "Valid commands"
+    APPEND_ITEM SYSTEM_TIME 32 UINT "System time milis"
+        UNITS "milliseconds" "ms"
+
+TELEMETRY CHOMP SBS LITTLE_ENDIAN "S.Bus"
+    APPEND_ID_ITEM PKTID 8 UINT 12 "Packet ID which must be 12"
+    APPEND_ITEM AUTO_SELF_RIGHT 1 UINT "Auto self-right enabled"
+    APPEND_ITEM GENTLE_RETRACT 1 UINT "GENTLE_HAMMER_RETRACT"
+    APPEND_ITEM GENTLE_FIRE 1 UINT "GENTLE_HAMMER_FIRE"
+    APPEND_ITEM FLAME_PULSE 1 UINT "FLAME_PULSE"
+    APPEND_ITEM FLAME_CTRL 1 UINT "FLAME_CTRL"
+    APPEND_ITEM MANUAL_RETRACT 1 UINT "HAMMER_RETRACT"
+    APPEND_ITEM MANUAL_FIRE 1 UINT "HAMMER_FIRE"
+    APPEND_ITEM AUTO_HAMMER 1 UINT "AUTO_HAMMER_ENABLE"
+    APPEND_ITEM WEAPONS_ENABLE 1 UINT "WEAPONS_ENABLE"
+    APPEND_ITEM PAD0 1 UINT "PAD"
+    APPEND_ITEM MANUAL_HOLD_DOWN 1 UINT "Manual hold down enable"
+    APPEND_ITEM AUTO_HOLD_DOWN 1 UINT "Auto hold down eable"
+    APPEND_ITEM MANUAL_SELF_RIGHT_RIGHT 1 UINT "Manual self right right"
+    APPEND_ITEM MANUAL_SELF_RIGHT_LEFT 1 UINT "Manual self right left"
+    APPEND_ITEM DANGER 1 UINT "DANGER_CTRL"
+    APPEND_ITEM PAD1 1 UINT
+    APPEND_ITEM HMRI 16 INT "Hammer Intensity"
+        UNITS "degrees" "deg"
+    APPEND_ITEM HMRD 16 INT "Hammer Distance"
+        UNITS "milimeters" "mm"
+
+TELEMETRY CHOMP DBGM LITTLE_ENDIAN "Debug Message"
+    APPEND_ID_ITEM PKTID 8 UINT 13 "Packet ID which must be 13"
+    APPEND_ITEM MSG 1024 STRING "The message text"
+        ALLOW_SHORT
+
+TELEMETRY CHOMP HS LITTLE_ENDIAN "Health&Sensor"
+    APPEND_ID_ITEM PKTID 8 UINT 1 "Packet ID which must be 1"
+    APPEND_ITEM LOOP_SPEED 32 UINT "Loop speed"
+    APPEND_ITEM MAG_CTRL 1 UINT "MAG_CTRL"
+    APPEND_ITEM GENTLE_RETRACT 1 UINT "GENTLE_HAMMER_RETRACT"
+    APPEND_ITEM GENTLE_FIRE 1 UINT "GENTLE_HAMMER_FIRE"
+    APPEND_ITEM FLAME_PULSE 1 UINT "FLAME_PULSE"
+    APPEND_ITEM FLAME_CTRL 1 UINT "FLAME_CTRL"
+    APPEND_ITEM MANUAL_RETRACT 1 UINT "HAMMER_RETRACT"
+    APPEND_ITEM MANUAL_FIRE 1 UINT "HAMMER_FIRE"
+    APPEND_ITEM AUTO_HAMMER 1 UINT "AUTO_HAMMER_ENABLE"
+    APPEND_ITEM PAD 6 UINT "PAD"
+    APPEND_ITEM DANGER 1 UINT "DANGER_CTRL"
+    APPEND_ITEM MAG_PULSE 1 UINT "MAG_PULSE"
+    APPEND_ITEM PRESSURE 16 INT "Pressure"
+    APPEND_ITEM ANGLE 16 UINT "Angle"
+    APPEND_ITEM LEDDAR_OVERRUN 16 UINT "LEDDAR buffer overruns"
+    APPEND_ITEM LEDDAR_CRC 16 UINT "LEDDAR CRC errors"
+    APPEND_ITEM SBUS_OVERRUN 16 UINT "S.Bus buffer overruns"
+
+TELEMETRY CHOMP LEDDARV2 LITTLE_ENDIAN "Leddar telemetry"
+    APPEND_ID_ITEM PKTID 8 UINT 15 "Packet ID which must be 2"
+    APPEND_ITEM STATE 16 INT "State"
+        STATE FAR_ZONE 1 GREEN
+        STATE ARM_ZONE 2 YELLOW
+        STATE HIT_ZONE 3 RED
+        STATE PREDICTIVE_HIT_ZONE 4 RED
+    APPEND_ITEM COUNT 16 INT "Count"
+    APPEND_ARRAY_ITEM RANGE 16 UINT 256 "Ranges"
+        UNITS "centimeters" "cm"
+    APPEND_ARRAY_ITEM AMPLITUDE 16 UINT 256 "Reflection amplitudes"
+
+TELEMETRY CHOMP LEDDAR LITTLE_ENDIAN "Leddar telemetry"
+    APPEND_ID_ITEM PKTID 8 UINT 2 "Packet ID which must be 2"
+    APPEND_ITEM STATE 16 INT "State"
+    APPEND_ITEM SEG0 4 UINT "Segment ID 0"
+    APPEND_ITEM SEG1 4 UINT "Segment ID 1"
+    APPEND_ITEM SEG2 4 UINT "Segment ID 2"
+    APPEND_ITEM SEG3 4 UINT "Segment ID 3"
+    APPEND_ITEM SEG4 4 UINT "Segment ID 4"
+    APPEND_ITEM SEG5 4 UINT "Segment ID 5"
+    APPEND_ITEM SEG6 4 UINT "Segment ID 6"
+    APPEND_ITEM SEG7 4 UINT "Segment ID 7"
+    APPEND_ITEM SEG8 4 UINT "Segment ID 8"
+    APPEND_ITEM SEG9 4 UINT "Segment ID 9"
+    APPEND_ITEM SEG10 4 UINT "Segment ID 10"
+    APPEND_ITEM SEG11 4 UINT "Segment ID 11"
+    APPEND_ITEM SEG12 4 UINT "Segment ID 12"
+    APPEND_ITEM SEG13 4 UINT "Segment ID 13"
+    APPEND_ITEM SEG14 4 UINT "Segment ID 14"
+    APPEND_ITEM SEG15 4 UINT "Segment ID 15"
+    APPEND_ITEM BEAM0 16 INT "Beam 0"
+    APPEND_ITEM BEAM1 16 INT "Beam 1"
+    APPEND_ITEM BEAM2 16 INT "Beam 2"
+    APPEND_ITEM BEAM3 16 INT "Beam 3"
+    APPEND_ITEM BEAM4 16 INT "Beam 4"
+    APPEND_ITEM BEAM5 16 INT "Beam 5"
+    APPEND_ITEM BEAM6 16 INT "Beam 6"
+    APPEND_ITEM BEAM7 16 INT "Beam 7"
+    APPEND_ITEM BEAM8 16 INT "Beam 8"
+    APPEND_ITEM BEAM9 16 INT "Beam 9"
+    APPEND_ITEM BEAM10 16 INT "Beam 10"
+    APPEND_ITEM BEAM11 16 INT "Beam 11"
+    APPEND_ITEM BEAM12 16 INT "Beam 12"
+    APPEND_ITEM BEAM13 16 INT "Beam 13"
+    APPEND_ITEM BEAM14 16 INT "Beam 14"
+    APPEND_ITEM BEAM15 16 INT "Beam 15"
+
+TELEMETRY CHOMP SWING LITTLE_ENDIAN "Swing Data"
+    APPEND_ID_ITEM PKTID 8 UINT 14 "Packet ID which must be 14"
+    APPEND_ITEM TIMESTEP 16 UINT "Data sampling period"
+        UNITS "microseconds" "us"
+    APPEND_ITEM THROW_CLOSE 16 UINT "Sample index of close"
+        UNITS "samples" "u"
+    APPEND_ITEM VO 16 UINT "Sample index of vent open"
+        UNITS "samples" "u"
+    APPEND_ITEM TC 16 UINT "Throw close angle"
+        UNITS "Degrees" "deg"
+    APPEND_ITEM ST 16 UINT "Start angle"
+        UNITS "Degrees" "deg"
+    APPEND_ITEM PT 16 UINT "Number of points collected"
+    APPEND_ARRAY_ITEM ANG 16 UINT 4096 "Angle data"
+        UNITS "Degrees" "deg"
+    APPEND_ARRAY_ITEM PRE 16 INT 4096 "Pressure data"
+        UNITS "Pounds per Square Inch" "PSI"
+
+TELEMETRY CHOMP IMU LITTLE_ENDIAN "Raw IMU measurements"
+    APPEND_ID_ITEM PKTID 8 UINT 17 "Packet ID which must be 17"
+    APPEND_ARRAY_ITEM ACCELERATION 16 INT 48 "Acceleration"
+        UNITS "g" "g"
+        POLY_READ_CONVERSION 0.0 0.000488281
+    APPEND_ARRAY_ITEM ANGULAR_RATE 16 INT 48 "Angular rate"
+        UNITS "degrees/second" "deg/s"
+        POLY_READ_CONVERSION 0.0 0.060976
+    APPEND_ITEM TEMPERATURE 16 INT "Temperature"
+        UNITS "celcius" "C"
+        POLY_READ_CONVERSION 0.0 0.01
+
+TELEMETRY CHOMP ORN LITTLE_ENDIAN "Orientation Status"
+    APPEND_ID_ITEM PKTID 8 UINT 19 "Packet ID which must be 19"
+    APPEND_ITEM STA 1 UINT "Stationary"
+    APPEND_ITEM ORN 4 UINT "Orientation"
+        STATE UPRIGHT 0 GREEN
+        STATE LEFT 1 YELLOW
+        STATE RIGHT 2 YELLOW
+        STATE UNKNOWN 3 RED
+    APPEND_ITEM PAD 3 UINT
+    APPEND_ITEM SAR 32 INT "Sum of angular rates"
+        UNITS "degrees/second" "deg/s"
+        POLY_READ_CONVERSION 0.0 0.060976
+    APPEND_ITEM TNRM 16 INT "Total norm"
+        UNITS "g" "g"
+        POLY_READ_CONVERSION 0.0  0.000488281
+    APPEND_ITEM CNRM 16 INT "Zhat cross norm"
+        UNITS "g" "g"
+        POLY_READ_CONVERSION 0.0  0.000488281
+
+TELEMETRY CHOMP DMP LITTLE_ENDIAN "DMP orientation results"
+    APPEND_ID_ITEM PKTID 8 UINT 18 "Packet ID which must be 18"
+    APPEND_ITEM CNT 16 UINT "FIFO Count"
+    APPEND_ITEM INT 8 UINT "Int status"
+    APPEND_ITEM QW 32 FLOAT "Quaternion w"
+    APPEND_ITEM QX 32 FLOAT "Quaternion x"
+    APPEND_ITEM QY 32 FLOAT "Quaternion y"
+    APPEND_ITEM QZ 32 FLOAT "Quaternion z"
+
+TELEMETRY CHOMP SRT LITTLE_ENDIAN "Self Righting"
+    APPEND_ID_ITEM PKTID 8 UINT 20 "Packet ID which must be 20"
+    APPEND_ITEM STATE 8 UINT "Self Right State"
+        STATE UPRIGHT       0
+        STATE WAIT_HMR_POS  1
+        STATE EXTEND        2
+        STATE LOCK_OUT      3
+        STATE WAIT_HMR_RETR 4
+        STATE WAIT_UPRIGHT  5
+        STATE WAIT_VENT     6
+        STATE WAIT_LO_VENT  7
+        STATE WAIT_RETRACT  8
+        STATE WAIT_LO_RET   9
+
+TELEMETRY CHOMP DRV LITTLE_ENDIAN "Drive Telemetry"
+    APPEND_ID_ITEM PKTID 8 UINT 8 "Packet ID which must be 8"
+    APPEND_ARRAY_ITEM WHEEL_VOLTAGES 16 INT 64 "Wheel Battery Voltages"
+        UNITS "volts" "v"
+        POLY_READ_CONVERSION 0.0 0.1
+    APPEND_ITEM WEAPONS_VOLTAGE 16 INT "Weapons Battery Voltage"
+        UNITS "volts" "v"
+        POLY_READ_CONVERSION 0.0 0.1
+
+TELEMETRY CHOMP TRK LITTLE_ENDIAN "Tracking"
+    APPEND_ID_ITEM PKTID 8 UINT 4 "Packet ID which must be 4"
+    APPEND_ITEM DETX 16 INT "detection x coordinate"
+    APPEND_ITEM DETY 16 INT "detection y coordinate"
+    APPEND_ITEM DETA 32 INT "detection angle"
+    APPEND_ITEM DETR 32 INT "detection radius"
+    APPEND_ITEM FLTX 16 INT "filtered x"
+    APPEND_ITEM FLTVX 16 INT "filtered x velocity"
+    APPEND_ITEM FLTY 16 INT "filtered y"
+    APPEND_ITEM FLTVY 16 INT "filtered y velocity"
+
+TELEMETRY CHOMP AUTOF LITTLE_ENDIAN "Autofire"
+    APPEND_ID_ITEM PKTID 8 UINT 5 "Packet ID which must be 5"
+    APPEND_ITEM STATE 8 INT "State"
+        STATE NO_TARGET  0
+        STATE WZ_LOCKOUT 1
+        STATE NO_HIT     2
+        STATE HIT        3
+    APPEND_ITEM SWING 32 INT "Swing"
+    APPEND_ITEM PREDX 16 INT "x"
+    APPEND_ITEM PREDY 16 INT "y"
+
+TELEMETRY CHOMP ACK LITTLE_ENDIAN "Command Acknowledge"
+   APPEND_ID_ITEM PKTID 8 UINT 6 "Packet ID which must be 6"
+   APPEND_ITEM CMDID 8 UINT "Command ID"
+   APPEND_ITEM VALID 16 UINT "Valid command count"
+   APPEND_ITEM INVALID 16 UINT "Invalid command count"
+
+TELEMETRY CHOMP ADRV LITTLE_ENDIAN "Autodrive telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 7 "Packet ID which must be 7"
+   APPEND_ITEM STEER_BIAS 16 INT "Steering control"
+   APPEND_ITEM DRIVE_BIAS 16 INT "Drive control"
+   APPEND_ITEM THETA 16 INT "Computed filter angle"
+       POLY_READ_CONVERSION 0.0 0.0280
+   APPEND_ITEM VTHETA 16 INT "Computed filter angular velocity"
+       POLY_READ_CONVERSION 0.0 0.0280
+   APPEND_ITEM RADIUS 16 INT "Computed filter radius"
+       POLY_READ_CONVERSION 0.0 0.001
+   APPEND_ITEM VRADIUS 16 INT "Computed filter radial velocity"
+       POLY_READ_CONVERSION 0.0 0.001
+
+
+TELEMETRY CHOMP OBJM LITTLE_ENDIAN "Object measured telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 21 "Packet ID which must be 21"
+   APPEND_ITEM NOBJ 8 INT "Number of detected objects"
+   APPEND_ARRAY_ITEM OBJ_LE 8 INT 64 "Object left edge"
+   APPEND_ARRAY_ITEM OBJ_RE 8 INT 64 "Object right edge"
+   APPEND_ARRAY_ITEM OBJ_SUMD 16 INT 128 "Object sum distance"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.01
+
+TELEMETRY CHOMP OBJC LITTLE_ENDIAN "Object calculated telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 22 "Packet ID which must be 22"
+   APPEND_ITEM NOBJ 8 INT "Number of detected objects"
+   APPEND_ARRAY_ITEM OBJ_R 16 INT 128 "Object radius"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.001
+   APPEND_ARRAY_ITEM OBJ_A 16 INT 128 "Object angle"
+       UNITS "radians" "rad"
+       POLY_READ_CONVERSION 0.0 0.00048828125
+   APPEND_ARRAY_ITEM OBJ_X 16 INT 128 "Object X position"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.001
+   APPEND_ARRAY_ITEM OBJ_Y 16 INT 128 "Object Y position"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.001
+
+TELEMETRY CHOMP VACUUM LITTLE_ENDIAN "Vacuum hold down trace"
+    APPEND_ID_ITEM PKTID 8 UINT 23 "Packet ID which must be 23"
+    APPEND_ITEM TIMESTEP 16 UINT "Data sampling period"
+        UNITS "microseconds" "us"
+    APPEND_ITEM PT 16 UINT "Number of points collected"
+    APPEND_ARRAY_ITEM LEFT 16 INT 2048 "Left vacuum data"
+        POLY_READ_CONVERSION -18.7099 0.01973618
+        UNITS "Pounds per square inch" "psi"
+    APPEND_ARRAY_ITEM RIGHT 16 INT 2048 "Right vacuum data"
+        POLY_READ_CONVERSION -18.7099 0.01973618
+        UNITS "Pounds per square inch" "psi"
+
+
+COMMAND CHOMP TCNTRL LITTLE_ENDIAN "Telementry Control"
+    APPEND_ID_PARAMETER CMDID 8 UINT 10 10 10 "Command ID which must be 10"
+    APPEND_PARAMETER SPERIOD 32 UINT 10000 30000000 100000 "Interval between small telemetry transmissions"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER LPERIOD 32 UINT 10000 30000000 100000 "Interval between LEDDAR telemetry transmissions"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER DPERIOD 32 UINT 5000 30000000 500000 "Interval between Drive telemetry transmissions"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER EN_ADRV 1 UINT 0 1 0 "Enable Autodrive telemetry"
+    APPEND_PARAMETER EN_ACK 1 UINT 0 1 1 "Enable Command Acknowledge"
+    APPEND_PARAMETER EN_AF 1 UINT 0 1 1 "Enable Autofire telemetry"
+    APPEND_PARAMETER EN_TRK 1 UINT 0 1 1 "Enable tracking filter telemetry"
+    APPEND_PARAMETER EN_DBGM_AUTOFIRE 1 UINT 0 1 0 "Enable Autofire debug messages"
+    APPEND_PARAMETER EN_LEDDAR 1 UINT 0 1 0 "Enable LEDDAR telemetry packet"
+    APPEND_PARAMETER EN_HS 1 UINT 0 1 0 "Enable HS telemetry packet"
+    APPEND_PARAMETER PAD00 1 UINT 0 0 0
+    APPEND_PARAMETER EN_LEDDARV2 1 UINT 0 1 0 "Enable LEDDARV2 telemetry packet"
+    APPEND_PARAMETER EN_SWG 1 UINT 0 1 0 "Enable SWG telemetry packet"
+    APPEND_PARAMETER EN_DBGM 1 UINT 0 1 0 "Enable DBGM telemetry packet"
+    APPEND_PARAMETER EN_SBS 1 UINT 0 1 1 "Enable SBS telemetry packet"
+    APPEND_PARAMETER EN_SYS 1 UINT 0 1 1 "Enable SYS telemetry packet"
+    APPEND_PARAMETER EN_SNS 1 UINT 0 1 0 "Enable SNS telemetry packet"
+    APPEND_PARAMETER PADDING11  1 UINT 0 0 0
+    APPEND_PARAMETER EN_DRV 1 UINT 0 1 0 "Enable drive control telemetry"
+    APPEND_PARAMETER EN_VAC 1 UINT 0 1 0 "Enable vacuum trace capture"
+    APPEND_PARAMETER EN_OBJC 1 UINT 0 1 0 "Enable Object Calculated telemetry"
+    APPEND_PARAMETER EN_OBJM 1 UINT 0 1 0 "Enable Object Measured telemetry"
+    APPEND_PARAMETER EN_SRT 1 UINT 0 1 1 "Enable SRT telemetry packet"
+    APPEND_PARAMETER EN_ORN 1 UINT 0 1 0 "Enable ORN telemetry packet"
+    APPEND_PARAMETER EN_DMP 1 UINT 0 1 0 "Enable DMP telemetry packet"
+    APPEND_PARAMETER EN_IMU 1 UINT 0 1 0 "Enable IMU telemetry packet"
+    APPEND_PARAMETER EN_PWM 1 UINT 0 1 1 "Enable PWM telemetry packet"
+    APPEND_PARAMETER PADDING32 8 UINT 0 0 0
+
+
+COMMAND CHOMP TRKFLT LITTLE_ENDIAN "Tracking Filter Settings"
+    APPEND_ID_PARAMETER CMDID 8 UINT 11 11 11 "Command ID which must be 11"
+    APPEND_PARAMETER ALPHA 16 INT 0 32767 9000 "Filter position update coefficient (scale 32767)"
+    APPEND_PARAMETER BETA 16 INT 0 32767 8192 "Filter velocity update coefficient (scale 4096)"
+    APPEND_PARAMETER MNUP 8 INT 0 127 3 "Minimum updates for valid filter"
+    APPEND_PARAMETER TRKLST 32 UINT 0 10000000 250000 "Track lost timeout"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER MXOT 16 INT 0 32767 1000 "Maximum distance from track"
+        UNITS "milimeter" "mm"
+    APPEND_PARAMETER MXST 16 INT 0 32767 6000 "Maximum initial object distance"
+        UNITS "milimeter" "mm"
+
+COMMAND CHOMP OBJSEG LITTLE_ENDIAN "Object Segmentation Settings"
+    APPEND_ID_PARAMETER CMDID 8 UINT 12 12 12 "Command ID which must be 12"
+    APPEND_PARAMETER MNOS 16 INT 0 32767 200 "Minimum object size"
+        UNITS "centimeters" "cm"
+    APPEND_PARAMETER MXOS 16 INT 0 32767 1800 "Maximum object size"
+        UNITS "centimeters" "cm"
+    APPEND_PARAMETER EDGE 16 INT 0 32767 60 "Object edge threshold"
+        UNITS "centimeters" "cm"
+    APPEND_PARAMETER PAD 7 INT 0 0 0
+    APPEND_PARAMETER CLOSE 1 INT 0 1 1 "Only inspect closest object"
+
+
+COMMAND CHOMP AF LITTLE_ENDIAN "Auto Fire Settings"
+    APPEND_ID_PARAMETER CMDID 8 UINT 13 13 13 "Command ID which must be 13"
+    APPEND_PARAMETER XTOL 16 INT 0 32767 200 "X tolerance for hit"
+        UNITS "milimeter" "mm"
+    APPEND_PARAMETER YTOL 16 INT 0 32767 200 "Y tolerance for hit"
+        UNITS "milimeter" "mm"
+    APPEND_PARAMETER MAXRT 16 INT 0 32767 50 "Max angular rate"
+        UNITS "degrees/sec" "deg/sec"
+        POLY_WRITE_CONVERSION 0.0 35.7
+    APPEND_PARAMETER TLMRT 32 UINT 0 10000000 100000 "Telemetry interval"
+        UNITS "microseconds" "us"
+
+COMMAND CHOMP ADRV LITTLE_ENDIAN "Auto Drive Settings"
+    APPEND_ID_PARAMETER CMDID 8 UINT 14 14 14 "Command ID which must be 14"
+    APPEND_PARAMETER STEERP 16 INT 0 32767 3000 "Steering proportional coefficient"
+    APPEND_PARAMETER STEERD 16 INT 0 32767 0 "Steering derivative coefficient"
+    APPEND_PARAMETER STEERMAX 16 INT 0 1000 600 "Steering maximum command"
+    APPEND_PARAMETER GYROG 16 INT 0 32767 0 "Gyro gain"
+    APPEND_PARAMETER DRIVEP 16 INT 0 32767 1500 "Drive proportional coefficient"
+    APPEND_PARAMETER DRIVED 16 INT 0 32767 0 "Drive derivative coefficient"
+    APPEND_PARAMETER DRIVEMAX 16 INT 0 32767 600 "Drive maximum command"
+    APPEND_PARAMETER TINT 32 INT 0 1000000 50000 "Drive telemetry interval"
+
+COMMAND CHOMP IMUP LITTLE_ENDIAN "IMU Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 15 15 15 "Command ID which must be 15"
+    APPEND_PARAMETER DLPF 8 INT 0 6 6 "Low pass filter bandwidth"
+        STATE MPU6050_DLPF_BW_256 0
+        STATE MPU6050_DLPF_BW_188 1
+        STATE MPU6050_DLPF_BW_98  2
+        STATE MPU6050_DLPF_BW_42  3
+        STATE MPU6050_DLPF_BW_20  4
+        STATE MPU6050_DLPF_BW_10  5
+        STATE MPU6050_DLPF_BW_5   6
+    APPEND_PARAMETER PERIOD 32 INT 0 10000000 100000 "IMU read period"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER STATIONARY 32 INT 0 720 3 "Gyro axis stationary sum"
+        UNITS "degrees/second" "deg/s"
+        POLY_WRITE_CONVERSION 0.0 35.7
+    APPEND_PARAMETER UP_CROSS 16 INT 0 2.0 0.06 "Maximum cross when upright"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER MIN_CROSS 16 INT 0 2.0 0.6 "Minimum valid acceleration cross"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER MAX_CROSS 16 INT 0 2.0 1.2 "Maximum valid acceleration cross"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER MAX_NORM 16 INT 0 4.0 1.75 "Maximum total norm"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER X_THR 16 INT 0 2.0 0.6 "X side threshold"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER Z_THR 16 INT 0 2.0 0.99 "Z upright threshold"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+
+
+COMMAND CHOMP SRTP LITTLE_ENDIAN "Self Right Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 16 16 16 "Command ID which must be 16"
+    APPEND_PARAMETER MINHSRA 16 INT 0 360 0 "min hammer self-right angle"
+    APPEND_PARAMETER MAXHSRA 16 INT 0 360 30 "max hammer self-right angle"
+    APPEND_PARAMETER MAXHMD 32 INT 0 30000000 4000000 "max hammer move duration"
+    APPEND_PARAMETER MAXROD 32 INT 0 60000000 3000000 "max reorient duration"
+    APPEND_PARAMETER MINRETD 32 INT 0 10000000 1000000 "min retract duration"
+    APPEND_PARAMETER MINVNTD 32 INT 0 10000000 1000000 "min vent duration"
+    APPEND_PARAMETER MRETD 32 INT 0 10000000 1000000 "Manual retract duration"
+    APPEND_PARAMETER MDEADD 32 INT 0 10000000 250000 "Manual deadtime"
+
+COMMAND CHOMP LDDR LITTLE_ENDIAN "LEDDAR Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 17 17 17 "Command ID which must be 17"
+    APPEND_PARAMETER MINDD 16 INT 0 100 20 "Detections closer than this are ignored"
+    APPEND_PARAMETER MAXDD 16 INT 0 1000 600 "Detections farther than this are ignored"
+
+COMMAND CHOMP HLD LITTLE_ENDIAN "Hold down Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 18 18 18 "Command ID which must be 18"
+    APPEND_PARAMETER SPRD 32 UINT 1000 1000000 10000 "Trace sample period"
+    APPEND_PARAMETER SDELAY 32 UINT 1000 1000000 300000 "Autohold start delay"
