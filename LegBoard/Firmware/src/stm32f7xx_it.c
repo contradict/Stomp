@@ -22,7 +22,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f7xx_it.h"
-   
+
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
   */
@@ -35,7 +35,7 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-
+extern SPI_HandleTypeDef DAC_SPIHandle;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -153,15 +153,21 @@ void SysTick_Handler(void)
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32f7xx.s).                                               */
 /******************************************************************************/
+void EXTI15_10_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(USER_BUTTON_PIN);
+}
+
 
 /**
   * @brief  This function handles PPP interrupt request.
   * @param  None
   * @retval None
   */
-/*void PPP_IRQHandler(void)
+void DAC_SPI_IRQHandler(void)
 {
-}*/
+    HAL_SPI_IRQHandler(&DAC_SPIHandle);
+}
 
 
 /**

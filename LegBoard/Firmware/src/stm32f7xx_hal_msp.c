@@ -29,6 +29,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
+#include "main.h"
 
 /** @addtogroup STM32F7xx_HAL_Driver
   * @{
@@ -72,18 +73,59 @@ void HAL_MspDeInit(void)
   * @brief  Initializes the PPP MSP.
   * @retval None
   */
-void HAL_PPP_MspInit(void)
+void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
 {
- 
+    GPIO_InitTypeDef GPIO_InitStruct;
+    if(hspi->Instance == DAC_SPI_Instance)
+    {
+        DAC_SPI_SCK_GPIO_CLK_ENABLE();
+        DAC_SPI_MISO_GPIO_CLK_ENABLE();
+        DAC_SPI_MOSI_GPIO_CLK_ENABLE();
+        DAC_SPI_NSS_GPIO_CLK_ENABLE();
+
+        DAC_SPI_CLK_ENABLE();
+
+        /* SCK */
+        GPIO_InitStruct.Pin = DAC_SPI_SCK_PIN;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+        GPIO_InitStruct.Alternate = DAC_SPI_SCK_AF;
+        HAL_GPIO_Init(DAC_SPI_SCK_GPIO_PORT, &GPIO_InitStruct);
+        /* MISO */
+        GPIO_InitStruct.Pin = DAC_SPI_MISO_PIN;
+        GPIO_InitStruct.Alternate = DAC_SPI_MISO_AF;
+        HAL_GPIO_Init(DAC_SPI_MISO_GPIO_PORT, &GPIO_InitStruct);
+        /* MOSI */
+        GPIO_InitStruct.Pin = DAC_SPI_MOSI_PIN;
+        GPIO_InitStruct.Alternate = DAC_SPI_MOSI_AF;
+        HAL_GPIO_Init(DAC_SPI_MOSI_GPIO_PORT, &GPIO_InitStruct);
+        /* NSS */
+        GPIO_InitStruct.Pin = DAC_SPI_NSS_PIN;
+        GPIO_InitStruct.Alternate = DAC_SPI_NSS_AF;
+        HAL_GPIO_Init(DAC_SPI_NSS_GPIO_PORT, &GPIO_InitStruct);
+
+        HAL_NVIC_SetPriority(DAC_SPI_IRQn, 1, 0);
+        HAL_NVIC_EnableIRQ(DAC_SPI_IRQn);
+     }
 }
 
 /**
   * @brief  DeInitializes the PPP MSP.  
   * @retval None
   */
-void HAL_PPP_MspDeInit(void)
+void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
 {
-
+    if(hspi->Instance == DAC_SPI_Instance)
+    {
+        DAC_SPI_FORCE_RESET();
+        DAC_SPI_RELEASE_RESET();
+        HAL_GPIO_DeInit(DAC_SPI_SCK_GPIO_PORT, DAC_SPI_SCK_PIN);
+        HAL_GPIO_DeInit(DAC_SPI_MISO_GPIO_PORT, DAC_SPI_MISO_PIN);
+        HAL_GPIO_DeInit(DAC_SPI_MOSI_GPIO_PORT, DAC_SPI_MOSI_PIN);
+        HAL_GPIO_DeInit(DAC_SPI_NSS_GPIO_PORT, DAC_SPI_NSS_PIN);
+        HAL_NVIC_DisableIRQ(DAC_SPI_IRQn);
+    }
 }
 
 /**

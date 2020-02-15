@@ -5,7 +5,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-#include "stm32f7xx_nucleo_144.h"
 #include <stdbool.h>
 
 /* Private typedef -----------------------------------------------------------*/
@@ -15,6 +14,7 @@
 #define UU(x) __attribute__((unused)) x
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+SPI_HandleTypeDef DAC_SPIHandle;
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void CPU_CACHE_Enable(void);
@@ -43,11 +43,6 @@ void led3_thread(UU(void const *args)) {
 }
 
 osThreadId buttonThreadId;
-
-void EXTI15_10_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(USER_BUTTON_PIN);
-}
 
 void HAL_GPIO_EXTI_Callback(UU(uint16_t GPIO_Pin))
 {
