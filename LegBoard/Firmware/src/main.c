@@ -3,68 +3,20 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdbool.h>
 #include "main.h"
 #include "cmsis_os.h"
-#include <stdbool.h>
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define DEFAULT_STACK_SIZE 0
 
-#define UU(x) __attribute__((unused)) x
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef DAC_SPIHandle;
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void CPU_CACHE_Enable(void);
 
 /* Private functions ---------------------------------------------------------*/
-
-void led1_thread(UU(void const *args)) {
-    while (true) {
-        BSP_LED_Toggle(LED_RED);
-        osDelay(1000);
-    }
-}
-
-void led2_thread(UU(void const *args)) {
-    while (true) {
-        BSP_LED_Toggle(LED_GREEN);
-        osDelay(500);
-    }
-}
-
-void led3_thread(UU(void const *args)) {
-    while (true) {
-        BSP_LED_Toggle(LED_BLUE);
-        osDelay(250);
-    }
-}
-
-osThreadId buttonThreadId;
-
-void HAL_GPIO_EXTI_Callback(UU(uint16_t GPIO_Pin))
-{
-  osSignalSet(buttonThreadId, 0);
-}
-
-void button_thread(UU(void const *arg))
-{
-    osEvent event;
-    for(;;)
-    {
-        event = osSignalWait(0, osWaitForever);
-        osDelay(10);
-        if(BSP_PB_GetState(BUTTON_USER) == 1)
-        {
-            BSP_LED_Toggle(LED_RED);
-            BSP_LED_Toggle(LED_BLUE);
-            BSP_LED_Toggle(LED_GREEN);
-        }
-    }
-}
-
 
 /**
   * @brief  Main program
@@ -73,13 +25,11 @@ void button_thread(UU(void const *arg))
   */
 int main(void)
 {
-  /* This project template calls firstly CPU_CACHE_Enable() in order to enable the CPU Cache.
-     This function is provided as template implementation that User may integrate 
-     in his application, to enhance the performance in case of use of AXI interface 
-     with several masters. */
-
   /* Enable the CPU Cache */
   CPU_CACHE_Enable();
+
+  /* Configure the system clock to 216 MHz */
+  SystemClock_Config();
 
   /* STM32F7xx HAL library initialization:
        - Configure the Flash ART accelerator on ITCM interface
@@ -89,24 +39,13 @@ int main(void)
      */
   HAL_Init();
 
-  /* Configure the system clock to 216 MHz */
-  SystemClock_Config();
+#ifdef ChompLegBoard
 
-  BSP_LED_Init(LED_GREEN);
-  BSP_LED_Init(LED_BLUE);
-  BSP_LED_Init(LED_RED);
-  BSP_PB_Init(BUTTON_USER, BUTTON_MODE_EXTI);
+#endif
 
-  osThreadDef(led1, led1_thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-  osThreadDef(led2, led2_thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-  osThreadDef(led3, led3_thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-  osThreadDef(button, button_thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-
-  osThreadCreate(osThread(led1), NULL);
-  osThreadCreate(osThread(led2), NULL);
-  osThreadCreate(osThread(led3), NULL);
-  buttonThreadId = osThreadCreate(osThread(button), NULL);
-
+#ifdef STM32F7xx_Nucleo_144
+  f722_nucleo_blinky_Init();
+#endif
   /* Start scheduler */
   osKernelStart();
 
@@ -122,7 +61,7 @@ int main(void)
   *            HCLK(Hz)                       = 216000000
   *            AHB Prescaler                  = 1
   *            APB1 Prescaler                 = 4
-  *            APB2 Prescaler                 = 2
+  *            APB2 Prescaler                 = 1
   *            HSE Frequency(Hz)              = 8000000
   *            PLL_M                          = 8
   *            PLL_N                          = 432

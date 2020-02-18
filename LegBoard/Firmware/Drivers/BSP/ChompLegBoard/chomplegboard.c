@@ -144,12 +144,21 @@ void DAC_IO_CLR_pulse(void)
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    (void)hspi;
     transfer_started = 0;
+    DAC_IO_TransferComplete(hspi);
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
 {
+    DAC_IO_TransferError(hspi);
+}
+
+__weak void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi)
+{
     (void)hspi;
 }
 
+__weak void DAC_IO_TransferError(SPI_HandleTypeDef *hspi)
+{
+    (void)hspi;
+}

@@ -36,6 +36,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern SPI_HandleTypeDef DAC_SPIHandle;
+extern ADC_HandleTypeDef feedback_adc;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -155,7 +156,9 @@ void SysTick_Handler(void)
 /******************************************************************************/
 void EXTI15_10_IRQHandler(void)
 {
+#ifdef STM32F7xx_Nucleo_144
   HAL_GPIO_EXTI_IRQHandler(USER_BUTTON_PIN);
+#endif
 }
 
 
@@ -169,6 +172,10 @@ void DAC_SPI_IRQHandler(void)
     HAL_SPI_IRQHandler(&DAC_SPIHandle);
 }
 
+void FEEDBACK_ADC_IRQHandler(void)
+{
+    HAL_ADC_IRQHandler(&feedback_adc);
+}
 
 /**
   * @}

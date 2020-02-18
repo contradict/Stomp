@@ -23,7 +23,15 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
+
+#ifdef ChompLegBoard
+#include "chomplegboard.h"
+#else
+#ifdef STM32F7xx_Nucleo_144
 #include "stm32f7xx_nucleo_144.h"
+#include "f722-nucleo-blinky.h"
+#endif
+#endif
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/

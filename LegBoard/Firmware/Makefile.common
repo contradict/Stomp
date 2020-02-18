@@ -118,9 +118,11 @@ vpath %.c $(DEVICE)
 
 #  Processor specific
 
-LDSCRIPT = $(TEMPLATEROOT)/STM32F722ZETx_ITCM_FLASH.ld
+LDSCRIPT = $(TEMPLATEROOT)/STM32F730I8Kx_FLASH.ld
 
 STARTUP_FOLDER= $(LIBROOT_FILENAME)/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates
+
+CFLAGS = -I./inc
 
 ## STARTUP variable will be built along with main.c
 STARTUP = src/system_stm32f7xx.o src/startup_$(PTYPE_FILENAME_LOWERCASE).o src/stm32f7xx_it.o src/stm32f7xx_hal_timebase_tim.o
@@ -146,6 +148,11 @@ endif
 ifeq ($(strip $(CONFIG_BSP_OTM8009A_COMPONENT_ENABLED)),y)
 	STARTUP += $(BSP_COMPONENTS)/otm8009a/otm8009a.o
 endif
+ifeq ($(strip $(CONFIG_BSP_ADS57X4_COMPONENT_ENABLED)),y)
+	STARTUP += $(BSP_COMPONENTS)/ads57x4/ads57x4.o
+	CFLAGS += -I$(BSP_COMPONENTS)/ads57x4
+endif
+
 
 ############ HAL
 
@@ -285,8 +292,6 @@ endif
 ifeq ($(strip $(CONFIG_LL_USB_MODULE_ENABLED)),y)
 	STARTUP += $(PERIPH)/Src/stm32f7xx_ll_usb.o
 endif
-
-CFLAGS = -I. -I./inc
 
 ############ Middlewares
 

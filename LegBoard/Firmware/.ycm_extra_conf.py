@@ -25,6 +25,7 @@ BASE_FLAGS = [
     "/usr/include/newlib/",
     "-isystem",
     "/usr/lib/gcc/arm-none-eabi/6.3.1/include",
+    "-D", "ChompLegBoard",
     "-I",
     p.join(DIR_OF_THIS_SCRIPT, "Drivers/CMSIS/Core/Include"),
     "-I",
@@ -45,6 +46,7 @@ BASE_FLAGS = [
     "-I", p.join(DIR_OF_THIS_SCRIPT, "inc"),
     "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/ChompLegBoard"),
     "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/STM32F7xx_Nucleo_144"),
+    "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/Components/ads57x4"),
 ]
 
 SOURCE_EXTENSIONS = [

@@ -30,6 +30,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
 #include "main.h"
+#include "feedback_adc.h"
 
 /** @addtogroup STM32F7xx_HAL_Driver
   * @{
@@ -128,6 +129,44 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
     }
 }
 
+void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    FEEDBACK_ADC_CHANNEL_GPIO_CLOCK_ENABLE();
+    FEEDBACK_ADC_CLK_ENABLE();
+    GPIO_InitStruct.Pin = CURL_ADC_CHANNEL_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(FEEDBACK_ADC_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = SWING_ADC_CHANNEL_PIN;
+    HAL_GPIO_Init(FEEDBACK_ADC_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LIFT_ADC_CHANNEL_PIN;
+    HAL_GPIO_Init(FEEDBACK_ADC_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
+
+    HAL_NVIC_SetPriority(FEEDBACK_ADC_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(FEEDBACK_ADC_IRQn);
+}
+
+void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc)
+{
+    FEEDBACK_ADC_FORCE_RESET();
+    FEEDBACK_ADC_RELEASE_RESET();
+    HAL_GPIO_DeInit(FEEDBACK_ADC_CHANNEL_GPIO_PORT, CURL_ADC_CHANNEL_PIN);
+    HAL_GPIO_DeInit(FEEDBACK_ADC_CHANNEL_GPIO_PORT, SWING_ADC_CHANNEL_PIN);
+    HAL_GPIO_DeInit(FEEDBACK_ADC_CHANNEL_GPIO_PORT, LIFT_ADC_CHANNEL_PIN);
+}
+
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim)
+{
+    FEEDBACK_TRIGGER_TIM_CLK_ENABLE();
+}
+
+void HAL_TIM_Base_MsaDepInit(TIM_HandleTypeDef *htim)
+{
+    FEEDBACK_TRIGGER_TIM_FORCE_RESET();
+    FEEDBACK_TRIGGER_TIM_RELEASE_RESET();
+}
 /**
   * @}
   */

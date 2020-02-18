@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "stm32f7xx_hal.h"
 
 /* Definition for DAC_SPI clock resources */
 #define DAC_SPI_Instance                 SPI1
@@ -48,3 +49,5 @@ void DAC_IO_WaitForTransfer(void);
 void DAC_IO_LDAC_pulse();
 void DAC_IO_CLR(bool state);
 void DAC_IO_CLR_pulse();
+void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi);
+void DAC_IO_TransferError(SPI_HandleTypeDef *hspi);

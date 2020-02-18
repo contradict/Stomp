@@ -67,12 +67,13 @@ enum ads57x4_power_config {
     ADS57x4_POWER_OCd=1<<10
 };
 
-extern void DAC_IO_Init();
+extern int DAC_IO_Init();
 extern void DAC_IO_Write(uint32_t* write);
 extern void DAC_IO_ReadWrite(uint32_t* write, uint32_t* read);
 extern void DAC_IO_WaitForTransfer(void);
 extern void DAC_IO_LDAC(bool state);
 extern void DAC_IO_CLR(bool state);
+extern void DAC_IO_TransferComplete();
 
 int ads57x4_Init();
 int ads5724_SetVoltage(enum ads57x4_channel channel, int16_t volts);

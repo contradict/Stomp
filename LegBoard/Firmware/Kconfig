@@ -13,13 +13,13 @@ menu "Board"
 
 config PTYPE
 	string "PTYPE"
-	default "stm32f769xx"
+	default "stm32f730xx"
 	help
 		Processor type (e.g. stm32f769xx)
 
 config BTYPE
 	string "BTYPE"
-	default "stm32f769i_discovery"
+	default "ChompLegBoard"
 	help
 		Processor type (e.g. stm32f769i_discovery)
 
@@ -73,15 +73,22 @@ menu "Included BSP components"
 
 config BSP_WM8994_COMPONENT_ENABLED
 	bool "BSP_WM8994_COMPONENT_ENABLED"
-	default y
+	default n
 	help
 		Include BSP WM8994 component - hi-fi codec.
 
 config BSP_OTM8009A_COMPONENT_ENABLED
 	bool "BSP_OTM8009A_COMPONENT_ENABLED"
-	default y
+	default n
 	help
 		Include BSP OTM8009A component - driver for TFT LCDs.
+
+config BSP_ADS57X4_COMPONENT_ENABLED
+	bool "BSP_ADS57X4_COMPONENT_ENABLED"
+	default y
+	help
+		Include BSP ADS57X4 component - driver for SPI DAC.
+
 endmenu
 
 menu "Included HAL libraries"
