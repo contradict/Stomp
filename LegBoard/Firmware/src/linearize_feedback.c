@@ -4,11 +4,20 @@
 #include "ads57x4.h"
 #include "feedback_adc.h"
 
-/*
-#define M_PI    3.141592653589793238462643383279502884f
-#define M_PI_2  1.570796326794896619231321691639751442f
-#define M_PI_4  0.785398163397448309615660845819875721f
-*/
+// theta = (V - Vmin) / (Vmax - Vmin) * Thetamax + Thetamin
+// theta = V * Thetamax / (Vmax - Vmin) + (Thetamin - (Vmin / (Vmax - Vmin)))
+#define THETA_OFFSET(Vmin, Vmax, Thetamin, Thetamax) (Thetamax / (Vmax - Vmin))
+#define THETA_SCALE(Vmin, Vmax, Thetamin, Thetamax)  (Thetamin - (Vmin / (Vmax - Vmin)))
+
+// length = sqrt(l1**2 + l2**2 + l1 * l2 * sin(theta + phi))
+#define SHAPE_OFFSET(l1, l2) (l1*l1 + l2*l2)
+#define SHAPE_SCALE(l1, l2) (l1*l1)
+
+// feedback_voltage = (length - Lmin) / (Lmax - Lmin) * Vmax + Vmin
+#define FEEDBACK_OFFSET(Lmin, Lmax, Vmin, Vmax) (Vmax / (Lmax - Lmin))
+#define FEEDBACK_SCALE(Lmin, Lmax, Vmin, Vmax)  (Vmin - (Lmin / (Lmax - Lmin)))
+
+static void Linearize_Thread(const void* args);
 
 static const float ADC_VREF = 3.3f;
 static const float ADC_MAX_CODE = (float)((1<<12) - 1);
@@ -18,10 +27,10 @@ static const float DAC_CODE_SCALE = 10.8f / ((1<<12)-1);
 SPI_HandleTypeDef DAC_SPIHandle;
 ADC_HandleTypeDef feedback_adc;
 
+osThreadDef(lin, Linearize_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+osMessageQDef(adcdata, 2, uint32_t);
 static osThreadId linearize;
 static osMessageQId dataQ;
-
-static void Linearize_Thread(const void* args);
 
 enum JointIndex {
     CURL = 0,
@@ -33,7 +42,7 @@ enum JointIndex {
 static const enum ads57x4_channel joint_channel[3] = {
     ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_B, ADS57x4_CHANNEL_C}; 
 
-static struct LinearizationConstants {
+struct LinearizationConstants {
     float theta_offset[NJOINTS];
     float theta_scale[NJOINTS];
     float shape_offset[NJOINTS];
@@ -41,24 +50,46 @@ static struct LinearizationConstants {
     float shape_phase[NJOINTS];
     float feedback_offset[NJOINTS];
     float feedback_scale[NJOINTS];
-} constants __attribute__ ((section ("storage"))) = {
-    .theta_offset = {M_PI_2 - ((4.8 + 0.8) / 2),
-                     M_PI_2 - ((4.8 + 0.8) / 2),
-                     M_PI_2 - ((4.8 + 0.8) / 2)},
-    .theta_scale = {M_PI_4 / (4.8 - 0.8),
-                    1.0f, 1.0f}
 };
+
+static struct LinearizationConstants constants_storage __attribute__ ((section (".storage"))) = {
+    .theta_offset = {
+        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),  // CURL
+        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),  // LIFT
+        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)}, // SWING
+    .theta_scale = {
+        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),   // CURL
+        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),   // LIFT
+        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)},  // SWING
+    .shape_offset = {
+        SHAPE_OFFSET(0.00f, 0.00f),                                         // CURL
+        SHAPE_OFFSET(0.00f, 0.00f),                                         // LIFT
+        SHAPE_OFFSET(0.00f, 0.00f)},                                        // SWING
+    .shape_scale = {
+        SHAPE_SCALE(0.00f, 0.00f),                                          // CURL
+        SHAPE_SCALE(0.00f, 0.00f),                                          // LIFT
+        SHAPE_SCALE(0.00f, 0.00f)},                                         // SWING
+    .shape_phase = {0.0f, 0.0f, 0.0f},
+    .feedback_offset = {
+        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
+        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // LIFT
+        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f)},                         // SWING
+    .feedback_scale = {
+        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
+        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // LIFT
+        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f)},                         // SWING
+};
+
+static struct LinearizationConstants constants;
 
 void Linearize_ThreadInit(void)
 {
-    osThreadDef(lin, Linearize_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    osMessageQDef(adcdata, 2, uint32_t);
     /* Configure on-board ADC to read Feedback signals in repeating sequence */
     /* CURL, LIFT, SWING */
     /* Runs at 3kHz, so each channel sees 1kHz updates */
     ads57x4_Init();
 
-    FeedbackADC_TimerInit();  
+    FeedbackADC_TimerInit();
 
     FeedbackADC_Init();
 
@@ -90,11 +121,11 @@ void Linearize_Thread(const void* args)
             HAL_ADC_Start_IT(&feedback_adc);
             continue;
         }
-        float voltage = (ADC_VREF * (event.value.v / ADC_MAX_CODE) / JOINT_DIVIDER);
+        float voltage = (ADC_VREF * (((uint32_t)args) / ADC_MAX_CODE) / JOINT_DIVIDER);
         float angle = (constants.theta_offset[current_joint] +
                        constants.theta_scale[current_joint] * voltage);
-        float length = (constants.shape_offset[current_joint] +
-                        constants.shape_scale[current_joint] * sinf(angle + constants.shape_phase[current_joint]));
+        float length = sqrtf(constants.shape_offset[current_joint] +
+                             constants.shape_scale[current_joint] * sinf(angle + constants.shape_phase[current_joint]));
         float feedback_voltage = (constants.feedback_offset[current_joint] +
                                   constants.feedback_scale[current_joint] * length);
         uint16_t feedback_code = feedback_voltage * DAC_CODE_SCALE;

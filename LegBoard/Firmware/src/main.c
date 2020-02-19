@@ -6,12 +6,17 @@
 #include <stdbool.h>
 #include "main.h"
 #include "cmsis_os.h"
+#include "linearize_feedback.h"
+#include "storage.h"
+//#include "f722-nucleo-blinky.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+int __errno;
+
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void CPU_CACHE_Enable(void);
@@ -43,9 +48,12 @@ int main(void)
 
 #endif
 
-#ifdef STM32F7xx_Nucleo_144
-  f722_nucleo_blinky_Init();
-#endif
+//  f722_nucleo_blinky_Init();
+
+  Storage_Init();
+
+  Linearize_ThreadInit();
+
   /* Start scheduler */
   osKernelStart();
 

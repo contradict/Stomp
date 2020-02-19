@@ -11,7 +11,7 @@ BASE_FLAGS = [
     "-fexceptions",
     "-ferror-limit=10000",
     # '-DNDEBUG',
-    "-std=c11",
+    "-std=gnu17",
     "-xc",
     "-mthumb",
     "-DSTM32F722xx",
