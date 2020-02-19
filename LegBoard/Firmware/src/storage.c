@@ -1,8 +1,8 @@
 #include <string.h>
 
-extern void _sstdata;
-extern void _estdata;
-extern void _ldstdata;
+extern int _sstdata;
+extern int _estdata;
+extern int _ldstdata;
 
 void Storage_Init(void)
 {
