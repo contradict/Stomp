@@ -8,7 +8,7 @@
 #include "cmsis_os.h"
 #include "linearize_feedback.h"
 #include "storage.h"
-//#include "f722-nucleo-blinky.h"
+#include "f722-nucleo-blinky.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -48,7 +48,7 @@ int main(void)
 
 #endif
 
-//  f722_nucleo_blinky_Init();
+  f722_nucleo_blinky_Init();
 
   Storage_Init();
 

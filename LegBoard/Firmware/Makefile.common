@@ -130,6 +130,7 @@ STARTUP = src/system_stm32f7xx.o src/startup_$(PTYPE_FILENAME_LOWERCASE).o src/s
 ############ BSP
 ifeq ($(strip $(CONFIG_BSP_MODULE_ENABLED)),y)
 	STARTUP += $(BSP)/$(BTYPE_FILENAME_LOWERCASE).o
+	STARTUP += $(LIBROOT_FILENAME)/Drivers/BSP/STM32F7xx_Nucleo_144/stm32f7xx_nucleo_144.o
 endif
 ifeq ($(strip $(CONFIG_BSP_SDRAM_MODULE_ENABLED)),y)
 	STARTUP += $(BSP)/$(BTYPE_FILENAME)_sdram.o
@@ -434,7 +435,7 @@ FULLASSERT = -DUSE_FULL_ASSERT
 ARCH_FLAGS= -mcpu=cortex-m7 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard 
 LDFLAGS+= -T$(LDSCRIPT) $(ARCH_FLAGS) -specs=nosys.specs
 CFLAGS+= $(ARCH_FLAGS)
-CFLAGS+= -I$(DEVICE)/Include -I$(CORE)/Include -I$(PERIPH)/Inc -I$(BSP)
+CFLAGS+= -I$(DEVICE)/Include -I$(CORE)/Include -I$(PERIPH)/Inc -I$(BSP) -I $(LIBROOT_FILENAME)/Drivers/BSP/STM32F7xx_Nucleo_144/
 CFLAGS+= -D$(PTYPE_FILENAME_UPPERCASE) -D$(CONFIG_BTYPE) -DUSE_HAL_DRIVER $(FULLASSERT) $(USE_LL_DRIVER) -D_TIMEVAL_DEFINED -D_SYS_TIME_H_
 CFLAGS+= -g
 
