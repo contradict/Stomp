@@ -135,10 +135,12 @@ void Linearize_Thread(const void* args)
 
 void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi)
 {
+    (void)hspi;
 }
 
 void DAC_IO_TransferError(SPI_HandleTypeDef *hspi)
 {
+    (void)hspi;
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -151,5 +153,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 {
+    (void)hadc;
     osSignalSet(linearize, 1);
 }

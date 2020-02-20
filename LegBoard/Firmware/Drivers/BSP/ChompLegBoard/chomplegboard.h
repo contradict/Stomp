@@ -43,8 +43,8 @@
 #define DAC_SPI_IRQHandler               SPI1_IRQHandler
 
 int DAC_IO_Init(void);
-void DAC_IO_Write(uint32_t* write);
-void DAC_IO_ReadWrite(uint32_t* write, uint32_t* read);
+void DAC_IO_Write(uint8_t write[3]);
+void DAC_IO_ReadWrite(uint8_t write[3], uint8_t read[3]);
 void DAC_IO_WaitForTransfer(void);
 void DAC_IO_LDAC_pulse();
 void DAC_IO_CLR(bool state);

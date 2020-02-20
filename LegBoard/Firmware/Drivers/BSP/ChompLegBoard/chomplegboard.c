@@ -97,13 +97,13 @@ int DAC_IO_Init(void)
     return HAL_SPI_Init(&DAC_SPIHandle);
 }
 
-void DAC_IO_Write(uint32_t* write)
+void DAC_IO_Write(uint8_t write[3])
 {
     transfer_started = 1;
     HAL_SPI_Transmit_IT(&DAC_SPIHandle, ((uint8_t *)write), 3); 
 }
 
-void DAC_IO_ReadWrite(uint32_t *write, uint32_t* read)
+void DAC_IO_ReadWrite(uint8_t write[3], uint8_t read[3])
 {
     transfer_started = 1;
     HAL_SPI_TransmitReceive_IT(&DAC_SPIHandle,

@@ -3,22 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ADS57x4_WRITE 0
-#define ADS57x4_READ (1<<23)
-
-#define ADS57x4_OFFSET_REGISTER 19
-#define ADS57x4_OFFSET_CHANNEL 16
-#define ADS57x4_OFFSET_COMMAND 16
-
-#define ADS5754_OFFSET_DATA 0
-#define ADS5734_OFFSET_DATA 2
-#define ADS5724_OFFSET_DATA 4
-
-#define ADS57x4_OFFSET_TSD 3
-#define ADS57x4_OFFSET_CLAMP 2
-#define ADS57x4_OFFSET_CLR 1
-#define ADS57x4_OFFSET_SDO 0
-
 enum ads57x4_channel {
     ADS57x4_CHANNEL_A = 0,
     ADS57x4_CHANNEL_B = 1,
@@ -67,14 +51,6 @@ enum ads57x4_power_config {
     ADS57x4_POWER_OCd=1<<10
 };
 
-extern int DAC_IO_Init();
-extern void DAC_IO_Write(uint32_t* write);
-extern void DAC_IO_ReadWrite(uint32_t* write, uint32_t* read);
-extern void DAC_IO_WaitForTransfer(void);
-extern void DAC_IO_LDAC(bool state);
-extern void DAC_IO_CLR(bool state);
-extern void DAC_IO_TransferComplete();
-
 int ads57x4_Init();
 int ads5724_SetVoltage(enum ads57x4_channel channel, int16_t volts);
 int ads57x4_SelectOutputRange(enum ads57x4_channel channel,
@@ -83,4 +59,4 @@ int ads57x4_Clear();
 int ads57x4_Load();
 int ads57x4_Configure(bool TSD, bool Clamp, enum ads57x4_clear_select Clear, bool SDO);
 int ads57x4_Power(uint8_t power);
-int ads57x4_Read(enum ads57x4_register, enum ads57x4_channel channel, uint32_t* result);
+int ads57x4_Read(enum ads57x4_register, enum ads57x4_channel channel, uint8_t result[3]);
