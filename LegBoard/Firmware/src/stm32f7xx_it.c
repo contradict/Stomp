@@ -37,6 +37,7 @@
 /* Private variables ---------------------------------------------------------*/
 extern SPI_HandleTypeDef DAC_SPIHandle;
 extern ADC_HandleTypeDef feedback_adc;
+extern I2C_HandleTypeDef LED_I2CHandle;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -176,6 +177,30 @@ void FEEDBACK_ADC_IRQHandler(void)
 {
     HAL_ADC_IRQHandler(&feedback_adc);
 }
+
+/**
+  * @brief  This function handles I2C event interrupt request.
+  * @param  None
+  * @retval None
+  * @Note   This function is redefined in "main.h" and related to I2C data transmission
+  */
+void I2Cx_EV_IRQHandler(void)
+{
+  HAL_I2C_EV_IRQHandler(&LED_I2CHandle);
+}
+
+/**
+  * @brief  This function handles I2C error interrupt request.
+  * @param  None
+  * @retval None
+  * @Note   This function is redefined in "main.h" and related to I2C error
+  */
+void I2Cx_ER_IRQHandler(void)
+{
+  HAL_I2C_ER_IRQHandler(&LED_I2CHandle);
+}
+
+
 
 /**
   * @}

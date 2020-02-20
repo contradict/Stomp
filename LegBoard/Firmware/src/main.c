@@ -9,6 +9,7 @@
 #include "linearize_feedback.h"
 #include "storage.h"
 #include "f722-nucleo-blinky.h"
+#include "is31fl3235.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -49,6 +50,8 @@ int main(void)
 #endif
 
   f722_nucleo_blinky_Init();
+
+  is31fl3235_Init(IS31FL3235_ADDR_GND);
 
   Storage_Init();
 

@@ -24,7 +24,7 @@ static const float ADC_MAX_CODE = (float)((1<<12) - 1);
 static const float JOINT_DIVIDER = 2.0f / 3.0f;
 static const float DAC_CODE_SCALE = 10.8f / ((1<<12)-1);
 
-SPI_HandleTypeDef DAC_SPIHandle;
+extern SPI_HandleTypeDef DAC_SPIHandle;
 ADC_HandleTypeDef feedback_adc;
 
 osThreadDef(lin, Linearize_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);

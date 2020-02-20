@@ -47,6 +47,7 @@ BASE_FLAGS = [
     "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/ChompLegBoard"),
     "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/STM32F7xx_Nucleo_144"),
     "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/Components/ads57x4"),
+    "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/Components/is31fl3235"),
 ]
 
 SOURCE_EXTENSIONS = [

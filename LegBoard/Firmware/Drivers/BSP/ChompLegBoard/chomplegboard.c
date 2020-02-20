@@ -1,8 +1,8 @@
 #include <math.h>
 #include "chomplegboard.h"
-#include "stm32f7xx_hal.h"
 
-extern SPI_HandleTypeDef DAC_SPIHandle;
+SPI_HandleTypeDef DAC_SPIHandle;
+I2C_HandleTypeDef LED_I2CHandle;
 
 volatile static bool transfer_started;
 static int dwt_started = 0;
@@ -161,4 +161,47 @@ __weak void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi)
 __weak void DAC_IO_TransferError(SPI_HandleTypeDef *hspi)
 {
     (void)hspi;
+}
+
+void LED_IO_Init(void)
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    /* ENABLE */
+    GPIO_InitStruct.Pin = LED_EN_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+    HAL_GPIO_Init(LED_EN_GPIO_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_EN_GPIO_PORT, LED_EN_PIN, GPIO_PIN_SET);
+
+    LED_I2CHandle.Instance = LED_I2C_Instance;
+    LED_I2CHandle.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    LED_I2CHandle.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    LED_I2CHandle.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    LED_I2CHandle.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    LED_I2CHandle.Init.OwnAddress1 = 0;
+    LED_I2CHandle.Init.OwnAddress2 = 0;
+    LED_I2CHandle.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+    LED_I2CHandle.Init.Timing = ((6<<I2C_TIMINGR_PRESC_Pos)
+                                 | (10<<I2C_TIMINGR_SCLL_Pos)
+                                 | (4<<I2C_TIMINGR_SCLH_Pos)
+                                 | (4<<I2C_TIMINGR_SDADEL_Pos)
+                                 | (5<<I2C_TIMINGR_SCLDEL_Pos));
+    HAL_I2C_Init(&LED_I2CHandle);
+}
+
+void LED_IO_Write(uint16_t address, uint8_t *data, uint16_t size)
+{
+    HAL_I2C_Master_Transmit_IT(&LED_I2CHandle, address, data, size);
+}
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *i2ch)
+{
+    (void)i2ch;
+    LED_IO_Complete();
+}
+
+__weak void LED_IO_Complete(void)
+{
 }

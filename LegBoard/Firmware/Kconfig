@@ -89,6 +89,12 @@ config BSP_ADS57X4_COMPONENT_ENABLED
 	help
 		Include BSP ADS57X4 component - driver for SPI DAC.
 
+config BSP_IS31FL3235_COMPONENT_ENABLED
+	bool "BSP_IS31FL3235_COMPONENT_ENABLED"
+	default y
+	help
+		Include BSP IS31FL3235 component - driver for I2C LEDs.
+
 endmenu
 
 menu "Included HAL libraries"

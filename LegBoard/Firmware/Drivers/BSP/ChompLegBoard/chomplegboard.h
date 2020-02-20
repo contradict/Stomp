@@ -51,3 +51,26 @@ void DAC_IO_CLR(bool state);
 void DAC_IO_CLR_pulse();
 void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi);
 void DAC_IO_TransferError(SPI_HandleTypeDef *hspi);
+
+
+#define LED_I2C_Instance           I2C1
+#define LED_I2C_CLK_ENABLE()       __HAL_RCC_SPI1_CLK_ENABLE()
+#define LED_I2C_GPIO_CLK_ENABLE()  __HAL_RCC_GPIOB_CLK_ENABLE()
+
+#define LED_I2C_FORCE_RESET()      __HAL_RCC_I2C1_FORCE_RESET()
+#define LED_I2C_RELEASE_RESET()    __HAL_RCC_I2C1_RELEASE_RESET()
+
+#define LED_I2C_EV_IRQn       I2C1_EV_IRQn
+#define LED_I2C_ER_IRQn       I2C1_ER_IRQn
+#define LED_I2C_EV_IRQHandler I2C1_EV_IRQHandler
+#define LED_I2C_ER_IRQHandler I2C1_ER_IRQHandler
+
+#define LED_I2C_SCL_AF    GPIO_AF4_I2C1
+#define LED_I2C_SCL_PIN   6
+#define LED_I2C_SDA_AF    GPIO_AF4_I2C1
+#define LED_I2C_SDA_PIN   7
+#define LED_I2C_GPIO_PORT GPIOB
+#define LED_EN_PIN        8
+#define LED_EN_GPIO_PORT  GPIOB
+
+void LED_IO_Complete(void);

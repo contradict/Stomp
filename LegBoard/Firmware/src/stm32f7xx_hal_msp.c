@@ -162,11 +162,39 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim)
     FEEDBACK_TRIGGER_TIM_CLK_ENABLE();
 }
 
-void HAL_TIM_Base_MsaDepInit(TIM_HandleTypeDef *htim)
+void HAL_TIM_Base_MspDepInit(TIM_HandleTypeDef *htim)
 {
     FEEDBACK_TRIGGER_TIM_FORCE_RESET();
     FEEDBACK_TRIGGER_TIM_RELEASE_RESET();
 }
+
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+    if(hi2c->Instance == LED_I2C_Instance)
+    {
+        LED_I2C_GPIO_CLK_ENABLE();
+        LED_I2C_CLK_ENABLE();
+
+        /* SCL */
+        GPIO_InitStruct.Pin = LED_I2C_SCL_PIN;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+        GPIO_InitStruct.Alternate = LED_I2C_SCL_AF;
+        HAL_GPIO_Init(LED_I2C_GPIO_PORT, &GPIO_InitStruct);
+        /* SDA */
+        GPIO_InitStruct.Pin = LED_I2C_SDA_PIN;
+        GPIO_InitStruct.Alternate = LED_I2C_SDA_AF;
+        HAL_GPIO_Init(LED_I2C_GPIO_PORT, &GPIO_InitStruct);
+
+        HAL_NVIC_SetPriority(LED_I2C_EV_IRQn, 1, 0);
+        HAL_NVIC_EnableIRQ(LED_I2C_EV_IRQn);
+        HAL_NVIC_SetPriority(LED_I2C_ER_IRQn, 1, 0);
+        HAL_NVIC_EnableIRQ(LED_I2C_ER_IRQn);
+    }
+}
+
 /**
   * @}
   */
