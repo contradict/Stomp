@@ -4,6 +4,7 @@
 #include "stm32f7xx_hal.h"
 #include "ads57x4.h"
 #include "feedback_adc.h"
+#include "status_led.h"
 
 // theta = (V - Vmin) / (Vmax - Vmin) * Thetamax + Thetamin
 // theta = V * Thetamax / (Vmax - Vmin) + (Thetamin - (Vmin / (Vmax - Vmin)))
@@ -49,29 +50,29 @@ struct LinearizationConstants {
 static struct LinearizationConstants linearization_constants __attribute__ ((section (".storage.linearize"))) = {
     .theta_offset = {
         THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),  // CURL
-        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),  // LIFT
-        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)}, // SWING
+        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),  // SWING
+        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)}, // LIFT
     .theta_scale = {
         THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),   // CURL
-        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),   // LIFT
-        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)},  // SWING
+        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),   // SWING
+        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)},  // LIFT
     .shape_offset = {
         SHAPE_OFFSET(0.00f, 0.00f),                                         // CURL
-        SHAPE_OFFSET(0.00f, 0.00f),                                         // LIFT
-        SHAPE_OFFSET(0.00f, 0.00f)},                                        // SWING
+        SHAPE_OFFSET(0.00f, 0.00f),                                         // SWING
+        SHAPE_OFFSET(0.00f, 0.00f)},                                        // LIFT
     .shape_scale = {
         SHAPE_SCALE(0.00f, 0.00f),                                          // CURL
-        SHAPE_SCALE(0.00f, 0.00f),                                          // LIFT
-        SHAPE_SCALE(0.00f, 0.00f)},                                         // SWING
+        SHAPE_SCALE(0.00f, 0.00f),                                          // SWING
+        SHAPE_SCALE(0.00f, 0.00f)},                                         // LIFT
     .shape_phase = {0.0f, 0.0f, 0.0f},
     .feedback_offset = {
         FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
-        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // LIFT
-        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f)},                         // SWING
+        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // SWING
+        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f)},                         // LIFT
     .feedback_scale = {
         FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
-        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // LIFT
-        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f)},                         // SWING
+        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // SWING
+        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f)},                         // LIFT
 };
 
 void Linearize_ThreadInit(void)
@@ -89,10 +90,26 @@ void Linearize_ThreadInit(void)
     dataQ = osMessageCreate(osMessageQ(adcdata), linearize);
 }
 
+static void adc_reinit(void)
+{
+    HAL_TIM_Base_DeInit(&feedback_timer);
+
+    HAL_ADC_DeInit(&feedback_adc);
+
+    FeedbackADC_TimerInit();
+
+    FeedbackADC_Init();
+
+    HAL_ADC_Start_IT(&feedback_adc);
+    HAL_TIM_Base_Start(&feedback_timer);
+}
+
 void Linearize_Thread(const void* args)
 {
+    (void)args;
     osEvent event;
     HAL_ADC_Start_IT(&feedback_adc);
+    HAL_TIM_Base_Start(&feedback_timer);
     for(enum JointIndex current_joint = CURL;
         true;
         current_joint = (current_joint + 1) % 3)
@@ -100,20 +117,18 @@ void Linearize_Thread(const void* args)
         event = osSignalWait(0, 0);
         if(event.status == osEventSignal && event.value.v != 0)
         {
-            current_joint = CURL;
-            HAL_ADC_Stop_IT(&feedback_adc);
-            HAL_ADC_Start_IT(&feedback_adc);
+            current_joint = LIFT;
+            adc_reinit();
             continue;
         }
         event = osMessageGet(dataQ, osWaitForever);
         if(event.status != osEventMessage)
         {
-            current_joint = CURL;
-            HAL_ADC_Stop_IT(&feedback_adc);
-            HAL_ADC_Start_IT(&feedback_adc);
+            current_joint = LIFT;
+            adc_reinit();
             continue;
         }
-        float voltage = (ADC_VREF * (((uint32_t)args) / ADC_MAX_CODE) / JOINT_DIVIDER);
+        float voltage = (ADC_VREF * (event.value.v / ADC_MAX_CODE) * JOINT_DIVIDER);
         float angle = (linearization_constants.theta_offset[current_joint] +
                        linearization_constants.theta_scale[current_joint] * voltage);
         float length = sqrtf(linearization_constants.shape_offset[current_joint] +
@@ -122,6 +137,9 @@ void Linearize_Thread(const void* args)
                                   linearization_constants.feedback_scale[current_joint] * length);
         uint16_t feedback_code = feedback_voltage * DAC_CODE_SCALE;
         ads5724_SetVoltage(joint_channel[current_joint], feedback_code);
+        float brightness = voltage*200.0 / (ADC_VREF * JOINT_DIVIDER);
+        brightness = (brightness > 255) ? 255 : ((brightness < 0) ? 0 : brightness);
+        LED(current_joint, brightness, 0, 0);
     }
 }
 
@@ -137,9 +155,9 @@ void DAC_IO_TransferError(SPI_HandleTypeDef *hspi)
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    if(osOK != osMessagePut(linearize, hadc->Instance->DR, 0))
+    if(osOK != osMessagePut(dataQ, hadc->Instance->DR, 0))
     {
-        osSignalSet(linearize, 1);
+        osSignalSet(linearize, 2);
     }
 }
 

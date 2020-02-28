@@ -24,6 +24,7 @@
 #include "stm32f7xx_it.h"
 #include "modbus_uart.h"
 #include "chomplegboard.h"
+#include "feedback_adc.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{

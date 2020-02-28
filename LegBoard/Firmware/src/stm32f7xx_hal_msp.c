@@ -139,6 +139,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 
     FEEDBACK_ADC_CHANNEL_GPIO_CLOCK_ENABLE();
     FEEDBACK_ADC_CLK_ENABLE();
+
     GPIO_InitStruct.Pin = CURL_ADC_CHANNEL_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;

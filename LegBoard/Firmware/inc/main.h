@@ -2,7 +2,7 @@
 
 enum JointIndex {
     CURL = 0,
-    LIFT = 1,
-    SWING = 2,
+    SWING = 1,
+    LIFT = 2,
     NJOINTS = 3
 };

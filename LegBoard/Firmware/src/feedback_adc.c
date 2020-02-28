@@ -15,7 +15,7 @@ void FeedbackADC_Init(void)
     feedback_adc.Init.Resolution            = ADC_RESOLUTION_12B;
     feedback_adc.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
     feedback_adc.Init.NbrOfConversion       = 3;
-    feedback_adc.Init.ScanConvMode          = DISABLE;
+    feedback_adc.Init.ScanConvMode          = ENABLE;
     feedback_adc.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
     feedback_adc.Init.ContinuousConvMode    = DISABLE;
     feedback_adc.Init.DiscontinuousConvMode = ENABLE;
@@ -30,10 +30,10 @@ void FeedbackADC_Init(void)
     sConfig.Rank    = 1;
     sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
     HAL_ADC_ConfigChannel(&feedback_adc, &sConfig);
-    sConfig.Channel = LIFT_ADC_CHANNEL;
+    sConfig.Channel = SWING_ADC_CHANNEL;
     sConfig.Rank    = 2;
     HAL_ADC_ConfigChannel(&feedback_adc, &sConfig);
-    sConfig.Channel = SWING_ADC_CHANNEL;
+    sConfig.Channel = LIFT_ADC_CHANNEL;
     sConfig.Rank    = 3;
     HAL_ADC_ConfigChannel(&feedback_adc, &sConfig);
 }
@@ -59,5 +59,3 @@ void FeedbackADC_TimerInit(void)
     mstrconfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     HAL_TIMEx_MasterConfigSynchronization(&feedback_timer, &mstrconfig);
 }
-
-

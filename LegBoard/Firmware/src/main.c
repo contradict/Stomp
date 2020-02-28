@@ -53,7 +53,7 @@ int main(void)
 
   //MODBUS_Init();
 
-  //Linearize_ThreadInit();
+  Linearize_ThreadInit();
 
   /* Start scheduler */
   osKernelStart();
