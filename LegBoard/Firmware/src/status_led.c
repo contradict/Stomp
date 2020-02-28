@@ -9,12 +9,17 @@
 #define COMMAND(idx, r, g, b) (((idx&0xff) << 24) | ((r&0xff)<<16) | ((g&0xff)<<8) | (b&0xff))
 
 static void LED_Thread(const void *args);
+static void RGB_Thread(const void *args);
 
 osThreadDef(led, LED_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-osMessageQDef(ledcommand, 32, uint32_t);
-static osThreadId status_led;
-static osMessageQId commandQ;
+osThreadDef(rgb, RGB_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
 
+osMessageQDef(ledcommand, 32, uint32_t);
+
+static osThreadId status_led;
+static osThreadId rgb_tid;
+
+static osMessageQId commandQ;
 
 void LED_ThreadInit(void)
 {
@@ -101,4 +106,44 @@ void LED(uint8_t idx, uint8_t r, uint8_t g, uint8_t b)
 void LED_IO_Complete(void)
 {
     osSignalSet(status_led, 0);
+}
+
+static void RGB_Thread(const void *args)
+{
+    (void)args;
+    osDelay(10);
+    while(1)
+    {
+        LED(0, 255, 0, 0);
+        osDelay(200);
+        LED(1, 0, 255, 0);
+        osDelay(200);
+        LED(2, 0, 0, 255);
+        LED(0, 0, 255, 0);
+        osDelay(200);
+        LED(1, 0, 0, 255);
+        osDelay(200);
+        LED(2, 255, 0, 0);
+        LED(0, 0, 0, 255);
+        osDelay(200);
+        LED(1, 255, 0, 0);
+        osDelay(200);
+        LED(2, 0, 255, 0);
+        LED(0, 0, 0, 0);
+        osDelay(200);
+        LED(1, 0, 0, 0);
+        osDelay(200);
+        LED(2, 0, 0, 0);
+        osDelay(200);
+       }
+}
+
+void LED_TestPatternStart(void)
+{
+  rgb_tid = osThreadCreate(osThread(rgb), NULL);
+}
+
+void LED_TestPatternStop(void)
+{
+  osThreadTerminate(rgb_tid);
 }

@@ -26,42 +26,6 @@ static void CPU_CACHE_Enable(void);
 
 /* Private functions ---------------------------------------------------------*/
 
-static void RGB_Thread(const void *args);
-
-osThreadDef(rgb, RGB_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-static osThreadId rgb_tid;
-
-static void RGB_Thread(const void *args)
-{
-    (void)args;
-    osDelay(10);
-    while(1)
-    {
-        LED(0, 255, 0, 0);
-        osDelay(200);
-        LED(1, 0, 255, 0);
-        osDelay(200);
-        LED(2, 0, 0, 255);
-        LED(0, 0, 255, 0);
-        osDelay(200);
-        LED(1, 0, 0, 255);
-        osDelay(200);
-        LED(2, 255, 0, 0);
-        LED(0, 0, 0, 255);
-        osDelay(200);
-        LED(1, 255, 0, 0);
-        osDelay(200);
-        LED(2, 0, 255, 0);
-        LED(0, 0, 0, 0);
-        osDelay(200);
-        LED(1, 0, 0, 0);
-        osDelay(200);
-        LED(2, 0, 0, 0);
-        osDelay(200);
-       }
-}
-
-
 /**
   * @brief  Main program
   * @param  None
@@ -90,8 +54,6 @@ int main(void)
   //MODBUS_Init();
 
   //Linearize_ThreadInit();
-
-  rgb_tid = osThreadCreate(osThread(rgb), NULL);
 
   /* Start scheduler */
   osKernelStart();
