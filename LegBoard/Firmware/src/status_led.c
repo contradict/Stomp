@@ -5,8 +5,21 @@
 #define COMMAND_R(value) ((value>>16) & 0xFF)
 #define COMMAND_G(value) ((value>>8) & 0xFF)
 #define COMMAND_B(value) (value & 0xFF)
+#define COMMAND_V(value) (value & 0xFF)
 
-#define COMMAND(idx, r, g, b) (((idx&0xff) << 24) | ((r&0xff)<<16) | ((g&0xff)<<8) | (b&0xff))
+#define COMMAND_CODE_RGB 0x00
+#define COMMAND_CODE_SINGLE 0x80
+#define COMMAND_CHANNEL_R 0x00
+#define COMMAND_CHANNEL_G 0x20
+#define COMMAND_CHANNEL_B 0x40
+#define COMMAND_CHANNEL_RAW 0x60
+#define COMMAND_IDX_MASK 0x1f
+#define COMMAND_CHANNEL_MASK 0x60
+#define COMMAND_CHANNEL_SHIFT 5
+
+#define COMMAND_RGB(idx, r, g, b) (((idx&0x1f) << 24) | ((r&0xff)<<16) | ((g&0xff)<<8) | (b&0xff))
+#define COMMAND_S(idx, c, v) ((((idx&0x1f) | c | COMMAND_CODE_SINGLE) << 24) | (v&0xff))
+#define COMMAND_RAW(idx, v) ((((idx&0x1f) | COMMAND_CHANNEL_RAW | COMMAND_CODE_SINGLE) << 24) | (v&0xff))
 
 static void LED_Thread(const void *args);
 static void RGB_Thread(const void *args);
@@ -33,7 +46,7 @@ static void LED_Thread(const void *args)
 {
     (void)args;
     osEvent event;
-    uint8_t idx, rgb[3];
+    uint8_t idx, rgb[3], nrgb;
     uint8_t control_default[9] = {
         IS31FL3235_LED_CONTROL_CURRENT_IMAX | IS31FL3235_LED_CONTROL_OUT_ON,
         IS31FL3235_LED_CONTROL_CURRENT_IMAX | IS31FL3235_LED_CONTROL_OUT_ON,
@@ -47,6 +60,12 @@ static void LED_Thread(const void *args)
     };
     while(1)
     {
+        is31fl3235_Reset();
+        event = osSignalWait(0, 100);
+        if(event.status == osEventTimeout)
+        {
+            continue;
+        }
         is31fl3235_Shutdown(false);
         event = osSignalWait(0, 100);
         if(event.status == osEventTimeout)
@@ -76,12 +95,31 @@ static void LED_Thread(const void *args)
             continue;
         }
         idx = COMMAND_IDX(event.value.v);
-        rgb[0] = COMMAND_R(event.value.v);
-        rgb[1] = COMMAND_G(event.value.v);
-        rgb[2] = COMMAND_B(event.value.v);
+        if(idx & COMMAND_CODE_SINGLE)
+        {
+            if((idx & COMMAND_CHANNEL_RAW) == COMMAND_CHANNEL_RAW)
+            {
+                idx = idx & COMMAND_IDX_MASK;
+                rgb[0] = COMMAND_V(event.value.v);
+                nrgb = 1;
+            }
+            else
+            {
+                idx = (idx & COMMAND_IDX_MASK) + ((idx & COMMAND_CHANNEL_MASK)>>COMMAND_CHANNEL_SHIFT);
+                rgb[0] = COMMAND_V(event.value.v);
+                nrgb = 1;
+            }
+        }
+        else
+        {
+            rgb[0] = COMMAND_R(event.value.v);
+            rgb[1] = COMMAND_G(event.value.v);
+            rgb[2] = COMMAND_B(event.value.v);
+            nrgb = 3;
+        }
         while(1)
         {
-            is31fl3235_Set(idx, 3, rgb);
+            is31fl3235_Set(idx, nrgb, rgb);
             event = osSignalWait(0, 100);
             if(event.status == osEventTimeout)
             {
@@ -100,7 +138,7 @@ static void LED_Thread(const void *args)
 
 void LED(uint8_t idx, uint8_t r, uint8_t g, uint8_t b)
 {
-    osMessagePut(commandQ, COMMAND(idx * 3, r, g, b), 0);
+    osMessagePut(commandQ, COMMAND_RGB(idx * 3, r, g, b), 0);
 }
 
 void LED_IO_Complete(void)
@@ -147,3 +185,24 @@ void LED_TestPatternStop(void)
 {
   osThreadTerminate(rgb_tid);
 }
+
+void LED_R(uint8_t idx, uint8_t r)
+{
+    osMessagePut(commandQ, COMMAND_S(idx * 3, COMMAND_CHANNEL_R, r), 0);
+}
+
+void LED_G(uint8_t idx, uint8_t g)
+{
+    osMessagePut(commandQ, COMMAND_S(idx * 3, COMMAND_CHANNEL_G, g), 0);
+}
+
+void LED_B(uint8_t idx, uint8_t b)
+{
+    osMessagePut(commandQ, COMMAND_S(idx * 3, COMMAND_CHANNEL_B, b), 0);
+}
+
+void LED_Raw(uint8_t idx, uint8_t v)
+{
+    osMessagePut(commandQ, COMMAND_RAW(idx, v), 0);
+}
+
