@@ -1,0 +1,19 @@
+#include "stm32f7xx_hal.h"
+
+extern UART_HandleTypeDef modbus_uart;
+
+#define MODBUS_UART_Instance          USART1
+#define MODBUS_UART_CLK_ENABLE()      __HAL_RCC_USART1_CLK_ENABLE()
+#define MODBUS_UART_FORCE_RESET()     __HAL_RCC_USART1_FORCE_RESET()
+#define MODBUS_UART_RELEASE_RESET()   __HAL_RCC_USART1_RELEASE_RESET()
+#define MODBUS_UART_IRQn         USART1_IRQn
+#define MODBUS_UART_IRQHandler   USART1_IRQHandler
+
+#define MODBUS_UART_GPIO_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
+#define MODBUS_UART_GPIO_PORT GPIOA
+#define MODBUS_UART_GPIO_AF   GPIO_AF7_USART1
+#define MODBUS_UART_TX_PIN    9
+#define MODBUS_UART_RX_PIN    10
+#define MODBUS_UART_DE_PIN    12
+
+void MODBUS_UART_Init();

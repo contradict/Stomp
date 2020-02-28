@@ -1,0 +1,9 @@
+.config.old
+Firmware.bin
+Firmware.elf
+*.cmd
+*.o
+*.d
+openocd.log
+scripts
+source
