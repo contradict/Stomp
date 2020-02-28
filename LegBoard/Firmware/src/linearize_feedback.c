@@ -139,7 +139,7 @@ void Linearize_Thread(const void* args)
         ads5724_SetVoltage(joint_channel[current_joint], feedback_code);
         float brightness = voltage*200.0 / (ADC_VREF * JOINT_DIVIDER);
         brightness = (brightness > 255) ? 255 : ((brightness < 0) ? 0 : brightness);
-        LED(current_joint, brightness, 0, 0);
+        LED_G(current_joint, brightness);
     }
 }
 
