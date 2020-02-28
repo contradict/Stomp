@@ -145,6 +145,7 @@ void HAL_ResumeTick(void)
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+  (void)htim;
   HAL_IncTick();
 }
 

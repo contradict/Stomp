@@ -86,6 +86,7 @@ SECTIONS
     . = ALIGN(4);
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
+    KEEP (*(.rodata.uxTopUsedPriority .rodata.uxTopUsedPriority.*))
     . = ALIGN(4);
   } >FLASH_LOW_ITCM AT> FLASH_LOW
 
@@ -127,7 +128,6 @@ SECTIONS
     _sdata = .;        /* create a global symbol at data start */
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
-    KEEP (*(.openocd .openocd.*))
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH_LOW

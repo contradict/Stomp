@@ -142,6 +142,14 @@ config HAL_UART_MODULE_ENABLED
 	help
 		Include HAL Universal Asynchronous Receiver/Transmitter module.	
 
+config HAL_UART_EX_MODULE_ENABLED
+	bool "HAL_UART_EX_MODULE_ENABLED"
+	depends on HAL_UART_MODULE_ENABLED
+	default y
+	help
+		Include HAL Universal Asynchronous Receiver/Transmitter Extra Functions module.	
+
+
 config HAL_USART_MODULE_ENABLED
 	bool "HAL_USART_MODULE_ENABLED"
 	default y

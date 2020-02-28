@@ -1,4 +1,5 @@
 #include <math.h>
+#include "main.h"
 #include "cmsis_os.h"
 #include "stm32f7xx_hal.h"
 #include "ads57x4.h"
@@ -32,13 +33,6 @@ osMessageQDef(adcdata, 2, uint32_t);
 static osThreadId linearize;
 static osMessageQId dataQ;
 
-enum JointIndex {
-    CURL = 0,
-    LIFT = 1,
-    SWING = 2,
-    NJOINTS = 3
-};
-
 static const enum ads57x4_channel joint_channel[3] = {
     ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_B, ADS57x4_CHANNEL_C}; 
 
@@ -52,7 +46,7 @@ struct LinearizationConstants {
     float feedback_scale[NJOINTS];
 };
 
-static struct LinearizationConstants constants_storage __attribute__ ((section (".storage"))) = {
+static struct LinearizationConstants linearization_constants __attribute__ ((section (".storage.linearize"))) = {
     .theta_offset = {
         THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),  // CURL
         THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),  // LIFT
@@ -79,8 +73,6 @@ static struct LinearizationConstants constants_storage __attribute__ ((section (
         FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // LIFT
         FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f)},                         // SWING
 };
-
-static struct LinearizationConstants constants;
 
 void Linearize_ThreadInit(void)
 {
@@ -122,12 +114,12 @@ void Linearize_Thread(const void* args)
             continue;
         }
         float voltage = (ADC_VREF * (((uint32_t)args) / ADC_MAX_CODE) / JOINT_DIVIDER);
-        float angle = (constants.theta_offset[current_joint] +
-                       constants.theta_scale[current_joint] * voltage);
-        float length = sqrtf(constants.shape_offset[current_joint] +
-                             constants.shape_scale[current_joint] * sinf(angle + constants.shape_phase[current_joint]));
-        float feedback_voltage = (constants.feedback_offset[current_joint] +
-                                  constants.feedback_scale[current_joint] * length);
+        float angle = (linearization_constants.theta_offset[current_joint] +
+                       linearization_constants.theta_scale[current_joint] * voltage);
+        float length = sqrtf(linearization_constants.shape_offset[current_joint] +
+                             linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
+        float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +
+                                  linearization_constants.feedback_scale[current_joint] * length);
         uint16_t feedback_code = feedback_voltage * DAC_CODE_SCALE;
         ads5724_SetVoltage(joint_channel[current_joint], feedback_code);
     }
@@ -145,7 +137,7 @@ void DAC_IO_TransferError(SPI_HandleTypeDef *hspi)
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    if(osOK != osMessagePut(linearize, hadc->Instance->DR, 1))
+    if(osOK != osMessagePut(linearize, hadc->Instance->DR, 0))
     {
         osSignalSet(linearize, 1);
     }

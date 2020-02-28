@@ -4,12 +4,14 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdbool.h>
+#include "stm32f7xx_hal.h"
 #include "main.h"
 #include "cmsis_os.h"
 #include "linearize_feedback.h"
 #include "storage.h"
 #include "f722-nucleo-blinky.h"
-#include "is31fl3235.h"
+#include "modbus.h"
+#include "status_led.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -23,6 +25,42 @@ static void SystemClock_Config(void);
 static void CPU_CACHE_Enable(void);
 
 /* Private functions ---------------------------------------------------------*/
+
+static void RGB_Thread(const void *args);
+
+osThreadDef(rgb, RGB_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+static osThreadId rgb_tid;
+
+static void RGB_Thread(const void *args)
+{
+    (void)args;
+    osDelay(10);
+    while(1)
+    {
+        LED(0, 255, 0, 0);
+        osDelay(200);
+        LED(1, 0, 255, 0);
+        osDelay(200);
+        LED(2, 0, 0, 255);
+        LED(0, 0, 255, 0);
+        osDelay(200);
+        LED(1, 0, 0, 255);
+        osDelay(200);
+        LED(2, 255, 0, 0);
+        LED(0, 0, 0, 255);
+        osDelay(200);
+        LED(1, 255, 0, 0);
+        osDelay(200);
+        LED(2, 0, 255, 0);
+        LED(0, 0, 0, 0);
+        osDelay(200);
+        LED(1, 0, 0, 0);
+        osDelay(200);
+        LED(2, 0, 0, 0);
+        osDelay(200);
+       }
+}
+
 
 /**
   * @brief  Main program
@@ -45,17 +83,15 @@ int main(void)
      */
   HAL_Init();
 
-#ifdef ChompLegBoard
-
-#endif
-
-  f722_nucleo_blinky_Init();
-
-  is31fl3235_Init(IS31FL3235_ADDR_GND);
-
   Storage_Init();
 
-  Linearize_ThreadInit();
+  LED_ThreadInit();
+
+  //MODBUS_Init();
+
+  //Linearize_ThreadInit();
+
+  rgb_tid = osThreadCreate(osThread(rgb), NULL);
 
   /* Start scheduler */
   osKernelStart();
@@ -70,11 +106,11 @@ int main(void)
   *            System Clock source            = PLL (HSE)
   *            SYSCLK(Hz)                     = 216000000
   *            HCLK(Hz)                       = 216000000
-  *            AHB Prescaler                  = 1
-  *            APB1 Prescaler                 = 4
+  *            AHB Prescaler                  = 1 (216MHz)
+  *            APB1 Prescaler                 = 4 (54MHz)
   *            APB2 Prescaler                 = 1
-  *            HSE Frequency(Hz)              = 8000000
-  *            PLL_M                          = 8
+  *            HSE Frequency(Hz)              = 25000000
+  *            PLL_M                          = 25
   *            PLL_N                          = 432
   *            PLL_P                          = 2
   *            PLL_Q                          = 9
@@ -100,11 +136,11 @@ static void SystemClock_Config(void)
   /* Enable HSE Oscillator and activate PLL with HSE as source
   Note: Since there is no oscillator on board, HSE clock is derived from STLink */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 25;
   RCC_OscInitStruct.PLL.PLLN = 432;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 9;

@@ -1,9 +1,8 @@
 #include "stm32f7xx_hal.h"
 
+extern TIM_HandleTypeDef feedback_timer;
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
-/* User can use this section to tailor ADCx instance used and associated
-   resources */
 
 /* Definition for ADCx clock resources */
 #define FEEDBACK_ADC                              ADC1

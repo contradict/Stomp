@@ -22,6 +22,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f7xx_it.h"
+#include "modbus_uart.h"
+#include "chomplegboard.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -184,7 +186,7 @@ void FEEDBACK_ADC_IRQHandler(void)
   * @retval None
   * @Note   This function is redefined in "main.h" and related to I2C data transmission
   */
-void I2Cx_EV_IRQHandler(void)
+void LED_I2C_EV_IRQHandler(void)
 {
   HAL_I2C_EV_IRQHandler(&LED_I2CHandle);
 }
@@ -195,11 +197,60 @@ void I2Cx_EV_IRQHandler(void)
   * @retval None
   * @Note   This function is redefined in "main.h" and related to I2C error
   */
-void I2Cx_ER_IRQHandler(void)
+void LED_I2C_ER_IRQHandler(void)
 {
   HAL_I2C_ER_IRQHandler(&LED_I2CHandle);
 }
 
+void MODBUS_UART_IRQHandler(void)
+{
+    HAL_UART_IRQHandler(&modbus_uart);
+}
+
+void CURL_UART_IRQHandler(void)
+{
+    HAL_UART_IRQHandler(&modbus_uart);
+}
+
+void CURL_DMA_TX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmatx);
+}
+
+void CURL_DMA_RX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmarx);
+}
+
+void LIFT_UART_IRQHandler(void)
+{
+    HAL_UART_IRQHandler(&modbus_uart);
+}
+
+void LIFT_DMA_TX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmatx);
+}
+
+void LIFT_DMA_RX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmarx);
+}
+
+void SWING_UART_IRQHandler(void)
+{
+    HAL_UART_IRQHandler(&modbus_uart);
+}
+
+void SWING_DMA_TX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmatx);
+}
+
+void SWING_DMA_RX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmarx);
+}
 
 
 /**

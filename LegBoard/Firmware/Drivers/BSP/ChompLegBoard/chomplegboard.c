@@ -167,14 +167,6 @@ void LED_IO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
 
-    /* ENABLE */
-    GPIO_InitStruct.Pin = LED_EN_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-    HAL_GPIO_Init(LED_EN_GPIO_PORT, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(LED_EN_GPIO_PORT, LED_EN_PIN, GPIO_PIN_SET);
-
     LED_I2CHandle.Instance = LED_I2C_Instance;
     LED_I2CHandle.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
     LED_I2CHandle.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -184,11 +176,19 @@ void LED_IO_Init(void)
     LED_I2CHandle.Init.OwnAddress2 = 0;
     LED_I2CHandle.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
     LED_I2CHandle.Init.Timing = ((6<<I2C_TIMINGR_PRESC_Pos)
-                                 | (10<<I2C_TIMINGR_SCLL_Pos)
-                                 | (4<<I2C_TIMINGR_SCLH_Pos)
-                                 | (4<<I2C_TIMINGR_SDADEL_Pos)
-                                 | (5<<I2C_TIMINGR_SCLDEL_Pos));
+                                 | (11<<I2C_TIMINGR_SCLL_Pos)
+                                 | (10<<I2C_TIMINGR_SCLH_Pos)
+                                 | (3<<I2C_TIMINGR_SDADEL_Pos)
+                                 | (3<<I2C_TIMINGR_SCLDEL_Pos));
     HAL_I2C_Init(&LED_I2CHandle);
+
+    /* ENABLE */
+    GPIO_InitStruct.Pin = LED_EN_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+    HAL_GPIO_Init(LED_EN_GPIO_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_EN_GPIO_PORT, LED_EN_PIN, GPIO_PIN_SET);
 }
 
 void LED_IO_Write(uint16_t address, uint8_t *data, uint16_t size)

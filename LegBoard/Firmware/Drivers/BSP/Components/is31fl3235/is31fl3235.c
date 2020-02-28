@@ -9,32 +9,14 @@
 #define IS31FL3235_REG_RESET         0x4F
 
 
-#define IS31FL3235_SHUTDOWN_SWSHDN   0x00
-#define IS31FL3235_SHUTDOWN_NORM     0x01
-
-#define IS31FL3235_UPDATE_GO 0x00
-
-#define IS31FL3235_LED_CONTROL_CURRENT_IMAX  0x00
-#define IS31FL3235_LED_CONTROL_CURRENT_IMAX2 0x02
-#define IS31FL3235_LED_CONTROL_CURRENT_IMAX3 0x04
-#define IS31FL3235_LED_CONTROL_CURRENT_IMAX4 0x06
-#define IS31FL3235_LED_CONTROL_OUT_OFF       0x00
-#define IS31FL3235_LED_CONTROL_OUT_ON        0x01
-
-#define IS31FL3235_CONTROL_NORMAL 0x00
-#define IS31FL3235_CONTROL_SHDN   0x00
-
-#define IS31FL3235_RESET_RESET    0x00
-
 extern void LED_IO_Init(void);
 extern void LED_IO_Write(uint16_t address, uint8_t *data, uint16_t size);
 
 static uint16_t i2c_address;
-static bool request_go = false;
 static uint8_t SHUTDOWN[2] = {IS31FL3235_REG_SHUTDOWN, IS31FL3235_SHUTDOWN_NORM};
-static uint8_t UPDATE[2]   = {IS31FL3235_REG_UPDATE,   IS31FL3235_UPDATE_GO};
+static const uint8_t UPDATE[2]   = {IS31FL3235_REG_UPDATE,   IS31FL3235_UPDATE_GO};
 static uint8_t CONTROL[2]  = {IS31FL3235_REG_CONTROL,  IS31FL3235_CONTROL_NORMAL};
-static uint8_t RESET[2]    = {IS31FL3235_REG_RESET,    IS31FL3235_RESET_RESET};
+static const uint8_t RESET[2]    = {IS31FL3235_REG_RESET,    IS31FL3235_RESET_RESET};
 
 static uint8_t led_pwm[1+IS31FL3235_NUM_CHANNELS];
 static uint8_t led_control[1+IS31FL3235_NUM_CHANNELS];
@@ -71,22 +53,12 @@ void is31fl3235_Set(uint8_t start_channel, uint8_t num_channels, uint8_t *data)
 {
     led_pwm[0] = IS31FL3235_REG_PWM(start_channel);
     memcpy(led_pwm + 1, data, num_channels);
-    request_go = true;
     LED_IO_Write(i2c_address, led_pwm, num_channels + 1);
 }
 
 void is31fl3235_SetControl(uint8_t start_channel, uint8_t num_channels, uint8_t *data)
 {
-    led_control[0] = IS31FL3235_REG_PWM(start_channel);
+    led_control[0] = IS31FL3235_REG_LEDCONTROL(start_channel);
     memcpy(led_control + 1, data, num_channels);
     LED_IO_Write(i2c_address, led_control, num_channels + 1);
-}
-
-void LED_IO_Complete(void)
-{
-    if(request_go)
-    {
-        is31fl3235_Update();
-    }
-    request_go = false;
 }

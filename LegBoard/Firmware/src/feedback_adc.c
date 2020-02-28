@@ -2,7 +2,7 @@
 #include "feedback_adc.h"
 
 extern ADC_HandleTypeDef feedback_adc;
-static TIM_HandleTypeDef htim;
+TIM_HandleTypeDef feedback_timer;
 
 void FeedbackADC_Init(void)
 {
@@ -42,22 +42,22 @@ void FeedbackADC_TimerInit(void)
 {
     TIM_MasterConfigTypeDef mstrconfig;
 
-    htim.Instance = FEEDBACK_TRIGGER_TIM;
+    feedback_timer.Instance = FEEDBACK_TRIGGER_TIM;
 
     // Clocked from APB1 x 2, APB1 prescaler is 4, = 216MHz/2 time clock
     // (216MHz/2) / (3kHz) = 72000
     // Max prescaler is 65535, use prescaler
-    htim.Init.Prescaler = 9; // prescale is value + 1
-    htim.Init.Period = 7200;
-    htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim.Init.RepetitionCounter = 0x0;
-    htim.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    HAL_TIM_Base_Init(&htim);
+    feedback_timer.Init.Prescaler = 9; // prescale is value + 1
+    feedback_timer.Init.Period = 7200;
+    feedback_timer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    feedback_timer.Init.CounterMode = TIM_COUNTERMODE_UP;
+    feedback_timer.Init.RepetitionCounter = 0x0;
+    feedback_timer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    HAL_TIM_Base_Init(&feedback_timer);
 
     mstrconfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
     mstrconfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    HAL_TIMEx_MasterConfigSynchronization(&htim, &mstrconfig);
+    HAL_TIMEx_MasterConfigSynchronization(&feedback_timer, &mstrconfig);
 }
 
 

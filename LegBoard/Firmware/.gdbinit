@@ -6,15 +6,15 @@ target remote | $OPENOCD/bin/openocd -f openocd.cfg
 set remote hardware-breakpoint-limit 8
 set remote hardware-watchpoint-limit 4
 
-define restart
+define reset
   monitor reset halt
 end
 
 define reload
-  restart
+  reset
   monitor stm32f2x mass_erase 0
   monitor program Firmware.elf verify
-  restart
+  reset
 end
 
 # reload
