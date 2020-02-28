@@ -73,7 +73,7 @@ static Detection RawDetections[MAX_DETECTIONS];
 static uint8_t good_detections;
 static Detection MinimumDetections[LEDDAR_SEGMENTS];
 
-void leddarWrapperInit(){
+void initLeddarWrapper(){
   restoreLeddarParameters();
   for(size_t i=0; i<LEDDAR_SEGMENTS; i++) {
     MinimumDetections[i].Segment = i;
@@ -103,6 +103,7 @@ static const uint8_t REQUEST_DETECTIONS_CMD=0x41;
 uint8_t receivedData[MAX_LEDDAR_BUFFER] = {0};
 uint16_t leddar_overrun = 0;
 uint16_t leddar_crc_error = 0;
+
 void requestDetections(){
   uint8_t data[64] = {0};
   uint16_t count = LeddarSerial.available();

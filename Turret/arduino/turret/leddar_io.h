@@ -21,7 +21,7 @@ struct Detection
   void reset(void) { Distance = reset_distance; Amplitude = 0; };
 };
 
-void leddarWrapperInit();
+void initLeddarWrapper();
 
 void requestDetections();
 bool bufferDetections();

@@ -43,7 +43,7 @@ static struct IMUParameters EEMEM saved_params = {
 };
 
 
-void initializeIMU(void) {
+void initIMU(void) {
     restoreIMUParameters();
     I2c.begin();
     I2c.setSpeed(false);
@@ -100,7 +100,7 @@ static bool  maybeReadIMU(void)
 
 
 // State machine to distribute compute over several cycles
-void processIMU(void) {
+void updateIMU(void) {
     if(maybeReadIMU()) {
         // Compute cross product with Zhat
         // a = measured

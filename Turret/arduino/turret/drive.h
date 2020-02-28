@@ -1,7 +1,7 @@
 #ifndef DRIVE_H
 #define DRIVE_H
 
-void driveSetup();
+void initDrive();
 
 // parameter passed by reference. This routine clamps the value to the maximum
 // range of -1000 to 1000, passing a reference ensures that the clamped value

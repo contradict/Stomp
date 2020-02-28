@@ -10,7 +10,7 @@ ISR(PCINT2_vect)
    Xbee.cts_interrupt();
 }
 
-void xbeeInit(){
+void initXbee(){
 #ifdef HARD_WIRED
   Xbee.begin(115200);
 #else

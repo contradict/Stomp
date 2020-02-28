@@ -7,7 +7,7 @@
 static uint16_t cached_angle;
 static int16_t cached_pressure;
 
-void sensorSetup(){
+void initSensors(){
     pinMode(ANGLE_AI, INPUT);
     pinMode(PRESSURE_AI, INPUT);
 }

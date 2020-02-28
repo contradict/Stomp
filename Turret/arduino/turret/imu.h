@@ -8,8 +8,8 @@ enum Orientation {
     ORN_UNKNOWN = 3
 };
 
-void initializeIMU(void);
-void processIMU(void);
+void initIMU(void);
+void updateIMU(void);
 void telemetryIMU(void);
 bool isStationary(void);
 bool getOmegaZ(int16_t *omega_z);

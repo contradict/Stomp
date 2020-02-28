@@ -1,7 +1,7 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-void sensorSetup();
+void initSensors();
 bool readMlhPressure(int16_t* pressure);
 bool readAngle(uint16_t* angle);
 bool angularVelocity(float* angular_velocity);

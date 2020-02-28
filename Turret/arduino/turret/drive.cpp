@@ -7,7 +7,7 @@
 // Serial out pins defined in turret.ino-- check there to verify proper connectivity to motor controller
 extern HardwareSerial& DriveSerial;
 
-void driveSetup() {
+void driveInit() {
     DriveSerial.begin(115200);
     DriveSerial.println("@00^CPRI 1 0");  // set serial priority first
     delay(5);

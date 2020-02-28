@@ -36,7 +36,7 @@ enum RCBitfield {
     WEAPONS_ENABLE_BIT = 32768
 };
 
-void SBusInit(void);
+void initSBus(void);
 
 bool sbusGood(void);
 

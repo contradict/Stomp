@@ -15,197 +15,353 @@
 #include "imu.h"
 #include "autofire.h"
 
-//  BB MJS: removed hold_down
-//  BB MJS: What about selfright?  Simply fire hammer, right?
-//  BB MJS: Self right is just fire hammer.  So removed that all
-//  BB MJS: Big thing is that turret is no longer deailing with the wheel drive motors
-//          but we will have one drive motor for turret control.
-//  BB MJS: So for now, removed dribe.h and autodrive.h.  Use as reference for how to control new motor
-//  BB MJS: Also removed rc_pwm because we are going to drive the motor differently
+//  ====================================================================
+//
+//  Global Variables
+//
+//  ====================================================================
 
-uint32_t start_time, loop_speed_min, loop_speed_avg, loop_speed_max, loop_count;
-void reset_loop_stats(void) {
-    loop_count = loop_speed_max = loop_speed_avg = 0;
-    loop_speed_min = (uint32_t)(-1L);
-}
+//  deltaTime managment
 
-void update_loop_stats() {
-    uint32_t loop_speed = micros() - start_time;
-    start_time = micros();
-    loop_speed_min = min(loop_speed, loop_speed_min);
-    loop_speed_avg += loop_speed;
-    loop_count += 1;
-    loop_speed_max = max(loop_speed, loop_speed_max);
-}
+uint32_t g_dT = 0;
+uint32_t g_start_time;
 
-static uint32_t last_request_time = micros();
-static uint32_t last_sensor_time = micros();
-static int16_t steer_bias = 0; // positive turns left, negative turns right
+//  update loop stats
+
+uint32_t g_loop_speed_min;
+uint32_t g_loop_speed_avg; 
+uint32_t g_loop_speed_max; 
+uint32_t g_loop_count;
+
+//  tracking of target
+
+Track g_tracked_object;
+
+//  ====================================================================
+//
+//  Global constants
+//
+//  ====================================================================
+
+const uint32_t k_sensor_period=5000L;
+const uint32_t k_leddar_max_request_period=100000L;
+
+//  ====================================================================
+//
+//  File static variables
+//
+//  ====================================================================
+
+//  Keep track of radio communications status and state
+
+static bool s_validRadioConnection = false;
+static int16_t s_hammerIntensity;
+static int16_t s_hammerDistance;
+static uint16_t s_currentRCBitfield;
+
+//  Have various update frequencies for different systems
+
+static uint32_t s_last_request_time = micros();
+static uint32_t s_last_sensor_time = micros();
+
+static int16_t s_steer_bias = 0; // positive turns left, negative turns right
 static enum AutofireState autofire = AF_NO_TARGET;
+
+//  ====================================================================
+//
+//  External references
+//
+//  ====================================================================
 
 extern uint16_t leddar_overrun;
 extern uint16_t leddar_crc_error;
 extern uint16_t sbus_overrun;
 extern uint8_t HAMMER_INTENSITIES_ANGLE[9];
 
-uint32_t sensor_period=5000L;
-uint32_t leddar_max_request_period=100000L;
+//  ====================================================================
+//
+//  Forward references to internal (private) methods
+//
+//  ====================================================================
 
-// parameters written in command
-Track tracked_object;
+static void sendTelemetry(void);
+static void updateTurretRotation(void);
+static void updateWeapons(void);
+static void updateTracking(void);
+static void updateWatchDogTimer(void);
+static void updateSensors(void);
+static void updateRadio(void);
 
-void turretSetup() {
-    // Come up safely
+static void reset_loop_stats(void);
+static void updateLoopStats(void);
+
+//  ====================================================================
+//
+//  Global (public) methods
+//
+//  ====================================================================
+
+//  
+//  Main initialization point
+//
+
+void turretSetup() 
+{
+    //  Make sure we come up safly and enable watch dog to 
+    //  ensure if we don't have communications, we reset.
+
     safeState();
     wdt_enable(WDTO_4S);
-    xbeeInit();
-    SBusInit();
-    leddarWrapperInit();
-    driveSetup();
-    sensorSetup();
-    initializeIMU();
-    reset_loop_stats();
+
+    //  Initialize all of the various subsystems
+    //  to initial state
+    
+    initXbee();
+    initSBus();
+    initLeddarWrapper();
+    initDrive();
+    initSensors();
+    initIMU();
+
+    //  Restore any information stored in EEMEM
+
     restoreObjectSegmentationParameters();
-    tracked_object.restoreTrackingFilterParams();
+    g_tracked_object.restoreTrackingFilterParams();
     restoreAutofireParameters();
     restoreTelemetryParameters();
+
+    // Turret init
+
+    reset_loop_stats();
+    g_start_time = micros();
+
     debug_print("STARTUP");
-    start_time = micros();
 }
 
-void turretLoop() {
-    if(micros() - last_sensor_time>sensor_period) {
-        readSensors();
-        last_sensor_time = micros();
-    }
+//
+//  Main update loop
+//
 
-    // check for data from weapons radio
-    bool working = sbusGood();
-    if (working) {
+void turretLoop() 
+{
+    //  First, update raido connection state to see if everything is good
+    //  If everything is good, will also update information about controller 
+    //  state, such as the requested hammer instnsity, drive speed, etc.
+
+    updateRadio();
+
+    //  Next, do general systems updates.
+    //  Reset watch dog timmer if we have a connection and give the
+    //  the sensors their update tick
+    
+    updateWatchDogTimer();
+    updateSensors();
+    updateIMU();
+
+    //  Update Tracking and auto fire using Lidar
+
+    updateTracking();
+
+    //  Update Weapons
+    //  Take care of hammer and flame thrower state
+    //  This includes manually firing the hammer or flame throwers
+
+    updateWeapons();
+
+    //  Calculate and apply turret rotation.  Accounts for systems adjustments
+    //  such as auto aim as well as requested adjustmens from the radio controller
+
+    updateTurretRotation();
+
+    //  Send out telemetry to PC and process commands from PC
+
+    sendTelemetry();
+    handleCommands();
+
+    // Finally update our loop stats
+
+    updateLoopStats();
+}
+
+//  ====================================================================
+//
+//  Internal (private) Methods
+//
+//  ====================================================================
+
+static void updateRadio()
+{
+    s_currentRCBitfield = getRcBitfield();
+
+    s_validRadioConnection = sbusGood();
+    s_hammerIntensity = getHammerIntensity();
+    s_hammerDistance = getRange();
+}
+
+static void updateSensors()
+{
+    //  Update the sensor data
+
+    if(micros() - s_last_sensor_time > k_sensor_period) 
+    {
+        readSensors();
+        s_last_sensor_time = micros();
+    }
+}
+
+static void updateWatchDogTimer()
+{
+    //  As long as we have valid radio connection,
+    //  prevent watch dog timer from expiring
+
+    if (s_validRadioConnection) 
+    {
         wdt_reset();
     }
-    uint16_t current_rc_bitfield = getRcBitfield();
+}
 
+static void updateTracking()
+{
     // If there has been no data from the LEDDAR for a while, ask again
-    if (micros() - last_request_time > leddar_max_request_period){
-        last_request_time = micros();
-        requestDetections();
-    }
 
-    int16_t hammer_intensity = getHammerIntensity();
-    int16_t hammer_distance = getRange();
-    int16_t turret_speed = getTurretSpeed();
-
-    if (working)
+    if (micros() - s_last_request_time > k_leddar_max_request_period)
     {
-        drive(turret_speed);
-    }
-
-    // Check if data is available from the LEDDAR
-    if (bufferDetections()){
-
-        uint32_t now = micros();
-        // extract detections from LEDDAR packet
-        uint8_t raw_detection_count = parseDetections();
-
-        // request new detections
-        last_request_time = micros();
+        s_last_request_time = micros();
         requestDetections();
-
-        calculateMinimumDetections(raw_detection_count);
-        const Detection (*minDetections)[LEDDAR_SEGMENTS] = NULL;
-        getMinimumDetections(&minDetections);
-
-        Object objects[8];
-        uint8_t num_objects = segmentObjects(*minDetections, now, objects);
-
-        int8_t best_object = trackObject(now, objects, num_objects, tracked_object);
-
-        // auto centering code
-        //  BB MJS: Commented out for now
-        // new_autodrive = pidSteer(tracked_object, drive_range, &drive_bias, &steer_bias);
-
-        autofire = willHit(tracked_object, hammer_distance, hammer_intensity);
-        if((autofire==AF_HIT) && (current_rc_bitfield & AUTO_HAMMER_ENABLE_BIT)) {
-            fire(hammer_intensity, current_rc_bitfield & FLAME_PULSE_BIT, true);
-        }
-
-        // Send subsampled leddar telem
-        if (isTimeToSendLeddarTelem(now)){
-            sendLeddarTelem(*minDetections, raw_detection_count);
-            sendObjectsTelemetry(num_objects, objects);
-
-            if(num_objects > 0)
-            {
-                sendTrackingTelemetry(
-                        objects[best_object].xcoord(), objects[best_object].ycoord(),
-                        objects[best_object].angle(), objects[best_object].radius(),
-                        tracked_object.x/16, tracked_object.vx/16,
-                        tracked_object.y/16, tracked_object.vy/16);
-            }
-            else
-            {
-                sendTrackingTelemetry(
-                        0, 0, 0, 0,
-                        tracked_object.x/16, tracked_object.vx/16,
-                        tracked_object.y/16, tracked_object.vy/16);
-            }
-        }
     }
 
+    //  Check if data is available from the LEDDAR
+    //  If not, just bail 
+
+    if (!bufferDetections())
+    {
+        return;
+    }
+
+    uint32_t now = micros();
+
+    // extract detections from LEDDAR packet
+    uint8_t raw_detection_count = parseDetections();
+
+    // request new detections
+    s_last_request_time = micros();
+    requestDetections();
+
+    calculateMinimumDetections(raw_detection_count);
+
+    const Detection (*minDetections)[LEDDAR_SEGMENTS] = NULL;
+    getMinimumDetections(&minDetections);
+
+    Object objects[8];
+    uint8_t num_objects = segmentObjects(*minDetections, now, objects);
+    int8_t best_object = trackObject(now, objects, num_objects, g_tracked_object);
+
+    // auto centering code
+    //  BB MJS: Commented out for now
+    // new_autodrive = pidSteer(tracked_object, drive_range, &drive_bias, &s_steer_bias);
+
+    //  If I fired now, will I hit the target.  If so, then FIRE!!!
+
+    autofire = willHit(g_tracked_object, s_hammerDistance, s_hammerIntensity);
+
+    if((autofire==AF_HIT) && (s_currentRCBitfield & AUTO_HAMMER_ENABLE_BIT)) 
+    {
+        fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, true);
+    }
+
+    //  Send out tracking / auto aim telemetry
+  
+    if (isTimeToSendLeddarTelem(now))
+    {
+        sendLeddarTelem(*minDetections, raw_detection_count);
+        sendObjectsTelemetry(num_objects, objects);
+
+        if(num_objects > 0)
+        {
+            sendTrackingTelemetry(
+                    objects[best_object].xcoord(), objects[best_object].ycoord(),
+                    objects[best_object].angle(), objects[best_object].radius(),
+                    g_tracked_object.x/16, g_tracked_object.vx/16,
+                    g_tracked_object.y/16, g_tracked_object.vy/16);
+        }
+        else
+        {
+            sendTrackingTelemetry(
+                    0, 0, 0, 0,
+                    g_tracked_object.x/16, g_tracked_object.vx/16,
+                    g_tracked_object.y/16, g_tracked_object.vy/16);
+        }
+    }
+}
+
+static void updateWeapons()
+{
     // React to RC state changes (change since last time this call was made)
     int16_t diff = getRcBitfieldChanges();
-    if( !(current_rc_bitfield & FLAME_PULSE_BIT) && !(current_rc_bitfield & FLAME_CTRL_BIT) ){
+    
+    if( !(s_currentRCBitfield & FLAME_PULSE_BIT) && !(s_currentRCBitfield & FLAME_CTRL_BIT) ){
         flameSafe();
     }
-    if( (diff & FLAME_PULSE_BIT) && (current_rc_bitfield & FLAME_PULSE_BIT) ){
+    if( (diff & FLAME_PULSE_BIT) && (s_currentRCBitfield & FLAME_PULSE_BIT) ){
         flameEnable();
     }
     // Flame on -> off
-    if( (diff & FLAME_CTRL_BIT) && !(current_rc_bitfield & FLAME_CTRL_BIT) ){
+    if( (diff & FLAME_CTRL_BIT) && !(s_currentRCBitfield & FLAME_CTRL_BIT) ){
         flameEnd();
     }
     // Flame off -> on
-    if( (diff & FLAME_CTRL_BIT) && (current_rc_bitfield & FLAME_CTRL_BIT) ){
+    if( (diff & FLAME_CTRL_BIT) && (s_currentRCBitfield & FLAME_CTRL_BIT) ){
         flameEnable();
         flameStart();
     }
     // Manual hammer fire
-    if( (diff & HAMMER_FIRE_BIT) && (current_rc_bitfield & HAMMER_FIRE_BIT)){
-        if (current_rc_bitfield & DANGER_CTRL_BIT){
-          noAngleFire(hammer_intensity, current_rc_bitfield & FLAME_PULSE_BIT);
+    if( (diff & HAMMER_FIRE_BIT) && (s_currentRCBitfield & HAMMER_FIRE_BIT)){
+        if (s_currentRCBitfield & DANGER_CTRL_BIT){
+          noAngleFire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT);
         } else {
-          fire(hammer_intensity, current_rc_bitfield & FLAME_PULSE_BIT, false /*autofire*/);
+          fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, false /*autofire*/);
         }
     }
 
     //  BB MJS: Hammer control is going to be different this year.  There is no motor drive, just to Big
     //  cylindars for hard hit and gentral retract
 
-    if( (diff & HAMMER_RETRACT_BIT) && (current_rc_bitfield & HAMMER_RETRACT_BIT)){
-      if (current_rc_bitfield & DANGER_CTRL_BIT){
+    if( (diff & HAMMER_RETRACT_BIT) && (s_currentRCBitfield & HAMMER_RETRACT_BIT)){
+      if (s_currentRCBitfield & DANGER_CTRL_BIT){
         gentleRetract(HAMMER_RETRACT_BIT);
       } else {
         retract();
       }
     }
-    if( (current_rc_bitfield & GENTLE_HAM_F_BIT)) {
+    if( (s_currentRCBitfield & GENTLE_HAM_F_BIT)) {
         gentleFire(GENTLE_HAM_F_BIT);
     }
-    if( (current_rc_bitfield & GENTLE_HAM_R_BIT)) {
+    if( (s_currentRCBitfield & GENTLE_HAM_R_BIT)) {
         gentleRetract(GENTLE_HAM_R_BIT);
     }
+}
 
-    // read IMU and compute orientation
-    processIMU();
+static void updateTurretRotation()
+{
+    int16_t turret_speed = getTurretSpeed();
 
+    if (s_validRadioConnection)
+    {
+        drive(turret_speed);
+    }
+}
+
+static void sendTelemetry()
+{
     // send telemetry
     uint32_t now = micros();
-    if (isTimeToSendTelemetry(now)) {
+ 
+    if (isTimeToSendTelemetry(now)) 
+    {
         // get targeting RC command.
         sendSensorTelem(getPressure(), getAngle());
-        sendSystemTelem(loop_speed_min, loop_speed_avg/loop_count,
-                        loop_speed_max, loop_count,
+        sendSystemTelem(g_loop_speed_min, g_loop_speed_avg/g_loop_count,
+                        g_loop_speed_max, g_loop_count,
                         leddar_overrun,
                         leddar_crc_error,
                         sbus_overrun,
@@ -214,11 +370,26 @@ void turretLoop() {
                         invalid_command,
                         valid_command);
         reset_loop_stats();
-        int16_t hammer_angle = HAMMER_INTENSITIES_ANGLE[hammer_intensity];
-        sendSbusTelem(current_rc_bitfield, hammer_angle, hammer_distance);
+        int16_t hammer_angle = HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
+        sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance);
         telemetryIMU();
     }
-
-    handle_commands();
-    update_loop_stats();
 }
+
+static void reset_loop_stats(void) 
+{
+    g_loop_count = g_loop_speed_max = g_loop_speed_avg = 0;
+    g_loop_speed_min = (uint32_t)(-1L);
+}
+
+static void updateLoopStats(void) 
+{
+    uint32_t loop_speed = micros() - g_start_time;
+    g_start_time = micros();
+
+    g_loop_speed_min = min(loop_speed, g_loop_speed_min);
+    g_loop_speed_avg += loop_speed;
+    g_loop_count += 1;
+    g_loop_speed_max = max(loop_speed, g_loop_speed_max);
+}
+

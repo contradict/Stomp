@@ -9,6 +9,6 @@
 
 // Xbee Series 1 configuration notes: These are stock configuration (besides baudrate changes)
 
-void xbeeInit();
+void initXbee();
 
 #endif // XBEE_H

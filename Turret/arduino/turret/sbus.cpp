@@ -67,7 +67,7 @@ static void processSbus(void) {
     }
 }
 
-void SBusInit() {
+void initSBus() {
     // Try u2x mode first
     uint32_t baud = 100000;
     uint16_t baud_setting = (F_CPU / 4 / baud - 1) / 2;
