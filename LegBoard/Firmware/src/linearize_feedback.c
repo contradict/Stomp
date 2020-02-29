@@ -21,10 +21,12 @@
 
 static void Linearize_Thread(const void* args);
 
+#define __MAX_DAC_OUTPUT 10.8f
 static const float ADC_VREF = 3.3f;
 static const float ADC_MAX_CODE = (float)((1<<12) - 1);
 static const float JOINT_DIVIDER = 2.0f / 3.0f;
-static const float DAC_CODE_SCALE = 10.8f / ((1<<12)-1);
+static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
+static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 
 extern SPI_HandleTypeDef DAC_SPIHandle;
 ADC_HandleTypeDef feedback_adc;
@@ -35,7 +37,7 @@ static osThreadId linearize;
 static osMessageQId dataQ;
 
 static const enum ads57x4_channel joint_channel[3] = {
-    ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_B, ADS57x4_CHANNEL_C}; 
+    ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_C, ADS57x4_CHANNEL_B};
 
 struct LinearizationConstants {
     float theta_offset[NJOINTS];
@@ -90,6 +92,35 @@ void Linearize_ThreadInit(void)
     dataQ = osMessageCreate(osMessageQ(adcdata), linearize);
 }
 
+static void setup_dac(void)
+{
+    osEvent e;
+    while(1)
+    {
+        ads57x4_SelectOutputRange(ADS57x4_CHANNEL_A, ADS57x4_RANGE_U10p8V);
+        e = osSignalWait(0, 100);
+        if(e.status != osEventSignal || e.value.signals != 0)
+            continue;
+        ads57x4_SelectOutputRange(ADS57x4_CHANNEL_B, ADS57x4_RANGE_U10p8V);
+        e = osSignalWait(0, 100);
+        if(e.status != osEventSignal || e.value.signals != 0)
+            continue;
+        ads57x4_SelectOutputRange(ADS57x4_CHANNEL_C, ADS57x4_RANGE_U10p8V);
+        e = osSignalWait(0, 100);
+        if(e.status != osEventSignal || e.value.signals != 0)
+            continue;
+        ads57x4_Configure(true, false, ADS57x4_CLEAR_ZERO, false);
+        e = osSignalWait(0, 100);
+        if(e.status != osEventSignal || e.value.signals != 0)
+            continue;
+        ads57x4_Power(7);
+        e = osSignalWait(0, 100);
+        if(e.status != osEventSignal || e.value.signals != 0)
+            continue;
+        break;
+    }
+}
+
 static void adc_reinit(void)
 {
     HAL_TIM_Base_DeInit(&feedback_timer);
@@ -108,6 +139,7 @@ void Linearize_Thread(const void* args)
 {
     (void)args;
     osEvent event;
+    setup_dac();
     HAL_ADC_Start_IT(&feedback_adc);
     HAL_TIM_Base_Start(&feedback_timer);
     for(enum JointIndex current_joint = CURL;
@@ -129,28 +161,31 @@ void Linearize_Thread(const void* args)
             continue;
         }
         float voltage = (ADC_VREF * (event.value.v / ADC_MAX_CODE) * JOINT_DIVIDER);
-        float angle = (linearization_constants.theta_offset[current_joint] +
-                       linearization_constants.theta_scale[current_joint] * voltage);
-        float length = sqrtf(linearization_constants.shape_offset[current_joint] +
-                             linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
-        float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +
-                                  linearization_constants.feedback_scale[current_joint] * length);
-        uint16_t feedback_code = feedback_voltage * DAC_CODE_SCALE;
-        ads5724_SetVoltage(joint_channel[current_joint], feedback_code);
-        float brightness = voltage*200.0 / (ADC_VREF * JOINT_DIVIDER);
-        brightness = (brightness > 255) ? 255 : ((brightness < 0) ? 0 : brightness);
+        // float angle = (linearization_constants.theta_offset[current_joint] +
+        //                linearization_constants.theta_scale[current_joint] * voltage);
+        // float length = sqrtf(linearization_constants.shape_offset[current_joint] +
+        //                      linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
+        // float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +
+        //                           linearization_constants.feedback_scale[current_joint] * length);
+        float feedback_voltage = MAX_DAC_OUTPUT - voltage / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
+        uint16_t feedback_code = feedback_voltage * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+        ads5724_SetVoltage(joint_channel[current_joint], feedback_code<<4);
+        float brightness = voltage*250.0f / (ADC_VREF * JOINT_DIVIDER);
+        brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
         LED_G(current_joint, brightness);
     }
 }
 
-void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi)
+void DAC_IO_TransmitComplete(SPI_HandleTypeDef *hspi)
 {
-    (void)hspi;
+    __HAL_SPI_DISABLE(hspi);
+    osSignalSet(linearize, 0);
 }
 
-void DAC_IO_TransferError(SPI_HandleTypeDef *hspi)
+void DAC_IO_Error(SPI_HandleTypeDef *hspi)
 {
-    (void)hspi;
+    __HAL_SPI_DISABLE(hspi);
+    osSignalSet(linearize, 1);
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)

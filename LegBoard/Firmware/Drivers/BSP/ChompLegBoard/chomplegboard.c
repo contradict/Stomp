@@ -4,7 +4,6 @@
 SPI_HandleTypeDef DAC_SPIHandle;
 I2C_HandleTypeDef LED_I2CHandle;
 
-volatile static bool transfer_started;
 static int dwt_started = 0;
 
 void enableCycleCounter(void)
@@ -67,22 +66,8 @@ int DAC_IO_Init(void)
 
     GPIO_InitTypeDef GPIO_InitStruct;
 
-    /* LDAC */
-    GPIO_InitStruct.Pin = DAC_LDAC_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-    HAL_GPIO_Init(DAC_LDAC_GPIO_PORT, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(DAC_CLR_GPIO_PORT, DAC_CLR_PIN, GPIO_PIN_SET);
-    /* CLR */
-    GPIO_InitStruct.Pin = DAC_CLR_PIN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-    HAL_GPIO_Init(DAC_CLR_GPIO_PORT, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(DAC_CLR_GPIO_PORT, DAC_CLR_PIN, GPIO_PIN_SET);
-
     DAC_SPIHandle.Instance = DAC_SPI_Instance;
-    DAC_SPIHandle.Init.CLKPhase = SPI_DIRECTION_2LINES;
-    DAC_SPIHandle.Init.Mode = SPI_MODE_MASTER;
+    DAC_SPIHandle.Init.Mode = (SPI_CR1_MSTR | SPI_CR1_SSI);
     DAC_SPIHandle.Init.Direction = SPI_DIRECTION_2LINES;
     DAC_SPIHandle.Init.DataSize = SPI_DATASIZE_8BIT;
     DAC_SPIHandle.Init.CLKPolarity = SPI_POLARITY_LOW;
@@ -94,26 +79,39 @@ int DAC_IO_Init(void)
     DAC_SPIHandle.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     DAC_SPIHandle.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
 
-    return HAL_SPI_Init(&DAC_SPIHandle);
+    HAL_SPI_Init(&DAC_SPIHandle);
+    SET_BIT(DAC_SPIHandle.Instance->CR2, SPI_CR2_SSOE);
+
+    /* LDAC */
+    DAC_LDAC_GPIO_CLK_ENABLE();
+    GPIO_InitStruct.Pin = DAC_LDAC_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    HAL_GPIO_Init(DAC_LDAC_GPIO_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(DAC_LDAC_GPIO_PORT, DAC_LDAC_PIN, GPIO_PIN_SET);
+    /* CLR */
+    DAC_CLR_GPIO_CLK_ENABLE();
+    GPIO_InitStruct.Pin = DAC_CLR_PIN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    HAL_GPIO_Init(DAC_CLR_GPIO_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(DAC_CLR_GPIO_PORT, DAC_CLR_PIN, GPIO_PIN_SET);
+
+    return HAL_OK;
 }
+
 
 void DAC_IO_Write(uint8_t write[3])
 {
-    transfer_started = 1;
+    HAL_GPIO_WritePin(DAC_SPI_NSS_GPIO_PORT, DAC_SPI_NSS_PIN, 0);
     HAL_SPI_Transmit_IT(&DAC_SPIHandle, ((uint8_t *)write), 3); 
 }
 
 void DAC_IO_ReadWrite(uint8_t write[3], uint8_t read[3])
 {
-    transfer_started = 1;
     HAL_SPI_TransmitReceive_IT(&DAC_SPIHandle,
                                ((uint8_t *)write),
                                ((uint8_t *)read), 3); 
-}
-
-void DAC_IO_WaitForTransfer(void)
-{
-    while(transfer_started);
 }
 
 void DAC_IO_LDAC(bool state)
@@ -142,15 +140,26 @@ void DAC_IO_CLR_pulse(void)
   HAL_GPIO_WritePin(DAC_CLR_GPIO_PORT, DAC_CLR_PIN, state ? GPIO_PIN_RESET : GPIO_PIN_SET);
 }
 
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    HAL_GPIO_WritePin(DAC_SPI_NSS_GPIO_PORT, DAC_SPI_NSS_PIN, 1);
+    DAC_IO_TransmitComplete(hspi);
+}
+
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    transfer_started = 0;
     DAC_IO_TransferComplete(hspi);
 }
 
+
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi)
 {
-    DAC_IO_TransferError(hspi);
+    DAC_IO_Error(hspi);
+}
+
+__weak void DAC_IO_TransmitComplete(SPI_HandleTypeDef *hspi)
+{
+    (void)hspi;
 }
 
 __weak void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi)
@@ -158,7 +167,7 @@ __weak void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi)
     (void)hspi;
 }
 
-__weak void DAC_IO_TransferError(SPI_HandleTypeDef *hspi)
+__weak void DAC_IO_Error(SPI_HandleTypeDef *hspi)
 {
     (void)hspi;
 }

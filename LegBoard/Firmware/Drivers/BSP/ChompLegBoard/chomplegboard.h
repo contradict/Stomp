@@ -11,6 +11,8 @@
 #define DAC_SPI_MISO_GPIO_CLK_ENABLE()   __HAL_RCC_GPIOA_CLK_ENABLE()
 #define DAC_SPI_MOSI_GPIO_CLK_ENABLE()   __HAL_RCC_GPIOA_CLK_ENABLE()
 #define DAC_SPI_NSS_GPIO_CLK_ENABLE()    __HAL_RCC_GPIOA_CLK_ENABLE()
+#define DAC_LDAC_GPIO_CLK_ENABLE()       __HAL_RCC_GPIOC_CLK_ENABLE()
+#define DAC_CLR_GPIO_CLK_ENABLE()        __HAL_RCC_GPIOC_CLK_ENABLE()
 
 #define DAC_SPI_FORCE_RESET()            __HAL_RCC_SPI1_FORCE_RESET()
 #define DAC_SPI_RELEASE_RESET()          __HAL_RCC_SPI1_RELEASE_RESET()
@@ -50,7 +52,8 @@ void DAC_IO_LDAC_pulse();
 void DAC_IO_CLR(bool state);
 void DAC_IO_CLR_pulse();
 void DAC_IO_TransferComplete(SPI_HandleTypeDef *hspi);
-void DAC_IO_TransferError(SPI_HandleTypeDef *hspi);
+void DAC_IO_TransmitComplete(SPI_HandleTypeDef *hspi);
+void DAC_IO_Error(SPI_HandleTypeDef *hspi);
 
 
 #define LED_I2C_CLK_PERIPH         RCC_PERIPHCLK_I2C1

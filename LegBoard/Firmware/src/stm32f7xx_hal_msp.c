@@ -93,20 +93,23 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
         GPIO_InitStruct.Pin = DAC_SPI_SCK_PIN;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = DAC_SPI_SCK_AF;
         HAL_GPIO_Init(DAC_SPI_SCK_GPIO_PORT, &GPIO_InitStruct);
         /* MISO */
         GPIO_InitStruct.Pin = DAC_SPI_MISO_PIN;
         GPIO_InitStruct.Alternate = DAC_SPI_MISO_AF;
+        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         HAL_GPIO_Init(DAC_SPI_MISO_GPIO_PORT, &GPIO_InitStruct);
         /* MOSI */
         GPIO_InitStruct.Pin = DAC_SPI_MOSI_PIN;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Alternate = DAC_SPI_MOSI_AF;
         HAL_GPIO_Init(DAC_SPI_MOSI_GPIO_PORT, &GPIO_InitStruct);
         /* NSS */
         GPIO_InitStruct.Pin = DAC_SPI_NSS_PIN;
-        GPIO_InitStruct.Alternate = DAC_SPI_NSS_AF;
+        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+        GPIO_InitStruct.Alternate = 0;
         HAL_GPIO_Init(DAC_SPI_NSS_GPIO_PORT, &GPIO_InitStruct);
 
         HAL_NVIC_SetPriority(DAC_SPI_IRQn, 6, 0);

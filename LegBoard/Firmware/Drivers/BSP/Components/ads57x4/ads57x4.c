@@ -29,6 +29,8 @@ extern void DAC_IO_WaitForTransfer(void);
 extern void DAC_IO_LDAC(bool state);
 extern void DAC_IO_CLR(bool state);
 extern void DAC_IO_TransferComplete();
+extern void DAC_IO_TransmitComplete();
+extern void DAC_IO_Error();
 
 
 static uint8_t DAC_REGISTER[4][3];
