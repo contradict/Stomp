@@ -21,7 +21,6 @@
 #define WREGISTER(r, c) (ADS57x4_WRITE | (r << ADS57x4_OFFSET_REGISTER) | (c << ADS57x4_OFFSET_CHANNEL))
 #define RREGISTER(r, c) (ADS57x4_READ | (r << ADS57x4_OFFSET_REGISTER) | (c << ADS57x4_OFFSET_CHANNEL))
 
-
 extern int DAC_IO_Init();
 extern void DAC_IO_Write(uint8_t write[3]);
 extern void DAC_IO_ReadWrite(uint8_t write[3], uint8_t read[3]);
@@ -49,11 +48,29 @@ int ads57x4_Init(void)
     return 0;
 }
 
-int ads5724_SetVoltage(enum ads57x4_channel channel, int16_t volts)
+int ads5724_SetVoltage(enum ads57x4_channel channel, int16_t code)
 {
     DAC_REGISTER[channel][0] = WREGISTER(ADS57x4_REGISTER_DAC, channel);
-    DAC_REGISTER[channel][1] = HIGH_BYTE(volts);
-    DAC_REGISTER[channel][2] = LOW_BYTE(volts);
+    DAC_REGISTER[channel][1] = HIGH_BYTE(code<<ADS5724_OFFSET_DATA);
+    DAC_REGISTER[channel][2] = LOW_BYTE(code<<ADS5724_OFFSET_DATA);
+    DAC_IO_Write(DAC_REGISTER[channel]);
+    return 0;
+}
+
+int ads5734_SetVoltage(enum ads57x4_channel channel, int16_t code)
+{
+    DAC_REGISTER[channel][0] = WREGISTER(ADS57x4_REGISTER_DAC, channel);
+    DAC_REGISTER[channel][1] = HIGH_BYTE(code<<ADS5734_OFFSET_DATA);
+    DAC_REGISTER[channel][2] = LOW_BYTE(code<<ADS5734_OFFSET_DATA);
+    DAC_IO_Write(DAC_REGISTER[channel]);
+    return 0;
+}
+
+int ads5754_SetVoltage(enum ads57x4_channel channel, int16_t code)
+{
+    DAC_REGISTER[channel][0] = WREGISTER(ADS57x4_REGISTER_DAC, channel);
+    DAC_REGISTER[channel][1] = HIGH_BYTE(code<<ADS5754_OFFSET_DATA);
+    DAC_REGISTER[channel][2] = LOW_BYTE(code<<ADS5754_OFFSET_DATA);
     DAC_IO_Write(DAC_REGISTER[channel]);
     return 0;
 }

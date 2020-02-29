@@ -52,7 +52,9 @@ enum ads57x4_power_config {
 };
 
 int ads57x4_Init();
-int ads5724_SetVoltage(enum ads57x4_channel channel, int16_t volts);
+int ads5724_SetVoltage(enum ads57x4_channel channel, int16_t code);
+int ads5734_SetVoltage(enum ads57x4_channel channel, int16_t code);
+int ads5754_SetVoltage(enum ads57x4_channel channel, int16_t code);
 int ads57x4_SelectOutputRange(enum ads57x4_channel channel,
                               enum ads57x4_output_range range);
 int ads57x4_Clear();
