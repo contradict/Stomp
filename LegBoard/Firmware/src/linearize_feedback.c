@@ -5,6 +5,7 @@
 #include "ads57x4.h"
 #include "feedback_adc.h"
 #include "status_led.h"
+#include "chomplegboard.h"
 
 // theta = (V - Vmin) / (Vmax - Vmin) * Thetamax + Thetamin
 // theta = V * Thetamax / (Vmax - Vmin) + (Thetamin - (Vmin / (Vmax - Vmin)))
@@ -19,6 +20,11 @@
 #define FEEDBACK_OFFSET(Lmin, Lmax, Vmin, Vmax) (Vmax / (Lmax - Lmin))
 #define FEEDBACK_SCALE(Lmin, Lmax, Vmin, Vmax)  (Vmin - (Lmin / (Lmax - Lmin)))
 
+#define DAC_TX_COMPLETE   1
+#define DAC_IO_ERROR      2
+#define ADC_CONV_COMPLETE 4
+#define ADC_CONV_ERROR    8
+
 static void Linearize_Thread(const void* args);
 
 #define __MAX_DAC_OUTPUT 10.8f
@@ -29,12 +35,14 @@ static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 
 extern SPI_HandleTypeDef DAC_SPIHandle;
-ADC_HandleTypeDef feedback_adc;
+extern ADC_HandleTypeDef feedback_adcs[3];
 
-osThreadDef(lin, Linearize_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-osMessageQDef(adcdata, 2, uint32_t);
+osThreadDef(lin, Linearize_Thread, osPriorityHigh, 0, configMINIMAL_STACK_SIZE);
+osMessageQDef(adcdata, 8, uint32_t);
 static osThreadId linearize;
 static osMessageQId dataQ;
+
+static uint32_t channel_values[3];
 
 static const enum ads57x4_channel joint_channel[3] = {
     ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_C, ADS57x4_CHANNEL_B};
@@ -98,24 +106,24 @@ static void setup_dac(void)
     while(1)
     {
         ads57x4_SelectOutputRange(ADS57x4_CHANNEL_A, ADS57x4_RANGE_U10p8V);
-        e = osSignalWait(0, 100);
-        if(e.status != osEventSignal || e.value.signals != 0)
+        e = osSignalWait(DAC_TX_COMPLETE, 100);
+        if(e.status != osEventSignal || e.value.signals != DAC_TX_COMPLETE)
             continue;
         ads57x4_SelectOutputRange(ADS57x4_CHANNEL_B, ADS57x4_RANGE_U10p8V);
-        e = osSignalWait(0, 100);
-        if(e.status != osEventSignal || e.value.signals != 0)
+        e = osSignalWait(DAC_TX_COMPLETE, 100);
+        if(e.status != osEventSignal || e.value.signals != DAC_TX_COMPLETE)
             continue;
         ads57x4_SelectOutputRange(ADS57x4_CHANNEL_C, ADS57x4_RANGE_U10p8V);
-        e = osSignalWait(0, 100);
-        if(e.status != osEventSignal || e.value.signals != 0)
+        e = osSignalWait(DAC_TX_COMPLETE, 100);
+        if(e.status != osEventSignal || e.value.signals != DAC_TX_COMPLETE)
             continue;
         ads57x4_Configure(true, false, ADS57x4_CLEAR_ZERO, false);
-        e = osSignalWait(0, 100);
-        if(e.status != osEventSignal || e.value.signals != 0)
+        e = osSignalWait(DAC_TX_COMPLETE, 100);
+        if(e.status != osEventSignal || e.value.signals != DAC_TX_COMPLETE)
             continue;
         ads57x4_Power(7);
-        e = osSignalWait(0, 100);
-        if(e.status != osEventSignal || e.value.signals != 0)
+        e = osSignalWait(DAC_TX_COMPLETE, 100);
+        if(e.status != osEventSignal || e.value.signals != DAC_TX_COMPLETE)
             continue;
         break;
     }
@@ -125,13 +133,17 @@ static void adc_reinit(void)
 {
     HAL_TIM_Base_DeInit(&feedback_timer);
 
-    HAL_ADC_DeInit(&feedback_adc);
+    HAL_ADC_DeInit(&feedback_adcs[0]);
+    HAL_ADC_DeInit(&feedback_adcs[1]);
+    HAL_ADC_DeInit(&feedback_adcs[2]);
 
     FeedbackADC_TimerInit();
 
     FeedbackADC_Init();
 
-    HAL_ADC_Start_IT(&feedback_adc);
+    HAL_ADC_Start(&feedback_adcs[2]);
+    HAL_ADC_Start(&feedback_adcs[1]);
+    HAL_ADCEx_MultiModeStart_DMA(&feedback_adcs[0], channel_values, 3);
     HAL_TIM_Base_Start(&feedback_timer);
 }
 
@@ -139,65 +151,94 @@ void Linearize_Thread(const void* args)
 {
     (void)args;
     osEvent event;
+    float voltage[3];
+    float feedback_voltage[3];
+    uint16_t feedback_code[3];
+    float brightness[3];
+    int sendjoint=3;
+
     setup_dac();
-    HAL_ADC_Start_IT(&feedback_adc);
+    HAL_ADC_Start(&feedback_adcs[2]);
+    HAL_ADC_Start(&feedback_adcs[1]);
+    HAL_ADCEx_MultiModeStart_DMA(&feedback_adcs[0], channel_values, 3);
     HAL_TIM_Base_Start(&feedback_timer);
-    for(enum JointIndex current_joint = CURL;
-        true;
-        current_joint = (current_joint + 1) % 3)
+    for(;;)
     {
-        event = osSignalWait(0, 0);
-        if(event.status == osEventSignal && event.value.v != 0)
+        event = osSignalWait(ADC_CONV_COMPLETE | ADC_CONV_ERROR | DAC_TX_COMPLETE, osWaitForever);
+        if(event.status != osEventSignal)
         {
-            current_joint = LIFT;
-            adc_reinit();
             continue;
         }
-        event = osMessageGet(dataQ, osWaitForever);
-        if(event.status != osEventMessage)
+        if(event.value.signals & ADC_CONV_ERROR)
         {
-            current_joint = LIFT;
-            adc_reinit();
-            continue;
+                adc_reinit();
         }
-        float voltage = (ADC_VREF * (event.value.v / ADC_MAX_CODE) * JOINT_DIVIDER);
-        // float angle = (linearization_constants.theta_offset[current_joint] +
-        //                linearization_constants.theta_scale[current_joint] * voltage);
-        // float length = sqrtf(linearization_constants.shape_offset[current_joint] +
-        //                      linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
-        // float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +
-        //                           linearization_constants.feedback_scale[current_joint] * length);
-        float feedback_voltage = MAX_DAC_OUTPUT - voltage / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
-        uint16_t feedback_code = feedback_voltage * DAC_MAX_CODE / MAX_DAC_OUTPUT;
-        ads5724_SetVoltage(joint_channel[current_joint], feedback_code<<4);
-        float brightness = voltage*250.0f / (ADC_VREF * JOINT_DIVIDER);
-        brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
-        LED_G(current_joint, brightness);
+        else if(event.value.signals & DAC_TX_COMPLETE)
+        {
+            if(sendjoint<3)
+            {
+                ads5724_SetVoltage(joint_channel[sendjoint], feedback_code[sendjoint]);
+                sendjoint++;
+            }
+            else
+            {
+                DAC_IO_LDAC(true);
+            }
+        }
+        else if(event.value.signals & ADC_CONV_COMPLETE)
+        {
+            DAC_IO_LDAC(false);
+            voltage[0] = (ADC_VREF * (channel_values[0] / ADC_MAX_CODE) * JOINT_DIVIDER);
+            voltage[1] = (ADC_VREF * (channel_values[1] / ADC_MAX_CODE) * JOINT_DIVIDER);
+            voltage[2] = (ADC_VREF * (channel_values[2] / ADC_MAX_CODE) * JOINT_DIVIDER);
+            // float angle = (linearization_constants.theta_offset[current_joint] +
+            //                linearization_constants.theta_scale[current_joint] * voltage);
+            // float length = sqrtf(linearization_constants.shape_offset[current_joint] +
+            //                      linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
+            // float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +
+            //                           linearization_constants.feedback_scale[current_joint] * length);
+            feedback_voltage[0] = MAX_DAC_OUTPUT - voltage[0] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
+            feedback_voltage[1] = MAX_DAC_OUTPUT - voltage[1] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
+            feedback_voltage[2] = MAX_DAC_OUTPUT - voltage[2] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
+            feedback_code[0] = feedback_voltage[0] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+            feedback_code[1] = feedback_voltage[1] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+            feedback_code[2] = feedback_voltage[2] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+            sendjoint = 0;
+            ads5724_SetVoltage(joint_channel[sendjoint], feedback_code[sendjoint]);
+            sendjoint++;
+            brightness[0] = voltage[0]*250.0f / (ADC_VREF * JOINT_DIVIDER);
+            brightness[0] = (brightness[0] > 255.0f) ? 255.0f : ((brightness[0] < 0.0f) ? 0.0f : brightness[0]);
+            brightness[1] = voltage[1]*250.0f / (ADC_VREF * JOINT_DIVIDER);
+            brightness[1] = (brightness[1] > 255.0f) ? 255.0f : ((brightness[1] < 0.0f) ? 0.0f : brightness[1]);
+            brightness[2] = voltage[2]*250.0f / (ADC_VREF * JOINT_DIVIDER);
+            brightness[2] = (brightness[2] > 255.0f) ? 255.0f : ((brightness[2] < 0.0f) ? 0.0f : brightness[2]);
+            LED_G(0, brightness[0]);
+            LED_G(1, brightness[1]);
+            LED_G(2, brightness[2]);
+        }
     }
 }
 
 void DAC_IO_TransmitComplete(SPI_HandleTypeDef *hspi)
 {
-    __HAL_SPI_DISABLE(hspi);
-    osSignalSet(linearize, 0);
+    (void)hspi;
+    osSignalSet(linearize, DAC_TX_COMPLETE);
 }
 
 void DAC_IO_Error(SPI_HandleTypeDef *hspi)
 {
-    __HAL_SPI_DISABLE(hspi);
-    osSignalSet(linearize, 1);
+    (void)hspi;
+    osSignalSet(linearize, DAC_IO_ERROR);
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    if(osOK != osMessagePut(dataQ, hadc->Instance->DR, 0))
-    {
-        osSignalSet(linearize, 2);
-    }
+    (void)hadc;
+    osSignalSet(linearize, ADC_CONV_COMPLETE);
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 {
     (void)hadc;
-    osSignalSet(linearize, 1);
+    osSignalSet(linearize, ADC_CONV_ERROR);
 }

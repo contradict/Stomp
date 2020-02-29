@@ -51,9 +51,9 @@ int main(void)
 
   LED_ThreadInit();
 
-  //MODBUS_Init();
-
   Linearize_ThreadInit();
+
+  //MODBUS_Init();
 
   /* Start scheduler */
   osKernelStart();

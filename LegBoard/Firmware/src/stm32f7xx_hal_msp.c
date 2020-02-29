@@ -141,7 +141,10 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
     GPIO_InitTypeDef GPIO_InitStruct;
 
     FEEDBACK_ADC_CHANNEL_GPIO_CLOCK_ENABLE();
-    FEEDBACK_ADC_CLK_ENABLE();
+    FEEDBACK_ADC_CURL_CLK_ENABLE();
+    FEEDBACK_ADC_SWING_CLK_ENABLE();
+    FEEDBACK_ADC_LIFT_CLK_ENABLE();
+    FEEDBACK_DMA_CLK_ENABLE();
 
     GPIO_InitStruct.Pin = CURL_ADC_CHANNEL_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
@@ -152,8 +155,27 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
     GPIO_InitStruct.Pin = LIFT_ADC_CHANNEL_PIN;
     HAL_GPIO_Init(FEEDBACK_ADC_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
 
-    HAL_NVIC_SetPriority(FEEDBACK_ADC_IRQn, 6, 0);
-    HAL_NVIC_EnableIRQ(FEEDBACK_ADC_IRQn);
+    static DMA_HandleTypeDef hdma_adc;
+    hdma_adc.Instance = FEEDBACK_ADC_DMA_STREAM;
+    hdma_adc.Init.Channel = FEEDBACK_ADC_DMA_CHANNEL;
+    hdma_adc.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_adc.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_adc.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_adc.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_adc.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    hdma_adc.Init.Mode = DMA_CIRCULAR;
+    hdma_adc.Init.Priority = DMA_PRIORITY_HIGH;
+    hdma_adc.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    hdma_adc.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_HALFFULL;
+    hdma_adc.Init.MemBurst = DMA_MBURST_SINGLE;
+    hdma_adc.Init.PeriphBurst = DMA_PBURST_SINGLE;
+
+    HAL_DMA_Init(&hdma_adc);
+
+    __HAL_LINKDMA(hadc, DMA_Handle, hdma_adc);
+
+    HAL_NVIC_SetPriority(FEEDBACK_DMA_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(FEEDBACK_DMA_IRQn);
 }
 
 void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc)

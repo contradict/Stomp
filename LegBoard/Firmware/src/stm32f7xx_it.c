@@ -39,7 +39,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern SPI_HandleTypeDef DAC_SPIHandle;
-extern ADC_HandleTypeDef feedback_adc;
+extern ADC_HandleTypeDef feedback_adcs[3];
 extern I2C_HandleTypeDef LED_I2CHandle;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -176,10 +176,12 @@ void DAC_SPI_IRQHandler(void)
     HAL_SPI_IRQHandler(&DAC_SPIHandle);
 }
 
+/*
 void FEEDBACK_ADC_IRQHandler(void)
 {
-    HAL_ADC_IRQHandler(&feedback_adc);
+    HAL_ADC_IRQHandler(&feedback_adcs[0]);
 }
+*/
 
 /**
   * @brief  This function handles I2C event interrupt request.
@@ -253,6 +255,10 @@ void SWING_DMA_RX_IRQHandler(void)
     HAL_DMA_IRQHandler(modbus_uart.hdmarx);
 }
 
+void FEEDBACK_DMA_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(feedback_adcs[0].DMA_Handle);
+}
 
 /**
   * @}

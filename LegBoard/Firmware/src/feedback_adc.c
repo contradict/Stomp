@@ -1,41 +1,55 @@
 #include "stm32f7xx_hal.h"
 #include "feedback_adc.h"
 
-extern ADC_HandleTypeDef feedback_adc;
+ADC_HandleTypeDef feedback_adcs[3];
 TIM_HandleTypeDef feedback_timer;
 
 void FeedbackADC_Init(void)
 {
     ADC_ChannelConfTypeDef sConfig;
 
-    feedback_adc.Instance = FEEDBACK_ADC;
+    feedback_adcs[0].Instance = ADC1;
+    feedback_adcs[1].Instance = ADC2;
+    feedback_adcs[2].Instance = ADC3;
 
-    // Clocked from PCLK2 at 108MHz, div4 gives 27MHz ADCCLK
-    feedback_adc.Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV4;
-    feedback_adc.Init.Resolution            = ADC_RESOLUTION_12B;
-    feedback_adc.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
-    feedback_adc.Init.NbrOfConversion       = 3;
-    feedback_adc.Init.ScanConvMode          = ENABLE;
-    feedback_adc.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
-    feedback_adc.Init.ContinuousConvMode    = DISABLE;
-    feedback_adc.Init.DiscontinuousConvMode = ENABLE;
-    feedback_adc.Init.NbrOfDiscConversion   = 1;
-    feedback_adc.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T2_TRGO;
-    feedback_adc.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_RISING;
-    feedback_adc.Init.DMAContinuousRequests = DISABLE;
+    feedback_adcs[0].Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_RISING;
+    feedback_adcs[1].Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    feedback_adcs[2].Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
 
-    HAL_ADC_Init(&feedback_adc);
+    feedback_adcs[0].Init.DMAContinuousRequests = ENABLE;
+    feedback_adcs[1].Init.DMAContinuousRequests = DISABLE;
+    feedback_adcs[2].Init.DMAContinuousRequests = DISABLE;
 
-    sConfig.Channel = CURL_ADC_CHANNEL;
-    sConfig.Rank    = 1;
+    sConfig.Rank = 1;
     sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-    HAL_ADC_ConfigChannel(&feedback_adc, &sConfig);
-    sConfig.Channel = SWING_ADC_CHANNEL;
-    sConfig.Rank    = 2;
-    HAL_ADC_ConfigChannel(&feedback_adc, &sConfig);
-    sConfig.Channel = LIFT_ADC_CHANNEL;
-    sConfig.Rank    = 3;
-    HAL_ADC_ConfigChannel(&feedback_adc, &sConfig);
+    sConfig.Offset = 0;
+
+    for(int adcidx=2; adcidx>=0; adcidx--)
+    {
+        // Clocked from PCLK2 at 108MHz, div4 gives 27MHz ADCCLK
+        feedback_adcs[adcidx].Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV4;
+        feedback_adcs[adcidx].Init.Resolution            = ADC_RESOLUTION_12B;
+        feedback_adcs[adcidx].Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+        feedback_adcs[adcidx].Init.NbrOfConversion       = 1;
+        feedback_adcs[adcidx].Init.ScanConvMode          = DISABLE;
+        feedback_adcs[adcidx].Init.EOCSelection          = DISABLE;
+        feedback_adcs[adcidx].Init.ContinuousConvMode    = DISABLE;
+        feedback_adcs[adcidx].Init.DiscontinuousConvMode = ENABLE;
+        feedback_adcs[adcidx].Init.NbrOfDiscConversion   = 1;
+        feedback_adcs[adcidx].Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T2_TRGO;
+
+        HAL_ADC_Init(&feedback_adcs[adcidx]);
+
+        sConfig.Channel = ADC_CHANNEL_11 + adcidx;
+
+        HAL_ADC_ConfigChannel(&feedback_adcs[adcidx], &sConfig);
+    }
+
+    ADC_MultiModeTypeDef mode;
+    mode.Mode = ADC_TRIPLEMODE_REGSIMULT;
+    mode.DMAAccessMode = ADC_DMAACCESSMODE_1;
+    mode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_5CYCLES;
+    HAL_ADCEx_MultiModeConfigChannel(&feedback_adcs[0], &mode);
 }
 
 void FeedbackADC_TimerInit(void)
@@ -45,10 +59,10 @@ void FeedbackADC_TimerInit(void)
     feedback_timer.Instance = FEEDBACK_TRIGGER_TIM;
 
     // Clocked from APB1 x 2, APB1 prescaler is 4, = 216MHz/2 time clock
-    // (216MHz/2) / (3kHz) = 72000
+    // (216MHz/2) / (1kHz) = 108000
     // Max prescaler is 65535, use prescaler
-    feedback_timer.Init.Prescaler = 9; // prescale is value + 1
-    feedback_timer.Init.Period = 7200;
+    feedback_timer.Init.Prescaler = 107; // prescale is value + 1
+    feedback_timer.Init.Period = 1000;
     feedback_timer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     feedback_timer.Init.CounterMode = TIM_COUNTERMODE_UP;
     feedback_timer.Init.RepetitionCounter = 0x0;

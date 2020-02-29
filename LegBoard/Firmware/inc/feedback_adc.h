@@ -5,12 +5,21 @@ extern TIM_HandleTypeDef feedback_timer;
 /* Exported constants --------------------------------------------------------*/
 
 /* Definition for ADCx clock resources */
-#define FEEDBACK_ADC                              ADC1
-#define FEEDBACK_ADC_CLK_ENABLE()                 __HAL_RCC_ADC1_CLK_ENABLE()
+#define FEEDBACK_ADC_CURL                         ADC1
+#define FEEDBACK_ADC_SWING                        ADC2
+#define FEEDBACK_ADC_LIFT                         ADC3
+#define FEEDBACK_ADC_CURL_CLK_ENABLE()            __HAL_RCC_ADC1_CLK_ENABLE()
+#define FEEDBACK_ADC_SWING_CLK_ENABLE()           __HAL_RCC_ADC2_CLK_ENABLE()
+#define FEEDBACK_ADC_LIFT_CLK_ENABLE()            __HAL_RCC_ADC3_CLK_ENABLE()
 #define FEEDBACK_ADC_CHANNEL_GPIO_CLOCK_ENABLE()  __HAL_RCC_GPIOC_CLK_ENABLE()
+#define FEEDBACK_DMA_CLK_ENABLE()                 __HAL_RCC_DMA2_CLK_ENABLE()
 
-#define FEEDBACK_ADC_FORCE_RESET()        __HAL_RCC_ADC_FORCE_RESET()
-#define FEEDBACK_ADC_RELEASE_RESET()      __HAL_RCC_ADC_RELEASE_RESET()
+#define FEEDBACK_ADC_FORCE_RESET()                __HAL_RCC_ADC_FORCE_RESET()
+#define FEEDBACK_ADC_RELEASE_RESET()              __HAL_RCC_ADC_RELEASE_RESET()
+
+/* Definition for ADCx's DMA */
+#define FEEDBACK_ADC_DMA_CHANNEL                  DMA_CHANNEL_0
+#define FEEDBACK_ADC_DMA_STREAM                   DMA2_Stream0
 
 /* Definition for ADC Channel Pin */
 #define FEEDBACK_ADC_CHANNEL_GPIO_PORT    GPIOC
@@ -26,6 +35,9 @@ extern TIM_HandleTypeDef feedback_timer;
 /* Definition for SWING_ADC's NVIC */
 #define FEEDBACK_ADC_IRQn                 ADC_IRQn
 #define FEEDBACK_ADC_IRQHandler           ADC_IRQHandler
+
+#define FEEDBACK_DMA_IRQn                 DMA2_Stream0_IRQn
+#define FEEDBACK_DMA_IRQHandler           DMA2_Stream0_IRQHandler
 
 /* Definition for TIMx clock resources */
 #define FEEDBACK_TRIGGER_TIM                 TIM2

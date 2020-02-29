@@ -48,6 +48,7 @@ int DAC_IO_Init(void);
 void DAC_IO_Write(uint8_t write[3]);
 void DAC_IO_ReadWrite(uint8_t write[3], uint8_t read[3]);
 void DAC_IO_WaitForTransfer(void);
+void DAC_IO_LDAC(bool state);
 void DAC_IO_LDAC_pulse();
 void DAC_IO_CLR(bool state);
 void DAC_IO_CLR_pulse();
