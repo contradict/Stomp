@@ -1,4 +1,4 @@
-// functions to send serial drive commands to Roboteq motor controllers 
+/*// functions to send serial drive commands to Roboteq motor controllers 
 #include "Arduino.h"
 #include "drive.h"
 #include "pins.h"
@@ -7,7 +7,7 @@
 // Serial out pins defined in turret.ino-- check there to verify proper connectivity to motor controller
 extern HardwareSerial& DriveSerial;
 
-void driveInit() {
+void initDrive() {
     DriveSerial.begin(115200);
     DriveSerial.println("@00^CPRI 1 0");  // set serial priority first
     delay(5);
@@ -38,7 +38,6 @@ void drive( int16_t &p_speed) {
 #define NUM_DRIVES 5
 void driveTelem(void) {
     //  BB MJS: Don't send anything right now
-    /*
     static int idx = 0;
     static int16_t volts[NUM_DRIVES];
     char volt_buffer[VOLTAGE_RESPONSE_LENGTH];
@@ -66,5 +65,5 @@ void driveTelem(void) {
             idx = 0;
         }
     }
-    */
 }
+*/

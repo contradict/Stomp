@@ -10,7 +10,7 @@ enum SBUSChannels {
     INTENSITY = 6,
     DANGER_MODE = 7,
     RANGE = 8,
-    MANUAL_SELF_RIGHT = 9,
+    AUTOAIM_ENABLE = 9,
     HOLD_DOWN = 10,
     TURRET_SPIN = 9
 };
@@ -25,24 +25,25 @@ enum RCBitfield {
     FLAME_PULSE_BIT = 16,
     GENTLE_HAM_F_BIT = 32,
     GENTLE_HAM_R_BIT = 64,
-    AUTO_SELF_RIGHT_BIT = 128,
+    // = 128,
     // = 256,
     DANGER_CTRL_BIT = 512,
-    MANUAL_SELF_RIGHT_LEFT_BIT = 1024,
-    MANUAL_SELF_RIGHT_RIGHT_BIT = 2048,
-    AUTO_HOLD_DOWN =  4096,
-    MANUAL_HOLD_DOWN =  8192,
+    // = 1024,
+    // = 2048,
+    AUTO_AIM_ENABLE_BIT =  4096,
+    // = 8192,
     // = 16384,
     WEAPONS_ENABLE_BIT = 32768
 };
 
-void initSBus(void);
+void initSBus();
+void updateSBus();
 
-bool sbusGood(void);
+bool isRadioConnected();
 
 uint16_t getHammerIntensity();
 
-int16_t getTurretSpeed();
+int16_t desiredSBusTurretSpeed();
 
 uint16_t getRange();
 

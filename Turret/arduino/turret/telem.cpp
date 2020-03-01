@@ -326,13 +326,32 @@ struct AutofireTelemetryInner {
     int16_t y;
 } __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_AF, AutofireTelemetryInner> AFTelemetry;
-bool sendAutofireTelemetry(enum AutofireState st, int32_t swing, int32_t x, int32_t y) {
+bool sendAutofireTelemetry(enum AutoFireState st, int32_t swing, int32_t x, int32_t y) {
     CHECK_ENABLED(TLM_ID_AF);
     AFTelemetry tlm;
     tlm.inner.state = st;
     tlm.inner.swing = swing;
     tlm.inner.x = (int16_t)clip(x, -32768L, 32767L);
     tlm.inner.y = (int16_t)clip(y, -32768L, 32767L);
+    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+}
+
+struct AutoAimTelemetryInner {
+    int16_t steer_bias;
+    int16_t theta;
+    int16_t vtheta;
+    int16_t radius;
+    int16_t vradius;
+} __attribute__((packed));
+typedef TelemetryPacket<TLM_ID_AAIM, AutoAimTelemetryInner> AAIMTelemetry;
+bool sendAutoAimTelemetry(int16_t steer_bias, int16_t theta, int16_t vtheta, int16_t r, int16_t vr) {
+    CHECK_ENABLED(TLM_ID_AAIM);
+    AAIMTelemetry tlm;
+    tlm.inner.steer_bias = steer_bias;
+    tlm.inner.theta = theta;
+    tlm.inner.vtheta = vtheta;
+    tlm.inner.radius = r;
+    tlm.inner.vradius = vr;
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
 

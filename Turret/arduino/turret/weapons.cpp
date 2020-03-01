@@ -8,7 +8,7 @@
 
 //  BB MJS: Removed Hold_down and selfright
 
-extern HardwareSerial& DriveSerial;
+extern HardwareSerial& TurretRotationMotorSerial;
 
 uint8_t MAX_SAFE_ANGLE = 65;
 uint8_t HAMMER_INTENSITIES_ANGLE[9] = { 3, 5, 10, 15, 20, 30, 40, 50, 65 };
@@ -59,7 +59,7 @@ void retract( bool check_velocity ){
         String movecmd = startElectricHammerMove(1000);
         while (micros() - retract_time < RETRACT_TIMEOUT && angle > RETRACT_COMPLETE_ANGLE) {
             // process sbus data and check if weaponsEnabled has changed state
-            sbusGood();
+            updateSBus();
             sensor_read_time = micros();
             readAngle(&angle);
             // Ensure that loop step takes 1 ms or more (without this it takes quite a bit less)
@@ -68,7 +68,7 @@ void retract( bool check_velocity ){
             if (delay_time > 0) {
                 delayMicroseconds(delay_time);
             }
-            DriveSerial.println(movecmd);
+            TurretRotationMotorSerial.println(movecmd);
         }
         stopElectricHammerMove();
     }
@@ -241,14 +241,14 @@ String startElectricHammerMove(int16_t speed) {
     delay(50);
     String movecmd("@05!G ");
     movecmd += speed;
-    DriveSerial.println(movecmd);
+    TurretRotationMotorSerial.println(movecmd);
     return movecmd;
 }
 
 void stopElectricHammerMove(void) {
     // disengage even if weapons are disabled
     digitalWrite(RETRACT_VALVE_DO, LOW);
-    DriveSerial.println("@05!G 0");
+    TurretRotationMotorSerial.println("@05!G 0");
     // wait for disengage
     delay(50);
     hammer_in_motion = false;
@@ -259,7 +259,7 @@ static void electricHammerMove(RCBitfield control, int16_t speed){
     String movecmd = startElectricHammerMove(speed);
     uint32_t inter_sbus_time = micros();
     while ((micros() - inter_sbus_time) < 30000UL) {
-        bool working = sbusGood();
+        bool working = isRadioConnected();
         if (working) {
             wdt_reset();
             uint16_t current_rc_bitfield = getRcBitfield();
@@ -267,7 +267,7 @@ static void electricHammerMove(RCBitfield control, int16_t speed){
                 break;
             }
             delay(5);
-            DriveSerial.println(movecmd);
+            TurretRotationMotorSerial.println(movecmd);
             inter_sbus_time = micros();
             // continue retracting
         } else {

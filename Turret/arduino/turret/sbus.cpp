@@ -5,10 +5,6 @@
 #include "wiring_private.h"
 #include "telem.h"
 
-//  BB MJS: This is where we will make asjustments to the different controls for the new turret
-//  I believe, no more selfright controls, understand tartgeting modes.
-//  However, all hammer and flamethrower controls remaine the same.
-
 static void setWeaponsEnabled(bool state);
 static uint16_t computeRCBitfield();
 static bool parseSbus();
@@ -24,6 +20,7 @@ static bool failsafe = true;
 static uint32_t last_parse_time = 0;
 static uint16_t bitfield;
 static uint16_t last_bitfield;
+static bool s_radioConnected = false;
 
 ISR(USART3_RX_vect)
 {
@@ -53,7 +50,7 @@ ISR(USART3_UDRE_vect)
 {
 }
 
-static void processSbus(void) {
+static void processSBus(void) {
     if(new_packet) {
         bool fail = parseSbus();
         if(!fail) {
@@ -84,6 +81,20 @@ void initSBus() {
     last_parse_time = micros();
 }
 
+void updateSBus() 
+{
+    processSBus();
+ 
+    bool timeout = ((micros() - last_parse_time) > radio_lost_timeout);
+    s_radioConnected = !(failsafe || timeout);
+ 
+    if(!s_radioConnected) 
+    {
+        setWeaponsEnabled(false);
+    }
+}
+
+
 static void setWeaponsEnabled(bool state)
 {
     if(state) {
@@ -97,14 +108,9 @@ static void setWeaponsEnabled(bool state)
     }
 }
 
-bool sbusGood(void) {
-    processSbus();
-    bool timeout = ((micros() - last_parse_time) > radio_lost_timeout);
-    bool working = !(failsafe || timeout);
-    if(!working) {
-        setWeaponsEnabled(false);
-    }
-    return working;
+bool isRadioConnected()
+{
+    return s_radioConnected;
 }
 
 static bool parseSbus(){
@@ -147,10 +153,7 @@ static bool parseSbus(){
 #define GENTLE_HAM_F_THRESHOLD 500
 #define GENTLE_HAM_R_THRESHOLD 1500
 
-// #define MAG_PULSE_THRESHOLD 500
-#define AUTO_SELF_RIGHT_THRESHOLD 1500
-#define MANUAL_SELF_RIGHT_LEFT_THRESHOLD 500
-#define MANUAL_SELF_RIGHT_RIGHT_THRESHOLD 1500
+#define AUTOAIM_THRESHOLD 1500
 
 #define TURRET_SPEED_RC_MIN 170
 #define TURRET_SPEED_RC_MAX 1800
@@ -188,31 +191,14 @@ static uint16_t computeRCBitfield() {
     bitfield |= FLAME_PULSE_BIT;
   }
 
-  if( sbusChannels[HOLD_DOWN] > MANUAL_HOLD_DOWN_THRESHOLD ){
-      bitfield |= MANUAL_HOLD_DOWN;
-  }
-  else if( AUTO_HOLD_DOWN_THRESHOLD < sbusChannels[HOLD_DOWN] &&
-      sbusChannels[HOLD_DOWN] < MANUAL_HOLD_DOWN_THRESHOLD ){
-      bitfield |= AUTO_HOLD_DOWN;
-  }
-
   if ( sbusChannels[GENTLE_HAM_CTRL] < GENTLE_HAM_F_THRESHOLD){
     bitfield |= GENTLE_HAM_F_BIT;
   }
   if ( sbusChannels[GENTLE_HAM_CTRL] > GENTLE_HAM_R_THRESHOLD){
     bitfield |= GENTLE_HAM_R_BIT;
   }
-  if ( sbusChannels[AUTO_SELF_RIGHT] > AUTO_SELF_RIGHT_THRESHOLD){
-    bitfield |= AUTO_SELF_RIGHT_BIT;
-  }
   if ( sbusChannels[DANGER_MODE] > DANGER_MODE_THRESHOLD){
     bitfield |= DANGER_CTRL_BIT;
-  }
-  if (sbusChannels[MANUAL_SELF_RIGHT] < MANUAL_SELF_RIGHT_LEFT_THRESHOLD) {
-      bitfield |= MANUAL_SELF_RIGHT_LEFT_BIT;
-  }
-  if (sbusChannels[MANUAL_SELF_RIGHT] > MANUAL_SELF_RIGHT_RIGHT_THRESHOLD) {
-      bitfield |= MANUAL_SELF_RIGHT_RIGHT_BIT;
   }
   return bitfield;
 }
@@ -246,11 +232,16 @@ uint16_t getHammerIntensity(){
   return intensity;
 }
 
-int16_t getTurretSpeed(){
+int16_t desiredSBusTurretSpeed()
+{
     uint16_t channel_val;
+ 
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         channel_val = sbusChannels[TURRET_SPIN];
     }
+
+    //  Clamp the channel_val to the expected min max that we sould get (basically between 170 & 1800)
+    //  Then map that to a turret speed, which is the value to write to the Robotec motor contoller (between -1000 and 1000)
 
     int16_t speed = constrain(channel_val, TURRET_SPEED_RC_MIN, TURRET_SPEED_RC_MAX);
     speed = map(speed, TURRET_SPEED_RC_MIN, TURRET_SPEED_RC_MAX, TURRET_SPEED_ROBOTECT_MIN, TURRET_SPEED_ROBOTECT_MAX);

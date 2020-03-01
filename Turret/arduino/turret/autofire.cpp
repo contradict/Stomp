@@ -3,27 +3,34 @@
 #include "imu.h"
 #include "telem.h"
 
-//  BB MJS: removed hold_down.h
-
 extern uint8_t HAMMER_INTENSITIES_ANGLE[9];
 
-struct AutofireParameters {
+struct AutoFireParameters {
     int32_t xtol, ytol;
     int32_t max_omegaZ;   // rad/s * 2048 = 50 deg/sec
     uint32_t autofire_telem_interval;
 } __attribute__((packed));
 
-static struct AutofireParameters params;
+static struct AutoFireParameters params;
 static uint32_t last_autofire_telem = 0;
 
-static struct AutofireParameters EEMEM saved_params = {
+static struct AutoFireParameters EEMEM saved_params = {
     .xtol = 200,   // currently unused, front of box is depth
     .ytol = 200,
     .max_omegaZ = 1787,   // rad/s * 2048 = 50 deg/sec
     .autofire_telem_interval = 100000,
 };
 
-static void saveAutofireParameters(void);
+static void saveAutoFireParameters(void);
+
+//  BB MJS: TMP
+
+int32_t getTmpAdjustment()
+{
+    return params.max_omegaZ;
+}
+
+//  BB MJS: END TMP
 
 int32_t swingDuration(int16_t hammer_intensity) {
     int16_t hammer_angle = HAMMER_INTENSITIES_ANGLE[hammer_intensity];
@@ -40,7 +47,7 @@ bool omegaZLockout(int32_t *omegaZ) {
 }
 
 int8_t nsteps=3;
-enum AutofireState willHit(const Track &tracked_object,
+enum AutoFireState updateAutoFire(const Track &tracked_object,
                            int16_t depth, int16_t hammer_intensity) {
     int32_t omegaZ=0;
     uint32_t now = micros();
@@ -59,7 +66,7 @@ enum AutofireState willHit(const Track &tracked_object,
         }
         hit = (x>0) && (x/16<depth) && abs(y/16)<params.ytol;
     }
-    enum AutofireState st;
+    enum AutoFireState st;
     if(lockout) st =     AF_OMEGAZ_LOCKOUT;
     else if(!valid) st = AF_NO_TARGET;
     else if(!hit) st =   AF_NO_HIT;
@@ -78,13 +85,13 @@ void setAutoFireParams(int16_t p_xtol,
     params.ytol = p_ytol;
     params.max_omegaZ = p_max_omegaz;
     params.autofire_telem_interval = telemetry_interval;
-    saveAutofireParameters();
+    saveAutoFireParameters();
 }
 
-void saveAutofireParameters(void) {
-    eeprom_write_block(&params, &saved_params, sizeof(struct AutofireParameters));
+void saveAutoFireParameters(void) {
+    eeprom_write_block(&params, &saved_params, sizeof(struct AutoFireParameters));
 }
 
-void restoreAutofireParameters(void) {
-    eeprom_read_block(&params, &saved_params, sizeof(struct AutofireParameters));
+void restoreAutoFireParameters(void) {
+    eeprom_read_block(&params, &saved_params, sizeof(struct AutoFireParameters));
 }

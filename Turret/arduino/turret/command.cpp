@@ -17,7 +17,7 @@ enum Commands {
     CMD_ID_LDDR = 17,
 };
 
-extern Track g_tracked_object;
+extern Track g_trackedObject;
 
 const uint16_t CMD_TERMINATOR=0x6666;
 
@@ -111,7 +111,7 @@ void serialEvent(void) {
     }
 }
 
-void HandleCommands(void) {
+void handleCommands(void) {
   TelemetryRateCommand *trate_cmd;
   TrackingFilterCommand *trkflt_cmd;
   ObjectSegmentationCommand *objseg_cmd;
@@ -134,7 +134,7 @@ void HandleCommands(void) {
               break;
           case CMD_ID_TRKFLT:
               trkflt_cmd = (TrackingFilterCommand *)command_buffer;
-              g_tracked_object.setTrackingFilterParams(trkflt_cmd->inner.alpha,
+              g_trackedObject.setTrackingFilterParams(trkflt_cmd->inner.alpha,
                                       trkflt_cmd->inner.beta,
                                       trkflt_cmd->inner.min_num_updates,
                                       trkflt_cmd->inner.track_lost_dt,

@@ -138,6 +138,11 @@ bool Track::valid(uint32_t now) const {
     return recent_update(now) && (num_updates>min_num_updates);
 }
 
+//
+//  Returns the angle between forward (the axis of the hammer) and the target
+//  Angle is in fixed point (1:17:14) raidans
+//
+
 int32_t Track::angle(void) const {
     if(valid(micros())) {
         // arctan(y/x)
