@@ -6,3 +6,4 @@
 * Spread out the LEDs so each one is in line with the servo connectors it
     represents
 * Add one more LED near the Communication connectors
+* Add non-volatile storage. A >2kbit I2C EEPROM would be a good choice.
