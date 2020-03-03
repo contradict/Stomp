@@ -1,4 +1,5 @@
 #include "stm32f7xx_hal.h"
+#include "stm32f7xx_ll_usart.h"
 #include "modbus_uart.h"
 #include "servo_uart.h"
 #include "main.h"
@@ -25,7 +26,9 @@ void MODBUS_UART_Init()
     modbus_uart.Init.OverSampling = UART_OVERSAMPLING_8;
     modbus_uart.Init.Parity = UART_PARITY_NONE;
     modbus_uart.Init.StopBits = UART_STOPBITS_1;
-    HAL_RS485Ex_Init(&modbus_uart, UART_DE_POLARITY_HIGH, 16, 16);
+    HAL_RS485Ex_Init(&modbus_uart, UART_DE_POLARITY_HIGH, 8, 8);
+    LL_USART_SetRxTimeout(MODBUS_UART_Instance, 20);
+    LL_USART_EnableRxTimeout(MODBUS_UART_Instance);
 }
 
 void Curl_UART_Init()

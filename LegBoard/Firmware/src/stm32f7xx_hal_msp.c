@@ -250,7 +250,7 @@ void HAL_UART_MspInit_modbus(UART_HandleTypeDef *huart)
 
     GPIO_InitStruct.Pin = MODBUS_UART_TX_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = MODBUS_UART_GPIO_AF;
     HAL_GPIO_Init(MODBUS_UART_GPIO_PORT, &GPIO_InitStruct);

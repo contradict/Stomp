@@ -1,13 +1,14 @@
 #include <stdbool.h>
 #include <machine/endian.h>
 #include "stm32f7xx_hal.h"
+#include "stm32f7xx_ll_usart.h"
 #include "modbus_uart.h"
 #include "cmsis_os.h"
 #include "modbus.h"
 
 #define MAXPACKET 128
 
-#define CRC_POLYNOMIAL_MODBUS 0xA001
+#define CRC_POLYNOMIAL_MODBUS 0x8005
 
 #define HIGH_BYTE(x) ((x>>8) & 0xff)
 #define LOW_BYTE(x) (x&0xff)
@@ -52,7 +53,7 @@ osThreadDef(modbus, MODBUS_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE
 static osThreadId modbus;
 
 static struct MODBUS_parameters modbus_parameters __attribute__ ((section (".storage.modbus"))) = {
-    .address = 1
+    .address = 0x55
 };
 
 static CRC_HandleTypeDef hcrc;
@@ -65,7 +66,6 @@ extern struct MODBUS_HoldingRegister modbus_holding_registers[];
 void MODBUS_Init()
 {
     MODBUS_UART_Init();
-
     hcrc.Instance = CRC;
     hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_DISABLE;
     hcrc.Init.GeneratingPolynomial = CRC_POLYNOMIAL_MODBUS;
@@ -73,6 +73,8 @@ void MODBUS_Init()
     hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_DISABLE;
     hcrc.Init.InitValue = 0xFFFF;
     hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
+	hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_BYTE;
+	hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_ENABLE;
     HAL_CRC_Init(&hcrc);
 
     modbus = osThreadCreate(osThread(modbus), NULL);
@@ -159,7 +161,7 @@ static size_t MODBUS_ReadCoils(uint16_t start, uint16_t count, uint8_t *txBuffer
     uint8_t *data = &(txBuffer[3]);
     *data = 0;
 
-    for(size_t i=start;i<count;i++)
+    for(size_t i=start;i<start + count;i++)
     {
         coil = MODBUS_FindCoil(modbus_coils, i);
         if(coil)
@@ -199,7 +201,7 @@ static size_t MODBUS_ReadDiscreteInputs(uint16_t start, uint16_t count, uint8_t 
     uint8_t *data = &(txBuffer[3]);
     *data = 0;
 
-    for(size_t i=start;i<count;i++)
+    for(size_t i=start;i<start + count;i++)
     {
         input = MODBUS_FindDiscreteInput(modbus_discrete_inputs, i);
         if(input)
@@ -240,12 +242,12 @@ static size_t MODBUS_ReadHoldingRegister(uint16_t start, uint16_t count, uint8_t
     uint16_t *data = (uint16_t *)&(txBuffer[3]);
     *data = 0;
 
-    for(size_t i=start;i<count;i++)
+    for(size_t i=start;i<start + count;i++)
     {
         hold = MODBUS_FindHoldingRegister(modbus_holding_registers, i);
         if(hold)
         {
-            *byte_count += 1;
+            *byte_count += 2;
             *data = __htons(hold->read(hold->context));
         }
         else
@@ -292,7 +294,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
     switch(pdu[0])
     {
         case READ_COILS:
-            if(pdu_length < 4)
+            if(pdu_length != 3)
             {
                 // We can't figure out what the address should have been so it
                 // must be wrong.
@@ -300,24 +302,34 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
             }
             else
             {
-                start = __ntohs(*(pdu + 1));
-                count = __ntohs(*(pdu + 2));
+                start = pdu[1];
+                count = pdu[2];
                 responseLength = MODBUS_ReadCoils(start, count, txBuffer, txLength);
             }
             break;
         case READ_DISCRETE_INPUTS:
-            if(pdu_length < 4)
+            if(pdu_length != 3)
             {
                 responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
             }
             else
             {
-                start = __ntohs(*(pdu + 1));
-                count = __ntohs(*(pdu + 2));
+                start = pdu[1];
+                count = pdu[2];
                 responseLength = MODBUS_ReadDiscreteInputs(start, count, txBuffer, txLength);
             }
             break;
         case READ_HOLDING_REGISTERS:
+            if(pdu_length != 3)
+            {
+                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+            }
+            else
+            {
+                start = pdu[1];
+                count = pdu[2];
+                responseLength = MODBUS_ReadHoldingRegister(start, count, txBuffer, txLength);
+            }
             break;
         case READ_INPUT_REGISTERS:
             break;
@@ -345,54 +357,60 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
 void MODBUS_Thread(const void *args)
 {
     (void)args;
-    uint8_t rxBuffer[2][MAXPACKET];
+    uint8_t rxBuffer[MAXPACKET];
     uint8_t txBuffer[MAXPACKET];
-    uint8_t *listenbuffer = (uint8_t *)rxBuffer[0];
-    uint8_t *processbuffer = (uint8_t *)rxBuffer[1];
     osEvent e;
     size_t bytes_received;
     size_t responseLength;
+    enum ModbusSignalEvent evt;
 
     // start listening
-    HAL_UART_Receive_IT(&modbus_uart, listenbuffer, MAXPACKET);
+    HAL_UART_Receive_IT(&modbus_uart, rxBuffer, MAXPACKET);
+    LL_USART_EnableIT_RTO(modbus_uart.Instance);
     while(1)
     {
         // waitfor something to happen
-        e = osSignalWait(0, osWaitForever);
-
-        // Swap buffers and start listening again
-        bytes_received = modbus_uart.pRxBuffPtr - listenbuffer;
-        uint8_t *tmpbuffer;
-        tmpbuffer = processbuffer;
-        processbuffer = listenbuffer;
-        listenbuffer = tmpbuffer;
-        HAL_UART_Receive_IT(&modbus_uart, listenbuffer, MAXPACKET);
+        e = osSignalWait(SIGNAL_RXTO | SIGNAL_ERROR | SIGNAL_RXCPLT | SIGNAL_TXCPLT, osWaitForever);
+        if(e.status != osEventSignal)
+        {
+            continue;
+        }
+        evt = e.value.signals;
 
         // Handle event
-        if(e.status == osEventSignal)
+        switch((enum ModbusSignalEvent)e.value.v)
         {
-            switch((enum ModbusSignalEvent)e.value.v)
-            {
-                case SIGNAL_RXTO:
-                    if(processbuffer[0] == modbus_parameters.address &&
-                       bytes_received > 4 &&
-                       MODBUS_crc(processbuffer, bytes_received) == 0)
-                    {
-                        responseLength = MODBUS_Process(processbuffer + 1, bytes_received - 3, txBuffer, MAXPACKET);
-                    }
-                    break;
+            case SIGNAL_RXTO:
+                bytes_received = modbus_uart.pRxBuffPtr - rxBuffer;
+                if(rxBuffer[0] == modbus_parameters.address &&
+                        bytes_received > 4 &&
+                        MODBUS_crc(rxBuffer, bytes_received) == 0)
+                {
+                    responseLength = MODBUS_Process(rxBuffer + 1, bytes_received - 3, txBuffer, MAXPACKET);
+                }
+                break;
 
-                case SIGNAL_RXCPLT:
-                    // Filled buffer with no timeout
-                    break;
+            case SIGNAL_RXCPLT:
+                // Filled buffer with no timeout
+                break;
 
-                case SIGNAL_TXCPLT:
-                    break;
+            case SIGNAL_TXCPLT:
+                break;
 
-                case SIGNAL_ERROR:
-                    break;
-            }
+            case SIGNAL_ERROR:
+                break;
         }
+		if(responseLength > 0)
+        {
+            HAL_UART_Transmit_IT(&modbus_uart, txBuffer, responseLength);
+            responseLength = 0;
+        }
+        else
+        {
+            HAL_UART_Receive_IT(&modbus_uart, rxBuffer, MAXPACKET);
+            LL_USART_EnableIT_RTO(modbus_uart.Instance);
+        }
+
     }
 }
 
