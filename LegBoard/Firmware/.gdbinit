@@ -11,7 +11,7 @@ define reset
 end
 
 define reload
-  load Firmware.elf
+  file Firmware.elf
   reset
   monitor stm32f2x mass_erase 0
   monitor program Firmware.elf verify
