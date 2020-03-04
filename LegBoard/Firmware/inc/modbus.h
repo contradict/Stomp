@@ -33,5 +33,6 @@ struct MODBUS_HoldingRegister
     void (*write)(void *, uint16_t);
 };
 
-
 void MODBUS_Init(void);
+
+uint16_t MODBUS_crc(uint8_t *data, uint16_t length);

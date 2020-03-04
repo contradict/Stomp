@@ -66,8 +66,13 @@ extern struct MODBUS_DiscreteInput modbus_discrete_inputs[];
 extern struct MODBUS_InputRegister modbus_input_registers[];
 extern struct MODBUS_HoldingRegister modbus_holding_registers[];
 
+osMutexDef(crcmutex);
+static osMutexId crcmutex;
+
 void MODBUS_Init()
 {
+    crcmutex = osMutexCreate(osMutex(crcmutex));
+
     MODBUS_UART_Init();
     hcrc.Instance = CRC;
     hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_DISABLE;
@@ -85,7 +90,11 @@ void MODBUS_Init()
 
 uint16_t MODBUS_crc(uint8_t* buffer, uint16_t count)
 {
-    return HAL_CRC_Calculate(&hcrc, (uint32_t *)buffer, count);
+    uint16_t crc;
+    osMutexWait(crcmutex, osWaitForever);
+    crc = HAL_CRC_Calculate(&hcrc, (uint32_t *)buffer, count);
+    osMutexRelease(crcmutex);
+    return crc;
 }
 
 /*
