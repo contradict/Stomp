@@ -290,10 +290,112 @@ static size_t MODBUS_ReadInputRegister(uint16_t start, uint16_t count, uint8_t *
     return responseLength + *byte_count;
 }
 
+static size_t MODBUS_WriteSingleCoil(uint16_t address, uint16_t value, uint8_t *txBuffer, size_t txLength)
+{
+    struct MODBUS_Coil *coil = MODBUS_FindCoil(modbus_coils, address);
+    if(coil)
+    {
+        txBuffer[0] = modbus_parameters.address;
+        txBuffer[1] = WRITE_SINGLE_COIL;
+        *((uint16_t *)&txBuffer[2]) = __builtin_bswap16(address);
+        *((uint16_t *)&txBuffer[4]) = __builtin_bswap16(value);
+        coil->write(coil->context, value);
+        return 6; 
+    }
+    else
+    {
+        return MODBUS_ExceptionResponse(WRITE_SINGLE_COIL, ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+    }
+}
+
+static size_t MODBUS_WriteSingleRegister(uint16_t address, uint16_t value, uint8_t *txBuffer, size_t txLength)
+{
+    struct MODBUS_HoldingRegister *hold = MODBUS_FindHoldingRegister(modbus_holding_registers, address);
+    if(hold)
+    {
+        txBuffer[0] = modbus_parameters.address;
+        txBuffer[1] = WRITE_SINGLE_REGISTER;
+        *((uint16_t *)&txBuffer[2]) = __builtin_bswap16(address);
+        *((uint16_t *)&txBuffer[4]) = __builtin_bswap16(value);
+        hold->write(hold->context, value);
+        return 6; 
+    }
+    else
+    {
+        return MODBUS_ExceptionResponse(WRITE_SINGLE_REGISTER, ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+    }
+}
+
+static size_t MODBUS_WriteMultipleCoils(uint16_t start, uint16_t count, uint8_t *data, uint8_t byte_count, uint8_t *txBuffer, size_t txLength)
+{
+    struct MODBUS_Coil *coil;
+    size_t responseLength = 6;
+
+    txBuffer[0] = modbus_parameters.address;
+    txBuffer[1] = WRITE_MULTIPLE_COILS;
+    *((uint16_t *)&txBuffer[2]) = __builtin_bswap16(start);
+    uint16_t *wcount = ((uint16_t *)&txBuffer[4]);
+    *wcount = 0;
+
+    for(size_t i=start, bit_index=0, data_index=0;
+        i<start + count && data_index < byte_count;
+        i++, bit_index++)
+    {
+        if(bit_index == 8)
+        {
+            data_index += 1;
+            bit_index = 0;
+        }
+        coil = MODBUS_FindCoil(modbus_coils, i);
+        if(coil)
+        {
+            *wcount += 1;
+            coil->write(coil->context, data[data_index] & (1<<bit_index));
+        }
+        else
+        {
+            return MODBUS_ExceptionResponse(WRITE_MULTIPLE_COILS, ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+        }
+    }
+    *wcount = __builtin_bswap16(*wcount);
+    return responseLength;
+}
+
+static size_t MODBUS_WriteMultipleRegisters(uint16_t start, uint16_t count, uint16_t *data, uint8_t byte_count, uint8_t *txBuffer, size_t txLength)
+{
+    struct MODBUS_HoldingRegister *hold;
+    size_t responseLength = 6;
+
+    txBuffer[0] = modbus_parameters.address;
+    txBuffer[1] = WRITE_MULTIPLE_REGISTERS;
+    *((uint16_t *)&txBuffer[2]) = __builtin_bswap16(start);
+    uint16_t *wcount = ((uint16_t *)&txBuffer[4]);
+    *wcount = 0;
+
+    for(size_t i=start, data_index=0;
+        i<start + count && 2*data_index < byte_count;
+        i++, data_index++)
+    {
+        hold = MODBUS_FindHoldingRegister(modbus_holding_registers, i);
+        if(hold)
+        {
+            *wcount += 1;
+            hold->write(hold->context, __builtin_bswap16(data[data_index]));
+        }
+        else
+        {
+            return MODBUS_ExceptionResponse(WRITE_MULTIPLE_COILS, ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+        }
+    }
+    *wcount = __builtin_bswap16(*wcount);
+    return responseLength;
+}
+
 size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t txLength)
 {
     size_t responseLength = 0;
-    uint16_t start, count;
+    uint16_t start, count, address, value;
+    uint8_t byte_count;
 
     switch(pdu[0])
     {
@@ -348,12 +450,54 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
             }
             break;
         case WRITE_SINGLE_COIL:
+            if(pdu_length != 5)
+            {
+                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+            }
+            else
+            {
+                address = WORD(pdu, 1);
+                value = WORD(pdu, 3);
+                responseLength = MODBUS_WriteSingleCoil(address, value, txBuffer, txLength);
+            }
             break;
         case WRITE_SINGLE_REGISTER:
+            if(pdu_length != 5)
+            {
+                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+            }
+            else
+            {
+                address = WORD(pdu, 1);
+                value = WORD(pdu, 3);
+                responseLength = MODBUS_WriteSingleRegister(address, value, txBuffer, txLength);
+            }
             break;
         case WRITE_MULTIPLE_COILS:
+            if(pdu_length < 6)
+            {
+                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+            }
+            else
+            {
+                start = WORD(pdu, 1);
+                count = WORD(pdu, 3);
+                byte_count = pdu[5];
+                responseLength = MODBUS_WriteMultipleCoils(start, count, pdu+6, byte_count, txBuffer, txLength);
+            }
             break;
         case WRITE_MULTIPLE_REGISTERS:
+            if(pdu_length < 6)
+            {
+                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+            }
+            else
+            {
+                start = WORD(pdu, 1);
+                count = WORD(pdu, 3);
+                byte_count = pdu[5];
+                responseLength = MODBUS_WriteMultipleRegisters(start, count, (uint16_t *)(pdu+6), byte_count, txBuffer, txLength);
+            }
             break;
         default:
             responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_FUNCTION_CODE, txBuffer, txLength);
