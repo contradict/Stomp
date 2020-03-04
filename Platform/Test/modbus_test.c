@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
     uint16_t value;
     uint8_t bits_value;
-    for(int i=0;i<50;i++)
+    for(int i=0;i<1;i++)
     {
         modbus_read_registers(ctx, 0x55, 1, &value);
         printf("r=%04x\n", value);
@@ -76,6 +76,20 @@ int main(int argc, char **argv)
         printf("d=%04x\n", bits_value);
         modbus_read_input_registers(ctx, 0x55, 1, &value);
         printf("i=%04x\n", value);
+        modbus_write_bit(ctx, 0x55, 0);
+        modbus_read_bits(ctx, 0x55, 1, &bits_value);
+        printf("c=%04x\n", bits_value);
+        modbus_write_register(ctx, 0x55, 0x55AA);
+        modbus_read_registers(ctx, 0x55, 1, &value);
+        printf("r=%04x\n", value);
+        bits_value = 0x0001;
+        modbus_write_bits(ctx, 0x55, 1, &bits_value);
+        modbus_read_bits(ctx, 0x55, 1, &bits_value);
+        printf("c=%04x\n", bits_value);
+        value = 0xAA55;
+        modbus_write_registers(ctx, 0x55, 1, &value);
+        modbus_read_registers(ctx, 0x55, 1, &value);
+        printf("r=%04x\n", value);
         modbus_flush(ctx);
         usleep(500000);
     }
