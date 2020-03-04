@@ -85,23 +85,29 @@ int main(int argc, char **argv)
         perror("Open failed");
         exit(1);
     }
-    char data[6] = {0x55, 0x03, 0x55, 0x01, 0x00 , 0x00};
+    int npkt = 50;
+    if(argc > 1)
+    {
+        npkt = atoi(argv[1]);
+    }
+
+    char data[8] = {0x55, 0x03, 0x00, 0x55, 0x00, 0x01, 0x00 , 0x00};
     char rdata[16];
-    uint16_t cksum = modbus_crc(data, 4);
+    uint16_t cksum = modbus_crc(data, 6);
     printf("cksum: %04x\n", cksum);
-    ((uint16_t *)data)[2] = cksum;
-    for(int i=0;i<6;i++)
+    ((uint16_t *)data)[3] = cksum;
+    for(int i=0;i<8;i++)
     {
         printf("%02x ", data[i]);
     }
     printf("\n");
-    for(int i=0;i<50;i++)
+    for(int i=0;npkt==0 || i<npkt;i++)
     {
-        printf("w=%d ", write(fd, data, 6));
-        usleep(100);
+        printf("i=%d w=%d ", i, write(fd, data, 8));
+        usleep(400);
         int32_t available;
         ioctl(fd, FIONREAD, &available);
-        printf("a=%d ", available);
+        printf("r=%d ", available);
         if(available > 0)
         {
             read(fd, rdata, available);
