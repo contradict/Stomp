@@ -1,16 +1,8 @@
 #include <modbus.h>
 
+#include "modbus_common.h"
+
 static uint16_t scratchpad = 0x55;
-
-uint16_t return_context(void *context)
-{
-    return *(uint16_t *)context;
-}
-
-void save_to_context(void *context, uint16_t value)
-{
-    *(uint16_t *)context = value;
-}
 
 struct MODBUS_HoldingRegister modbus_holding_registers[] = {
     {

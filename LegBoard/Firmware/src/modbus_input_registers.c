@@ -1,13 +1,14 @@
-#include "modbus.h"
+#include <modbus.h>
+
 #include "modbus_common.h"
 
 static uint16_t scratchpad = 0x55;
 
-struct MODBUS_DiscreteInput modbus_discrete_inputs[] = {
+struct MODBUS_InputRegister modbus_input_registers[] = {
     {
         .address = 0x55,
-        .context = &scratchpad,
-        .read = return_context_bool,
+        .context = (void *)&scratchpad,
+        .read = return_context
     },
     {
         .address = 0,

@@ -14,6 +14,8 @@
 #define HIGH_BYTE(x) ((x>>8) & 0xff)
 #define LOW_BYTE(x) (x&0xff)
 
+#define WORD(data, offset) (__builtin_bswap16(*((uint16_t *)(data + offset))))
+
 enum ModbusSignalEvent
 {
     SIGNAL_TXCPLT = 1,
@@ -272,12 +274,12 @@ static size_t MODBUS_ReadInputRegister(uint16_t start, uint16_t count, uint8_t *
     uint16_t *data = (uint16_t *)&(txBuffer[3]);
     *data = 0;
 
-    for(size_t i=start;i<count;i++)
+    for(size_t i=start;i<start + count;i++)
     {
         input = MODBUS_FindInputRegister(modbus_input_registers, i);
         if(input)
         {
-            *byte_count += 1;
+            *byte_count += 2;
             *data = __htons(input->read(input->context));
         }
         else
@@ -291,12 +293,12 @@ static size_t MODBUS_ReadInputRegister(uint16_t start, uint16_t count, uint8_t *
 size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t txLength)
 {
     size_t responseLength = 0;
-    uint8_t start, count;
+    uint16_t start, count;
 
     switch(pdu[0])
     {
         case READ_COILS:
-            if(pdu_length != 3)
+            if(pdu_length != 5)
             {
                 // We can't figure out what the address should have been so it
                 // must be wrong.
@@ -304,36 +306,46 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
             }
             else
             {
-                start = pdu[1];
-                count = pdu[2];
+                start = WORD(pdu, 1);
+                count = WORD(pdu, 3);
                 responseLength = MODBUS_ReadCoils(start, count, txBuffer, txLength);
             }
             break;
         case READ_DISCRETE_INPUTS:
-            if(pdu_length != 3)
+            if(pdu_length != 5)
             {
                 responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
             }
             else
             {
-                start = pdu[1];
-                count = pdu[2];
+                start = WORD(pdu, 1);
+                count = WORD(pdu, 3);
                 responseLength = MODBUS_ReadDiscreteInputs(start, count, txBuffer, txLength);
             }
             break;
         case READ_HOLDING_REGISTERS:
-            if(pdu_length != 3)
+            if(pdu_length != 5)
             {
                 responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
             }
             else
             {
-                start = pdu[1];
-                count = pdu[2];
+                start = WORD(pdu, 1);
+                count = WORD(pdu, 3);
                 responseLength = MODBUS_ReadHoldingRegister(start, count, txBuffer, txLength);
             }
             break;
         case READ_INPUT_REGISTERS:
+            if(pdu_length != 5)
+            {
+                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+            }
+            else
+            {
+                start = WORD(pdu, 1);
+                count = WORD(pdu, 3);
+                responseLength = MODBUS_ReadInputRegister(start, count, txBuffer, txLength);
+            }
             break;
         case WRITE_SINGLE_COIL:
             break;
