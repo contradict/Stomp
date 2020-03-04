@@ -1,25 +1,7 @@
+#include <string.h>
 #include "cmsis_os.h"
+#include "timers.h"
 #include "is31fl3235.h"
-
-#define COMMAND_IDX(value) ((value>>24) & 0xFF)
-#define COMMAND_R(value) ((value>>16) & 0xFF)
-#define COMMAND_G(value) ((value>>8) & 0xFF)
-#define COMMAND_B(value) (value & 0xFF)
-#define COMMAND_V(value) (value & 0xFF)
-
-#define COMMAND_CODE_RGB 0x00
-#define COMMAND_CODE_SINGLE 0x80
-#define COMMAND_CHANNEL_R 0x00
-#define COMMAND_CHANNEL_G 0x20
-#define COMMAND_CHANNEL_B 0x40
-#define COMMAND_CHANNEL_RAW 0x60
-#define COMMAND_IDX_MASK 0x1f
-#define COMMAND_CHANNEL_MASK 0x60
-#define COMMAND_CHANNEL_SHIFT 5
-
-#define COMMAND_RGB(idx, r, g, b) (((idx&0x1f) << 24) | ((r&0xff)<<16) | ((g&0xff)<<8) | (b&0xff))
-#define COMMAND_S(idx, c, v) ((((idx&0x1f) | c | COMMAND_CODE_SINGLE) << 24) | (v&0xff))
-#define COMMAND_RAW(idx, v) ((((idx&0x1f) | COMMAND_CHANNEL_RAW | COMMAND_CODE_SINGLE) << 24) | (v&0xff))
 
 static void LED_Thread(const void *args);
 static void RGB_Thread(const void *args);
@@ -27,26 +9,72 @@ static void RGB_Thread(const void *args);
 osThreadDef(led, LED_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
 osThreadDef(rgb, RGB_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
 
-osMessageQDef(ledcommand, 32, uint32_t);
+enum StatusLEDCommand
+{
+    SET,
+    BLINK,
+    BLINK_OVER
+};
+
+struct StatusLEDMessage {
+    uint8_t command, start, count, duration;
+    uint8_t values[4];
+    osTimerId timer;
+};
+
+osMailQDef(ledcommand, 32, struct StatusLEDMessage);
 
 static osThreadId status_led;
 static osThreadId rgb_tid;
 
-static osMessageQId commandQ;
+static osMailQId commandQ;
+
+static uint8_t zeros[4] = {0,0,0,0};
+
+static bool blink_in_progress[32];
 
 void LED_ThreadInit(void)
 {
+    bzero(blink_in_progress, sizeof(blink_in_progress));
     is31fl3235_Init(IS31FL3235_ADDR_GND);
 
     status_led = osThreadCreate(osThread(led), NULL);
-    commandQ = osMessageCreate(osMessageQ(ledcommand), status_led);
+    commandQ = osMailCreate(osMailQ(ledcommand), status_led);
+}
+
+static void LED_BlinkOver(void const *arg)
+{
+    struct StatusLEDMessage *msg = (struct StatusLEDMessage *)pvTimerGetTimerID((TimerHandle_t)arg);
+    msg->command = BLINK_OVER;
+    bzero(msg->values, msg->count);
+    osMailPut(commandQ, msg);
+}
+
+static void LED_Set(struct StatusLEDMessage *msg)
+{
+    osEvent event;
+    while(1)
+    {
+        is31fl3235_Set(msg->start, msg->count, msg->values);
+        event = osSignalWait(0, 100);
+        if(event.status == osEventTimeout)
+        {
+            continue;
+        }
+        is31fl3235_Update();
+        event = osSignalWait(0, 100);
+        if(event.status == osEventTimeout)
+        {
+            continue;
+        }
+        break;
+    }
 }
 
 static void LED_Thread(const void *args)
 {
     (void)args;
     osEvent event;
-    uint8_t idx, rgb[3], nrgb;
     uint8_t control_default[9] = {
         IS31FL3235_LED_CONTROL_CURRENT_IMAX | IS31FL3235_LED_CONTROL_OUT_ON,
         IS31FL3235_LED_CONTROL_CURRENT_IMAX | IS31FL3235_LED_CONTROL_OUT_ON,
@@ -58,6 +86,9 @@ static void LED_Thread(const void *args)
         IS31FL3235_LED_CONTROL_CURRENT_IMAX | IS31FL3235_LED_CONTROL_OUT_ON,
         IS31FL3235_LED_CONTROL_CURRENT_IMAX | IS31FL3235_LED_CONTROL_OUT_ON
     };
+
+    osTimerDef(blink_timer, LED_BlinkOver);
+
     while(1)
     {
         is31fl3235_Reset();
@@ -89,56 +120,116 @@ static void LED_Thread(const void *args)
 
     for(;;)
     {
-        event = osMessageGet(commandQ, osWaitForever);
-        if(event.status != osEventMessage)
+        event = osMailGet(commandQ, osWaitForever);
+        if(event.status != osEventMail)
         {
             continue;
         }
-        idx = COMMAND_IDX(event.value.v);
-        if(idx & COMMAND_CODE_SINGLE)
+        struct StatusLEDMessage *msg = (struct StatusLEDMessage *)event.value.p;
+        LED_Set(msg);
+        switch((enum StatusLEDCommand)msg->command)
         {
-            if((idx & COMMAND_CHANNEL_RAW) == COMMAND_CHANNEL_RAW)
-            {
-                idx = idx & COMMAND_IDX_MASK;
-                rgb[0] = COMMAND_V(event.value.v);
-                nrgb = 1;
-            }
-            else
-            {
-                idx = (idx & COMMAND_IDX_MASK) + ((idx & COMMAND_CHANNEL_MASK)>>COMMAND_CHANNEL_SHIFT);
-                rgb[0] = COMMAND_V(event.value.v);
-                nrgb = 1;
-            }
-        }
-        else
-        {
-            rgb[0] = COMMAND_R(event.value.v);
-            rgb[1] = COMMAND_G(event.value.v);
-            rgb[2] = COMMAND_B(event.value.v);
-            nrgb = 3;
-        }
-        while(1)
-        {
-            is31fl3235_Set(idx, nrgb, rgb);
-            event = osSignalWait(0, 100);
-            if(event.status == osEventTimeout)
-            {
-                continue;
-            }
-            is31fl3235_Update();
-            event = osSignalWait(0, 100);
-            if(event.status == osEventTimeout)
-            {
-                continue;
-            }
-            break;
+            case SET:
+                osMailFree(commandQ, msg);
+                break;
+            case BLINK:
+                for(int i=msg->start; i<msg->start + msg->count; i++)
+                    blink_in_progress[i] = true;
+                msg->timer = osTimerCreate(osTimer(blink_timer), osTimerOnce, msg);
+                osTimerStart(msg->timer, msg->duration);
+                break;
+            case BLINK_OVER:
+                for(int i=msg->start; i<msg->start + msg->count; i++)
+                    blink_in_progress[i] = false;
+                osTimerDelete(msg->timer);
+                osMailFree(commandQ, msg);
+                break;
         }
     }
 }
 
-void LED(uint8_t idx, uint8_t r, uint8_t g, uint8_t b)
+void LED_SetRGB(uint8_t idx, uint8_t r, uint8_t g, uint8_t b)
 {
-    osMessagePut(commandQ, COMMAND_RGB(idx * 3, r, g, b), 0);
+    struct StatusLEDMessage *msg = osMailAlloc(commandQ, 0);
+    if(msg == NULL)
+    {
+        return;
+    }
+    msg->command = SET;
+    msg->start = 3*idx;
+    msg->count = 3;
+    msg->values[0] = r;
+    msg->values[1] = g;
+    msg->values[2] = b;
+    osMailPut(commandQ, msg);
+}
+
+void LED_SetOne(uint8_t idx, uint8_t channel, uint8_t r)
+{
+    struct StatusLEDMessage *msg = osMailAlloc(commandQ, 0);
+    if(msg == NULL)
+    {
+        return;
+    }
+    msg->command = SET;
+    msg->start = 3*idx + channel;
+    msg->count = 1;
+    msg->values[0] = r;
+    osMailPut(commandQ, msg);
+}
+
+bool LED_IsBlinking(struct StatusLEDMessage *msg)
+{
+    bool in_progress = false;
+    for(int i=msg->start; i<msg->start + msg->count; i++)
+        in_progress |= blink_in_progress[i];
+    return in_progress;    
+}
+
+void LED_BlinkRGB(uint8_t idx, uint8_t r, uint8_t g, uint8_t b, uint8_t duration)
+{
+    struct StatusLEDMessage *msg = osMailAlloc(commandQ, 0);
+    if(msg == NULL)
+    {
+        return;
+    }
+    msg->command = BLINK;
+    msg->duration = duration;
+    msg->start = 3*idx;
+    msg->count = 3;
+    msg->values[0] = r;
+    msg->values[1] = g;
+    msg->values[2] = b;
+    if(!LED_IsBlinking(msg))
+    {
+        osMailPut(commandQ, msg);
+    }
+    else
+    {
+        osMailFree(commandQ, msg);
+    }
+}
+
+void LED_BlinkOne(uint8_t idx, uint8_t channel, uint8_t r, uint8_t duration)
+{
+    struct StatusLEDMessage *msg = osMailAlloc(commandQ, 0);
+    if(msg == NULL)
+    {
+        return;
+    }
+    msg->command = BLINK;
+    msg->duration = duration;
+    msg->start = 3*idx + channel;
+    msg->count = 1;
+    msg->values[0] = r;
+    if(!LED_IsBlinking(msg))
+    {
+        osMailPut(commandQ, msg);
+    }
+    else
+    {
+        osMailFree(commandQ, msg);
+    }
 }
 
 void LED_IO_Complete(void)
@@ -152,26 +243,26 @@ static void RGB_Thread(const void *args)
     osDelay(10);
     while(1)
     {
-        LED(0, 255, 0, 0);
+        LED_SetRGB(0, 255, 0, 0);
         osDelay(200);
-        LED(1, 0, 255, 0);
+        LED_SetRGB(1, 0, 255, 0);
         osDelay(200);
-        LED(2, 0, 0, 255);
-        LED(0, 0, 255, 0);
+        LED_SetRGB(2, 0, 0, 255);
+        LED_SetRGB(0, 0, 255, 0);
         osDelay(200);
-        LED(1, 0, 0, 255);
+        LED_SetRGB(1, 0, 0, 255);
         osDelay(200);
-        LED(2, 255, 0, 0);
-        LED(0, 0, 0, 255);
+        LED_SetRGB(2, 255, 0, 0);
+        LED_SetRGB(0, 0, 0, 255);
         osDelay(200);
-        LED(1, 255, 0, 0);
+        LED_SetRGB(1, 255, 0, 0);
         osDelay(200);
-        LED(2, 0, 255, 0);
-        LED(0, 0, 0, 0);
+        LED_SetRGB(2, 0, 255, 0);
+        LED_SetRGB(0, 0, 0, 0);
         osDelay(200);
-        LED(1, 0, 0, 0);
+        LED_SetRGB(1, 0, 0, 0);
         osDelay(200);
-        LED(2, 0, 0, 0);
+        LED_SetRGB(2, 0, 0, 0);
         osDelay(200);
        }
 }
@@ -186,23 +277,4 @@ void LED_TestPatternStop(void)
   osThreadTerminate(rgb_tid);
 }
 
-void LED_R(uint8_t idx, uint8_t r)
-{
-    osMessagePut(commandQ, COMMAND_S(idx * 3, COMMAND_CHANNEL_R, r), 0);
-}
-
-void LED_G(uint8_t idx, uint8_t g)
-{
-    osMessagePut(commandQ, COMMAND_S(idx * 3, COMMAND_CHANNEL_G, g), 0);
-}
-
-void LED_B(uint8_t idx, uint8_t b)
-{
-    osMessagePut(commandQ, COMMAND_S(idx * 3, COMMAND_CHANNEL_B, b), 0);
-}
-
-void LED_Raw(uint8_t idx, uint8_t v)
-{
-    osMessagePut(commandQ, COMMAND_RAW(idx, v), 0);
-}
 
