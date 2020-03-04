@@ -212,9 +212,9 @@ void Linearize_Thread(const void* args)
             brightness[1] = (brightness[1] > 255.0f) ? 255.0f : ((brightness[1] < 0.0f) ? 0.0f : brightness[1]);
             brightness[2] = voltage[2]*250.0f / (ADC_VREF * JOINT_DIVIDER);
             brightness[2] = (brightness[2] > 255.0f) ? 255.0f : ((brightness[2] < 0.0f) ? 0.0f : brightness[2]);
-            LED_G(0, brightness[0]);
-            LED_G(1, brightness[1]);
-            LED_G(2, brightness[2]);
+            LED_SetOne(0, 1, brightness[0]);
+            LED_SetOne(1, 1, brightness[1]);
+            LED_SetOne(2, 1, brightness[2]);
         }
     }
 }

@@ -5,6 +5,7 @@
 #include "modbus_uart.h"
 #include "cmsis_os.h"
 #include "modbus.h"
+#include "status_led.h"
 
 #define MAXPACKET 128
 
@@ -136,6 +137,7 @@ enum ModbusExceptionCode {
 
 static size_t MODBUS_ExceptionResponse(enum ModbusFunctionCode function, enum ModbusExceptionCode code, uint8_t *txBuffer, size_t txLength)
 {
+    LED_BlinkOne(2, 0, 127, 50);
     if(txLength>5) // space for CRC
     {
         txBuffer[0] = modbus_parameters.address;
@@ -386,6 +388,7 @@ void MODBUS_Thread(const void *args)
                         bytes_received > 4 &&
                         MODBUS_crc(rxBuffer, bytes_received) == 0)
                 {
+                    LED_BlinkOne(2, 2, 127, 50);
                     responseLength = MODBUS_Process(rxBuffer + 1, bytes_received - 3, txBuffer, MAXPACKET);
                 }
                 break;
