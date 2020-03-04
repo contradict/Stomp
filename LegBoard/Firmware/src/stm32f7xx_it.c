@@ -25,6 +25,8 @@
 #include "modbus_uart.h"
 #include "chomplegboard.h"
 #include "feedback_adc.h"
+#include "enfield_uart.h"
+#include "modbus_uart.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -212,47 +214,47 @@ void MODBUS_UART_IRQHandler(void)
 
 void CURL_UART_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(&modbus_uart);
+    HAL_UART_IRQHandler(&enfield_uart[CURL]);
 }
 
 void CURL_DMA_TX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(modbus_uart.hdmatx);
+    HAL_DMA_IRQHandler(enfield_uart[CURL].hdmatx);
 }
 
 void CURL_DMA_RX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(modbus_uart.hdmarx);
+    HAL_DMA_IRQHandler(enfield_uart[CURL].hdmarx);
 }
 
 void LIFT_UART_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(&modbus_uart);
+    HAL_UART_IRQHandler(&enfield_uart[LIFT]);
 }
 
 void LIFT_DMA_TX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(modbus_uart.hdmatx);
+    HAL_DMA_IRQHandler(enfield_uart[LIFT].hdmatx);
 }
 
 void LIFT_DMA_RX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(modbus_uart.hdmarx);
+    HAL_DMA_IRQHandler(enfield_uart[LIFT].hdmarx);
 }
 
 void SWING_UART_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(&modbus_uart);
+    HAL_UART_IRQHandler(&enfield_uart[SWING]);
 }
 
 void SWING_DMA_TX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(modbus_uart.hdmatx);
+    HAL_DMA_IRQHandler(enfield_uart[SWING].hdmatx);
 }
 
 void SWING_DMA_RX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(modbus_uart.hdmarx);
+    HAL_DMA_IRQHandler(enfield_uart[SWING].hdmarx);
 }
 
 void FEEDBACK_DMA_IRQHandler(void)

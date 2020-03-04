@@ -1,6 +1,8 @@
+#pragma once
+
 #include "stm32f7xx_hal.h"
 
-extern UART_HandleTypeDef servo_uart[3];
+extern UART_HandleTypeDef enfield_uart[3];
 
 #define CURL_UART_Instance        USART3
 #define CURL_UART_CLK_ENABLE()    __HAL_RCC_USART3_CLK_ENABLE()
@@ -74,4 +76,4 @@ extern UART_HandleTypeDef servo_uart[3];
 #define SWING_DMA_RX_IRQn       DMA2_Stream1_IRQn
 #define SWING_DMA_RX_IRQHandler DMA2_Stream1_IRQHandler
 
-void Servo_UART_Init();
+void Enfield_UART_Init();

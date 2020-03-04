@@ -33,7 +33,7 @@
 #include "feedback_adc.h"
 #include "modbus_uart.h"
 #include "chomplegboard.h"
-#include "servo_uart.h"
+#include "enfield_uart.h"
 
 /** @addtogroup STM32F7xx_HAL_Driver
   * @{
@@ -436,13 +436,13 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
     if(huart == &modbus_uart)
     {
         HAL_UART_MspInit_modbus(huart);
-    } else if(huart == &servo_uart[CURL])
+    } else if(huart == &enfield_uart[CURL])
     {
         HAL_UART_MspInit_Curl(huart);
-    } else if(huart == &servo_uart[LIFT])
+    } else if(huart == &enfield_uart[LIFT])
     {
         HAL_UART_MspInit_Lift(huart);
-    } else if(huart == &servo_uart[SWING])
+    } else if(huart == &enfield_uart[SWING])
     {
         HAL_UART_MspInit_Swing(huart);
     }

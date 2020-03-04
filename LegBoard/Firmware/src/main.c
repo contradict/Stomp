@@ -12,6 +12,7 @@
 #include "f722-nucleo-blinky.h"
 #include "modbus.h"
 #include "status_led.h"
+#include "enfield.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -54,6 +55,8 @@ int main(void)
   Linearize_ThreadInit();
 
   MODBUS_Init();
+
+  // Enfield_Init();
 
   /* Start scheduler */
   osKernelStart();

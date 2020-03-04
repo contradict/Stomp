@@ -68,6 +68,8 @@ extern struct MODBUS_HoldingRegister modbus_holding_registers[];
 
 osMutexDef(crcmutex);
 static osMutexId crcmutex;
+UART_HandleTypeDef modbus_uart;
+
 
 void MODBUS_Init()
 {
@@ -86,6 +88,22 @@ void MODBUS_Init()
     HAL_CRC_Init(&hcrc);
 
     modbus = osThreadCreate(osThread(modbus), NULL);
+}
+
+void MODBUS_UART_Init()
+{
+    modbus_uart.Instance = MODBUS_UART_Instance;
+    modbus_uart.Init.BaudRate = 1000000;
+    modbus_uart.Init.WordLength = UART_WORDLENGTH_8B;
+    modbus_uart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    modbus_uart.Init.Mode = UART_MODE_TX_RX;
+    modbus_uart.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+    modbus_uart.Init.OverSampling = UART_OVERSAMPLING_8;
+    modbus_uart.Init.Parity = UART_PARITY_NONE;
+    modbus_uart.Init.StopBits = UART_STOPBITS_1;
+    HAL_RS485Ex_Init(&modbus_uart, UART_DE_POLARITY_HIGH, 8, 8);
+    LL_USART_SetRxTimeout(MODBUS_UART_Instance, 20);
+    LL_USART_EnableRxTimeout(MODBUS_UART_Instance);
 }
 
 uint16_t MODBUS_crc(uint8_t* buffer, uint16_t count)
