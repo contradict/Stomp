@@ -1,3 +1,5 @@
+#pragma once
+
 #include "stm32f7xx_hal.h"
 
 extern TIM_HandleTypeDef feedback_timer;

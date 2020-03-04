@@ -1,3 +1,5 @@
+#pragma once
+
 #include "stm32f7xx_hal.h"
 
 extern UART_HandleTypeDef modbus_uart;
