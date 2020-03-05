@@ -1,4 +1,8 @@
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "cmsis_os.h"
+#include "joint.h"
 
 enum EnfieldReadRegister {
     ReadProportionalGain = 112,
@@ -51,4 +55,21 @@ enum EnfieldWriteRegister {
     SetSaveConfiguration = 225
 };
 
+struct EnfieldResponse {
+    int err;
+    uint16_t value;
+};
+
+struct EnfieldRequest {
+    enum JointIndex joint;
+    bool write;
+    enum EnfieldReadRegister r;
+    enum EnfieldWriteRegister w;
+    uint16_t value;
+    osMailQId responseQ;
+    struct EnfieldResponse *response;
+};
+
 void Enfield_Init();
+struct EnfieldRequest * Enfield_AllocRequest(enum JointIndex joint);
+void Enfield_Request(struct EnfieldRequest *req);
