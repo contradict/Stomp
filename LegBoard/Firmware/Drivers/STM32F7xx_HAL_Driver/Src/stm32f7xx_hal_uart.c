@@ -2157,37 +2157,45 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
           || ((cr1its & (USART_CR1_RXNEIE | USART_CR1_PEIE)) != 0U)))
   {
     /* UART parity error interrupt occurred -------------------------------------*/
-    if (((isrflags & USART_ISR_PE) != 0U) && ((cr1its & USART_CR1_PEIE) != 0U))
+    if ((isrflags & USART_ISR_PE) != 0U)
     {
       __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_PEF);
-
-      huart->ErrorCode |= HAL_UART_ERROR_PE;
+      if ((cr1its & USART_CR1_PEIE) != 0U)
+      {
+        huart->ErrorCode |= HAL_UART_ERROR_PE;
+      }
     }
 
     /* UART frame error interrupt occurred --------------------------------------*/
-    if (((isrflags & USART_ISR_FE) != 0U) && ((cr3its & USART_CR3_EIE) != 0U))
+    if ((isrflags & USART_ISR_FE) != 0U)
     {
       __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_FEF);
-
-      huart->ErrorCode |= HAL_UART_ERROR_FE;
+      if ((cr3its & USART_CR3_EIE) != 0U)
+      {
+        huart->ErrorCode |= HAL_UART_ERROR_FE;
+      }
     }
 
     /* UART noise error interrupt occurred --------------------------------------*/
-    if (((isrflags & USART_ISR_NE) != 0U) && ((cr3its & USART_CR3_EIE) != 0U))
+    if ((isrflags & USART_ISR_NE) != 0U)
     {
       __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_NEF);
-
-      huart->ErrorCode |= HAL_UART_ERROR_NE;
+      if  ((cr3its & USART_CR3_EIE) != 0U)
+      {
+        huart->ErrorCode |= HAL_UART_ERROR_NE;
+      }
     }
 
     /* UART Over-Run interrupt occurred -----------------------------------------*/
-    if (((isrflags & USART_ISR_ORE) != 0U)
-        && (((cr1its & USART_CR1_RXNEIE) != 0U) ||
-            ((cr3its & USART_CR3_EIE) != 0U)))
+    if ((isrflags & USART_ISR_ORE) != 0U)
     {
       __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
 
-      huart->ErrorCode |= HAL_UART_ERROR_ORE;
+      if ((((cr1its & USART_CR1_RXNEIE) != 0U) ||
+            ((cr3its & USART_CR3_EIE) != 0U)))
+      {
+        huart->ErrorCode |= HAL_UART_ERROR_ORE;
+      }
     }
 
     /* Call UART Error Call back function if need be --------------------------*/
