@@ -56,7 +56,7 @@ int main(void)
 
   MODBUS_Init();
 
-  // Enfield_Init();
+  Enfield_Init();
 
   /* Start scheduler */
   osKernelStart();

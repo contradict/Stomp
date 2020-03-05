@@ -14,8 +14,8 @@ extern UART_HandleTypeDef enfield_uart[3];
 #define CURL_UART_GPIO_CLK_ENABLE() __HAL_RCC_GPIOB_CLK_ENABLE()
 #define CURL_UART_GPIO_PORT         GPIOB
 #define CURL_UART_GPIO_AF           GPIO_AF7_USART3
-#define CURL_UART_TX_PIN            10
-#define CURL_UART_RX_PIN            11
+#define CURL_UART_TX_PIN            GPIO_PIN_10
+#define CURL_UART_RX_PIN            GPIO_PIN_11
 
 #define CURL_DMA_Instance      DMA1
 #define CURL_DMA_CLK_ENABLE()  __HAL_RCC_DMA1_CLK_ENABLE()
@@ -38,8 +38,8 @@ extern UART_HandleTypeDef enfield_uart[3];
 #define LIFT_UART_GPIO_CLK_ENABLE() __HAL_RCC_GPIOA_CLK_ENABLE()
 #define LIFT_UART_GPIO_PORT         GPIOA
 #define LIFT_UART_GPIO_AF           GPIO_AF7_USART2
-#define LIFT_UART_TX_PIN            2
-#define LIFT_UART_RX_PIN            3
+#define LIFT_UART_TX_PIN            GPIO_PIN_2
+#define LIFT_UART_RX_PIN            GPIO_PIN_3
 
 #define LIFT_DMA_Instance      DMA1
 #define LIFT_DMA_CLK_ENABLE()  __HAL_RCC_DMA1_CLK_ENABLE()
@@ -62,8 +62,8 @@ extern UART_HandleTypeDef enfield_uart[3];
 #define SWING_UART_GPIO_CLK_ENABLE() __HAL_RCC_GPIOC_CLK_ENABLE()
 #define SWING_UART_GPIO_PORT         GPIOC
 #define SWING_UART_GPIO_AF           GPIO_AF8_USART6
-#define SWING_UART_TX_PIN            6
-#define SWING_UART_RX_PIN            7
+#define SWING_UART_TX_PIN            GPIO_PIN_6
+#define SWING_UART_RX_PIN            GPIO_PIN_7
 
 #define SWING_DMA_Instance      DMA2
 #define SWING_DMA_CLK_ENABLE()  __HAL_RCC_DMA2_CLK_ENABLE()
