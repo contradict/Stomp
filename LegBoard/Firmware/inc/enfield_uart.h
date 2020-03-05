@@ -75,5 +75,3 @@ extern UART_HandleTypeDef enfield_uart[3];
 #define SWING_DMA_RX_CHANNEL    DMA_CHANNEL_5
 #define SWING_DMA_RX_IRQn       DMA2_Stream1_IRQn
 #define SWING_DMA_RX_IRQHandler DMA2_Stream1_IRQHandler
-
-void Enfield_UART_Init();

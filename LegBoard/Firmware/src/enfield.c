@@ -23,6 +23,7 @@ struct EnfieldState
     uint16_t RodEndPressure;
 };
 
+void Enfield_UART_Init();
 static void Enfield_Thread(const void *arg);
 static int Enfield_Get(struct EnfieldState *enf, enum EnfieldReadRegister r, uint16_t *v);
 static int Enfield_Write(struct EnfieldState *enf, enum EnfieldReadRegister r, uint16_t v);
