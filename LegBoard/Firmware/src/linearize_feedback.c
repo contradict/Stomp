@@ -1,5 +1,5 @@
 #include <math.h>
-#include "main.h"
+#include "joint.h"
 #include "cmsis_os.h"
 #include "stm32f7xx_hal.h"
 #include "ads57x4.h"
@@ -35,26 +35,33 @@ static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 
 extern SPI_HandleTypeDef DAC_SPIHandle;
-extern ADC_HandleTypeDef feedback_adcs[3];
+extern ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
 
 osThreadDef(lin, Linearize_Thread, osPriorityRealtime, 1, configMINIMAL_STACK_SIZE);
 osMessageQDef(adcdata, 8, uint32_t);
 static osThreadId linearize;
 static osMessageQId dataQ;
 
-static uint32_t channel_values[3];
+static uint32_t channel_values[JOINT_COUNT];
 
-static const enum ads57x4_channel joint_channel[3] = {
+/* Map joint order to ADC order */
+static const uint8_t joint_adc_channel[JOINT_COUNT] = {0, 1, 2};
+
+/* Map joint order to LED order */
+static const uint8_t joint_led_channel[JOINT_COUNT] = {0, 1, 2};
+
+/* Map joint order to DAC order */
+static const enum ads57x4_channel joint_dac_channel[JOINT_COUNT] = {
     ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_C, ADS57x4_CHANNEL_B};
 
 struct LinearizationConstants {
-    float theta_offset[NJOINTS];
-    float theta_scale[NJOINTS];
-    float shape_offset[NJOINTS];
-    float shape_scale[NJOINTS];
-    float shape_phase[NJOINTS];
-    float feedback_offset[NJOINTS];
-    float feedback_scale[NJOINTS];
+    float theta_offset[JOINT_COUNT];
+    float theta_scale[JOINT_COUNT];
+    float shape_offset[JOINT_COUNT];
+    float shape_scale[JOINT_COUNT];
+    float shape_phase[JOINT_COUNT];
+    float feedback_offset[JOINT_COUNT];
+    float feedback_scale[JOINT_COUNT];
 };
 
 static struct LinearizationConstants linearization_constants __attribute__ ((section (".storage.linearize"))) = {
@@ -133,6 +140,7 @@ static void adc_reinit(void)
 {
     HAL_TIM_Base_DeInit(&feedback_timer);
 
+    /* Done in ADC order */
     HAL_ADC_DeInit(&feedback_adcs[0]);
     HAL_ADC_DeInit(&feedback_adcs[1]);
     HAL_ADC_DeInit(&feedback_adcs[2]);
@@ -151,10 +159,10 @@ void Linearize_Thread(const void* args)
 {
     (void)args;
     osEvent event;
-    float voltage[3];
-    float feedback_voltage[3];
-    uint16_t feedback_code[3];
-    float brightness[3];
+    float voltage[JOINT_COUNT];
+    float feedback_voltage[JOINT_COUNT];
+    uint16_t feedback_code[JOINT_COUNT];
+    float brightness[JOINT_COUNT];
     int sendjoint=3;
 
     setup_dac();
@@ -177,7 +185,7 @@ void Linearize_Thread(const void* args)
         {
             if(sendjoint<3)
             {
-                ads5724_SetVoltage(joint_channel[sendjoint], feedback_code[sendjoint]);
+                ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
                 sendjoint++;
             }
             else
@@ -188,33 +196,27 @@ void Linearize_Thread(const void* args)
         else if(event.value.signals & ADC_CONV_COMPLETE)
         {
             DAC_IO_LDAC(false);
-            voltage[0] = (ADC_VREF * (channel_values[0] / ADC_MAX_CODE) * JOINT_DIVIDER);
-            voltage[1] = (ADC_VREF * (channel_values[1] / ADC_MAX_CODE) * JOINT_DIVIDER);
-            voltage[2] = (ADC_VREF * (channel_values[2] / ADC_MAX_CODE) * JOINT_DIVIDER);
+            for(int joint=0;joint<JOINT_COUNT;joint++)
+            {
+                voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) * JOINT_DIVIDER);
+            }
             // float angle = (linearization_constants.theta_offset[current_joint] +
             //                linearization_constants.theta_scale[current_joint] * voltage);
             // float length = sqrtf(linearization_constants.shape_offset[current_joint] +
             //                      linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
             // float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +
             //                           linearization_constants.feedback_scale[current_joint] * length);
-            feedback_voltage[0] = MAX_DAC_OUTPUT - voltage[0] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
-            feedback_voltage[1] = MAX_DAC_OUTPUT - voltage[1] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
-            feedback_voltage[2] = MAX_DAC_OUTPUT - voltage[2] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
-            feedback_code[0] = feedback_voltage[0] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
-            feedback_code[1] = feedback_voltage[1] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
-            feedback_code[2] = feedback_voltage[2] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+            for(int joint=0;joint<JOINT_COUNT;joint++)
+            {
+                feedback_voltage[joint] = MAX_DAC_OUTPUT - voltage[joint] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
+                feedback_code[joint] = feedback_voltage[joint] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+                brightness[joint] = voltage[joint]*250.0f / (ADC_VREF * JOINT_DIVIDER);
+                brightness[joint] = (brightness[joint] > 255.0f) ? 255.0f : ((brightness[joint] < 0.0f) ? 0.0f : brightness[joint]);
+                LED_SetOne(joint_led_channel[joint], 1, brightness[joint]);
+            }
             sendjoint = 0;
-            ads5724_SetVoltage(joint_channel[sendjoint], feedback_code[sendjoint]);
+            ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
             sendjoint++;
-            brightness[0] = voltage[0]*250.0f / (ADC_VREF * JOINT_DIVIDER);
-            brightness[0] = (brightness[0] > 255.0f) ? 255.0f : ((brightness[0] < 0.0f) ? 0.0f : brightness[0]);
-            brightness[1] = voltage[1]*250.0f / (ADC_VREF * JOINT_DIVIDER);
-            brightness[1] = (brightness[1] > 255.0f) ? 255.0f : ((brightness[1] < 0.0f) ? 0.0f : brightness[1]);
-            brightness[2] = voltage[2]*250.0f / (ADC_VREF * JOINT_DIVIDER);
-            brightness[2] = (brightness[2] > 255.0f) ? 255.0f : ((brightness[2] < 0.0f) ? 0.0f : brightness[2]);
-            LED_SetOne(0, 1, brightness[0]);
-            LED_SetOne(1, 1, brightness[1]);
-            LED_SetOne(2, 1, brightness[2]);
         }
     }
 }

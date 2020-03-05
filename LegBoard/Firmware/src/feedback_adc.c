@@ -1,13 +1,15 @@
 #include "stm32f7xx_hal.h"
 #include "feedback_adc.h"
+#include "joint.h"
 
-ADC_HandleTypeDef feedback_adcs[3];
+ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
 TIM_HandleTypeDef feedback_timer;
 
 void FeedbackADC_Init(void)
 {
     ADC_ChannelConfTypeDef sConfig;
 
+    /* Done in ADC order since 1 must be the master */
     feedback_adcs[0].Instance = ADC1;
     feedback_adcs[1].Instance = ADC2;
     feedback_adcs[2].Instance = ADC3;

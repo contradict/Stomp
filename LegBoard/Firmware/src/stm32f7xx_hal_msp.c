@@ -29,7 +29,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
-#include "main.h"
+#include "joint.h"
 #include "feedback_adc.h"
 #include "modbus_uart.h"
 #include "chomplegboard.h"
@@ -436,13 +436,13 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
     if(huart == &modbus_uart)
     {
         HAL_UART_MspInit_modbus(huart);
-    } else if(huart == &enfield_uart[CURL])
+    } else if(huart == &enfield_uart[JOINT_CURL])
     {
         HAL_UART_MspInit_Curl(huart);
-    } else if(huart == &enfield_uart[LIFT])
+    } else if(huart == &enfield_uart[JOINT_LIFT])
     {
         HAL_UART_MspInit_Lift(huart);
-    } else if(huart == &enfield_uart[SWING])
+    } else if(huart == &enfield_uart[JOINT_SWING])
     {
         HAL_UART_MspInit_Swing(huart);
     }

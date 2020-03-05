@@ -20,13 +20,13 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
 #include "stm32f7xx_it.h"
 #include "modbus_uart.h"
 #include "chomplegboard.h"
 #include "feedback_adc.h"
 #include "enfield_uart.h"
 #include "modbus_uart.h"
+#include "joint.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -41,7 +41,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern SPI_HandleTypeDef DAC_SPIHandle;
-extern ADC_HandleTypeDef feedback_adcs[3];
+extern ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
 extern I2C_HandleTypeDef LED_I2CHandle;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -214,47 +214,47 @@ void MODBUS_UART_IRQHandler(void)
 
 void CURL_UART_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(&enfield_uart[CURL]);
+    HAL_UART_IRQHandler(&enfield_uart[JOINT_CURL]);
 }
 
 void CURL_DMA_TX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(enfield_uart[CURL].hdmatx);
+    HAL_DMA_IRQHandler(enfield_uart[JOINT_CURL].hdmatx);
 }
 
 void CURL_DMA_RX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(enfield_uart[CURL].hdmarx);
+    HAL_DMA_IRQHandler(enfield_uart[JOINT_CURL].hdmarx);
 }
 
 void LIFT_UART_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(&enfield_uart[LIFT]);
+    HAL_UART_IRQHandler(&enfield_uart[JOINT_LIFT]);
 }
 
 void LIFT_DMA_TX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(enfield_uart[LIFT].hdmatx);
+    HAL_DMA_IRQHandler(enfield_uart[JOINT_LIFT].hdmatx);
 }
 
 void LIFT_DMA_RX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(enfield_uart[LIFT].hdmarx);
+    HAL_DMA_IRQHandler(enfield_uart[JOINT_LIFT].hdmarx);
 }
 
 void SWING_UART_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(&enfield_uart[SWING]);
+    HAL_UART_IRQHandler(&enfield_uart[JOINT_SWING]);
 }
 
 void SWING_DMA_TX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(enfield_uart[SWING].hdmatx);
+    HAL_DMA_IRQHandler(enfield_uart[JOINT_SWING].hdmatx);
 }
 
 void SWING_DMA_RX_IRQHandler(void)
 {
-    HAL_DMA_IRQHandler(enfield_uart[SWING].hdmarx);
+    HAL_DMA_IRQHandler(enfield_uart[JOINT_SWING].hdmarx);
 }
 
 void FEEDBACK_DMA_IRQHandler(void)
