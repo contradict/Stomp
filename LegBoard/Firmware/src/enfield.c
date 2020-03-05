@@ -26,7 +26,7 @@ struct EnfieldState
 void Enfield_UART_Init();
 static void Enfield_Thread(const void *arg);
 static int Enfield_Get(struct EnfieldState *enf, enum EnfieldReadRegister r, uint16_t *v);
-static int Enfield_Write(struct EnfieldState *enf, enum EnfieldReadRegister r, uint16_t v);
+static int Enfield_Write(struct EnfieldState *enf, enum EnfieldWriteRegister r, uint16_t v);
 
 UART_HandleTypeDef enfield_uart[NJOINTS];
 static struct EnfieldState enfield_state[NJOINTS];
@@ -134,7 +134,7 @@ static int Enfield_Get(struct EnfieldState *enf, enum EnfieldReadRegister r, uin
     return -2;
 }
 
-static int Enfield_Write(struct EnfieldState *enf, enum EnfieldReadRegister r, uint16_t v)
+static int Enfield_Write(struct EnfieldState *enf, enum EnfieldWriteRegister r, uint16_t v)
 {
     osEvent evt;
     uint8_t pkt[8] = {'$', 'C', r, 0x0, 0x0, '#', 0x00, 0x00};
