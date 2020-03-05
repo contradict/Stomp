@@ -71,7 +71,7 @@ extern UART_HandleTypeDef enfield_uart[3];
 #define SWING_DMA_TX_CHANNEL    DMA_CHANNEL_5
 #define SWING_DMA_TX_IRQn       DMA2_Stream6_IRQn
 #define SWING_DMA_TX_IRQHandler DMA2_Stream6_IRQHandler
-#define SWING_DMA_RX_STREAM     DMA2_Stream1
+#define SWING_DMA_RX_STREAM     DMA2_Stream7
 #define SWING_DMA_RX_CHANNEL    DMA_CHANNEL_5
-#define SWING_DMA_RX_IRQn       DMA2_Stream1_IRQn
-#define SWING_DMA_RX_IRQHandler DMA2_Stream1_IRQHandler
+#define SWING_DMA_RX_IRQn       DMA2_Stream7_IRQn
+#define SWING_DMA_RX_IRQHandler DMA2_Stream7_IRQHandler
