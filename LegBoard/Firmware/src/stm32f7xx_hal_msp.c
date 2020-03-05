@@ -276,14 +276,14 @@ void HAL_UART_MspInit_Curl(UART_HandleTypeDef *huart)
 
     CURL_DMA_CLK_ENABLE();
 
-    GPIO_InitStruct.Pin = MODBUS_UART_TX_PIN;
+    GPIO_InitStruct.Pin = CURL_UART_TX_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = MODBUS_UART_GPIO_AF;
-    HAL_GPIO_Init(MODBUS_UART_GPIO_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = MODBUS_UART_RX_PIN;
-    HAL_GPIO_Init(MODBUS_UART_GPIO_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Alternate = CURL_UART_GPIO_AF;
+    HAL_GPIO_Init(CURL_UART_GPIO_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = CURL_UART_RX_PIN;
+    HAL_GPIO_Init(CURL_UART_GPIO_PORT, &GPIO_InitStruct);
 
     tx_dma.Instance                 = CURL_DMA_TX_STREAM;
     tx_dma.Init.Channel             = CURL_DMA_TX_CHANNEL;
