@@ -29,7 +29,7 @@ static int Enfield_Write(struct EnfieldState *enf, enum EnfieldReadRegister r, u
 
 UART_HandleTypeDef enfield_uart[NJOINTS];
 static struct EnfieldState enfield_state[NJOINTS];
-osThreadDef(curl_thread, Enfield_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+osThreadDef(enfield_thread, Enfield_Thread, osPriorityAboveNormal, 3, configMINIMAL_STACK_SIZE);
 
 void Enfield_Init(void)
 {
@@ -41,9 +41,9 @@ void Enfield_Init(void)
     enfield_state[SWING].uart = &enfield_uart[SWING];
     enfield_state[LIFT].uart = &enfield_uart[LIFT];
 
-    enfield_state[CURL].thread = osThreadCreate(osThread(curl_thread), &enfield_state[CURL]);
-    enfield_state[SWING].thread = osThreadCreate(osThread(curl_thread), &enfield_state[SWING]);
-    enfield_state[LIFT].thread = osThreadCreate(osThread(curl_thread), &enfield_state[LIFT]);
+    enfield_state[CURL].thread = osThreadCreate(osThread(enfield_thread), &enfield_state[CURL]);
+    enfield_state[SWING].thread = osThreadCreate(osThread(enfield_thread), &enfield_state[SWING]);
+    enfield_state[LIFT].thread = osThreadCreate(osThread(enfield_thread), &enfield_state[LIFT]);
 }
 
 void Curl_UART_Init()

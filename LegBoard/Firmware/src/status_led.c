@@ -6,8 +6,8 @@
 static void LED_Thread(const void *args);
 static void RGB_Thread(const void *args);
 
-osThreadDef(led, LED_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-osThreadDef(rgb, RGB_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+osThreadDef(led, LED_Thread, osPriorityIdle, 1, configMINIMAL_STACK_SIZE);
+osThreadDef(rgb, RGB_Thread, osPriorityIdle, 1, configMINIMAL_STACK_SIZE);
 
 enum StatusLEDCommand
 {

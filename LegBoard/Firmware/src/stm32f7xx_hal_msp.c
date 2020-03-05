@@ -112,7 +112,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
         GPIO_InitStruct.Alternate = 0;
         HAL_GPIO_Init(DAC_SPI_NSS_GPIO_PORT, &GPIO_InitStruct);
 
-        HAL_NVIC_SetPriority(DAC_SPI_IRQn, 6, 0);
+        HAL_NVIC_SetPriority(DAC_SPI_IRQn, 6, 1);
         HAL_NVIC_EnableIRQ(DAC_SPI_IRQn);
      }
 }
@@ -232,9 +232,9 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
         GPIO_InitStruct.Alternate = LED_I2C_SDA_AF;
         HAL_GPIO_Init(LED_I2C_GPIO_PORT, &GPIO_InitStruct);
 
-        HAL_NVIC_SetPriority(LED_I2C_EV_IRQn, 7, 0);
+        HAL_NVIC_SetPriority(LED_I2C_EV_IRQn, 13, 1);
         HAL_NVIC_EnableIRQ(LED_I2C_EV_IRQn);
-        HAL_NVIC_SetPriority(LED_I2C_ER_IRQn, 7, 0);
+        HAL_NVIC_SetPriority(LED_I2C_ER_IRQn, 13, 0);
         HAL_NVIC_EnableIRQ(LED_I2C_ER_IRQn);
     }
 }
@@ -259,7 +259,7 @@ void HAL_UART_MspInit_modbus(UART_HandleTypeDef *huart)
     GPIO_InitStruct.Pin = MODBUS_UART_DE_PIN;
     HAL_GPIO_Init(MODBUS_UART_GPIO_PORT, &GPIO_InitStruct);
 
-    HAL_NVIC_SetPriority(MODBUS_UART_IRQn, 6, 1);
+    HAL_NVIC_SetPriority(MODBUS_UART_IRQn, 8, 0);
     HAL_NVIC_EnableIRQ(MODBUS_UART_IRQn);
 }
 
@@ -309,13 +309,13 @@ void HAL_UART_MspInit_Curl(UART_HandleTypeDef *huart)
     HAL_DMA_Init(&rx_dma);
     __HAL_LINKDMA(huart, hdmarx, rx_dma);
 
-    HAL_NVIC_SetPriority(CURL_DMA_TX_IRQn, 6, 1);
+    HAL_NVIC_SetPriority(CURL_DMA_TX_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(CURL_DMA_TX_IRQn);
 
-    HAL_NVIC_SetPriority(CURL_DMA_RX_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(CURL_DMA_RX_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(CURL_DMA_RX_IRQn);
 
-    HAL_NVIC_SetPriority(CURL_UART_IRQn, 6, 1);
+    HAL_NVIC_SetPriority(CURL_UART_IRQn, 7, 1);
     HAL_NVIC_EnableIRQ(CURL_UART_IRQn);
 }
 
@@ -365,13 +365,13 @@ void HAL_UART_MspInit_Lift(UART_HandleTypeDef *huart)
     HAL_DMA_Init(&rx_dma);
     __HAL_LINKDMA(huart, hdmarx, rx_dma);
 
-    HAL_NVIC_SetPriority(LIFT_DMA_TX_IRQn, 6, 1);
+    HAL_NVIC_SetPriority(LIFT_DMA_TX_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(LIFT_DMA_TX_IRQn);
 
-    HAL_NVIC_SetPriority(LIFT_DMA_RX_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(LIFT_DMA_RX_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(LIFT_DMA_RX_IRQn);
 
-    HAL_NVIC_SetPriority(LIFT_UART_IRQn, 6, 1);
+    HAL_NVIC_SetPriority(LIFT_UART_IRQn, 7, 1);
     HAL_NVIC_EnableIRQ(LIFT_UART_IRQn);
 }
 
@@ -421,13 +421,13 @@ void HAL_UART_MspInit_Swing(UART_HandleTypeDef *huart)
     HAL_DMA_Init(&rx_dma);
     __HAL_LINKDMA(huart, hdmarx, rx_dma);
 
-    HAL_NVIC_SetPriority(SWING_DMA_TX_IRQn, 6, 1);
+    HAL_NVIC_SetPriority(SWING_DMA_TX_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(SWING_DMA_TX_IRQn);
 
-    HAL_NVIC_SetPriority(SWING_DMA_RX_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(SWING_DMA_RX_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(SWING_DMA_RX_IRQn);
 
-    HAL_NVIC_SetPriority(SWING_UART_IRQn, 6, 1);
+    HAL_NVIC_SetPriority(SWING_UART_IRQn, 7, 1);
     HAL_NVIC_EnableIRQ(SWING_UART_IRQn);
 }
 

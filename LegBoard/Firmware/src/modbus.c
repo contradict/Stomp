@@ -52,7 +52,7 @@ struct MODBUS_parameters
 
 static void MODBUS_Thread(const void* args);
 
-osThreadDef(modbus, MODBUS_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+osThreadDef(modbus, MODBUS_Thread, osPriorityNormal, 1, configMINIMAL_STACK_SIZE);
 static osThreadId modbus;
 
 static struct MODBUS_parameters modbus_parameters __attribute__ ((section (".storage.modbus"))) = {

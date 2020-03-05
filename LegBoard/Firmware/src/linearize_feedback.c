@@ -37,7 +37,7 @@ static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 extern SPI_HandleTypeDef DAC_SPIHandle;
 extern ADC_HandleTypeDef feedback_adcs[3];
 
-osThreadDef(lin, Linearize_Thread, osPriorityHigh, 0, configMINIMAL_STACK_SIZE);
+osThreadDef(lin, Linearize_Thread, osPriorityRealtime, 1, configMINIMAL_STACK_SIZE);
 osMessageQDef(adcdata, 8, uint32_t);
 static osThreadId linearize;
 static osMessageQId dataQ;
