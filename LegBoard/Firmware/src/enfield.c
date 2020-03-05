@@ -21,6 +21,7 @@ struct EnfieldState
     uint16_t FeedbackInput;
     uint16_t BaseEndPressure;
     uint16_t RodEndPressure;
+    uint16_t DigitalCommand;
 };
 
 void Enfield_UART_Init();
@@ -101,9 +102,17 @@ void Enfield_Thread(const void *arg)
     struct EnfieldState *st = (struct EnfieldState *)arg;
     while(1)
     {
+        if(Enfield_Write(st, SetZeroGains, 0x0000) == 0)
+        {
+            break;
+        }
+    }
+    while(1)
+    {
         Enfield_Get(st, ReadFeedbackInput, &(st->FeedbackInput));
         Enfield_Get(st, ReadBaseEndPressure, &(st->FeedbackInput));
         Enfield_Get(st, ReadRodEndPressure, &(st->FeedbackInput));
+        Enfield_Write(st, SetDigitalCommand, st->DigitalCommand);
     }
 }
 
