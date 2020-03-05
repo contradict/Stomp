@@ -33,6 +33,7 @@ static const float ADC_MAX_CODE = (float)((1<<12) - 1);
 static const float JOINT_DIVIDER = 2.0f / 3.0f;
 static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
+static const float JOINT_ANGLE_SCALE = 1000.0f;
 
 extern SPI_HandleTypeDef DAC_SPIHandle;
 extern ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
@@ -43,6 +44,8 @@ static osThreadId linearize;
 static osMessageQId dataQ;
 
 static uint32_t channel_values[JOINT_COUNT];
+static float joint_angle[JOINT_COUNT];
+static float cylinder_length[JOINT_COUNT];
 
 /* Map joint order to ADC order */
 static const uint8_t joint_adc_channel[JOINT_COUNT] = {0, 1, 2};
@@ -107,6 +110,19 @@ void Linearize_ThreadInit(void)
     dataQ = osMessageCreate(osMessageQ(adcdata), linearize);
 }
 
+uint16_t Linearize_ReadAngle(void *ctx)
+{
+    enum JointIndex joint = (enum JointIndex)ctx;
+    return roundf(joint_angle[joint] * JOINT_ANGLE_SCALE);
+}
+
+uint16_t Linearize_ReadLength(void *ctx)
+{
+    enum JointIndex joint = (enum JointIndex)ctx;
+    return roundf(cylinder_length[joint] * JOINT_ANGLE_SCALE);
+}
+
+
 static void setup_dac(void)
 {
     osEvent e;
@@ -155,7 +171,7 @@ static void adc_reinit(void)
     HAL_TIM_Base_Start(&feedback_timer);
 }
 
-void Linearize_Thread(const void* args)
+static void Linearize_Thread(const void* args)
 {
     (void)args;
     osEvent event;
@@ -199,9 +215,9 @@ void Linearize_Thread(const void* args)
             for(int joint=0;joint<JOINT_COUNT;joint++)
             {
                 voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) * JOINT_DIVIDER);
+                joint_angle[joint] = (linearization_constants.theta_offset[joint] +
+                                      linearization_constants.theta_scale[joint] * voltage[joint]);
             }
-            // float angle = (linearization_constants.theta_offset[current_joint] +
-            //                linearization_constants.theta_scale[current_joint] * voltage);
             // float length = sqrtf(linearization_constants.shape_offset[current_joint] +
             //                      linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
             // float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +

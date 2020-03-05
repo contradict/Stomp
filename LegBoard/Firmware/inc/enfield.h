@@ -73,3 +73,5 @@ struct EnfieldRequest {
 void Enfield_Init();
 struct EnfieldRequest * Enfield_AllocRequest(enum JointIndex joint);
 void Enfield_Request(struct EnfieldRequest *req);
+uint16_t Enfield_ReadRodEndPresure(void *ctx);
+uint16_t Enfield_ReadBaseEndPresure(void *ctx);

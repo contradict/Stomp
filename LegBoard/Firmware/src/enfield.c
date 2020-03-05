@@ -100,6 +100,18 @@ void Enfield_Request(struct EnfieldRequest *req)
     osMailPut(enfield_context[req->joint].commandQ, req);
 }
 
+uint16_t Enfield_ReadBaseEndPresure(void *ctx)
+{
+    enum JointIndex joint = (enum JointIndex)ctx;
+    return enfield_context[joint].BaseEndPressure;
+}
+
+uint16_t Enfield_ReadRodEndPresure(void *ctx)
+{
+    enum JointIndex joint = (enum JointIndex)ctx;
+    return enfield_context[joint].RodEndPressure;
+}
+
 void Curl_UART_Init()
 {
     enfield_uart[JOINT_CURL].Instance = CURL_UART_Instance;
