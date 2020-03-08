@@ -7,3 +7,6 @@
     represents
 * Add one more LED near the Communication connectors
 * Add non-volatile storage. A >2kbit I2C EEPROM would be a good choice.
+* I would like to have some testpoints
+    * 4 microprocessor pins brought to plated holes
+    * 6 LED controller pins brought to plated holes
