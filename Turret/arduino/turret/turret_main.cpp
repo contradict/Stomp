@@ -3,7 +3,6 @@
 #include "sbus.h"
 #include "leddar_io.h"
 #include "sensors.h"
-#include "drive.h"
 #include "xbee.h"
 #include "telem.h"
 #include "pins.h"
@@ -55,8 +54,6 @@ const uint32_t k_leddar_max_request_period=100000L;
 //
 //  ====================================================================
 
-static TurretController s_turretController;
-
 //  Keep track of radio communications status and state
 
 static int16_t s_hammerIntensity;
@@ -69,10 +66,6 @@ static uint32_t s_last_request_time = micros();
 static uint32_t s_last_sensor_time = micros();
 
 static enum AutoFireState s_autoFire = AF_NO_TARGET;
-static enum AutoAimState s_autoAim = AA_NO_TARGET;
-
-static int16_t s_steer_bias = 0; // positive turns left, negative turns right
-
 
 //  ====================================================================
 //
@@ -129,17 +122,16 @@ void turretSetup()
     initSensors();
     initIMU();
 
-    s_turretController.Init();
+    Turret.Init();
 
     //  Restore any information stored in EEMEM
 
     restoreObjectSegmentationParameters();
     restoreAutoFireParameters();
-    restoreAutoAimParameters();
     restoreTelemetryParameters();
-
     g_trackedObject.restoreTrackingFilterParams();
-    s_turretController.RestoreParams();
+
+    Turret.RestoreParams();
 
     // Turret init
 
@@ -182,7 +174,7 @@ void turretLoop()
     //  Calculate and apply turret rotation.  Accounts for systems adjustments
     //  such as auto aim as well as requested adjustmens from the radio controller
 
-    s_turretController.Update();
+    Turret.Update();
 
     //  Send out telemetry to PC and process commands from PC
 
@@ -190,6 +182,7 @@ void turretLoop()
     handleCommands();
 
     // Finally update our loop stats
+
 
     updateLoopStats();
 }
@@ -225,7 +218,7 @@ static void updateWatchDogTimer()
     //  As long as we have valid radio connection,
     //  prevent watch dog timer from expiring
 
-    if (true) // isRadioConnected()) 
+    if (isRadioConnected())
     {
         wdt_reset();
     }
@@ -267,20 +260,14 @@ static void updateTracking()
     uint8_t num_objects = segmentObjects(*minDetections, now, objects);
     int8_t best_object = trackObject(now, objects, num_objects, g_trackedObject);
 
-    //  Get the state of autoAim and autoFire
+    //  Get the state of autoFire
 
     s_autoFire = updateAutoFire(g_trackedObject, s_hammerDistance, s_hammerIntensity);
-    s_autoAim = updateAutoAim(g_trackedObject);
 
     if((s_autoFire==AF_HIT) && (s_currentRCBitfield & AUTO_HAMMER_ENABLE_BIT)) 
     {
         fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, true);
     }
-
-    if((s_autoAim == AA_LOCKED_ON) && (s_currentRCBitfield & AUTO_AIM_ENABLE_BIT)) 
-    {
-    }
-
 
     //  Send out tracking / auto aim telemetry
   
@@ -364,7 +351,7 @@ static void sendTelemetry()
         return;
     }
 
-    s_turretController.SendTelem();
+    Turret.SendTelem();
 
     sendSensorTelem(getPressure(), getAngle());
 
@@ -381,7 +368,9 @@ static void sendTelemetry()
     reset_loop_stats();
     int16_t hammer_angle = HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
 
-    sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance);
+    //  BB MJS: Get the turret speed to put in here
+
+    sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, 0);
 
     telemetryIMU();
 }

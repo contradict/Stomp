@@ -1,5 +1,7 @@
 #pragma once
 
+#include "track.h"
+
 //  ====================================================================
 //
 //  Forward declerations
@@ -41,14 +43,37 @@ public:
     void Init();
     void Update();
 
-    int32_t GetDesiredAutoAimSpeed();
-    int32_t GetDesiredSBusSpeed();
+    Track* GetCurrentTarget();
+    int32_t GetDesiredManualTurretSpeed();
 
     void SetParams(uint32_t p_watchDogTimerTriggerDt);
     void RestoreParams();
 
     void SendTelem();
-    
+
+private:
+
+    enum controllerState 
+    {
+        EInit,
+        ESafe,
+        EActive,
+
+        EInvalid = -1
+    };
+
+    //  ====================================================================
+    //
+    //  Private methods
+    //
+    //  ====================================================================
+
+    void setState(controllerState p_state);
+
+    void initAllControllers();
+
+    void saveParams();
+
     //  ====================================================================
     //
     //  Private constants
@@ -65,15 +90,6 @@ private:
     //
     //  ====================================================================
     
-    enum controllerState 
-    {
-        EInit,
-        ESafe,
-        EActive,
-
-        EInvalid = -1
-    };
-
     TurretRotationController *m_pTurretRotationController;
 
     controllerState m_state;
@@ -81,17 +97,6 @@ private:
 
     Params m_params;
 
-    //  ====================================================================
-    //
-    //  Private methods
-    //
-    //  ====================================================================
-
-    void initAllControllers();
-    
-    void setState(controllerState p_state);
-
-    void saveParams();
 };
 
 extern TurretController Turret;

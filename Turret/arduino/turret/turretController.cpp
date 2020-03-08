@@ -19,13 +19,13 @@
 //
 //  ====================================================================
 
+extern Track g_trackedObject;
+
 //  ====================================================================
 //
 //  File static variables
 //
 //  ====================================================================
-
-static TurretRotationController s_turretRotationController;
 
 static struct TurretController::Params EEMEM s_savedParams = 
 {
@@ -50,9 +50,17 @@ void TurretController::Init()
     setState(EInit);
 }
 
+ 
+
 void TurretController::Update()
 {
     uint32_t now = micros();
+
+    //  Pass update to our owned objects
+
+    m_pTurretRotationController->Update();
+
+    //  Update our state
 
     while(true)
     {
@@ -87,25 +95,23 @@ void TurretController::Update()
             break;
         }
 
+        //  No more state changes, move on
+        
         if (m_state == prevState)
         {
             break;
         }
     }
-
-    //  Now that the state is stable, take action based on stable state
-
-    s_turretRotationController.Update();
 }
 
-int32_t TurretController::GetDesiredAutoAimSpeed()
+Track* TurretController::GetCurrentTarget()
 {
-    return desiredAutoAimTurretSpeed();
+    return &g_trackedObject;
 }
 
-int32_t TurretController::GetDesiredSBusSpeed()
+int32_t TurretController::GetDesiredManualTurretSpeed()
 {
-    return desiredSBusTurretSpeed();
+    return getDesiredManualTurretSpeed();
 }
 
 void TurretController::SetParams(uint32_t p_watchDogTimerTriggerDt)
@@ -116,11 +122,15 @@ void TurretController::SetParams(uint32_t p_watchDogTimerTriggerDt)
 
 void TurretController::RestoreParams()
 {
+    m_pTurretRotationController->RestoreParams();
+
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct TurretController::Params));
 }
 
 void TurretController::SendTelem()
 {
+    m_pTurretRotationController->SendTelem();
+    sendTurretTelemetry(m_state);
 }
 
 //  ====================================================================
@@ -131,7 +141,7 @@ void TurretController::SendTelem()
 
 void TurretController::initAllControllers()
 {
-    s_turretRotationController.Init();
+    m_pTurretRotationController->Init();
 }
 
 void TurretController::setState(controllerState p_state)
@@ -147,7 +157,6 @@ void TurretController::setState(controllerState p_state)
     {
         case EInit:
         {
-            initAllControllers();
         }
         break;
     }
@@ -159,6 +168,13 @@ void TurretController::setState(controllerState p_state)
 
     switch (m_state)
     {
+        case EInit:
+        {
+            m_pTurretRotationController = new TurretRotationController();
+            initAllControllers();            
+        }
+        break;
+
         case ESafe:
         {
         }

@@ -26,10 +26,13 @@ static struct TelemetryParameters EEMEM saved_params = {
     .leddar_telemetry_interval=100000L,
     .drive_telem_interval=500000L,
     .enabled_telemetry=(
+            _LBV(TLM_ID_SYS)|
             _LBV(TLM_ID_SBS)|
-            _LBV(TLM_ID_SRT)|
             _LBV(TLM_ID_TRK)|
             _LBV(TLM_ID_AF)|
+            _LBV(TLM_ID_TUR)|
+            _LBV(TLM_ID_TROT)|
+            _LBV(TLM_ID_AAIM)|
             _LBV(TLM_ID_ACK)
             )
 };
@@ -40,7 +43,8 @@ static uint32_t last_telem_time = micros();
 static uint32_t last_drive_telem_time = micros();
 static uint32_t last_leddar_telem_time = micros();
 
-template <uint8_t packet_id, typename packet_inner> struct TelemetryPacket{
+template <uint8_t packet_id, typename packet_inner> struct TelemetryPacket
+{
     uint8_t pkt_id;
     packet_inner inner;
     uint16_t terminator;
@@ -48,7 +52,8 @@ template <uint8_t packet_id, typename packet_inner> struct TelemetryPacket{
 } __attribute__((packed));
 
 
-struct SystemTelemetryInner {
+struct SystemTelemetryInner 
+{
     uint8_t  weapons_enabled:1;
     uint32_t loop_speed_min;
     uint32_t loop_speed_avg;
@@ -70,7 +75,8 @@ bool sendSystemTelem(uint32_t loop_speed_min, uint32_t loop_speed_avg,
                      uint16_t leddar_overrun, uint16_t leddar_crc_error,
                      uint16_t sbus_overrun, uint8_t last_command,
                      uint16_t command_overrun, uint16_t invalid_command,
-                     uint16_t valid_command){
+                     uint16_t valid_command)
+{
     CHECK_ENABLED(TLM_ID_SYS);
     SystemTelemetry tlm;
     tlm.inner.weapons_enabled = g_enabled;
@@ -89,41 +95,42 @@ bool sendSystemTelem(uint32_t loop_speed_min, uint32_t loop_speed_avg,
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
 
-struct SensorTelemetryInner {
+struct SensorTelemetryInner 
+{
     uint16_t pressure;
     uint16_t angle;
-    int16_t vacuum_left;
-    int16_t vacuum_right;
-} __attribute__((packed));
+}
+ __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_SNS, SensorTelemetryInner> SensorTelemetry;
 
-bool sendSensorTelem(int16_t pressure, uint16_t angle){
+bool sendSensorTelem(int16_t pressure, uint16_t angle)
+{
     CHECK_ENABLED(TLM_ID_SNS);
     SensorTelemetry tlm;
     tlm.inner.pressure = pressure;
     tlm.inner.angle = angle;
-    tlm.inner.vacuum_left = 0;
-    tlm.inner.vacuum_right = 0;
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
 
-
-struct SBusTelemetryInner {
+struct SBusTelemetryInner 
+{
     uint16_t bitfield;
     int16_t hammer_intensity;
     int16_t hammer_distance;
+    int16_t turret_speed;
 } __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_SBS, SBusTelemetryInner> SBusTelemetry;
 
-bool sendSbusTelem(uint16_t cmd_bitfield, int16_t hammer_intensity, int16_t hammer_distance) {
+bool sendSbusTelem(uint16_t cmd_bitfield, int16_t hammer_intensity, int16_t hammer_distance, int16_t turret_speed) 
+{
     CHECK_ENABLED(TLM_ID_SBS);
     SBusTelemetry tlm;
     tlm.inner.bitfield = cmd_bitfield;
     tlm.inner.hammer_intensity = hammer_intensity;
     tlm.inner.hammer_distance = hammer_distance;
+    tlm.inner.turret_speed = turret_speed;
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
-
 
 const size_t MAX_DEBUG_MSG_LENGTH=128;
 bool sendDebugMessageTelem(const char *msg){
@@ -158,11 +165,11 @@ struct LeddarTelemetryInner {
     uint16_t range[LEDDAR_SEGMENTS];
     uint16_t amplitude[LEDDAR_SEGMENTS];
 } __attribute__((packed));
-typedef TelemetryPacket<TLM_ID_LEDDARV2, LeddarTelemetryInner> LeddarTelemetry;
+typedef TelemetryPacket<TLM_ID_LIDAR, LeddarTelemetryInner> LeddarTelemetry;
 
 static LeddarTelemetry leddar_tlm;
 bool sendLeddarTelem(const Detection (&min_detections)[LEDDAR_SEGMENTS], unsigned int count){
-  CHECK_ENABLED(TLM_ID_LEDDARV2);
+  CHECK_ENABLED(TLM_ID_LIDAR);
   leddar_tlm.inner.count = count;
   for (uint8_t i = 0; i < LEDDAR_SEGMENTS; i++){
       leddar_tlm.inner.range[i] = min_detections[i].Distance;
@@ -178,7 +185,6 @@ bool isTimeToSendLeddarTelem(uint32_t now) {
     }
     return send;
 }
-
 
 struct SwingTelemInner {
     uint16_t sample_period;
@@ -236,26 +242,6 @@ bool sendIMUTelem(int16_t (&a)[3], int16_t (&g)[3], int16_t t)
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
 
-struct DMPTelemInner {
-    uint16_t fifoCount;
-    uint8_t intStatus;
-    float qw, qx, qy, qz;
-} __attribute__((packed));
-typedef TelemetryPacket<TLM_ID_DMP, DMPTelemInner> DMPTelemetry;
-
-bool sendDMPTelem(size_t fifoCount, uint8_t intStatus, float w, float x, float y, float z)
-{
-    CHECK_ENABLED(TLM_ID_DMP);
-    DMPTelemetry tlm;
-    tlm.inner.fifoCount = fifoCount;
-    tlm.inner.intStatus = intStatus;
-    tlm.inner.qw = w;
-    tlm.inner.qx = x;
-    tlm.inner.qy = y;
-    tlm.inner.qz = z;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
-}
-
 struct ORNTelemInner {
     uint8_t padding:3;
     uint8_t orientation:4;
@@ -275,15 +261,6 @@ bool sendORNTelem(bool stationary, uint8_t orientation, int32_t sum_angular_rate
     tlm.inner.total_norm = total_norm;
     tlm.inner.cross_norm = cross_norm;
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
-}
-
-bool isTimeToSendDriveTelemetry(uint32_t now) {
-    CHECK_ENABLED(TLM_ID_DRV);
-    bool send = now-last_drive_telem_time > params.drive_telem_interval;
-    if(send) {
-        last_drive_telem_time = now;
-    }
-    return send;
 }
 
 struct TrackingTelemetryInner {
@@ -318,7 +295,6 @@ bool sendTrackingTelemetry(int16_t detection_x,
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
 
-
 struct AutofireTelemetryInner {
     int8_t state;
     int32_t swing;
@@ -337,21 +313,53 @@ bool sendAutofireTelemetry(enum AutoFireState st, int32_t swing, int32_t x, int3
 }
 
 struct AutoAimTelemetryInner {
-    int16_t steer_bias;
+    int16_t state;
+    int16_t target_angular_velocity;
     int16_t theta;
     int16_t vtheta;
     int16_t radius;
     int16_t vradius;
 } __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_AAIM, AutoAimTelemetryInner> AAIMTelemetry;
-bool sendAutoAimTelemetry(int16_t steer_bias, int16_t theta, int16_t vtheta, int16_t r, int16_t vr) {
+
+bool sendAutoAimTelemetry(int16_t state, int16_t target_angular_velocity, int16_t theta, int16_t vtheta, int16_t r, int16_t vr) 
+{
     CHECK_ENABLED(TLM_ID_AAIM);
     AAIMTelemetry tlm;
-    tlm.inner.steer_bias = steer_bias;
+    tlm.inner.state = state;
+    tlm.inner.target_angular_velocity = target_angular_velocity;
     tlm.inner.theta = theta;
     tlm.inner.vtheta = vtheta;
     tlm.inner.radius = r;
     tlm.inner.vradius = vr;
+    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+}
+
+struct TurretTelemetryInner {
+    int16_t state;
+} __attribute__((packed));
+typedef TelemetryPacket<TLM_ID_TUR, TurretTelemetryInner> TURTelemetry;
+
+bool sendTurretTelemetry(int16_t state) 
+{
+    CHECK_ENABLED(TLM_ID_TUR);
+    TURTelemetry tlm;
+    tlm.inner.state = state;
+    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+}
+
+struct TurretRotationTelemetryInner {
+    int16_t state;
+    int16_t current_speed;
+} __attribute__((packed));
+typedef TelemetryPacket<TLM_ID_TROT, TurretRotationTelemetryInner> TurretRotationTelemetry;
+
+bool sendTurretRotationTelemetry(int16_t state, int16_t current_speed) 
+{
+    CHECK_ENABLED(TLM_ID_TROT);
+    TurretRotationTelemetry tlm;
+    tlm.inner.state = state;
+    tlm.inner.current_speed = current_speed;
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
 
@@ -402,6 +410,7 @@ struct ObjectsCalcuatedInner {
    int16_t object_y[8];
 } __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_OBJC, ObjectsCalcuatedInner> ObjectsCalculatedTelemetry;
+
 struct ObjectsMeasuredInner {
    uint8_t num_objects;
    uint8_t left_edge[8];
@@ -409,6 +418,7 @@ struct ObjectsMeasuredInner {
    int16_t object_sum_distance[8];
 } __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_OBJM, ObjectsMeasuredInner> ObjectsMeasuredTelemetry;
+
 bool sendObjectsCalculatedTelemetry(uint8_t num_objects, const Object (&objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJC);
@@ -431,6 +441,7 @@ bool sendObjectsCalculatedTelemetry(uint8_t num_objects, const Object (&objects)
     }
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
+
 bool sendObjectsMeasuredTelemetry(uint8_t num_objects, const Object (&objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJM);
@@ -451,38 +462,9 @@ bool sendObjectsMeasuredTelemetry(uint8_t num_objects, const Object (&objects)[8
     }
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
+
 bool sendObjectsTelemetry(uint8_t num_objects, const Object (&objects)[8])
 {
     return (sendObjectsMeasuredTelemetry(num_objects, objects) +
             sendObjectsCalculatedTelemetry(num_objects, objects));
 }
-
-struct VacuumTelemInner {
-    uint16_t sample_period;
-    uint16_t datapoints;
-} __attribute__((packed));
-typedef TelemetryPacket<TLM_ID_VAC, VacuumTelemInner> VacuumTelemetry;
-
-bool sendVacuumTelemetry(uint16_t sample_period,
-                         uint16_t datapoints_collected,
-                         int16_t* left_vacuum,
-                         int16_t* right_vacuum)
-{
-    CHECK_ENABLED(TLM_ID_VAC);
-    VacuumTelemetry tlm;
-    tlm.inner.sample_period = sample_period;
-    tlm.inner.datapoints = datapoints_collected;
-    bool success = Xbee.write((unsigned char *)&tlm, sizeof(tlm)-sizeof(TLM_TERMINATOR));
-    if(success)
-    {
-        success &= Xbee.enqueue(
-            (uint8_t *)left_vacuum, sizeof(uint16_t)*datapoints_collected, NULL, NULL);
-        success &= Xbee.enqueue(
-            (uint8_t *)right_vacuum, sizeof(int16_t)*datapoints_collected, NULL, NULL);
-    }
-    success &= Xbee.write((uint8_t *)&tlm.terminator, sizeof(tlm.terminator));
-
-    return success;
-}
-
-

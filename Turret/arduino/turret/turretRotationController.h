@@ -1,5 +1,7 @@
 #pragma once
 
+#include "autoaim.h"
+
 //  ====================================================================
 //
 //  Class decleration
@@ -38,6 +40,37 @@ public:
 
     void SendTelem();
     
+private:
+
+    enum controllerState 
+    {
+        EInit,
+        ESafe,
+        EDisabled,
+        EIdle,
+        EManualControl,
+        EAutoAim,
+        EAutoAimWithManualAssist,
+
+        EInvalid = -1
+    };
+
+    //  ====================================================================
+    //
+    //  Private methods
+    //
+    //  ====================================================================
+
+    void updateSpeed();
+
+    void setState(controllerState p_state);
+    void setSpeed(int32_t p_speed);
+
+    void initAllControllers();
+    void initMotorController();
+
+    void saveParams();
+
     //  ====================================================================
     //
     //  Private constants
@@ -57,37 +90,12 @@ private:
     //
     //  ====================================================================
     
-    enum controllerState 
-    {
-        EInit,
-        ESafe,
-        EIdle,
-        EManualControl,
-        EAutoAim,
-        EAutoAimWithManualAssist,
-
-        EInvalid = -1
-    };
-
     controllerState m_state;
     uint32_t m_stateStartTime;
 
     int32_t m_currentSpeed;
 
+    AutoAim *m_pAutoAim;
+
     Params m_params;
-
-    //  ====================================================================
-    //
-    //  Private methods
-    //
-    //  ====================================================================
-
-    void initMotorController();
-
-    void updateSpeed();
-
-    void setState(controllerState p_state);
-    void setSpeed(int32_t p_speed);
-
-    void saveParams();
 };

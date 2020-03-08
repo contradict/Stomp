@@ -113,6 +113,16 @@ bool isRadioConnected()
     return s_radioConnected;
 }
 
+bool isManualTurretEnabled()
+{
+    return s_radioConnected && ((bitfield & MANUAL_TURRET_BIT) || (bitfield & AUTO_AIM_BIT));
+}
+
+bool isAutoAimEnabled()
+{
+    return s_radioConnected && (bitfield & AUTO_AIM_BIT);
+}
+
 static bool parseSbus(){
     if (sbusData[0] == 0x0F && sbusData[24] == 0x00) {
         // perverse little endian-ish packet structure-- low bits come in first byte, remaining high bits
@@ -147,13 +157,11 @@ static bool parseSbus(){
 #define FLAME_PULSE_THRESHOLD 500
 #define FLAME_CTRL_THRESHOLD 1500
 
-#define AUTO_HOLD_DOWN_THRESHOLD 500
-#define MANUAL_HOLD_DOWN_THRESHOLD 1500
+#define MANUAL_TURRET_THRESHOLD 500
+#define AUTO_AIM_THRESHOLD 1500
 
 #define GENTLE_HAM_F_THRESHOLD 500
 #define GENTLE_HAM_R_THRESHOLD 1500
-
-#define AUTOAIM_THRESHOLD 1500
 
 #define TURRET_SPEED_RC_MIN 170
 #define TURRET_SPEED_RC_MAX 1800
@@ -189,6 +197,14 @@ static uint16_t computeRCBitfield() {
   // Center position enables pulse mode
   if ( sbusChannels[FLAME_CTRL] > FLAME_PULSE_THRESHOLD && sbusChannels[FLAME_CTRL] < FLAME_CTRL_THRESHOLD ){
     bitfield |= FLAME_PULSE_BIT;
+  }
+
+ if( sbusChannels[TURRET_CTL_MODE] > AUTO_AIM_THRESHOLD ){
+      bitfield |= AUTO_AIM_BIT;
+  }
+  else if(MANUAL_TURRET_THRESHOLD < sbusChannels[TURRET_CTL_MODE] &&
+      sbusChannels[TURRET_CTL_MODE] < AUTO_AIM_THRESHOLD ){
+      bitfield |= MANUAL_TURRET_BIT;
   }
 
   if ( sbusChannels[GENTLE_HAM_CTRL] < GENTLE_HAM_F_THRESHOLD){
@@ -232,7 +248,7 @@ uint16_t getHammerIntensity(){
   return intensity;
 }
 
-int16_t desiredSBusTurretSpeed()
+int16_t getDesiredManualTurretSpeed()
 {
     uint16_t channel_val;
  
