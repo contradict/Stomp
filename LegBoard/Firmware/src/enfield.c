@@ -7,6 +7,8 @@
 #include "enfield_uart.h"
 #include "joint.h"
 
+#define ENFIELD_BAUD 115200
+
 #define ENFIELD_OK             0
 #define ENFIELD_TXFAIL        -1
 #define ENFIELD_TXTO          -2
@@ -19,8 +21,7 @@ enum EnfieldInterruptSignal {
     ENFIELD_RX_COMPLETE = 1,
     ENFIELD_TX_COMPLETE = 2,
     ENFIELD_ERROR = 4,
-    ENFIELD_MESSAGE = 8,
-    ENFIELD_SIGNAL_ALL = 0x0f
+    ENFIELD_SIGNAL_ALL = 0x07
 };
 
 enum EnfieldThreadState {
@@ -39,6 +40,8 @@ struct EnfieldContext
     uint16_t RodEndPressure;
     uint16_t DigitalCommand;
     osMailQId commandQ;
+    uint8_t txpkt[8];
+    uint8_t rxpkt[6];
 };
 
 struct EnfieldParameters {
@@ -50,13 +53,13 @@ struct EnfieldParameters {
 static void Enfield_UART_Init();
 static void Enfield_Thread(const void *arg);
 static int Enfield_SendCommand(struct EnfieldContext *enf, uint8_t r, uint16_t v);
-static int Enfield_WaitTransmit(void);
-static int Enfield_ReceiveResponse(struct EnfieldContext *enf, uint8_t *pkt);
-static int Enfield_WaitReceive(uint8_t *pkt, uint16_t *v);
+static int Enfield_WaitTransmit(struct EnfieldContext *enf);
+static int Enfield_ReceiveResponse(struct EnfieldContext *enf);
+static int Enfield_WaitReceive(struct EnfieldContext *enf, uint16_t *v);
 static int Enfield_Get(struct EnfieldContext *enf, enum EnfieldReadRegister r, uint16_t *v);
 static int Enfield_Write(struct EnfieldContext *enf, enum EnfieldWriteRegister r, uint16_t *v);
 
-static struct EnfieldParameters parameters __attribute__ ((section (".storage.enfield"))) = {
+static struct EnfieldParameters enfield_parameters __attribute__ ((section (".storage.enfield"))) = {
     .sample_period = 50,
     .transmit_timeout = 2,
     .data_timeout = 10
@@ -64,7 +67,9 @@ static struct EnfieldParameters parameters __attribute__ ((section (".storage.en
 
 UART_HandleTypeDef enfield_uart[JOINT_COUNT];
 static struct EnfieldContext enfield_context[JOINT_COUNT];
-osThreadDef(enfield_thread, Enfield_Thread, osPriorityAboveNormal, 3, configMINIMAL_STACK_SIZE);
+osThreadDef(enfield_curl_thread, Enfield_Thread, osPriorityAboveNormal, 1, configMINIMAL_STACK_SIZE);
+osThreadDef(enfield_swing_thread, Enfield_Thread, osPriorityAboveNormal, 1, configMINIMAL_STACK_SIZE);
+osThreadDef(enfield_lift_thread, Enfield_Thread, osPriorityAboveNormal, 1, configMINIMAL_STACK_SIZE);
 
 osMailQDef(curlcommand, 32, struct EnfieldRequest);
 osMailQDef(swingcommand, 32, struct EnfieldRequest);
@@ -80,11 +85,11 @@ void Enfield_Init(void)
     enfield_context[JOINT_SWING].uart = &enfield_uart[JOINT_SWING];
     enfield_context[JOINT_LIFT].uart = &enfield_uart[JOINT_LIFT];
 
-    enfield_context[JOINT_CURL].thread = osThreadCreate(osThread(enfield_thread), &enfield_context[JOINT_CURL]);
+    enfield_context[JOINT_CURL].thread = osThreadCreate(osThread(enfield_curl_thread), &enfield_context[JOINT_CURL]);
     enfield_context[JOINT_CURL].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_CURL].thread);
-    enfield_context[JOINT_SWING].thread = osThreadCreate(osThread(enfield_thread), &enfield_context[JOINT_SWING]);
+    enfield_context[JOINT_SWING].thread = osThreadCreate(osThread(enfield_swing_thread), &enfield_context[JOINT_SWING]);
     enfield_context[JOINT_SWING].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_SWING].thread);
-    enfield_context[JOINT_LIFT].thread = osThreadCreate(osThread(enfield_thread), &enfield_context[JOINT_LIFT]);
+    enfield_context[JOINT_LIFT].thread = osThreadCreate(osThread(enfield_lift_thread), &enfield_context[JOINT_LIFT]);
     enfield_context[JOINT_LIFT].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_LIFT].thread);
 }
 
@@ -115,7 +120,7 @@ uint16_t Enfield_ReadRodEndPresure(void *ctx)
 void Curl_UART_Init()
 {
     enfield_uart[JOINT_CURL].Instance = CURL_UART_Instance;
-    enfield_uart[JOINT_CURL].Init.BaudRate = 57600;
+    enfield_uart[JOINT_CURL].Init.BaudRate = ENFIELD_BAUD;
     enfield_uart[JOINT_CURL].Init.WordLength = UART_WORDLENGTH_8B;
     enfield_uart[JOINT_CURL].Init.HwFlowCtl = UART_HWCONTROL_NONE;
     enfield_uart[JOINT_CURL].Init.Mode = UART_MODE_TX_RX;
@@ -129,7 +134,7 @@ void Curl_UART_Init()
 void Lift_UART_Init()
 {
     enfield_uart[JOINT_LIFT].Instance = LIFT_UART_Instance;
-    enfield_uart[JOINT_LIFT].Init.BaudRate = 57600;
+    enfield_uart[JOINT_LIFT].Init.BaudRate = ENFIELD_BAUD;
     enfield_uart[JOINT_LIFT].Init.WordLength = UART_WORDLENGTH_8B;
     enfield_uart[JOINT_LIFT].Init.HwFlowCtl = UART_HWCONTROL_NONE;
     enfield_uart[JOINT_LIFT].Init.Mode = UART_MODE_TX_RX;
@@ -143,7 +148,7 @@ void Lift_UART_Init()
 void Swing_UART_Init()
 {
     enfield_uart[JOINT_SWING].Instance = SWING_UART_Instance;
-    enfield_uart[JOINT_SWING].Init.BaudRate = 57600;
+    enfield_uart[JOINT_SWING].Init.BaudRate = ENFIELD_BAUD;
     enfield_uart[JOINT_SWING].Init.WordLength = UART_WORDLENGTH_8B;
     enfield_uart[JOINT_SWING].Init.HwFlowCtl = UART_HWCONTROL_NONE;
     enfield_uart[JOINT_SWING].Init.Mode = UART_MODE_TX_RX;
@@ -168,6 +173,7 @@ void Enfield_Thread(const void *arg)
     struct EnfieldContext *st = (struct EnfieldContext *)arg;
     struct EnfieldRequest *req;
     uint16_t dummy_command;
+    uint8_t err;
     while(1)
     {
         switch(state)
@@ -176,19 +182,24 @@ void Enfield_Thread(const void *arg)
                 state = SetZero;
                 break;
             case SetZero:
-                dummy_command = 0x0000;
-                if(ENFIELD_OK == Enfield_Write(st, SetZeroGains, &dummy_command))
+                dummy_command = 0x2222;
+                err = Enfield_Write(st, 149, &dummy_command);
+                if(ENFIELD_OK == err)
                 {
                     state = WaitRequest;
                 }
+                else
+                {
+                    osDelay(50);
+                }
                 break;
             case WaitRequest:
-                evt = osMailGet(st->commandQ, parameters.sample_period);
-                if(evt.status & osEventTimeout)
+                evt = osMailGet(st->commandQ, enfield_parameters.sample_period);
+                if(evt.status == osEventTimeout)
                 {
                     state = Update;
                 }
-                else if(evt.status & osEventMail)
+                else if(evt.status == osEventMail)
                 {
                     state = ExecuteRequest;
                 }
@@ -220,12 +231,14 @@ void Enfield_Thread(const void *arg)
 
 static int Enfield_SendCommand(struct EnfieldContext *enf, uint8_t r, uint16_t v)
 {
-    uint8_t pkt[8] = {'$', 'C', r, 0x11, 0x11, '#', 0x00, 0x00};
+    enf->txpkt[0] = '$';
+    enf->txpkt[1] = 'C';
+    enf->txpkt[2] = r;
+    *(uint16_t *)(enf->txpkt + 3) = v;
+    enf->txpkt[5] = '#';
+    *(uint16_t *)&enf->txpkt[6] = MODBUS_crc(enf->txpkt, 6);
 
-    *(uint16_t *)(pkt + 3) = v;
-    *(uint16_t *)&pkt[6] = MODBUS_crc(pkt, 6);
-
-    if(0 == HAL_UART_Transmit_IT(enf->uart, pkt, 8))
+    if(0 == HAL_UART_Transmit_DMA(enf->uart, enf->txpkt, 8))
     {
         return ENFIELD_OK;
     }
@@ -235,20 +248,26 @@ static int Enfield_SendCommand(struct EnfieldContext *enf, uint8_t r, uint16_t v
     }
 }
 
-static int Enfield_WaitTransmit(void)
+static int Enfield_WaitTransmit(struct EnfieldContext *enf)
 {
     osEvent evt;
-    evt = osSignalWait(ENFIELD_SIGNAL_ALL, parameters.transmit_timeout);
-    if(!(evt.status == osEventSignal && (evt.value.signals & ENFIELD_TX_COMPLETE)))
+    evt = osSignalWait(ENFIELD_SIGNAL_ALL, enfield_parameters.transmit_timeout);
+    if(evt.status == osEventTimeout)
     {
+        HAL_UART_AbortTransmit_IT(enf->uart);
         return ENFIELD_TXTO;
     }
-    return ENFIELD_OK;
+    if((evt.status == osEventSignal) &&
+       (evt.value.signals & ENFIELD_TX_COMPLETE))
+    {
+        return ENFIELD_OK;
+    }
+    return ENFIELD_TXFAIL;
 }
 
-static int Enfield_ReceiveResponse(struct EnfieldContext *enf, uint8_t *pkt)
+static int Enfield_ReceiveResponse(struct EnfieldContext *enf)
 {
-    if(HAL_OK == HAL_UART_Receive_IT(enf->uart, pkt, 6))
+    if(HAL_OK == HAL_UART_Receive_DMA(enf->uart, enf->rxpkt, 6))
     {
         return ENFIELD_OK;
     }
@@ -258,69 +277,72 @@ static int Enfield_ReceiveResponse(struct EnfieldContext *enf, uint8_t *pkt)
     }
 }
 
-static int Enfield_WaitReceive(uint8_t *pkt, uint16_t *v)
+static int Enfield_WaitReceive(struct EnfieldContext *enf, uint16_t *v)
 {
     osEvent evt;
-    evt = osSignalWait(ENFIELD_SIGNAL_ALL, parameters.data_timeout);
-    if(!(evt.status == osEventSignal && (evt.value.signals & ENFIELD_RX_COMPLETE)))
+    int err;
+    evt = osSignalWait(ENFIELD_SIGNAL_ALL, enfield_parameters.data_timeout);
+    if(evt.status == osEventTimeout)
     {
-        return ENFIELD_RXTO;
+        HAL_UART_AbortReceive_IT(enf->uart);
+        err = ENFIELD_RXTO;
     }
-    if(MODBUS_crc(pkt, 6) == 0)
+    else if((evt.status == osEventSignal) &&
+       (evt.value.signals & ENFIELD_RX_COMPLETE))
     {
-        *v = *(uint16_t *)(pkt+1);
-        return ENFIELD_OK;
+        if(MODBUS_crc(enf->rxpkt, 6) == 0)
+        {
+            *v = *(uint16_t *)(enf->rxpkt+1);
+            err = ENFIELD_OK;
+        }
+        else
+        {
+            err = ENFIELD_CRCFAIL;
+        }
     }
-    return ENFIELD_CRCFAIL;
+    else
+    {
+        err = ENFIELD_RXFAIL;
+    }
+    return err;
 }
 
 static int Enfield_Transfer(struct EnfieldContext *enf,  uint8_t r, uint16_t *v)
 {
-    uint8_t rxpkt[6];
     int err;
     err = Enfield_SendCommand(enf, r, *v);
     if(err != ENFIELD_OK)
     {
         return err;
     }
-    err = Enfield_WaitTransmit();
+    err = Enfield_ReceiveResponse(enf);
     if(err != ENFIELD_OK)
     {
+        HAL_UART_AbortTransmit_IT(enf->uart);
         return err;
     }
-    err = Enfield_ReceiveResponse(enf, rxpkt);
+    err = Enfield_WaitTransmit(enf);
     if(err != ENFIELD_OK)
     {
+        HAL_UART_AbortReceive_IT(enf->uart);
         return err;
     }
-    return Enfield_WaitReceive(rxpkt, v);
+    err =  Enfield_WaitReceive(enf, v);
+    return err;
 }
 
 static int Enfield_Get(struct EnfieldContext *enf, enum EnfieldReadRegister r, uint16_t *v)
 {
     uint8_t err;
     err = Enfield_Transfer(enf, r, v);
-    if(err != ENFIELD_OK)
-    {
-        return err;
-    }
-    return ENFIELD_OK;
+    return err;
 }
 
 static int Enfield_Write(struct EnfieldContext *enf, enum EnfieldWriteRegister r, uint16_t *v)
 {
-    uint16_t vcopy = *v;
     uint8_t err;
     err = Enfield_Transfer(enf, r, v);
-    if(err != ENFIELD_OK)
-    {
-        return err;
-    }
-    if(vcopy != *v)
-    {
-        return ENFIELD_WRITEMISMATCH;
-    }
-    return ENFIELD_OK;
+    return err;
 }
 
 void Enfield_RxCplt(UART_HandleTypeDef *huart)
