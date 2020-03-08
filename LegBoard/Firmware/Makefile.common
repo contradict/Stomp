@@ -301,24 +301,24 @@ ifeq ($(strip $(CONFIG_LL_USB_MODULE_ENABLED)),y)
 	STARTUP += $(PERIPH)/Src/stm32f7xx_ll_usb.o
 endif
 
-############ Middlewares
+############ 
 
 ifeq ($(strip $(CONFIG_CMSIS_RTOS_ENABLED)),y)
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/croutine.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/list.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/queue.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/tasks.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/timers.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.o
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/FreeRTOS-openocd.o
-	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/include
-	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/croutine.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/list.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/queue.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/tasks.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/timers.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/portable/MemMang/heap_4.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/FreeRTOS-openocd.o
+	CFLAGS += -I$(LIBROOT_FILENAME)/FreeRTOS/Source/include
+	CFLAGS += -I$(LIBROOT_FILENAME)/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1
 endif
 
 ifeq ($(strip $(CONFIG_LWIP_MIDDLEWARE_ENABLED)),y)
-	LWIPDIR = $(LIBROOT_FILENAME)/Middlewares/Third_Party/LwIP/src
+	LWIPDIR = $(LIBROOT_FILENAME)/LwIP/src
 
 	# COREFILES, CORE4FILES: The minimum set of files needed for lwIP.
 	COREFILES=$(LWIPDIR)/core/init.c \
@@ -421,11 +421,11 @@ ifeq ($(strip $(CONFIG_LWIP_MIDDLEWARE_ENABLED)),y)
 		$(SIXLOWPAN:.c=.o) \
 		$(APPFILES:.c=.o)
 
-	STARTUP += $(LIBROOT_FILENAME)/Middlewares/Third_Party/LwIP/system/OS/sys_arch.o
-	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/LwIP/system/arch
-	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/LwIP/system
-	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/LwIP/src/include
-	CFLAGS += -I$(LIBROOT_FILENAME)/Middlewares/Third_Party/LwIP/src/apps/httpd
+	STARTUP += $(LIBROOT_FILENAME)/LwIP/system/OS/sys_arch.o
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/system/arch
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/system
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/src/include
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/src/apps/httpd
 endif
 
 ############ Utils
@@ -516,8 +516,8 @@ ifeq ($(strip $(CONFIG_LWIP_MIDDLEWARE_ENABLED)),y)
 endif
 
 ifeq ($(strip $(CONFIG_CMSIS_RTOS_ENABLED)),y)
-	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h ./inc/cmsis_os.h
-	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOSConfig_template.h ./inc/FreeRTOSConfig.h
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h ./inc/cmsis_os.h
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/FreeRTOS/Source/include/FreeRTOSConfig_template.h ./inc/FreeRTOSConfig.h
 endif
 
 clean:
