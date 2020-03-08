@@ -37,9 +37,9 @@ USER_MODIFIED
 "config/tools/launcher/launcher_mini.txt" 0x46F8054C
 "config/tools/launcher/launcher.css" 0x6314C0C0
 "config/tools/launcher/launcher2.txt" 0x697956FC
-"config/tools/launcher/launcher.txt" 0xD8164517
+"config/tools/launcher/launcher.txt" 0x7EA19786
 "config/tools/launcher/launcher2.css" 0x69DA47AB
-"config/tools/tlm_grapher/tlm_grapher.txt" 0xCFC19F8B
+"config/tools/tlm_grapher/tlm_grapher.txt" 0x81BD1063
 "config/tools/tlm_grapher/leddar.txt" 0x9C266402
 "config/tools/tlm_grapher/README.txt" 0x93B2C07E
 "config/data/meta_init.txt" 0x1B132ACE

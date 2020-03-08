@@ -3,7 +3,7 @@ TOOL_FONT tahoma 12
 LABEL_FONT tahoma 16
 NUM_COLUMNS 5 # This is the default
 
-MULTITOOL_START "CHOMP"
+MULTITOOL_START "STOMP"
   TOOL "LAUNCH CmdTlmServer -x 65 -y 52 -w 1024 -t 400 -c xbee.txt"
   DELAY 5
   TOOL "LAUNCH CmdSender -x 65 -y 52 -w 680 -t 748 --packet 'CHOMP TCNTRL'"
