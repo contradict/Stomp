@@ -193,93 +193,45 @@ void AutoAim::SendTelem()
 
 void AutoAim::updateDesiredTurretSpeed()
 {
-    m_desiredTurretSpeed = 0;
+    if (m_state != ETrackingTarget)
+    {
+        m_desiredTurretSpeed = 0;
+        return;
+    }
 
-    /*
-    bool valid = tracked_object.valid(now);
-    if(valid) {
-        int32_t bias;
-        int32_t theta = tracked_object.angle();
-        int32_t vtheta = tracked_object.vtheta();
-        bias  = params.steer_p * (0 - theta) / 16384L;
-        bias += -params.steer_d * vtheta / 16384L;
-        int16_t omegaZ = 0;
-        if(getOmegaZ(&omegaZ)) {
-            bias += -params.gyro_gain*omegaZ/1024;
-        }
-        *steer_bias  = clip(bias, -params.steer_max, params.steer_max);
-        int32_t tracked_r = integer_sqrt(
-            (tracked_object.x / 4L) * (tracked_object.x / 4L) +
-            (tracked_object.y / 4L) * (tracked_object.y / 4L));
-        int32_t tracked_vr = integer_sqrt(
-            (tracked_object.vx / 4L) * (tracked_object.vx / 4L)+
-            (tracked_object.vy / 4L) * (tracked_object.vy / 4L));
-        bias  = params.drive_p * ((int32_t)depth*4L - tracked_r)/16384L;
-        bias += -params.drive_d * tracked_vr * 4 / 16384L;
-        *drive_bias  = clip(bias, -params.drive_max, params.drive_max);
-        if(now - last_autodrive_telem > params.autodrive_telem_interval) {
-            sendAutodriveTelemetry(*steer_bias,
-                                   *drive_bias,
-                                   clip(theta, -32768L, 32767L),
-                                   clip(vtheta, -32768L, 32767L),
-                                   clip(tracked_r / 4, -32768L, 32767L),
-                                   clip(tracked_vr / 4, -32768L, 32767L));
-        */
-
-           /*
-    Track p_trackedObject;
+    //  We should not be in ETrackingTarget, without a valid target,
+    //  but, lets just be sure
 
     uint32_t now = micros();
- 
-    enum AutoAimState state = AA_NO_TARGET;
-    m_desiredTurretSpeed = 0;
-    
-    //  Calculate the speed at which the turret should turn to place
-    //  the tracked object in line with the swing of the hammer.
-    //
-    //  This caclulation ignores all other turret motion factors, such as
-    //  the angular velocity of the hull or controller input.  Simply
-    //  caclulate the turret rotation relative to a unmoving base that                                  
-    //  will align the hammer to the target
 
-    if (p_trackedObject.valid(now))
+    if (!m_pTarget->valid(now))
     {
-        //
-        //  Magically convert from where the target is and how fast it is moving, into 
-        //  the speed we want the turret to be turning
-        //
+        return;
+    }    
 
-        state == AA_TRACKING_TARGET;    
-        s_desiredTurretSpeed = FROM_FP_32x14(-p_trackedObject.vtheta() * getTmpAdjustment());
+    int32_t theta = m_pTarget->angle();
+    int32_t vtheta = m_pTarget->vtheta();
 
-        //  This is more like the real alogrithm, but the above is fine for now
-        int16_t steer_bias;
+    m_desiredTurretSpeed = m_params.steer_p * (0 - theta) / 16384L;
+    m_desiredTurretSpeed += -m_params.steer_d * vtheta / 16384L;
 
-        int32_t bias;
-
-        int32_t theta = p_trackedObject.angle();
-        int32_t vtheta = p_trackedObject.vtheta();
-
-        //  Convert from the angle between forward (hammer axis) and target
-        //  in to the speed we need to run the motor at 
-        bias  = FROM_FP_32x14(s_autoAimParams.steer_p * (0 - theta));
-        bias += FROM_FP_32x14(-s_autoAimParams.steer_d * vtheta)
-
-        int16_t omegaZ = 0;
-        if(getOmegaZ(&omegaZ)) 
-        {
-            bias += -s_autoAimParams.gyro_gain*omegaZ/1024;
-        }
-
-        steer_bias  = constrain(bias, -s_autoAimParams.steer_max, s_autoAimParams.steer_max);
+    /*
+     int16_t omegaZ = 0;
+    if(getOmegaZ(&omegaZ)) 
+    {
+        m_desiredTurretSpeed += -m_params.gyro_gain * omegaZ / 1024;
     }
 
-    if (now - s_lastAutoaimTelem > s_autoAimParams.autoaimTelemInterval) 
-    {
-        sendAutoAimTelemetry(0, 0, 0, 0, 0);
-    }
+   int32_t tracked_r = integer_sqrt(
+        (m_pTarget->x / 4L) * (m_pTarget->x / 4L) +
+        (m_pTarget->y / 4L) * (m_pTarget->y / 4L));
+        
+    int32_t tracked_vr = integer_sqrt(
+        (m_pTarget->vx / 4L) * (m_pTarget->vx / 4L)+
+        (m_pTarget->vy / 4L) * (m_pTarget->vy / 4L));
 
-    return state;
+    bias  = params.drive_p * ((int32_t)depth*4L - tracked_r)/16384L;
+    bias += -params.drive_d * tracked_vr * 4 / 16384L;   
     */
 }
 
