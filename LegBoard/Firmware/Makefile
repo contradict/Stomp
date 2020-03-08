@@ -12,6 +12,7 @@ OBJS=$(STARTUP) src/main.o
 OBJS += src/stm32f7xx_hal_timebase_tim.o
 OBJS += src/storage.o
 OBJS += src/status_led.o
+OBJS += src/debug_pin.o
 OBJS += src/feedback_adc.o src/linearize_feedback.o
 OBJS += src/uart.o
 OBJS += src/modbus.o src/modbus_coils.o src/modbus_discrete_inputs.o
