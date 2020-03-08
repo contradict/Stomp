@@ -955,7 +955,8 @@ HAL_StatusTypeDef HAL_UART_UnRegisterCallback(UART_HandleTypeDef *huart, HAL_UAR
            using DMA mode.
            The HAL_UART_TxCpltCallback(), HAL_UART_RxCpltCallback() user callbacks
            will be executed respectively at the end of the transmit or Receive process
-           The HAL_UART_ErrorCallback()user callback will be executed when a communication error is detected
+           The HAL_UART_ErrorCallback() user callback will be executed when a
+           communication error is detected
 
     (#) Blocking mode API's are :
         (+) HAL_UART_Transmit()
