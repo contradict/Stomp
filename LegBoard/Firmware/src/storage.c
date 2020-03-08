@@ -15,9 +15,9 @@
 #define ADDR_FLASH_SECTOR_10    ((uint32_t)0x08180000) /* Base address of Sector 10, 256 Kbytes */
 #define ADDR_FLASH_SECTOR_11    ((uint32_t)0x081C0000) /* Base address of Sector 11, 256 Kbytes */
 
-extern int _sstdata; // Start of data in RAM
-extern int _estdata; // End of data in RAM
-extern int _ldstdata; // Start of data in FLASH (LMA)
+extern uint8_t _sstdata; // Start of data in RAM
+extern uint8_t _estdata; // End of data in RAM
+extern uint8_t _ldstdata; // Start of data in FLASH (LMA)
 
 static uint32_t GetSector(uint32_t Address)
 {
