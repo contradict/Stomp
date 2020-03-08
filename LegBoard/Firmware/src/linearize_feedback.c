@@ -26,6 +26,15 @@
 #define ADC_CONV_ERROR    8
 
 static void Linearize_Thread(const void* args);
+void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
+                          float voltage[JOINT_COUNT],
+                          float joint_angle[JOINT_COUNT]);
+void compute_cylinder_lengths(const float joint_angle[JOINT_COUNT],
+                              float cylinder_length[JOINT_COUNT]);
+void compute_feedback_voltage(const float cylinder_length[JOINT_COUNT],
+                              float feedback_voltage[JOINT_COUNT],
+                              uint16_t feedback_code[JOINT_COUNT]);
+void compute_led_brightness(const float joint_voltage[JOINT_COUNT]);
 
 #define __MAX_DAC_OUTPUT 10.8f
 static const float ADC_VREF = 3.3f;
@@ -69,6 +78,7 @@ struct LinearizationConstants {
 
 static struct LinearizationConstants linearization_constants __attribute__ ((section (".storage.linearize"))) = {
     .theta_offset = {
+      //THETA_OFFSET(Vmin,  Vmax,           Thetamin,           Thetamax)
         THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),  // CURL
         THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),  // SWING
         THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)}, // LIFT
@@ -77,19 +87,23 @@ static struct LinearizationConstants linearization_constants __attribute__ ((sec
         THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),   // SWING
         THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)},  // LIFT
     .shape_offset = {
+      //SHAPE_OFFSET(   l1,    l2)
         SHAPE_OFFSET(0.00f, 0.00f),                                         // CURL
         SHAPE_OFFSET(0.00f, 0.00f),                                         // SWING
         SHAPE_OFFSET(0.00f, 0.00f)},                                        // LIFT
     .shape_scale = {
+      //SHAPE_SCALE(   l1,    l2)
         SHAPE_SCALE(0.00f, 0.00f),                                          // CURL
         SHAPE_SCALE(0.00f, 0.00f),                                          // SWING
         SHAPE_SCALE(0.00f, 0.00f)},                                         // LIFT
     .shape_phase = {0.0f, 0.0f, 0.0f},
     .feedback_offset = {
+      //FEEDBACK_OFFSET( Lmin,  Lmax,Vmin,  Vmax)
         FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
         FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // SWING
         FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f)},                         // LIFT
     .feedback_scale = {
+      //FEEDBACK_SCALE( Lmin,  Lmax,Vmin,  Vmax)
         FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
         FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // SWING
         FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f)},                         // LIFT
@@ -175,11 +189,10 @@ static void Linearize_Thread(const void* args)
 {
     (void)args;
     osEvent event;
-    float voltage[JOINT_COUNT];
+    float joint_voltage[JOINT_COUNT];
     float feedback_voltage[JOINT_COUNT];
     uint16_t feedback_code[JOINT_COUNT];
-    float brightness[JOINT_COUNT];
-    int sendjoint=3;
+    int sendjoint=JOINT_COUNT; // start past end, need to reset to start sending
 
     setup_dac();
     HAL_ADC_Start(&feedback_adcs[2]);
@@ -199,7 +212,7 @@ static void Linearize_Thread(const void* args)
         }
         else if(event.value.signals & DAC_TX_COMPLETE)
         {
-            if(sendjoint<3)
+            if(sendjoint<JOINT_COUNT)
             {
                 ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
                 sendjoint++;
@@ -212,28 +225,63 @@ static void Linearize_Thread(const void* args)
         else if(event.value.signals & ADC_CONV_COMPLETE)
         {
             DAC_IO_LDAC(false);
-            for(int joint=0;joint<JOINT_COUNT;joint++)
-            {
-                voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) * JOINT_DIVIDER);
-                joint_angle[joint] = (linearization_constants.theta_offset[joint] +
-                                      linearization_constants.theta_scale[joint] * voltage[joint]);
-            }
-            // float length = sqrtf(linearization_constants.shape_offset[current_joint] +
-            //                      linearization_constants.shape_scale[current_joint] * sinf(angle + linearization_constants.shape_phase[current_joint]));
-            // float feedback_voltage = (linearization_constants.feedback_offset[current_joint] +
-            //                           linearization_constants.feedback_scale[current_joint] * length);
-            for(int joint=0;joint<JOINT_COUNT;joint++)
-            {
-                feedback_voltage[joint] = MAX_DAC_OUTPUT - voltage[joint] / JOINT_DIVIDER / ADC_VREF * MAX_DAC_OUTPUT;
-                feedback_code[joint] = feedback_voltage[joint] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
-                brightness[joint] = voltage[joint]*250.0f / (ADC_VREF * JOINT_DIVIDER);
-                brightness[joint] = (brightness[joint] > 255.0f) ? 255.0f : ((brightness[joint] < 0.0f) ? 0.0f : brightness[joint]);
-                LED_SetOne(joint_led_channel[joint], 1, brightness[joint]);
-            }
+            compute_joint_angles(channel_values, joint_voltage, joint_angle);
+            compute_cylinder_lengths(joint_angle, cylinder_length);
+            compute_feedback_voltage(cylinder_length, feedback_voltage, feedback_code);
+            compute_led_brightness(joint_voltage);
             sendjoint = 0;
             ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
             sendjoint++;
         }
+    }
+}
+
+void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
+                          float voltage[JOINT_COUNT],
+                          float joint_angle[JOINT_COUNT])
+{
+    for(int joint=0;joint<JOINT_COUNT;joint++)
+    {
+        voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) * JOINT_DIVIDER);
+        joint_angle[joint] = (linearization_constants.theta_offset[joint] +
+                linearization_constants.theta_scale[joint] * voltage[joint]);
+    }
+}
+
+void compute_cylinder_lengths(const float joint_angle[JOINT_COUNT],
+                              float cylinder_length[JOINT_COUNT])
+{
+    for(int joint = 0; joint < JOINT_COUNT; joint++)
+    {
+        cylinder_length[joint] = (
+                sqrtf(linearization_constants.shape_offset[joint] +
+                    (linearization_constants.shape_scale[joint] *
+                     sinf(joint_angle[joint] +
+                         linearization_constants.shape_phase[joint]))));
+    }
+}
+
+void compute_feedback_voltage(const float cylinder_length[JOINT_COUNT],
+                              float feedback_voltage[JOINT_COUNT],
+                              uint16_t feedback_code[JOINT_COUNT])
+{
+    for(int joint = 0; joint < JOINT_COUNT; joint++)
+    {
+        feedback_voltage[joint] = (
+            linearization_constants.feedback_offset[joint] +
+            linearization_constants.feedback_scale[joint] * cylinder_length[joint]);
+        feedback_code[joint] = feedback_voltage[joint] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+    }
+}
+
+void compute_led_brightness(const float joint_voltage[JOINT_COUNT])
+{
+    float brightness;
+    for(int joint=0;joint<JOINT_COUNT;joint++)
+    {
+        brightness = joint_voltage[joint]*250.0f / (ADC_VREF * JOINT_DIVIDER);
+        brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
+        LED_SetOne(joint_led_channel[joint], 1, brightness);
     }
 }
 
