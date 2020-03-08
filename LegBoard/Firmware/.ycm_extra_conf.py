@@ -39,10 +39,10 @@ BASE_FLAGS = [
     "-I",
     p.join(
         DIR_OF_THIS_SCRIPT,
-        "Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/"),
+        "FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/"),
     "-I",
     p.join(DIR_OF_THIS_SCRIPT,
-           "Middlewares/Third_Party/FreeRTOS/Source/include/"),
+           "FreeRTOS/Source/include/"),
     "-I", p.join(DIR_OF_THIS_SCRIPT, "inc"),
     "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/ChompLegBoard"),
     "-I", p.join(DIR_OF_THIS_SCRIPT, "Drivers/BSP/STM32F7xx_Nucleo_144"),
