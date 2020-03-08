@@ -63,6 +63,11 @@ ValveOffset      | 139 | 0-1000  |
 FeedbackPolarity | 144 | 0-1     | 
 DigitalCommand   | 145 | 0-4095  | 
 CommandSource    | 146 | 0-1     | 
+Unknown          | 149 | ??????  | Only seen as first command, data is 0x2222 response is 0x0000
+Unknown          | 148 | ??????  | Only seen at startup, response is 0x0000
+Unknown          | 147 | ??????  | Only seen at startup, response is 0x79db
+Unknown          | 177 | 0       | written to 0 on Enfield tool startup
+Unknown          | 185 | 0       | written to 0 on Enfield tool startup
 AnalogCommand    | 152 | 0-4095  | 
 FeedbackPosition | 153 | 0-4095  | 
 BaseEndPressure  | 154 |         | 
@@ -95,8 +100,5 @@ ValveOffset       | 28  | 0-1000  |
 FeedbackPolarity  | 33  | 0-1     | 0-normal, 1-inverted
 CommandSource     | 89  | 0-1     | 1-analog, 0-slider
 DigitalCommand    | 88  | 0-4095  |
-Unknown           | 149 | 0x2222  | written with value 0x2222 on startup by the Enfield tool
-Unknown           | 177 | 0       | written to 0 on Enfield tool startup
-Unknown           | 185 | 0       | written to 0 on Enfield tool startup
 Unknown           | 224 | 0       | always written 0 after changing command input type
 SaveConfiguration | 225 | 0       | write 0 to save configuration
