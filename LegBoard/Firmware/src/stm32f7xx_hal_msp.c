@@ -294,18 +294,20 @@ void HAL_UART_MspInit_Curl(UART_HandleTypeDef *huart)
     tx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
     tx_dma.Init.Mode                = DMA_NORMAL;
     tx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    tx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
     HAL_DMA_Init(&tx_dma);
     __HAL_LINKDMA(huart, hdmatx, tx_dma);
 
     rx_dma.Instance                 = CURL_DMA_RX_STREAM;
     rx_dma.Init.Channel             = CURL_DMA_RX_CHANNEL;
-    rx_dma.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    rx_dma.Init.Direction           = DMA_PERIPH_TO_MEMORY;
     rx_dma.Init.PeriphInc           = DMA_PINC_DISABLE;
     rx_dma.Init.MemInc              = DMA_MINC_ENABLE;
     rx_dma.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     rx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
     rx_dma.Init.Mode                = DMA_NORMAL;
     rx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    rx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
     HAL_DMA_Init(&rx_dma);
     __HAL_LINKDMA(huart, hdmarx, rx_dma);
 
@@ -350,18 +352,20 @@ void HAL_UART_MspInit_Lift(UART_HandleTypeDef *huart)
     tx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
     tx_dma.Init.Mode                = DMA_NORMAL;
     tx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    tx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
     HAL_DMA_Init(&tx_dma);
     __HAL_LINKDMA(huart, hdmatx, tx_dma);
 
     rx_dma.Instance                 = LIFT_DMA_RX_STREAM;
     rx_dma.Init.Channel             = LIFT_DMA_RX_CHANNEL;
-    rx_dma.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    rx_dma.Init.Direction           = DMA_PERIPH_TO_MEMORY;
     rx_dma.Init.PeriphInc           = DMA_PINC_DISABLE;
     rx_dma.Init.MemInc              = DMA_MINC_ENABLE;
     rx_dma.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     rx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
     rx_dma.Init.Mode                = DMA_NORMAL;
     rx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    rx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
     HAL_DMA_Init(&rx_dma);
     __HAL_LINKDMA(huart, hdmarx, rx_dma);
 
@@ -406,18 +410,20 @@ void HAL_UART_MspInit_Swing(UART_HandleTypeDef *huart)
     tx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
     tx_dma.Init.Mode                = DMA_NORMAL;
     tx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    tx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
     HAL_DMA_Init(&tx_dma);
     __HAL_LINKDMA(huart, hdmatx, tx_dma);
 
     rx_dma.Instance                 = SWING_DMA_RX_STREAM;
     rx_dma.Init.Channel             = SWING_DMA_RX_CHANNEL;
-    rx_dma.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    rx_dma.Init.Direction           = DMA_PERIPH_TO_MEMORY;
     rx_dma.Init.PeriphInc           = DMA_PINC_DISABLE;
     rx_dma.Init.MemInc              = DMA_MINC_ENABLE;
     rx_dma.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     rx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
     rx_dma.Init.Mode                = DMA_NORMAL;
     rx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    rx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
     HAL_DMA_Init(&rx_dma);
     __HAL_LINKDMA(huart, hdmarx, rx_dma);
 
