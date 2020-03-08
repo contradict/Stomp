@@ -172,8 +172,8 @@ void Enfield_Thread(const void *arg)
     enum EnfieldThreadState state = Start;
     struct EnfieldContext *st = (struct EnfieldContext *)arg;
     struct EnfieldRequest *req;
-    uint16_t dummy_command;
-    uint8_t err;
+    uint16_t write_data;
+    int err;
     while(1)
     {
         switch(state)
@@ -182,8 +182,17 @@ void Enfield_Thread(const void *arg)
                 state = SetZero;
                 break;
             case SetZero:
-                dummy_command = 0x2222;
-                err = Enfield_Write(st, 149, &dummy_command);
+                write_data = 0x0000;
+                // Command has no response, ignore RX error
+                err = Enfield_Write(st, SetZeroGains, &write_data);
+                if(err == ENFIELD_RXTO)
+                {
+                    err = 0;
+                }
+                write_data = 0x0000;
+                err  = Enfield_Write(st, SetProportionalGain, &write_data);
+                write_data = 0x0000;
+                err += Enfield_Write(st, SetDerivativeGain, &write_data);
                 if(ENFIELD_OK == err)
                 {
                     state = WaitRequest;
@@ -221,8 +230,8 @@ void Enfield_Thread(const void *arg)
             case Update:
                 Enfield_Get(st, ReadBaseEndPressure, &(st->BaseEndPressure));
                 Enfield_Get(st, ReadRodEndPressure, &(st->RodEndPressure));
-                dummy_command = st->DigitalCommand;
-                Enfield_Write(st, SetDigitalCommand, &dummy_command);
+                write_data = st->DigitalCommand;
+                Enfield_Write(st, SetDigitalCommand, &write_data);
                 state = WaitRequest;
                 break;
         }

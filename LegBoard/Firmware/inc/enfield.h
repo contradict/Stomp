@@ -24,11 +24,17 @@ enum EnfieldReadRegister {
     ReadFeedbackPolarity = 144,
     ReadDigitalCommand   = 145,
     ReadCommandSource    = 146,
+    ReadSerialNumberLo   = 147,
+    ReadSerialNumberHi   = 148,
     ReadAnalogCommand    = 152,
     ReadFeedbackPosition = 153,
     ReadBaseEndPressure  = 154,
     ReadRodEndPressure   = 155,
     ReadSpoolPosition    = 158,
+    ReadFirmwareVersionB = 161,
+    ReadFirmwareVersionA = 162,
+    ReadFirmwareRevLow   = 163,
+    ReadFirmwareRevHigh  = 164
 };
 
 enum EnfieldWriteRegister {
