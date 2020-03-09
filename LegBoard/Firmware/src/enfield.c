@@ -129,7 +129,7 @@ int Enfield_ReadRodEndPresure(void *ctx, uint16_t *v)
     return 0;
 }
 
-void Curl_UART_Init()
+static void Curl_UART_Init()
 {
     enfield_uart[JOINT_CURL].Instance = CURL_UART_Instance;
     enfield_uart[JOINT_CURL].Init.BaudRate = ENFIELD_BAUD;
@@ -143,7 +143,7 @@ void Curl_UART_Init()
     HAL_UART_Init(&enfield_uart[JOINT_CURL]);
 }
 
-void Lift_UART_Init()
+static void Lift_UART_Init()
 {
     enfield_uart[JOINT_LIFT].Instance = LIFT_UART_Instance;
     enfield_uart[JOINT_LIFT].Init.BaudRate = ENFIELD_BAUD;
@@ -157,7 +157,7 @@ void Lift_UART_Init()
     HAL_UART_Init(&enfield_uart[JOINT_LIFT]);
 }
 
-void Swing_UART_Init()
+static void Swing_UART_Init()
 {
     enfield_uart[JOINT_SWING].Instance = SWING_UART_Instance;
     enfield_uart[JOINT_SWING].Init.BaudRate = ENFIELD_BAUD;
