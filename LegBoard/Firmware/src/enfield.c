@@ -6,6 +6,7 @@
 #include "modbus.h"
 #include "enfield_uart.h"
 #include "joint.h"
+#include "status_led.h"
 
 #define ENFIELD_BAUD 115200
 
@@ -191,6 +192,7 @@ void Enfield_Thread(const void *arg)
         switch(state)
         {
             case Start:
+                LED_SetOne(st->joint, 0, 128);
                 state = SetZero;
                 break;
             case SetZero:
@@ -239,6 +241,7 @@ void Enfield_Thread(const void *arg)
                 }
                 break;
             case WaitRequest:
+                LED_SetOne(st->joint, 2, 128);
                 evt = osMailGet(st->commandQ, enfield_parameters.sample_period);
                 if(evt.status == osEventTimeout)
                 {
@@ -250,6 +253,7 @@ void Enfield_Thread(const void *arg)
                 }
                 break;
             case ExecuteRequest:
+                LED_BlinkOne(st->joint, 2, 255, 10);
                 req = (struct EnfieldRequest *)evt.value.p;
                 if(req->write)
                 {
