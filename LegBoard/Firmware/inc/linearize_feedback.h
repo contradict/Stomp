@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
+#include "modbus.h"
 
 void Linearize_ThreadInit(void);
-uint16_t Linearize_ReadAngle(void *ctx);
-uint16_t Linearize_ReadLength(void *ctx);
+int Linearize_ReadAngle(void *ctx, uint16_t *v);
+int Linearize_ReadLength(void *ctx, uint16_t *v);

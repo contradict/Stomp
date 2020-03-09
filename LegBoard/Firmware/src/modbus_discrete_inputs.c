@@ -3,11 +3,13 @@
 
 static uint16_t scratchpad = 0x55;
 
-struct MODBUS_DiscreteInput modbus_discrete_inputs[] = {
+static int return_context(void *ctx, bool *v);
+
+const struct MODBUS_DiscreteInput modbus_discrete_inputs[] = {
     {
         .address = 0x55,
         .context = &scratchpad,
-        .read = return_context_bool,
+        .read = return_context,
     },
     {
         .address = 0,
@@ -15,3 +17,9 @@ struct MODBUS_DiscreteInput modbus_discrete_inputs[] = {
         .read = 0,
     }
 };
+
+static int return_context(void *ctx, bool *v)
+{
+    *v = *(bool *)ctx;
+    return 0;
+}

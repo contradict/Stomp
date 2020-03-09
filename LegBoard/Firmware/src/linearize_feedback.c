@@ -6,6 +6,8 @@
 #include "feedback_adc.h"
 #include "status_led.h"
 #include "chomplegboard.h"
+#include "linearize_feedback.h"
+#include "modbus.h"
 
 // theta = (V - Vmin) / (Vmax - Vmin) * Thetamax + Thetamin
 // theta = V * Thetamax / (Vmax - Vmin) + (Thetamin - (Vmin / (Vmax - Vmin)))
@@ -124,16 +126,26 @@ void Linearize_ThreadInit(void)
     dataQ = osMessageCreate(osMessageQ(adcdata), linearize);
 }
 
-uint16_t Linearize_ReadAngle(void *ctx)
+int Linearize_ReadAngle(void *ctx, uint16_t *v)
 {
     enum JointIndex joint = (enum JointIndex)ctx;
-    return roundf(joint_angle[joint] * JOINT_ANGLE_SCALE);
+    if((joint < 0) || (joint >= JOINT_COUNT))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    *v = roundf(joint_angle[joint] * JOINT_ANGLE_SCALE);
+    return 0;
 }
 
-uint16_t Linearize_ReadLength(void *ctx)
+int Linearize_ReadLength(void *ctx, uint16_t *v)
 {
     enum JointIndex joint = (enum JointIndex)ctx;
-    return roundf(cylinder_length[joint] * JOINT_ANGLE_SCALE);
+    if((joint < 0) || (joint >= JOINT_COUNT))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    *v = roundf(cylinder_length[joint] * JOINT_ANGLE_SCALE);
+    return 0;
 }
 
 

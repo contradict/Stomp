@@ -138,32 +138,6 @@ MODBUS_FIND(DiscreteInput)
 MODBUS_FIND(InputRegister)
 MODBUS_FIND(HoldingRegister)
 
-enum ModbusExceptionCode {
-// 01 ILLEGAL FUNCTION CODE The function code received in the query is not an
-// allowable action for the slave.  If a Poll Program Complete command was
-// issued, this code indicates that no program function preceded it.
-    ILLEGAL_FUNCTION_CODE = 1,
-// 02 ILLEGAL DATA ADDRESS The data address received in the query is not an
-// allowable address for the slave.
-    ILLEGAL_DATA_ADDRESS  = 2,
-// 03 ILLEGAL DATA VALUE A value contained in the query data field is not an
-// allowable value for the slave.
-    ILLEGAL_DATA_VALUE    = 3,
-// 04 SLAVE DEVICE FAILURE An unrecoverable error occurred while the slave was
-// attempting to perform the requested action.
-    SLAVE_DEVICE_FAILURE  = 4,
-// 05 ACKNOWLEDGE The slave has accepted the request and is processing it, but a
-// long duration of time will be required to do so. This response is returned to
-// prevent a timeout error from occurring in the master. The master can next
-// issue a Poll Program Complete message to determine if processing is
-// completed.
-    ACKNOWLEDGE           = 5,
-// 06 SLAVE DEVICE BUSY The slave is engaged in processing a long–duration
-// program command. The master should retransmit the message later when the
-// slave is free
-    SLAVE_DEVICE_BUSY     = 6,
-};
-
 static size_t MODBUS_ExceptionResponse(enum ModbusFunctionCode function, enum ModbusExceptionCode code, uint8_t *txBuffer, size_t txLength)
 {
     LED_BlinkOne(2, 0, 127, 50);
@@ -184,6 +158,7 @@ static size_t MODBUS_ReadCoils(uint16_t start, uint16_t count, uint8_t *txBuffer
 {
     struct MODBUS_Coil *coil;
     size_t responseLength = 3;
+    int err;
 
     txBuffer[0] = modbus_parameters.address;
     txBuffer[1] = READ_COILS;
@@ -202,7 +177,12 @@ static size_t MODBUS_ReadCoils(uint16_t start, uint16_t count, uint8_t *txBuffer
             {
                 *byte_count += 1;
             }
-            bool c = coil->read(coil->context);
+            bool c;
+            err = coil->read(coil->context, &c);
+            if(0 != err)
+            {
+                return MODBUS_ExceptionResponse(READ_COILS, err, txBuffer, txLength);
+            }
             if(c)
             {
                 *data |= (0x01 << bitnum);
@@ -224,6 +204,7 @@ static size_t MODBUS_ReadDiscreteInputs(uint16_t start, uint16_t count, uint8_t 
 {
     struct MODBUS_DiscreteInput *input;
     size_t responseLength = 3;
+    int err;
 
     txBuffer[0] = modbus_parameters.address;
     txBuffer[1] = READ_DISCRETE_INPUTS;
@@ -242,7 +223,12 @@ static size_t MODBUS_ReadDiscreteInputs(uint16_t start, uint16_t count, uint8_t 
             {
                 *byte_count += 1;
             }
-            bool c = input->read(input->context);
+            bool c;
+            err = input->read(input->context, &c);
+            if( 0 != err)
+            {
+                return MODBUS_ExceptionResponse(READ_DISCRETE_INPUTS, err, txBuffer, txLength);
+            }
             if(c)
             {
                 *data |= (0x01 << bitnum);
@@ -265,6 +251,7 @@ static size_t MODBUS_ReadHoldingRegister(uint16_t start, uint16_t count, uint8_t
 {
     struct MODBUS_HoldingRegister *hold;
     size_t responseLength = 3;
+    int err;
 
     txBuffer[0] = modbus_parameters.address;
     txBuffer[1] = READ_HOLDING_REGISTERS;
@@ -279,7 +266,12 @@ static size_t MODBUS_ReadHoldingRegister(uint16_t start, uint16_t count, uint8_t
         if(hold)
         {
             *byte_count += 2;
-            *data = __htons(hold->read(hold->context));
+            err = hold->read(hold->context, data);
+            if( 0 != err)
+            {
+                return MODBUS_ExceptionResponse(READ_HOLDING_REGISTERS, err, txBuffer, txLength);
+            }
+            *data = __htons(*data);
         }
         else
         {
@@ -293,6 +285,7 @@ static size_t MODBUS_ReadInputRegister(uint16_t start, uint16_t count, uint8_t *
 {
     struct MODBUS_InputRegister *input;
     size_t responseLength = 3;
+    int err;
 
     txBuffer[0] = modbus_parameters.address;
     txBuffer[1] = READ_INPUT_REGISTERS;
@@ -307,7 +300,12 @@ static size_t MODBUS_ReadInputRegister(uint16_t start, uint16_t count, uint8_t *
         if(input)
         {
             *byte_count += 2;
-            *data = __htons(input->read(input->context));
+            err = input->read(input->context, data);
+            if(0 != err)
+            {
+                return MODBUS_ExceptionResponse(READ_INPUT_REGISTERS, err, txBuffer, txLength);
+            }
+            *data = __htons(*data);
         }
         else
         {
@@ -320,14 +318,22 @@ static size_t MODBUS_ReadInputRegister(uint16_t start, uint16_t count, uint8_t *
 static size_t MODBUS_WriteSingleCoil(uint16_t address, uint16_t value, uint8_t *txBuffer, size_t txLength)
 {
     struct MODBUS_Coil *coil = MODBUS_FindCoil(modbus_coils, address);
+    int err;
     if(coil)
     {
         txBuffer[0] = modbus_parameters.address;
         txBuffer[1] = WRITE_SINGLE_COIL;
         *((uint16_t *)&txBuffer[2]) = __builtin_bswap16(address);
         *((uint16_t *)&txBuffer[4]) = __builtin_bswap16(value);
-        coil->write(coil->context, value);
-        return 6; 
+        err = coil->write(coil->context, value);
+        if( 0 != err)
+        {
+            return MODBUS_ExceptionResponse(WRITE_SINGLE_COIL, err, txBuffer, txLength);
+        }
+        else
+        {
+            return 6; 
+        }
     }
     else
     {
@@ -338,14 +344,22 @@ static size_t MODBUS_WriteSingleCoil(uint16_t address, uint16_t value, uint8_t *
 static size_t MODBUS_WriteSingleRegister(uint16_t address, uint16_t value, uint8_t *txBuffer, size_t txLength)
 {
     struct MODBUS_HoldingRegister *hold = MODBUS_FindHoldingRegister(modbus_holding_registers, address);
+    int err;
     if(hold)
     {
         txBuffer[0] = modbus_parameters.address;
         txBuffer[1] = WRITE_SINGLE_REGISTER;
         *((uint16_t *)&txBuffer[2]) = __builtin_bswap16(address);
         *((uint16_t *)&txBuffer[4]) = __builtin_bswap16(value);
-        hold->write(hold->context, value);
-        return 6; 
+        err = hold->write(hold->context, value);
+        if(0 != err)
+        {
+            return MODBUS_ExceptionResponse(WRITE_SINGLE_REGISTER, err, txBuffer, txLength);
+        }
+        else
+        {
+            return 6;
+        }
     }
     else
     {
@@ -357,6 +371,7 @@ static size_t MODBUS_WriteMultipleCoils(uint16_t start, uint16_t count, uint8_t 
 {
     struct MODBUS_Coil *coil;
     size_t responseLength = 6;
+    int err;
 
     txBuffer[0] = modbus_parameters.address;
     txBuffer[1] = WRITE_MULTIPLE_COILS;
@@ -377,7 +392,11 @@ static size_t MODBUS_WriteMultipleCoils(uint16_t start, uint16_t count, uint8_t 
         if(coil)
         {
             *wcount += 1;
-            coil->write(coil->context, data[data_index] & (1<<bit_index));
+            err = coil->write(coil->context, data[data_index] & (1<<bit_index));
+            if(0 != err)
+            {
+                return MODBUS_ExceptionResponse(WRITE_MULTIPLE_COILS, err, txBuffer, txLength);
+            }
         }
         else
         {
@@ -392,6 +411,7 @@ static size_t MODBUS_WriteMultipleRegisters(uint16_t start, uint16_t count, uint
 {
     struct MODBUS_HoldingRegister *hold;
     size_t responseLength = 6;
+    int err;
 
     txBuffer[0] = modbus_parameters.address;
     txBuffer[1] = WRITE_MULTIPLE_REGISTERS;
@@ -407,7 +427,11 @@ static size_t MODBUS_WriteMultipleRegisters(uint16_t start, uint16_t count, uint
         if(hold)
         {
             *wcount += 1;
-            hold->write(hold->context, __builtin_bswap16(data[data_index]));
+            err = hold->write(hold->context, __builtin_bswap16(data[data_index]));
+            if(0 != err)
+            {
+                return MODBUS_ExceptionResponse(WRITE_MULTIPLE_COILS, err, txBuffer, txLength);
+            }
         }
         else
         {

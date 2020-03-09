@@ -7,7 +7,9 @@
 
 static uint16_t scratchpad = 0x55;
 
-struct MODBUS_InputRegister modbus_input_registers[] = {
+static int return_context(void *, uint16_t *v);
+
+const struct MODBUS_InputRegister modbus_input_registers[] = {
     {
         .address = 0x55,
         .context = (void *)&scratchpad,
@@ -79,3 +81,9 @@ struct MODBUS_InputRegister modbus_input_registers[] = {
         .read = 0,
     }
 };
+
+static int return_context(void *ctx, uint16_t *v)
+{
+    *v = *(bool *)ctx;
+    return 0;
+}

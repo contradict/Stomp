@@ -105,16 +105,26 @@ void Enfield_Request(struct EnfieldRequest *req)
     osMailPut(enfield_context[req->joint].commandQ, req);
 }
 
-uint16_t Enfield_ReadBaseEndPresure(void *ctx)
+int Enfield_ReadBaseEndPresure(void *ctx, uint16_t *v)
 {
     enum JointIndex joint = (enum JointIndex)ctx;
-    return enfield_context[joint].BaseEndPressure;
+    if((joint < 0) || (joint >= JOINT_COUNT))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    *v = enfield_context[joint].BaseEndPressure;
+    return 0;
 }
 
-uint16_t Enfield_ReadRodEndPresure(void *ctx)
+int Enfield_ReadRodEndPresure(void *ctx, uint16_t *v)
 {
     enum JointIndex joint = (enum JointIndex)ctx;
-    return enfield_context[joint].RodEndPressure;
+    if((joint < 0) || (joint >= JOINT_COUNT))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    *v = enfield_context[joint].RodEndPressure;
+    return 0;
 }
 
 void Curl_UART_Init()
