@@ -90,11 +90,11 @@ Name              | 'r' | Range   | Description
 ProportionalGain  | 1   | 0-1000  |
 DerivativeGain    | 2   | 0-1000  |
 ForceDamping      | 8   | 0-1000  |
-AreaRatio         | 12  | 0-32767 | 32767 * (rod end piston area / bore area)
-CylinderBore      | 13  | 0-32767 | 1024 * Cylinder Bore in inches
 Offset            | 15  | 0-1000  |
 CommandInput      | 16  | 0-1     | 0-4-20mA, 1-0-10v
 FeedbackInput     | 17  | 0-1     | 0-4-20mA, 1-0-10v
+AreaRatio         | 18  | 0-32767 | 32767 * (rod end piston area / bore area)
+CylinderBore      | 19  | 0-32767 | 1024 * Cylinder Bore diameter in inches
 MinimumPosition   | 20  | 0-1000  |
 MaximumPosition   | 21  | 0-1000  |
 PortConnection    | 22  | 0-1     | 0-standard, 1-transposed

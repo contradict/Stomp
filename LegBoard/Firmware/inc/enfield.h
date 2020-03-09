@@ -41,11 +41,11 @@ enum EnfieldWriteRegister {
     SetProportionalGain  = 1,
     SetDerivativeGain    = 2,
     SetForceDamping      = 8,
-    SetAreaRatio         = 12,
-    SetCylinderBore      = 13,
     SetOffset            = 15,
     SetCommandInput      = 16,
     SetFeedbackInput     = 17,
+    SetAreaRatio         = 18,
+    SetCylinderBore      = 19,
     SetMinimumPosition   = 20,
     SetMaximumPosition   = 21,
     SetPortConnection    = 22,
@@ -60,6 +60,9 @@ enum EnfieldWriteRegister {
     SetZeroGains         = 224,
     SetSaveConfiguration = 225
 };
+
+#define COMMAND_SOURCE_DIGITAL 0
+#define COMMAND_SOURCE_ANALOG  1
 
 struct EnfieldResponse {
     int err;
