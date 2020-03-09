@@ -6,7 +6,9 @@
 * Spread out the LEDs so each one is in line with the servo connectors it
     represents
 * Add one more LED near the Communication connectors
-* Add non-volatile storage. A >2kbit I2C EEPROM would be a good choice.
+* Add non-volatile storage. A >2kbit I2C EEPROM would be a good choice. It would
+    also be interesting to explore the battery-backed SRAM on chip, maybe just a
+    small lithium battery could solve this.
 * I would like to have some testpoints
     * 4 microprocessor pins brought to plated holes
     * 6 LED controller pins brought to plated holes
