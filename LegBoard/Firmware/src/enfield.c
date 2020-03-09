@@ -25,11 +25,13 @@ enum EnfieldInterruptSignal {
 };
 
 enum EnfieldThreadState {
-    Start,
-    SetZero,
-    WaitRequest,
-    ExecuteRequest,
-    Update
+    Start,            // Initial state
+    SetZero,          // Set all gains to zero
+    GetCurrent,       // Retrieve current position
+    SetCommand,       // Set command source to digital
+    WaitRequest,      // Wait sample_period for a command, execute if recieved
+    ExecuteRequest,   // Execute command
+    Update            // smaple period timeout, write position and read pressure
 };
 
 struct EnfieldContext
@@ -205,6 +207,30 @@ void Enfield_Thread(const void *arg)
                 err += Enfield_Write(st, SetDerivativeGain, &write_data);
                 if(ENFIELD_OK == err)
                 {
+                    state = GetCurrent;
+                }
+                else
+                {
+                    osDelay(50);
+                }
+                break;
+            case GetCurrent:
+                err = Enfield_Get(st, ReadFeedbackPosition, &st->DigitalCommand);
+                if(ENFIELD_OK == err)
+                {
+                    state = SetCommand;
+                }
+                else
+                {
+                    osDelay(50);
+                }
+                break;
+            case SetCommand:
+                write_data = COMMAND_SOURCE_DIGITAL;
+                err = Enfield_Write(st, SetCommandSource, &write_data);
+                if(ENFIELD_OK == err)
+                {
+                    LED_SetOne(st->joint, 0, 0);
                     state = WaitRequest;
                 }
                 else
@@ -236,6 +262,7 @@ void Enfield_Thread(const void *arg)
                 }
                 osMailPut(req->responseQ, req->response);
                 osMailFree(st->commandQ, req);
+                state = Update;
                 break;
             case Update:
                 Enfield_Get(st, ReadBaseEndPressure, &(st->BaseEndPressure));
