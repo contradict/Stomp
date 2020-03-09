@@ -18,6 +18,14 @@
 #define ENFIELD_CRCFAIL       -5
 #define ENFIELD_WRITEMISMATCH -6
 
+const enum EnfieldWriteRegister EnfieldValidWriteRegister[] = {
+    1, 2, 8, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 33, 89, 88,
+    224, 225};
+
+const enum EnfieldReadRegister EnfieldValidReadRegister[] = {
+    112, 113, 119, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 137, 138,
+    139, 144, 145, 146, 147, 148, 152, 153, 154, 155, 158, 161, 162, 163, 164};
+
 enum EnfieldInterruptSignal {
     ENFIELD_RX_COMPLETE = 1,
     ENFIELD_TX_COMPLETE = 2,
@@ -37,6 +45,7 @@ enum EnfieldThreadState {
 
 struct EnfieldContext
 {
+    enum JointIndex joint;
     UART_HandleTypeDef *uart;
     osThreadId thread;
     uint16_t BaseEndPressure;
@@ -84,14 +93,18 @@ void Enfield_Init(void)
 
     bzero(&enfield_context, sizeof(enfield_context));
 
-    enfield_context[JOINT_CURL].uart = &enfield_uart[JOINT_CURL];
-    enfield_context[JOINT_SWING].uart = &enfield_uart[JOINT_SWING];
-    enfield_context[JOINT_LIFT].uart = &enfield_uart[JOINT_LIFT];
+    for(enum JointIndex j=0; j<JOINT_COUNT; j++)
+    {
+        enfield_context[j].uart = &enfield_uart[j];
+        enfield_context[j].joint = j;
+    }
 
     enfield_context[JOINT_CURL].thread = osThreadCreate(osThread(enfield_curl_thread), &enfield_context[JOINT_CURL]);
     enfield_context[JOINT_CURL].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_CURL].thread);
+
     enfield_context[JOINT_SWING].thread = osThreadCreate(osThread(enfield_swing_thread), &enfield_context[JOINT_SWING]);
     enfield_context[JOINT_SWING].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_SWING].thread);
+
     enfield_context[JOINT_LIFT].thread = osThreadCreate(osThread(enfield_lift_thread), &enfield_context[JOINT_LIFT]);
     enfield_context[JOINT_LIFT].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_LIFT].thread);
 }
@@ -128,6 +141,26 @@ int Enfield_ReadRodEndPresure(void *ctx, uint16_t *v)
     }
     *v = enfield_context[joint].RodEndPressure;
     return 0;
+}
+
+bool Enfield_IsValidReadRegister(enum EnfieldReadRegister r)
+{
+    for(size_t i=0; i < sizeof(EnfieldValidReadRegister) / sizeof(EnfieldValidReadRegister[0]); i++)
+    {
+        if( r == EnfieldValidReadRegister[i])
+            return true;
+    }
+    return false;
+}
+
+bool Enfield_IsValidWriteRegister(enum EnfieldWriteRegister r)
+{
+    for(size_t i=0; i < sizeof(EnfieldValidWriteRegister) / sizeof(EnfieldValidWriteRegister[0]); i++)
+    {
+        if( r == EnfieldValidWriteRegister[i])
+            return true;
+    }
+    return false;
 }
 
 static void Curl_UART_Init()

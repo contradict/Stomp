@@ -63,3 +63,7 @@ struct MODBUS_HoldingRegister
 void MODBUS_Init(void);
 
 uint16_t MODBUS_crc(uint8_t *data, uint16_t length);
+int MODBUS_ReadEnfieldHoldingRegister(void *ctx, uint16_t *v);
+int MODBUS_WriteEnfieldHoldingRegister(void *ctx, uint16_t v);
+int MODBUS_WriteEnfieldCoil(void *ctx, bool v);
+int MODBUS_ReadEnfieldCoil(void *ctx, bool *v);

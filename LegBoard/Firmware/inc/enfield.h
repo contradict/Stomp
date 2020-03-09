@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "cmsis_os.h"
 #include "joint.h"
+#include "modbus.h"
 
 enum EnfieldReadRegister {
     ReadProportionalGain = 112,
@@ -82,5 +83,7 @@ struct EnfieldRequest {
 void Enfield_Init();
 struct EnfieldRequest * Enfield_AllocRequest(enum JointIndex joint);
 void Enfield_Request(struct EnfieldRequest *req);
-uint16_t Enfield_ReadRodEndPresure(void *ctx);
-uint16_t Enfield_ReadBaseEndPresure(void *ctx);
+int Enfield_ReadRodEndPresure(void *ctx, uint16_t *v);
+int Enfield_ReadBaseEndPresure(void *ctx, uint16_t *v);
+bool Enfield_IsValidWriteRegister(enum EnfieldWriteRegister r);
+bool Enfield_IsValidReadRegister(enum EnfieldReadRegister r);

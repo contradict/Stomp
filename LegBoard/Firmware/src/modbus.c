@@ -6,6 +6,7 @@
 #include "cmsis_os.h"
 #include "modbus.h"
 #include "status_led.h"
+#include "enfield.h"
 
 #define MAXPACKET 128
 
@@ -55,6 +56,9 @@ static void MODBUS_Thread(const void* args);
 osThreadDef(modbus, MODBUS_Thread, osPriorityNormal, 1, configMINIMAL_STACK_SIZE);
 static osThreadId modbus;
 
+osMailQDef(enfieldQ, 32, struct EnfieldResponse);
+static osMailQId enfieldQ;
+
 static struct MODBUS_parameters modbus_parameters __attribute__ ((section (".storage.modbus"))) = {
     .address = 0x55
 };
@@ -88,6 +92,7 @@ void MODBUS_Init()
     HAL_CRC_Init(&hcrc);
 
     modbus = osThreadCreate(osThread(modbus), NULL);
+    enfieldQ = osMailCreate(osMailQ(enfieldQ), modbus);
 }
 
 void MODBUS_UART_Init()
@@ -646,4 +651,97 @@ void MODBUS_UARTError(UART_HandleTypeDef *huart)
 {
     (void)huart;
     osSignalSet(modbus, SIGNAL_ERROR);
+}
+
+#define CONTEXT_READ_REG(ctx)    ((enum EnfieldReadRegister)(((uint32_t)ctx)&0x000000FF))
+#define CONTEXT_WRITE_REG(ctx) ((enum EnfieldWriteRegister)((((uint32_t)ctx)&0x0000FF00)>>8))
+#define CONTEXT_JOINT(ctx)               ((enum JointIndex)((((uint32_t)ctx)&0xC0000000)>>30))
+
+int MODBUS_ReadEnfieldHoldingRegister(void *ctx, uint16_t *v)
+{
+    osEvent evt;
+    struct EnfieldRequest *req;
+
+    enum JointIndex j = CONTEXT_JOINT(ctx);
+    enum EnfieldReadRegister reg = CONTEXT_READ_REG(ctx);
+
+    int ret;
+
+    if(!Enfield_IsValidReadRegister(reg))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    if(j<0 || j>=JOINT_COUNT)
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+
+    req = Enfield_AllocRequest(j);
+    req->r = reg;
+    req->write = false;
+    req->responseQ = enfieldQ;
+    req->response = osMailAlloc(enfieldQ, 0);
+    Enfield_Request(req);
+    evt = osMailGet(enfieldQ, 100);
+    ret = SLAVE_DEVICE_FAILURE;
+    if((evt.status == osEventMail) &&
+       (req->response->err == 0))
+    {
+       *v = req->response->value;
+       ret = 0;
+    }
+    osMailFree(enfieldQ, req->response);
+    return ret;
+}
+
+int MODBUS_WriteEnfieldHoldingRegister(void *ctx, uint16_t v)
+{
+    (void)ctx;
+    osEvent evt;
+    struct EnfieldRequest *req;
+
+    enum JointIndex j = CONTEXT_JOINT(ctx);
+    enum EnfieldWriteRegister reg = CONTEXT_WRITE_REG(ctx);
+
+    int ret;
+
+    if(!Enfield_IsValidWriteRegister(reg))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    if(j<0 || j>=JOINT_COUNT)
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+
+    req = Enfield_AllocRequest(j);
+    req->w = reg;
+    req->write = true;
+    req->value = v;
+    req->responseQ = enfieldQ;
+    req->response = osMailAlloc(enfieldQ, 0);
+    Enfield_Request(req);
+    evt = osMailGet(enfieldQ, 100);
+    ret = SLAVE_DEVICE_FAILURE;
+    if((evt.status == osEventMail) &&
+       (req->response->err == 0))
+    {
+       ret = 0;
+    }
+    osMailFree(enfieldQ, req->response);
+    return ret;
+}
+
+int MODBUS_ReadEnfieldCoil(void *ctx, bool *v)
+{
+    uint16_t hv;
+    int err = MODBUS_ReadEnfieldHoldingRegister(ctx, &hv);
+    *v = (hv == 1);
+    return err;
+}
+
+int MODBUS_WriteEnfieldCoil(void *ctx, bool v)
+{
+    uint16_t hv = v ? 0x0001 : 0x0000;
+    return MODBUS_WriteEnfieldHoldingRegister(ctx, hv);
 }
