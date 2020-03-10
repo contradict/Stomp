@@ -449,7 +449,7 @@ static size_t MODBUS_WriteMultipleRegisters(uint16_t start, uint16_t count, uint
             err = hold->write(hold->context, __builtin_bswap16(data[data_index]));
             if(0 != err)
             {
-                return MODBUS_ExceptionResponse(WRITE_MULTIPLE_COILS, err, txBuffer, txLength);
+                return MODBUS_ExceptionResponse(WRITE_MULTIPLE_REGISTERS, err, txBuffer, txLength);
             }
         }
         else
@@ -686,8 +686,11 @@ int MODBUS_ReadEnfieldHoldingRegister(void *ctx, uint16_t *v)
     if(evt.status == osEventMail)
     {
        resp = evt.value.p;
-       *v = resp->value;
-       ret = 0;
+       if(resp->err == 0)
+       {
+           *v = resp->value;
+           ret = 0;
+       }
        osMailFree(enfieldQ, resp);
     }
     else if(evt.status == osEventTimeout)
@@ -736,10 +739,13 @@ int MODBUS_WriteEnfieldHoldingRegister(void *ctx, uint16_t v)
     if(evt.status == osEventMail)
     {
         resp = evt.value.p;
-        ret = resp->err;
+        if(resp->err == 0)
+        {
+            ret = 0;
+        }
         osMailFree(enfieldQ, resp);
     }
-    else if(evt.status == osEventMail)
+    else if(evt.status == osEventTimeout)
     {
         resp = evt.value.p;
         osMailFree(enfieldQ, resp);
