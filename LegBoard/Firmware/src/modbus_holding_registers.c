@@ -105,6 +105,12 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .write = MODBUS_WriteEnfieldHoldingRegister,
     },
     {
+        .address = CURL_BASE + 14,
+        .context = (void *)JOINT_CURL,
+        .read = Enfield_ReadDigitalCommand,
+        .write = Enfield_WriteDigitalCommand
+    },
+    {
         .address = SWING_BASE,
         .context = (void *)ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetProportionalGain, ReadProportionalGain),
         .read = MODBUS_ReadEnfieldHoldingRegister,
@@ -187,6 +193,12 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetDigitalCommand,  ReadDigitalCommand),
         .read = MODBUS_ReadEnfieldHoldingRegister,
         .write = MODBUS_WriteEnfieldHoldingRegister,
+    },
+    {
+        .address = SWING_BASE + 14,
+        .context = (void *)JOINT_SWING,
+        .read = Enfield_ReadDigitalCommand,
+        .write = Enfield_WriteDigitalCommand
     },
     {
         .address = LIFT_BASE,
@@ -272,6 +284,12 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .read = MODBUS_ReadEnfieldHoldingRegister,
         .write = MODBUS_WriteEnfieldHoldingRegister,
     },
+    {
+        .address = LIFT_BASE + 14,
+        .context = (void *)JOINT_LIFT,
+        .read = Enfield_ReadDigitalCommand,
+        .write = Enfield_WriteDigitalCommand
+    }, 
     {
         .address = 0,
         .context = 0,

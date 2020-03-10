@@ -143,6 +143,28 @@ int Enfield_ReadRodEndPresure(void *ctx, uint16_t *v)
     return 0;
 }
 
+int Enfield_ReadDigitalCommand(void *ctx, uint16_t *v)
+{
+    enum JointIndex joint = (enum JointIndex)ctx;
+    if((joint < 0) || (joint >= JOINT_COUNT))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    *v = enfield_context[joint].DigitalCommand;
+    return 0;
+}
+
+int Enfield_WriteDigitalCommand(void *ctx, uint16_t v)
+{
+    enum JointIndex joint = (enum JointIndex)ctx;
+    if((joint < 0) || (joint >= JOINT_COUNT))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    enfield_context[joint].DigitalCommand = v;
+    return 0;
+}
+
 bool Enfield_IsValidReadRegister(enum EnfieldReadRegister r)
 {
     for(size_t i=0; i < sizeof(EnfieldValidReadRegister) / sizeof(EnfieldValidReadRegister[0]); i++)
