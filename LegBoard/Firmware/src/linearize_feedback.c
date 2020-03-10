@@ -1,4 +1,5 @@
 #include <math.h>
+#include <complex.h>
 #include "joint.h"
 #include "cmsis_os.h"
 #include "stm32f7xx_hal.h"
@@ -9,18 +10,19 @@
 #include "linearize_feedback.h"
 #include "modbus.h"
 
-// theta = (V - Vmin) / (Vmax - Vmin) * Thetamax + Thetamin
-// theta = V * Thetamax / (Vmax - Vmin) + (Thetamin - (Vmin / (Vmax - Vmin)))
-#define THETA_OFFSET(Vmin, Vmax, Thetamin, Thetamax) (Thetamax / (Vmax - Vmin))
-#define THETA_SCALE(Vmin, Vmax, Thetamin, Thetamax)  (Thetamin - (Vmin / (Vmax - Vmin)))
+// theta = (V - Vmin) / (Vmax - Vmin) * (Thetamax - Thetamin) + Thetamin
+// theta = V * (Thetamax - Thetamin) / (Vmax - Vmin) + (Thetamin - (Vmin * (Thetamax - Thetamin) / (Vmax - Vmin)))
+#define THETA_SCALE(Vmin, Vmax, Thetamin, Thetamax) (((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
+#define THETA_OFFSET(Vmin, Vmax, Thetamin, Thetamax)  ((Thetamin) - Vmin * ((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
 
-// length = sqrt(l1**2 + l2**2 + l1 * l2 * sin(theta + phi))
+// length = sqrt(l1**2 + l2**2 - l1 * l2 * cos(theta + phi))
 #define SHAPE_OFFSET(l1, l2) (l1*l1 + l2*l2)
 #define SHAPE_SCALE(l1, l2) (l1*l1)
 
-// feedback_voltage = (length - Lmin) / (Lmax - Lmin) * Vmax + Vmin
-#define FEEDBACK_OFFSET(Lmin, Lmax, Vmin, Vmax) (Vmax / (Lmax - Lmin))
-#define FEEDBACK_SCALE(Lmin, Lmax, Vmin, Vmax)  (Vmin - (Lmin / (Lmax - Lmin)))
+// feedback_voltage = (length - Lmin) / (Lmax - Lmin) * (Vmax - Vmin) + Vmin
+//                  = length * scale + offset
+#define FEEDBACK_SCALE(Lmin, Lmax, Vmin, Vmax) (((Vmax) - (Vmin)) / ((Lmax) - (Lmin)))
+#define FEEDBACK_OFFSET(Lmin, Lmax, Vmin, Vmax)  ((Vmin) - (Lmin) * ((Vmax) - (Vmin)) / ((Lmax) - (Lmin)))
 
 #define DAC_TX_COMPLETE   1
 #define DAC_IO_ERROR      2
@@ -31,8 +33,8 @@ static void Linearize_Thread(const void* args);
 void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
                           float voltage[JOINT_COUNT],
                           float joint_angle[JOINT_COUNT]);
-void compute_cylinder_lengths(const float joint_angle[JOINT_COUNT],
-                              float cylinder_length[JOINT_COUNT]);
+void compute_cylinder_edge_lengths(const float joint_angle[JOINT_COUNT],
+                                   float cylinder_edge_length[JOINT_COUNT]);
 void compute_feedback_voltage(const float cylinder_length[JOINT_COUNT],
                               float feedback_voltage[JOINT_COUNT],
                               uint16_t feedback_code[JOINT_COUNT]);
@@ -56,7 +58,7 @@ static osMessageQId dataQ;
 
 static uint32_t channel_values[JOINT_COUNT];
 static float joint_angle[JOINT_COUNT];
-static float cylinder_length[JOINT_COUNT];
+static float cylinder_edge_length[JOINT_COUNT];
 
 /* Map joint order to ADC order */
 static const uint8_t joint_adc_channel[JOINT_COUNT] = {0, 1, 2};
@@ -71,44 +73,38 @@ static const enum ads57x4_channel joint_dac_channel[JOINT_COUNT] = {
 struct LinearizationConstants {
     float theta_offset[JOINT_COUNT];
     float theta_scale[JOINT_COUNT];
-    float shape_offset[JOINT_COUNT];
-    float shape_scale[JOINT_COUNT];
-    float shape_phase[JOINT_COUNT];
-    float feedback_offset[JOINT_COUNT];
-    float feedback_scale[JOINT_COUNT];
+    complex float Pl;
+    float L1, L2;
+    float Rllimit[2];
+    complex float Pc;
+    float C1, C2;
+    float Rclimit[2];
+    float S1;
+    complex float Ps;
+    float Rslimit[2];
 };
 
 static struct LinearizationConstants linearization_constants __attribute__ ((section (".storage.linearize"))) = {
     .theta_offset = {
-      //THETA_OFFSET(Vmin,  Vmax,           Thetamin,           Thetamax)
-        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),  // CURL
-        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),  // SWING
-        THETA_OFFSET(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)}, // LIFT
+      //THETA_OFFSET(Vmin,     Vmax,            Thetamin,           Thetamax)
+        THETA_OFFSET(0.916f, 4.774f, -M_PI_2 - M_PI/6.0f, -M_PI_2 + M_PI/6.0f),  // CURL
+        THETA_OFFSET(0.225f, 4.768f,          -M_PI/8.0f,           M_PI/8.0f),  // SWING
+        THETA_OFFSET(1.009f, 3.637f,          -M_PI/8.0f,           M_PI/8.0f)}, // LIFT
     .theta_scale = {
-        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/6.0f, M_PI_2 + M_PI/6.0f),   // CURL
-        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f),   // SWING
-        THETA_SCALE(0.88f, 4.8f, M_PI_2 - M_PI/8.0f, M_PI_2 + M_PI/8.0f)},  // LIFT
-    .shape_offset = {
-      //SHAPE_OFFSET(   l1,    l2)
-        SHAPE_OFFSET(0.00f, 0.00f),                                         // CURL
-        SHAPE_OFFSET(0.00f, 0.00f),                                         // SWING
-        SHAPE_OFFSET(0.00f, 0.00f)},                                        // LIFT
-    .shape_scale = {
-      //SHAPE_SCALE(   l1,    l2)
-        SHAPE_SCALE(0.00f, 0.00f),                                          // CURL
-        SHAPE_SCALE(0.00f, 0.00f),                                          // SWING
-        SHAPE_SCALE(0.00f, 0.00f)},                                         // LIFT
-    .shape_phase = {0.0f, 0.0f, 0.0f},
-    .feedback_offset = {
-      //FEEDBACK_OFFSET( Lmin,  Lmax,Vmin,  Vmax)
-        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
-        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f),                          // SWING
-        FEEDBACK_OFFSET(0.01f, 0.08f, 0.0, 10.0f)},                         // LIFT
-    .feedback_scale = {
-      //FEEDBACK_SCALE( Lmin,  Lmax,Vmin,  Vmax)
-        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // CURL
-        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f),                          // SWING
-        FEEDBACK_SCALE(0.01f, 0.08f, 0.0, 10.0f)},                         // LIFT
+        THETA_SCALE(0.916f, 4.774f, -M_PI_2 - M_PI/6.0f, -M_PI_2 + M_PI/6.0f),   // CURL
+        THETA_SCALE(0.225f, 4.768f,          -M_PI/8.0f,           M_PI/8.0f),   // SWING
+        THETA_SCALE(1.009f, 3.637f,          -M_PI/8.0f,           M_PI/8.0f)},  // LIFT
+    .Pl = 4.287 + 2.06I,
+    .L1 = 4.4,
+    .L2 = 6.3,
+    .Rllimit = {1.07, 3.05},
+    .Pc = 4.287 - 0.44I,
+    .C1 = 2.5,
+    .C2 = 6.0,
+    .Rclimit = {5.8, 6.8},
+    .S1 = 3.90,
+    .Ps = 3.603 + 2.572I,
+    .Rslimit = {1.080, 2.572}
 };
 
 void Linearize_ThreadInit(void)
@@ -144,7 +140,7 @@ int Linearize_ReadLength(void *ctx, uint16_t *v)
     {
         return ILLEGAL_DATA_ADDRESS;
     }
-    *v = roundf(cylinder_length[joint] * JOINT_ANGLE_SCALE);
+    *v = roundf(cylinder_edge_length[joint] * JOINT_ANGLE_SCALE);
     return 0;
 }
 
@@ -238,8 +234,8 @@ static void Linearize_Thread(const void* args)
         {
             DAC_IO_LDAC(false);
             compute_joint_angles(channel_values, joint_voltage, joint_angle);
-            compute_cylinder_lengths(joint_angle, cylinder_length);
-            compute_feedback_voltage(cylinder_length, feedback_voltage, feedback_code);
+            compute_cylinder_edge_lengths(joint_angle, cylinder_edge_length);
+            compute_feedback_voltage(cylinder_edge_length, feedback_voltage, feedback_code);
             compute_led_brightness(joint_voltage);
             sendjoint = 0;
             ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
@@ -252,36 +248,55 @@ void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
                           float voltage[JOINT_COUNT],
                           float joint_angle[JOINT_COUNT])
 {
-    for(int joint=0;joint<JOINT_COUNT;joint++)
+    for(enum JointIndex joint=0;joint<JOINT_COUNT;joint++)
     {
-        voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) * JOINT_DIVIDER);
+        voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) / JOINT_DIVIDER);
         joint_angle[joint] = (linearization_constants.theta_offset[joint] +
                 linearization_constants.theta_scale[joint] * voltage[joint]);
     }
 }
 
-void compute_cylinder_lengths(const float joint_angle[JOINT_COUNT],
-                              float cylinder_length[JOINT_COUNT])
+void compute_cylinder_edge_lengths(const float joint_angle[JOINT_COUNT],
+                                   float cylinder_edge_length[JOINT_COUNT])
 {
-    for(int joint = 0; joint < JOINT_COUNT; joint++)
-    {
-        cylinder_length[joint] = (
-                sqrtf(linearization_constants.shape_offset[joint] +
-                    (linearization_constants.shape_scale[joint] *
-                     sinf(joint_angle[joint] +
-                         linearization_constants.shape_phase[joint]))));
-    }
+    cylinder_edge_length[JOINT_LIFT] = cabsf(
+            linearization_constants.Pl -
+            linearization_constants.L1 * cexpf(I * joint_angle[JOINT_LIFT]));
+    cylinder_edge_length[JOINT_CURL] = cabsf(
+            linearization_constants.Pl - linearization_constants.Pc +
+            linearization_constants.C1 * cexpf(I * (joint_angle[JOINT_CURL] + joint_angle[JOINT_LIFT])) +
+            linearization_constants.L2 * cexpf(I * joint_angle[JOINT_LIFT]));
+    cylinder_edge_length[JOINT_SWING] = cabsf(
+            linearization_constants.Ps - linearization_constants.S1 * cexpf(I * joint_angle[JOINT_SWING]));
 }
 
-void compute_feedback_voltage(const float cylinder_length[JOINT_COUNT],
+void compute_feedback_voltage(const float cylinder_edge_length[JOINT_COUNT],
                               float feedback_voltage[JOINT_COUNT],
                               uint16_t feedback_code[JOINT_COUNT])
 {
+    float scale[3], offset[3];
+    scale[JOINT_CURL] =  FEEDBACK_SCALE(linearization_constants.Rclimit[0],
+                                        linearization_constants.Rclimit[1],
+                                        0.0f, 10.0f);
+    scale[JOINT_SWING] =  FEEDBACK_SCALE(linearization_constants.Rslimit[0],
+                                         linearization_constants.Rslimit[1],
+                                         0.0f, 10.0f);
+    scale[JOINT_LIFT] =  FEEDBACK_SCALE(linearization_constants.Rllimit[0],
+                                        linearization_constants.Rllimit[1],
+                                        0.0f, 10.0f);
+    offset[JOINT_CURL] =  FEEDBACK_OFFSET(linearization_constants.Rclimit[0],
+                                          linearization_constants.Rclimit[1],
+                                          0.0f, 10.0f);
+    offset[JOINT_SWING] =  FEEDBACK_OFFSET(linearization_constants.Rslimit[0],
+                                           linearization_constants.Rslimit[1],
+                                           0.0f, 10.0f);
+    offset[JOINT_LIFT] =  FEEDBACK_OFFSET(linearization_constants.Rllimit[0],
+                                          linearization_constants.Rllimit[1],
+                                          0.0f, 10.0f);
+
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
-        feedback_voltage[joint] = (
-            linearization_constants.feedback_offset[joint] +
-            linearization_constants.feedback_scale[joint] * cylinder_length[joint]);
+        feedback_voltage[joint] = (scale[joint] * cylinder_edge_length[joint] + offset[joint]);
         feedback_code[joint] = feedback_voltage[joint] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
     }
 }
