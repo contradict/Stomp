@@ -158,7 +158,6 @@ MODBUS_FIND(HoldingRegister)
 
 static size_t MODBUS_ExceptionResponse(enum ModbusFunctionCode function, enum ModbusExceptionCode code, uint8_t *txBuffer, size_t txLength)
 {
-    LED_BlinkOne(2, 0, 127, 50);
     if(txLength>5) // space for CRC
     {
         txBuffer[0] = modbus_parameters.address;
