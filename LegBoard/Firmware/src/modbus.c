@@ -289,6 +289,7 @@ static size_t MODBUS_ReadHoldingRegister(uint16_t start, uint16_t count, uint8_t
                 return MODBUS_ExceptionResponse(READ_HOLDING_REGISTERS, err, txBuffer, txLength);
             }
             *data = __htons(*data);
+            data++;
         }
         else
         {
@@ -323,6 +324,7 @@ static size_t MODBUS_ReadInputRegister(uint16_t start, uint16_t count, uint8_t *
                 return MODBUS_ExceptionResponse(READ_INPUT_REGISTERS, err, txBuffer, txLength);
             }
             *data = __htons(*data);
+            data++;
         }
         else
         {
