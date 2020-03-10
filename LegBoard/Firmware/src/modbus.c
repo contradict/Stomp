@@ -690,6 +690,11 @@ int MODBUS_ReadEnfieldHoldingRegister(void *ctx, uint16_t *v)
        ret = 0;
        osMailFree(enfieldQ, resp);
     }
+    else if(evt.status == osEventTimeout)
+    {
+       resp = evt.value.p;
+       osMailFree(enfieldQ, resp);
+    }
     else
     {
       // ???
@@ -732,6 +737,11 @@ int MODBUS_WriteEnfieldHoldingRegister(void *ctx, uint16_t v)
     {
         resp = evt.value.p;
         ret = resp->err;
+        osMailFree(enfieldQ, resp);
+    }
+    else if(evt.status == osEventMail)
+    {
+        resp = evt.value.p;
         osMailFree(enfieldQ, resp);
     }
     else
