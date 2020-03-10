@@ -22,6 +22,11 @@ OBJS += src/enfield.o
 
 CFLAGS += -I inc
 
+# Linearization documentation
+
+Linearize.pdf: Linearize.md LiftCurlGeometry.jpg
+	pandoc Linearize.md -o $@
+
 # include common make file
 
 include $(TEMPLATEROOT)/Makefile.common
