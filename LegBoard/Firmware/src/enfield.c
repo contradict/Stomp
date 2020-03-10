@@ -103,10 +103,10 @@ void Enfield_Init(void)
     enfield_context[JOINT_CURL].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_CURL].thread);
 
     enfield_context[JOINT_SWING].thread = osThreadCreate(osThread(enfield_swing_thread), &enfield_context[JOINT_SWING]);
-    enfield_context[JOINT_SWING].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_SWING].thread);
+    enfield_context[JOINT_SWING].commandQ = osMailCreate(osMailQ(swingcommand), enfield_context[JOINT_SWING].thread);
 
     enfield_context[JOINT_LIFT].thread = osThreadCreate(osThread(enfield_lift_thread), &enfield_context[JOINT_LIFT]);
-    enfield_context[JOINT_LIFT].commandQ = osMailCreate(osMailQ(curlcommand), enfield_context[JOINT_LIFT].thread);
+    enfield_context[JOINT_LIFT].commandQ = osMailCreate(osMailQ(liftcommand), enfield_context[JOINT_LIFT].thread);
 }
 
 struct EnfieldRequest * Enfield_AllocRequest(enum JointIndex joint)
