@@ -65,6 +65,17 @@ int main(void)
   for(;;);
 }
 
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    while(1);
+}
+
+void vApplicationMallocFailedHook(void)
+{
+    while(1);
+}
+
+
 /**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follow : 
