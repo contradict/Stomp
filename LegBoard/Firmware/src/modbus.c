@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <string.h>
 #include <machine/endian.h>
 #include "stm32f7xx_hal.h"
 #include "stm32f7xx_ll_usart.h"
@@ -56,6 +57,15 @@ static void MODBUS_Thread(const void* args);
 osThreadDef(modbus, MODBUS_Thread, osPriorityNormal, 1, configMINIMAL_STACK_SIZE);
 static osThreadId modbus;
 
+static struct ModbusThreadState {
+    uint8_t rxBuffer[MAXPACKET];
+    uint8_t txBuffer[MAXPACKET];
+    osEvent e;
+    size_t bytes_received;
+    size_t responseLength;
+    enum ModbusSignalEvent evt;
+} modbus_state;
+
 osMailQDef(enfieldQ, 32, struct EnfieldResponse);
 static osMailQId enfieldQ;
 
@@ -72,6 +82,7 @@ extern struct MODBUS_HoldingRegister modbus_holding_registers[];
 
 osMutexDef(crcmutex);
 static osMutexId crcmutex;
+
 UART_HandleTypeDef modbus_uart;
 
 
@@ -91,7 +102,9 @@ void MODBUS_Init()
 	hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_ENABLE;
     HAL_CRC_Init(&hcrc);
 
-    modbus = osThreadCreate(osThread(modbus), NULL);
+    bzero(&modbus_state, sizeof(modbus_state));
+
+    modbus = osThreadCreate(osThread(modbus), &modbus_state);
     enfieldQ = osMailCreate(osMailQ(enfieldQ), modbus);
 }
 
@@ -570,59 +583,43 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
 
 void MODBUS_Thread(const void *args)
 {
-    (void)args;
-    uint8_t rxBuffer[MAXPACKET];
-    uint8_t txBuffer[MAXPACKET];
-    osEvent e;
-    size_t bytes_received;
-    size_t responseLength;
-    enum ModbusSignalEvent evt;
-
+    struct ModbusThreadState *st = (struct ModbusThreadState *)args;
     // start listening
-    HAL_UART_Receive_IT(&modbus_uart, rxBuffer, MAXPACKET);
+    HAL_UART_Receive_IT(&modbus_uart, st->rxBuffer, MAXPACKET);
     LL_USART_EnableIT_RTO(modbus_uart.Instance);
     while(1)
     {
         // waitfor something to happen
-        e = osSignalWait(SIGNAL_RXTO | SIGNAL_ERROR | SIGNAL_RXCPLT | SIGNAL_TXCPLT, osWaitForever);
-        if(e.status != osEventSignal)
+        st->e = osSignalWait(SIGNAL_RXTO | SIGNAL_ERROR | SIGNAL_RXCPLT | SIGNAL_TXCPLT, osWaitForever);
+        if(st->e.status != osEventSignal)
         {
             continue;
         }
-        evt = e.value.signals;
+        st->evt = st->e.value.signals;
 
         // Handle event
-        switch((enum ModbusSignalEvent)e.value.v)
+        if(st->evt & SIGNAL_RXTO)
         {
-            case SIGNAL_RXTO:
-                bytes_received = modbus_uart.pRxBuffPtr - rxBuffer;
-                if(rxBuffer[0] == modbus_parameters.address &&
-                        bytes_received > 4 &&
-                        MODBUS_crc(rxBuffer, bytes_received) == 0)
-                {
-                    LED_BlinkOne(2, 2, 127, 50);
-                    responseLength = MODBUS_Process(rxBuffer + 1, bytes_received - 3, txBuffer, MAXPACKET);
-                }
-                break;
-
-            case SIGNAL_RXCPLT:
-                // Filled buffer with no timeout
-                break;
-
-            case SIGNAL_TXCPLT:
-                break;
-
-            case SIGNAL_ERROR:
-                break;
-        }
-		if(responseLength > 0)
-        {
-            HAL_UART_Transmit_IT(&modbus_uart, txBuffer, responseLength);
-            responseLength = 0;
+            st->bytes_received = modbus_uart.pRxBuffPtr - st->rxBuffer;
+            if(st->rxBuffer[0] == modbus_parameters.address &&
+                    st->bytes_received > 4 &&
+                    MODBUS_crc(st->rxBuffer, st->bytes_received) == 0)
+            {
+                st->responseLength = MODBUS_Process(st->rxBuffer + 1, st->bytes_received - 3, st->txBuffer, MAXPACKET);
+            }
         }
         else
         {
-            HAL_UART_Receive_IT(&modbus_uart, rxBuffer, MAXPACKET);
+            st->responseLength = 0;
+        }
+		if(st->responseLength > 0)
+        {
+            HAL_UART_Transmit_IT(&modbus_uart, st->txBuffer, st->responseLength);
+            st->responseLength = 0;
+        }
+        else
+        {
+            HAL_UART_Receive_IT(&modbus_uart, st->rxBuffer, MAXPACKET);
             LL_USART_EnableIT_RTO(modbus_uart.Instance);
         }
 
