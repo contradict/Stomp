@@ -658,6 +658,7 @@ int MODBUS_ReadEnfieldHoldingRegister(void *ctx, uint16_t *v)
 {
     osEvent evt;
     struct EnfieldRequest *req;
+    struct EnfieldResponse *resp;
 
     enum JointIndex j = CONTEXT_JOINT(ctx);
     enum EnfieldReadRegister reg = CONTEXT_READ_REG(ctx);
@@ -679,15 +680,20 @@ int MODBUS_ReadEnfieldHoldingRegister(void *ctx, uint16_t *v)
     req->responseQ = enfieldQ;
     req->response = osMailAlloc(enfieldQ, 0);
     Enfield_Request(req);
-    evt = osMailGet(enfieldQ, 100);
     ret = SLAVE_DEVICE_FAILURE;
-    if((evt.status == osEventMail) &&
-       (req->response->err == 0))
+    evt = osMailGet(enfieldQ, osWaitForever);
+    if(evt.status == osEventMail)
     {
-       *v = req->response->value;
+       resp = evt.value.p;
+       *v = resp->value;
        ret = 0;
+       osMailFree(enfieldQ, resp);
     }
-    osMailFree(enfieldQ, req->response);
+    else
+    {
+      // ???
+        while(1);
+    }
     return ret;
 }
 
@@ -696,6 +702,7 @@ int MODBUS_WriteEnfieldHoldingRegister(void *ctx, uint16_t v)
     (void)ctx;
     osEvent evt;
     struct EnfieldRequest *req;
+    struct EnfieldResponse *resp;
 
     enum JointIndex j = CONTEXT_JOINT(ctx);
     enum EnfieldWriteRegister reg = CONTEXT_WRITE_REG(ctx);
@@ -720,12 +727,16 @@ int MODBUS_WriteEnfieldHoldingRegister(void *ctx, uint16_t v)
     Enfield_Request(req);
     evt = osMailGet(enfieldQ, 100);
     ret = SLAVE_DEVICE_FAILURE;
-    if((evt.status == osEventMail) &&
-       (req->response->err == 0))
+    if(evt.status == osEventMail)
     {
-       ret = 0;
+        resp = evt.value.p;
+        ret = resp->err;
+        osMailFree(enfieldQ, resp);
     }
-    osMailFree(enfieldQ, req->response);
+    else
+    {
+        while(1);
+    }
     return ret;
 }
 

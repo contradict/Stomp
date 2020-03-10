@@ -218,6 +218,7 @@ void Enfield_Thread(const void *arg)
     enum EnfieldThreadState state = Start;
     struct EnfieldContext *st = (struct EnfieldContext *)arg;
     struct EnfieldRequest *req;
+    struct EnfieldResponse *resp;
     uint16_t write_data;
     int err;
     while(1)
@@ -282,22 +283,24 @@ void Enfield_Thread(const void *arg)
                 }
                 else if(evt.status == osEventMail)
                 {
+                    req = (struct EnfieldRequest *)evt.value.p;
+                    resp = req->response;
                     state = ExecuteRequest;
                 }
                 break;
             case ExecuteRequest:
                 LED_BlinkOne(st->joint, 2, 255, 10);
-                req = (struct EnfieldRequest *)evt.value.p;
                 if(req->write)
                 {
-                    req->response->value = req->value;
-                    req->response->err = Enfield_Write(st, req->w, &req->response->value);
+                    resp->value = req->value;
+                    resp->err = Enfield_Write(st, req->w, &resp->value);
                 }
                 else
                 {
-                    req->response->err = Enfield_Get(st, req->r, &req->response->value);
+                    resp->err = Enfield_Get(st, req->r, &resp->value);
+                    Enfield_Get(st, req->r, &write_data);
                 }
-                osMailPut(req->responseQ, req->response);
+                osMailPut(req->responseQ, resp);
                 osMailFree(st->commandQ, req);
                 state = Update;
                 break;
