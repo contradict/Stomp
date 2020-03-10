@@ -275,7 +275,7 @@ void Enfield_Thread(const void *arg)
                 }
                 break;
             case WaitRequest:
-                LED_SetOne(st->joint, 2, 128);
+                LED_SetOne(st->joint, 2, 64);
                 evt = osMailGet(st->commandQ, enfield_parameters.sample_period);
                 if(evt.status == osEventTimeout)
                 {
@@ -289,7 +289,7 @@ void Enfield_Thread(const void *arg)
                 }
                 break;
             case ExecuteRequest:
-                LED_BlinkOne(st->joint, 2, 255, 10);
+                LED_BlinkOne(st->joint, 2, 255, 20);
                 if(req->write)
                 {
                     resp->value = req->value;
