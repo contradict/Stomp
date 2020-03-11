@@ -1,5 +1,10 @@
 ![Sketch of Leg Geometry](LiftCurlGeometry.jpg)
 
+# Linearization of feedback
+
+The Enfield servos need cyldiner length feedback, our systems measures joint
+angles on a four-bar linkage.
+
 ## Definition of Symbols
 
 Values measured during operation.
@@ -86,3 +91,29 @@ The swing loop is
 $$ R_s e^{i \alpha_s} + S_1 e^{i \theta_s} = S_x + i S_y $$
 
 $$ R_s = \left\|S_x + i S_y - S_2 e^{i \theta_s}\right\| $$
+
+# Toe position to cylinder lengths
+
+Toe position in from angles
+
+$$ T = L_x + i L_y + L_2 e^{i \theta_l } + C_2 e^{i (\theta_l + \theta_c)} $$
+
+The loops from above with the cylinders.
+
+$$ C_x + i C_y + R_c e^{i \alpha_c} - C_1 e^{i (\theta_c + \theta_l)} - L_2 e^{i \theta_l} \
+   = L_x + i L_y $$
+
+$$ R_l e^{i \alpha_l} + L_1 e^{i \theta_l} = L_x + i L_y $$
+
+Substitute for angular terms
+
+
+$$ e^{i \theta_l} = \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1} $$
+
+$$ e^{i (\theta_c + \theta_l)} = \frac{L_x + i L_y - C_x - i C_y - \
+   R_c e^{i \alpha_c} + L_2 \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1}}{-C_1} $$
+
+
+$$ T = L_x + i L_y + L_2 \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1} + \
+   C_2  \frac{L_x + i L_y - C_x - i C_y - \
+   R_c e^{i \alpha_c} + L_2 \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1}}{-C_1} $$
