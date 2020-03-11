@@ -1,0 +1,4 @@
+*.o
+modbus
+rs485test
+enfield

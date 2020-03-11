@@ -1,0 +1,553 @@
+## copied from Kbuild.include
+
+###############################################################################
+#
+# When a Kconfig string contains a filename, it is suitable for
+# passing to shell commands. It is surrounded by double-quotes, and
+# any double-quotes or backslashes within it are escaped by
+# backslashes.
+#
+# This is no use for dependencies or $(wildcard). We need to strip the
+# surrounding quotes and the escaping from quotes and backslashes, and
+# we *do* need to escape any spaces in the string. So, for example:
+#
+# Usage: $(eval $(call config_filename,FOO))
+#
+# Defines FOO_FILENAME based on the contents of the CONFIG_FOO option,
+# transformed as described above to be suitable for use within the
+# makefile.
+#
+# Also, if the filename is a relative filename and exists in the source
+# tree but not the build tree, define FOO_SRCPREFIX as $(srctree)/ to
+# be prefixed to *both* command invocation and dependencies.
+#
+# Note: We also print the filenames in the quiet_cmd_foo text, and
+# perhaps ought to have a version specially escaped for that purpose.
+# But it's only cosmetic, and $(patsubst "%",%,$(CONFIG_FOO)) is good
+# enough.  It'll strip the quotes in the common case where there's no
+# space and it's a simple filename, and it'll retain the quotes when
+# there's a space. There are some esoteric cases in which it'll print
+# the wrong thing, but we don't really care. The actual dependencies
+# and commands *do* get it right, with various combinations of single
+# and double quotes, backslashes and spaces in the filenames.
+#
+###############################################################################
+
+define config_filename
+ifneq ($$(CONFIG_$(1)),"")
+$(1)_FILENAME := $$(subst \\,\,$$(subst \$$(quote),$$(quote),$$(subst $$(space_escape),\$$(space),$$(patsubst "%",%,$$(subst $$(space),$$(space_escape),$$(CONFIG_$(1)))))))
+ifneq ($$(patsubst /%,%,$$(firstword $$($(1)_FILENAME))),$$(firstword $$($(1)_FILENAME)))
+else
+ifeq ($$(wildcard $$($(1)_FILENAME)),)
+ifneq ($$(wildcard $$(srctree)/$$($(1)_FILENAME)),)
+$(1)_SRCPREFIX := $(srctree)/
+endif
+endif
+endif
+endif
+endef
+
+config_targets ?= menuconfig config xconfig gconfig
+config_folder_name ?= config
+
+# pull in the user's configuration
+ifeq (,$(filter $(config_targets),$(MAKECMDGOALS)))
+	-include ${CURDIR}/.config
+endif
+
+################# if we have .config
+ifeq ($(strip $(CONFIG_HAVE_DOT_CONFIG)),y)
+
+# name of executable
+
+TARGET=$(notdir $(CURDIR))
+
+# strip quotes from library path with the help of Kbuild.include function, creates LIBROOT_FILENAME variable
+$(eval $(call config_filename,LIBROOT))
+
+# Tools
+
+CC=$(CONFIG_TOOLROOT)arm-none-eabi-gcc
+LD=$(CONFIG_TOOLROOT)arm-none-eabi-gcc
+AR=$(CONFIG_TOOLROOT)arm-none-eabi-ar
+AS=$(CONFIG_TOOLROOT)arm-none-eabi-as
+OBJCOPY=$(CONFIG_TOOLROOT)arm-none-eabi-objcopy
+GDB=$(CONFIG_TOOLROOT)gdb-multiarch
+
+# Code Paths
+
+DEVICE=$(LIBROOT_FILENAME)/Drivers/CMSIS/Device/ST/STM32F7xx
+CORE=$(LIBROOT_FILENAME)/Drivers/CMSIS
+PERIPH=$(LIBROOT_FILENAME)/Drivers/STM32F7xx_HAL_Driver
+
+# Board Support Package
+$(eval $(call config_filename,BTYPE))
+$(eval $(call config_filename,PTYPE))
+PTYPE_FILENAME_LOWERCASE=$(shell echo $(PTYPE_FILENAME) | tr A-Z a-z)
+PTYPE_FILENAME_UPPERCASE=$(shell echo $(PTYPE_FILENAME) | tr a-w A-W)
+BTYPE_FILENAME_LOWERCASE=$(shell echo $(BTYPE_FILENAME) | tr A-Z a-z)
+BSP=$(LIBROOT_FILENAME)/Drivers/BSP/$(BTYPE_FILENAME)
+BSP_COMPONENTS=$(LIBROOT_FILENAME)/Drivers/BSP/Components
+# BSP board directory filenames sometimes contain - or _, randomly, test and change
+ifeq (,$(wildcard $(BSP))) # test if directory exists
+	BSP=$(LIBROOT_FILENAME)/Drivers/BSP/$(subst _,-,$(BTYPE_FILENAME))
+endif
+
+PROJECTS_FOLDER=$(LIBROOT_FILENAME)/Projects/$(BTYPE_FILENAME)
+# BSP board directory filenames sometimes contain - or _, randomly, test and change
+ifeq (,$(wildcard $(EXAMPLES_FOLDER))) # test if directory exists
+	PROJECTS_FOLDER=$(LIBROOT_FILENAME)/Projects/$(subst _,-,$(BTYPE_FILENAME))
+endif
+EXAMPLES_FOLDER=$(PROJECTS_FOLDER)/Templates
+
+# Search path for standard files
+vpath %.c $(TEMPLATEROOT)
+
+# Search path for perpheral library
+
+vpath %.c $(CORE)
+vpath %.c $(BSP)
+vpath %.c $(PERIPH)/Src
+vpath %.c $(DEVICE)
+
+# Search path for Library
+
+#vpath %.c $(TEMPLATEROOT)/Library/ff9/src
+#vpath %.c $(TEMPLATEROOT)/Library/ff9/src/option
+#vpath %.c $(TEMPLATEROOT)/Library
+
+#  Processor specific
+
+LDSCRIPT = $(TEMPLATEROOT)/STM32F722xE_FLASH.ld
+
+STARTUP_FOLDER= $(LIBROOT_FILENAME)/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates
+
+## STARTUP variable will be built along with main.c
+STARTUP = src/system_stm32f7xx.o src/startup_$(PTYPE_FILENAME_LOWERCASE).o src/stm32f7xx_it.o src/stm32f7xx_hal_msp.o
+## src/stm32f7xx_hal_timebase_tim.o
+
+############ BSP
+ifeq ($(strip $(CONFIG_BSP_MODULE_ENABLED)),y)
+	STARTUP += $(BSP)/$(BTYPE_FILENAME_LOWERCASE).o
+	STARTUP += $(LIBROOT_FILENAME)/Drivers/BSP/STM32F7xx_Nucleo_144/stm32f7xx_nucleo_144.o
+endif
+ifeq ($(strip $(CONFIG_BSP_SDRAM_MODULE_ENABLED)),y)
+	STARTUP += $(BSP)/$(BTYPE_FILENAME)_sdram.o
+endif
+ifeq ($(strip $(CONFIG_BSP_AUDIO_MODULE_ENABLED)),y)
+	STARTUP += $(BSP)/$(BTYPE_FILENAME)_audio.o
+endif
+ifeq ($(strip $(CONFIG_BSP_LCD_MODULE_ENABLED)),y)
+	STARTUP += $(BSP)/$(BTYPE_FILENAME)_lcd.o
+endif
+
+############ BSP components
+ifeq ($(strip $(CONFIG_BSP_WM8994_COMPONENT_ENABLED)),y)
+	STARTUP += $(BSP_COMPONENTS)/wm8994/wm8994.o
+endif
+ifeq ($(strip $(CONFIG_BSP_OTM8009A_COMPONENT_ENABLED)),y)
+	STARTUP += $(BSP_COMPONENTS)/otm8009a/otm8009a.o
+endif
+ifeq ($(strip $(CONFIG_BSP_ADS57X4_COMPONENT_ENABLED)),y)
+	STARTUP += $(BSP_COMPONENTS)/ads57x4/ads57x4.o
+	CFLAGS += -I$(BSP_COMPONENTS)/ads57x4
+endif
+ifeq ($(strip $(CONFIG_BSP_IS31FL3235_COMPONENT_ENABLED)),y)
+	STARTUP += $(BSP_COMPONENTS)/is31fl3235/is31fl3235.o
+	CFLAGS += -I$(BSP_COMPONENTS)/is31fl3235
+endif
+
+
+
+############ HAL
+
+ifeq ($(strip $(CONFIG_HAL_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal.o
+endif
+ifeq ($(strip $(CONFIG_HAL_GPIO_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_gpio.o
+endif
+ifeq ($(strip $(CONFIG_HAL_I2C_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_i2c.o
+endif
+ifeq ($(strip $(CONFIG_HAL_I2C_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_i2c_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_DMA_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_dma.o
+endif
+ifeq ($(strip $(CONFIG_HAL_DMA_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_dma_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_DMA2D_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_dma2d.o
+endif
+ifeq ($(strip $(CONFIG_HAL_DSI_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_dsi.o
+endif
+ifeq ($(strip $(CONFIG_HAL_SPI_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_spi.o
+endif
+ifeq ($(strip $(CONFIG_HAL_UART_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_uart.o
+endif
+ifeq ($(strip $(CONFIG_HAL_UART_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_uart_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_USART_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_usart.o
+endif
+ifeq ($(strip $(CONFIG_HAL_RCC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_rcc.o
+endif
+ifeq ($(strip $(CONFIG_HAL_RCC_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_rcc_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_PWR_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_pwr.o
+endif
+ifeq ($(strip $(CONFIG_HAL_PWR_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_pwr_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_ETH_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_eth.o
+endif
+ifeq ($(strip $(CONFIG_HAL_ADC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_adc.o
+endif
+ifeq ($(strip $(CONFIG_HAL_ADC_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_adc_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_CAN_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_can.o
+endif
+ifeq ($(strip $(CONFIG_HAL_CEC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_cec.o
+endif
+ifeq ($(strip $(CONFIG_HAL_CORTEX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_cortex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_TIM_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_tim.o
+endif
+ifeq ($(strip $(CONFIG_HAL_TIM_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_tim_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_NOR_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_nor.o
+endif
+ifeq ($(strip $(CONFIG_HAL_SDRAM_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_sdram.o
+endif
+ifeq ($(strip $(CONFIG_HAL_SD_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_sd.o
+endif
+ifeq ($(strip $(CONFIG_HAL_SRAM_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_sram.o
+endif
+ifeq ($(strip $(CONFIG_HAL_WWDG_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_wwdg.o
+endif
+ifeq ($(strip $(CONFIG_HAL_FLASH_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_flash.o
+endif
+ifeq ($(strip $(CONFIG_HAL_FLASH_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_flash_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_CRC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_crc.o
+endif
+ifeq ($(strip $(CONFIG_HAL_CRC_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_crc_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_MMC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_mmc.o
+endif
+ifeq ($(strip $(CONFIG_HAL_PCD_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_pcd.o
+endif
+ifeq ($(strip $(CONFIG_HAL_PCD_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_pcd_ex.o
+endif
+ifeq ($(strip $(CONFIG_HAL_SAI_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_sai.o
+endif
+ifeq ($(strip $(CONFIG_HAL_DFSDM_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_dfsdm.o
+endif
+ifeq ($(strip $(CONFIG_HAL_LTDC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_ltdc.o
+endif
+ifeq ($(strip $(CONFIG_HAL_LTDC_EX_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_hal_ltdc_ex.o
+endif
+
+############ LL
+
+ifeq ($(strip $(CONFIG_USE_LL_DRIVER)),y)
+	USE_LL_DRIVER = -DUSE_LL_DRIVER
+endif
+
+ifeq ($(strip $(CONFIG_LL_FMC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_ll_fmc.o
+endif
+ifeq ($(strip $(CONFIG_LL_SDMMC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_ll_sdmmc.o
+endif
+ifeq ($(strip $(CONFIG_LL_RCC_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_ll_rcc.o
+endif
+ifeq ($(strip $(CONFIG_LL_USB_MODULE_ENABLED)),y)
+	STARTUP += $(PERIPH)/Src/stm32f7xx_ll_usb.o
+endif
+
+############ 
+
+ifeq ($(strip $(CONFIG_CMSIS_RTOS_ENABLED)),y)
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/croutine.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/list.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/queue.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/tasks.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/timers.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/portable/MemMang/heap_4.o
+	STARTUP += $(LIBROOT_FILENAME)/FreeRTOS/Source/FreeRTOS-openocd.o
+	CFLAGS += -I$(LIBROOT_FILENAME)/FreeRTOS/Source/include
+	CFLAGS += -I$(LIBROOT_FILENAME)/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1
+endif
+
+ifeq ($(strip $(CONFIG_LWIP_MIDDLEWARE_ENABLED)),y)
+	LWIPDIR = $(LIBROOT_FILENAME)/LwIP/src
+
+	# COREFILES, CORE4FILES: The minimum set of files needed for lwIP.
+	COREFILES=$(LWIPDIR)/core/init.c \
+		$(LWIPDIR)/core/def.c \
+		$(LWIPDIR)/core/dns.c \
+		$(LWIPDIR)/core/inet_chksum.c \
+		$(LWIPDIR)/core/ip.c \
+		$(LWIPDIR)/core/mem.c \
+		$(LWIPDIR)/core/memp.c \
+		$(LWIPDIR)/core/netif.c \
+		$(LWIPDIR)/core/pbuf.c \
+		$(LWIPDIR)/core/raw.c \
+		$(LWIPDIR)/core/stats.c \
+		$(LWIPDIR)/core/sys.c \
+		$(LWIPDIR)/core/tcp.c \
+		$(LWIPDIR)/core/tcp_in.c \
+		$(LWIPDIR)/core/tcp_out.c \
+		$(LWIPDIR)/core/timeouts.c \
+		$(LWIPDIR)/core/udp.c
+
+	CORE4FILES=$(LWIPDIR)/core/ipv4/autoip.c \
+		$(LWIPDIR)/core/ipv4/dhcp.c \
+		$(LWIPDIR)/core/ipv4/etharp.c \
+		$(LWIPDIR)/core/ipv4/icmp.c \
+		$(LWIPDIR)/core/ipv4/igmp.c \
+		$(LWIPDIR)/core/ipv4/ip4_frag.c \
+		$(LWIPDIR)/core/ipv4/ip4.c \
+		$(LWIPDIR)/core/ipv4/ip4_addr.c
+
+	CORE6FILES=$(LWIPDIR)/core/ipv6/dhcp6.c \
+		$(LWIPDIR)/core/ipv6/ethip6.c \
+		$(LWIPDIR)/core/ipv6/icmp6.c \
+		$(LWIPDIR)/core/ipv6/inet6.c \
+		$(LWIPDIR)/core/ipv6/ip6.c \
+		$(LWIPDIR)/core/ipv6/ip6_addr.c \
+		$(LWIPDIR)/core/ipv6/ip6_frag.c \
+		$(LWIPDIR)/core/ipv6/mld6.c \
+		$(LWIPDIR)/core/ipv6/nd6.c
+
+	# APIFILES: The files which implement the sequential and socket APIs.
+	APIFILES=$(LWIPDIR)/api/api_lib.c \
+		$(LWIPDIR)/api/api_msg.c \
+		$(LWIPDIR)/api/err.c \
+		$(LWIPDIR)/api/netbuf.c \
+		$(LWIPDIR)/api/netdb.c \
+		$(LWIPDIR)/api/netifapi.c \
+		$(LWIPDIR)/api/sockets.c \
+		$(LWIPDIR)/api/tcpip.c
+
+	# NETIFFILES: Files implementing various generic network interface functions
+	NETIFFILES=$(LWIPDIR)/netif/ethernet.c
+	
+	#	$(LWIPDIR)/netif/slipif.c
+
+	# SIXLOWPAN: 6LoWPAN
+	SIXLOWPAN=$(LWIPDIR)/netif/lowpan6.c \
+
+	# PPPFILES: PPP
+	PPPFILES=$(LWIPDIR)/netif/ppp/auth.c \
+		$(LWIPDIR)/netif/ppp/ccp.c \
+		$(LWIPDIR)/netif/ppp/chap-md5.c \
+		$(LWIPDIR)/netif/ppp/chap_ms.c \
+		$(LWIPDIR)/netif/ppp/chap-new.c \
+		$(LWIPDIR)/netif/ppp/demand.c \
+		$(LWIPDIR)/netif/ppp/eap.c \
+		$(LWIPDIR)/netif/ppp/ecp.c \
+		$(LWIPDIR)/netif/ppp/eui64.c \
+		$(LWIPDIR)/netif/ppp/fsm.c \
+		$(LWIPDIR)/netif/ppp/ipcp.c \
+		$(LWIPDIR)/netif/ppp/ipv6cp.c \
+		$(LWIPDIR)/netif/ppp/lcp.c \
+		$(LWIPDIR)/netif/ppp/magic.c \
+		$(LWIPDIR)/netif/ppp/mppe.c \
+		$(LWIPDIR)/netif/ppp/multilink.c \
+		$(LWIPDIR)/netif/ppp/ppp.c \
+		$(LWIPDIR)/netif/ppp/pppapi.c \
+		$(LWIPDIR)/netif/ppp/pppcrypt.c \
+		$(LWIPDIR)/netif/ppp/pppoe.c \
+		$(LWIPDIR)/netif/ppp/pppol2tp.c \
+		$(LWIPDIR)/netif/ppp/pppos.c \
+		$(LWIPDIR)/netif/ppp/upap.c \
+		$(LWIPDIR)/netif/ppp/utils.c \
+		$(LWIPDIR)/netif/ppp/vj.c \
+		$(LWIPDIR)/netif/ppp/polarssl/arc4.c \
+		$(LWIPDIR)/netif/ppp/polarssl/des.c \
+		$(LWIPDIR)/netif/ppp/polarssl/md4.c \
+		$(LWIPDIR)/netif/ppp/polarssl/md5.c \
+		$(LWIPDIR)/netif/ppp/polarssl/sha1.c
+
+	APPFILES=$(LWIPDIR)/apps/httpd/httpd.c
+	#APPFILES=$(LWIPDIR)/apps/httpd/fsdata.c
+	APPFILES=$(LWIPDIR)/apps/httpd/fs.c
+
+	STARTUP+=$(COREFILES:.c=.o) \
+		$(CORE4FILES:.c=.o) \
+		$(CORE6FILES:.c=.o) \
+		$(APIFILES:.c=.o) \
+		$(NETIFFILES:.c=.o) \
+		$(PPPFILES:.c=.o) \
+		$(SIXLOWPAN:.c=.o) \
+		$(APPFILES:.c=.o)
+
+	STARTUP += $(LIBROOT_FILENAME)/LwIP/system/OS/sys_arch.o
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/system/arch
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/system
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/src/include
+	CFLAGS += -I$(LIBROOT_FILENAME)/LwIP/src/apps/httpd
+endif
+
+############ Utils
+
+ifeq ($(strip $(CONFIG_LCD_LOG_UTIL_ENABLED)),y)
+	STARTUP += $(LIBROOT_FILENAME)/Utilities/Log/lcd_log.o src/syscalls.o
+	CFLAGS += -I$(LIBROOT_FILENAME)/Utilities/Log
+endif
+
+# Compilation Flags
+
+FULLASSERT = -DUSE_FULL_ASSERT
+
+ARCH_FLAGS= -mcpu=cortex-m7 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard 
+LDFLAGS+= -T$(LDSCRIPT) $(ARCH_FLAGS) -specs=nosys.specs -Wl,--gc-sections
+CFLAGS+= $(ARCH_FLAGS)
+CFLAGS += -fdata-sections -ffunction-sections
+CFLAGS+= -I$(DEVICE)/Include -I$(CORE)/Include -I$(PERIPH)/Inc -I$(BSP) -I $(LIBROOT_FILENAME)/Drivers/BSP/STM32F7xx_Nucleo_144/
+CFLAGS+= -D$(PTYPE_FILENAME_UPPERCASE) -D$(CONFIG_BTYPE) -DUSE_HAL_DRIVER $(FULLASSERT) $(USE_LL_DRIVER) -D_TIMEVAL_DEFINED -D_SYS_TIME_H_
+
+# Build executable
+
+$(TARGET).bin: $(TARGET).elf
+
+$(TARGET).elf: $(OBJS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
+
+# compile and generate dependency info
+
+%.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -MM $(CFLAGS) $< > $*.d
+
+%.o: %.s
+	$(CC) -c $(CFLAGS) $< -o $@
+
+%.bin: %.elf
+	$(OBJCOPY) -O binary $< $@
+
+# copies user defined files to project directory if they do not already exist
+init:
+
+	mkdir -p inc/
+	mkdir -p src/
+
+	## system_stm32f7xx.c 
+
+	cp -n --no-preserve=mode,ownership $(STARTUP_FOLDER)/system_stm32f7xx.c ./src
+
+	## startup_stm32f7xx.s
+
+	cp -n --no-preserve=mode,ownership $(STARTUP_FOLDER)/gcc/startup_$(PTYPE_FILENAME_LOWERCASE).s ./src
+
+	## stm32f7xx_hal_msp.c
+
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_msp_template.c ./src/stm32f7xx_hal_msp.c
+
+	## stm32f7xx_hal_conf.h
+
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_conf_template.h ./inc/stm32f7xx_hal_conf.h
+
+	## stm32f7xx_it.c
+
+	cp -n --no-preserve=mode,ownership $(EXAMPLES_FOLDER)/Src/stm32f7xx_it.c ./src
+
+	## stm32f7xx_it.h
+
+	cp -n --no-preserve=mode,ownership $(EXAMPLES_FOLDER)/Inc/stm32f7xx_it.h ./inc
+
+	## main.c
+
+	cp -n --no-preserve=mode,ownership $(EXAMPLES_FOLDER)/Src/main.c ./src
+
+	## main.h
+
+	cp -n --no-preserve=mode,ownership $(EXAMPLES_FOLDER)/Inc/main.h ./inc
+
+ifeq ($(strip $(CONFIG_LCD_LOG_UTIL_ENABLED)),y)
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/Utilities/Log/lcd_log_conf_template.h ./inc/lcd_log_conf.h
+	## replace stm32xxx_eval with stm32f769i_discovery
+	sed -i -- 's/stm32xxx_eval/$(BTYPE_FILENAME)/g' inc/lcd_log_conf.h
+	## copy syscalls.c from one of the example directories, because otherwise overriding putchar will not work
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/Projects/STM32F769I_EVAL/Examples/UART/UART_Printf/SW4STM32/syscalls.c ./src
+endif
+
+ifeq ($(strip $(CONFIG_LWIP_MIDDLEWARE_ENABLED)),y)
+	cp -n --no-preserve=mode,ownership $(PROJECTS_FOLDER)/Demonstration/Config/lwipopts.h ./inc
+endif
+
+ifeq ($(strip $(CONFIG_CMSIS_RTOS_ENABLED)),y)
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h ./inc/cmsis_os.h
+	cp -n --no-preserve=mode,ownership $(LIBROOT_FILENAME)/FreeRTOS/Source/include/FreeRTOSConfig_template.h ./inc/FreeRTOSConfig.h
+endif
+
+clean:
+	rm -f $(OBJS) $(OBJS:.o=.d) $(TARGET).elf $(TARGET).bin $(CLEANOTHER)
+
+debug: $(ELF)
+	$(GDB) $(ELF)
+
+flash: $(TARGET).hex
+	st-flash write $(TARGET).bin 0x8000000
+
+flash-windows: $(TARGET).bin
+	st-link_cli -c SWD -p $(TARGET).bin 0x8000000 -Rst -Run
+
+# pull in dependencies
+
+-include $(OBJS:.o=.d)
+
+else # if we do not have .config
+
+KBUILD_OUTPUT := ${CURDIR}/
+# windows, cygwin & symlinks -> no
+ifeq ($(OS),Windows_NT)
+	KBUILD_OUTPUT:=
+endif
+
+$(config_targets):
+	make -C $(TEMPLATEROOT)/$(config_folder_name) $(MAKECMDGOALS) KBUILD_KCONFIG=$(TEMPLATEROOT)/Kconfig KBUILD_OUTPUT=$(KBUILD_OUTPUT)
+	@if [ "$(OS)" = "Windows_NT" ]; then\
+        mv $(TEMPLATEROOT)/$(config_folder_name)/.config "$(subst /cygdrive/c,C:,${CURDIR})";\
+    fi
+
+endif
