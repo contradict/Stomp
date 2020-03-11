@@ -70,18 +70,16 @@ static const uint8_t joint_led_channel[JOINT_COUNT] = {0, 1, 2};
 static const enum ads57x4_channel joint_dac_channel[JOINT_COUNT] = {
     ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_C, ADS57x4_CHANNEL_B};
 
+struct link {
+    complex float pivot;
+    float l1, l2;
+    float min, max;
+};
+
 struct LinearizationConstants {
     float theta_offset[JOINT_COUNT];
     float theta_scale[JOINT_COUNT];
-    complex float Pl;
-    float L1, L2;
-    float Rllimit[2];
-    complex float Pc;
-    float C1, C2;
-    float Rclimit[2];
-    float S1;
-    complex float Ps;
-    float Rslimit[2];
+    struct link links[3];
 };
 
 static struct LinearizationConstants linearization_constants __attribute__ ((section (".storage.linearize"))) = {
@@ -94,17 +92,29 @@ static struct LinearizationConstants linearization_constants __attribute__ ((sec
         THETA_SCALE(0.916f, 4.774f, -M_PI_2 - M_PI/6.0f, -M_PI_2 + M_PI/6.0f),   // CURL
         THETA_SCALE(0.225f, 4.768f,          -M_PI/8.0f,           M_PI/8.0f),   // SWING
         THETA_SCALE(1.009f, 3.637f,          -M_PI/8.0f,           M_PI/8.0f)},  // LIFT
-    .Pl = 4.287 + 2.06I,
-    .L1 = 4.4,
-    .L2 = 6.3,
-    .Rllimit = {1.07, 3.05},
-    .Pc = 4.287 - 0.44I,
-    .C1 = 2.5,
-    .C2 = 6.0,
-    .Rclimit = {5.8, 6.8},
-    .S1 = 3.90,
-    .Ps = 3.603 + 2.572I,
-    .Rslimit = {1.080, 2.572}
+    .links = {
+        { //CURL
+            .pivot = 4.287 - 0.44I,
+            .l1 = 2.5,
+            .l2 = 6.0,
+            .min = 5.8,
+            .max = 6.8
+        },
+        { //SWING
+            .pivot = 3.603 + 2.572I,
+            .l1 = 3.90,
+            .l2 = 0.0,
+            .min = 1.080,
+            .max = 2.572
+        },
+        { //LIFT
+            .pivot = 4.287 + 2.06I,
+            .l1 = 4.4,
+            .l2 = 6.3,
+            .min = 1.07,
+            .max = 3.05
+        }
+    }
 };
 
 void Linearize_ThreadInit(void)
@@ -129,7 +139,7 @@ int Linearize_ReadAngle(void *ctx, uint16_t *v)
     {
         return ILLEGAL_DATA_ADDRESS;
     }
-    *v = roundf(joint_angle[joint] * JOINT_ANGLE_SCALE);
+    *(int16_t *)v = roundf(joint_angle[joint] * JOINT_ANGLE_SCALE);
     return 0;
 }
 
@@ -140,7 +150,8 @@ int Linearize_ReadLength(void *ctx, uint16_t *v)
     {
         return ILLEGAL_DATA_ADDRESS;
     }
-    *v = roundf(cylinder_edge_length[joint] * JOINT_ANGLE_SCALE);
+    *v = roundf((cylinder_edge_length[joint] -
+                 linearization_constants.links[joint].min) * JOINT_ANGLE_SCALE);
     return 0;
 }
 
@@ -260,43 +271,33 @@ void compute_cylinder_edge_lengths(const float joint_angle[JOINT_COUNT],
                                    float cylinder_edge_length[JOINT_COUNT])
 {
     cylinder_edge_length[JOINT_LIFT] = cabsf(
-            linearization_constants.Pl -
-            linearization_constants.L1 * cexpf(I * joint_angle[JOINT_LIFT]));
+            linearization_constants.links[JOINT_LIFT].pivot -
+            linearization_constants.links[JOINT_LIFT].l1 * cexpf(I * joint_angle[JOINT_LIFT]));
     cylinder_edge_length[JOINT_CURL] = cabsf(
-            linearization_constants.Pl - linearization_constants.Pc +
-            linearization_constants.C1 * cexpf(I * (joint_angle[JOINT_CURL] + joint_angle[JOINT_LIFT])) +
-            linearization_constants.L2 * cexpf(I * joint_angle[JOINT_LIFT]));
+            linearization_constants.links[JOINT_LIFT].pivot -
+            linearization_constants.links[JOINT_CURL].pivot +
+            linearization_constants.links[JOINT_CURL].l1 * cexpf(I * (joint_angle[JOINT_CURL] + joint_angle[JOINT_LIFT])) +
+            linearization_constants.links[JOINT_LIFT].l2 * cexpf(I * joint_angle[JOINT_LIFT]));
     cylinder_edge_length[JOINT_SWING] = cabsf(
-            linearization_constants.Ps - linearization_constants.S1 * cexpf(I * joint_angle[JOINT_SWING]));
+            linearization_constants.links[JOINT_SWING].pivot -
+            linearization_constants.links[JOINT_SWING].l1 * cexpf(I * joint_angle[JOINT_SWING]));
 }
 
 void compute_feedback_voltage(const float cylinder_edge_length[JOINT_COUNT],
                               float feedback_voltage[JOINT_COUNT],
                               uint16_t feedback_code[JOINT_COUNT])
 {
-    float scale[3], offset[3];
-    scale[JOINT_CURL] =  FEEDBACK_SCALE(linearization_constants.Rclimit[0],
-                                        linearization_constants.Rclimit[1],
-                                        0.0f, 10.0f);
-    scale[JOINT_SWING] =  FEEDBACK_SCALE(linearization_constants.Rslimit[0],
-                                         linearization_constants.Rslimit[1],
-                                         0.0f, 10.0f);
-    scale[JOINT_LIFT] =  FEEDBACK_SCALE(linearization_constants.Rllimit[0],
-                                        linearization_constants.Rllimit[1],
-                                        0.0f, 10.0f);
-    offset[JOINT_CURL] =  FEEDBACK_OFFSET(linearization_constants.Rclimit[0],
-                                          linearization_constants.Rclimit[1],
-                                          0.0f, 10.0f);
-    offset[JOINT_SWING] =  FEEDBACK_OFFSET(linearization_constants.Rslimit[0],
-                                           linearization_constants.Rslimit[1],
-                                           0.0f, 10.0f);
-    offset[JOINT_LIFT] =  FEEDBACK_OFFSET(linearization_constants.Rllimit[0],
-                                          linearization_constants.Rllimit[1],
-                                          0.0f, 10.0f);
-
+    float scale, offset;
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
-        feedback_voltage[joint] = (scale[joint] * cylinder_edge_length[joint] + offset[joint]);
+        scale =  FEEDBACK_SCALE(linearization_constants.links[joint].min,
+                                linearization_constants.links[joint].max,
+                                0.0f, 10.0f);
+        offset = FEEDBACK_OFFSET(linearization_constants.links[joint].min,
+                                 linearization_constants.links[joint].max,
+                                 0.0f, 10.0f);
+
+        feedback_voltage[joint] = (scale * cylinder_edge_length[joint] + offset);
         feedback_code[joint] = feedback_voltage[joint] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
     }
 }
