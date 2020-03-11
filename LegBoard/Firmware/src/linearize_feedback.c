@@ -306,7 +306,7 @@ void compute_led_brightness(const float joint_voltage[JOINT_COUNT])
     float brightness;
     for(int joint=0;joint<JOINT_COUNT;joint++)
     {
-        brightness = joint_voltage[joint]*250.0f / (ADC_VREF * JOINT_DIVIDER);
+        brightness = joint_voltage[joint] * JOINT_DIVIDER / ADC_VREF * 250.0f;
         brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
         LED_SetOne(joint_led_channel[joint], 1, brightness);
     }
