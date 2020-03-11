@@ -243,7 +243,7 @@ void Enfield_Thread(const void *arg)
     osEvent evt;
     struct EnfieldContext *st = (struct EnfieldContext *)arg;
     st->state = Start;
-    uint16_t write_data;
+    uint16_t read_data, write_data;
     int err;
     while(1)
     {
@@ -255,6 +255,7 @@ void Enfield_Thread(const void *arg)
                 break;
             case SetZero:
                 LED_SetOne(st->joint, 0, 128);
+                err = Enfield_Write(st, 0x95 , &write_data);
                 write_data = 0x0000;
                 // Command has no response, ignore RX error
                 err = Enfield_Write(st, SetZeroGains, &write_data);
@@ -326,10 +327,18 @@ void Enfield_Thread(const void *arg)
                 break;
             case Update:
                 LED_SetOne(st->joint, 2, 64);
-                Enfield_Get(st, ReadBaseEndPressure, &(st->BaseEndPressure));
-                Enfield_Get(st, ReadRodEndPressure, &(st->RodEndPressure));
+                err = Enfield_Get(st, ReadBaseEndPressure, &read_data);
+                if(ENFIELD_OK == err)
+                {
+                    st->BaseEndPressure = read_data;
+                }
+                err = Enfield_Get(st, ReadRodEndPressure, &read_data);
+                if(ENFIELD_OK == err)
+                {
+                    (st->RodEndPressure) = read_data;
+                }
                 write_data = st->DigitalCommand;
-                Enfield_Write(st, SetDigitalCommand, &write_data);
+                err = Enfield_Write(st, SetDigitalCommand, &write_data);
                 st->state = WaitRequest;
                 break;
         }
