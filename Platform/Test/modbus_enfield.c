@@ -8,7 +8,8 @@
 #include "modbus_device.h"
 
 int main(int argc, char **argv)
-{    modbus_t *ctx;
+{
+    modbus_t *ctx;
 
     // Phony baud
     ctx = modbus_new_rtu("/dev/ttyS4", 9600, 'N', 8, 1);
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
             printf("  Re-Re-Read dither failed: %s\n", modbus_strerror(errno));
         else
             printf("  Restored Dither: %d\n", value2);
-            */
+        */
     }
 
 
