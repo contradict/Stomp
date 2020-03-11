@@ -109,6 +109,11 @@ Track* TurretController::GetCurrentTarget()
     return &g_trackedObject;
 }
 
+int32_t TurretController::GetCurrentSpeed()
+{
+    m_pTurretRotationController->GetCurrentSpeed();
+}
+
 int32_t TurretController::GetDesiredManualTurretSpeed()
 {
     return getDesiredManualTurretSpeed();

@@ -14,10 +14,6 @@ enum AutoFireState updateAutoFire(const Track &tracked_object,
 
 bool omegaZLockout(int16_t *omegaZ);
 
-//  BB MJS: TMP
-int32_t getTmpAdjustment();
-//  BB MJS: END TMP
-
 void setAutoFireParams(int16_t p_xtol,
                        int16_t p_ytol,
                        int16_t p_max_omegaz,

@@ -6,8 +6,6 @@
 #include "telem.h"
 #include <avr/wdt.h>
 
-//  BB MJS: Removed Hold_down and selfright
-
 extern HardwareSerial& TurretRotationMotorSerial;
 
 uint8_t MAX_SAFE_ANGLE = 65;

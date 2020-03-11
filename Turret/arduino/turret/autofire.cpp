@@ -23,15 +23,6 @@ static struct AutoFireParameters EEMEM saved_params = {
 
 static void saveAutoFireParameters(void);
 
-//  BB MJS: TMP
-
-int32_t getTmpAdjustment()
-{
-    return params.max_omegaZ;
-}
-
-//  BB MJS: END TMP
-
 int32_t swingDuration(int16_t hammer_intensity) {
     int16_t hammer_angle = HAMMER_INTENSITIES_ANGLE[hammer_intensity];
     int32_t x=(40L-hammer_angle);

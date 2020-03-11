@@ -217,6 +217,11 @@ void TurretRotationController::Update()
     updateSpeed();
 }
 
+int32_t TurretRotationController::GetCurrentSpeed() 
+{ 
+    return m_currentSpeed; 
+}
+
 void TurretRotationController::SetParams(uint32_t p_manualControlOverideSpeed)
 {
     m_params.ManualControlOverideSpeed = p_manualControlOverideSpeed;

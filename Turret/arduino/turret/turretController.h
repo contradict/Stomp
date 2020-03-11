@@ -44,6 +44,7 @@ public:
     void Update();
 
     Track* GetCurrentTarget();
+    int32_t GetCurrentSpeed();
     int32_t GetDesiredManualTurretSpeed();
 
     void SetParams(uint32_t p_watchDogTimerTriggerDt);

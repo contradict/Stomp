@@ -5,8 +5,6 @@
 #include "autofire.h"
 #include "imu.h"
 
-//  BB MJS: removed autodtive, selfright and hold_down and associated commands
-
 #define MAXIMUM_COMMAND_LENGTH 64
 enum Commands {
     CMD_ID_TRATE = 10,

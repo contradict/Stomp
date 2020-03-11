@@ -140,7 +140,7 @@ bool Track::valid(uint32_t now) const {
 
 //
 //  Returns the angle between forward (the axis of the hammer) and the target
-//  Angle is in fixed point (1:17:14) raidans
+//  Angle is in fixed point (1:17:14) raidans - BB MJS: Confirm this
 //
 
 int32_t Track::angle(void) const {

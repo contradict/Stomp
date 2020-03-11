@@ -27,7 +27,4 @@ void initXbee()
     Xbee.set_cts_pin(XBEE_CTS);
 
 #endif
-
-  //  BB MJS
-  setTelemetryParams(100000L, 100000L, 500000, _LBV(TLM_ID_SYS)|_LBV(TLM_ID_SBS)|_LBV(TLM_ID_TRK)|_LBV(TLM_ID_TUR)|_LBV(TLM_ID_TROT)|_LBV(TLM_ID_AAIM)|_LBV(TLM_ID_AF)|_LBV(TLM_ID_ACK)|_LBV(TLM_ID_DBGM));
 }

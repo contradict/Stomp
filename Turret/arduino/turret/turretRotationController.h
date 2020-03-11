@@ -35,6 +35,8 @@ public:
     void Init();
     void Update();
 
+    int32_t GetCurrentSpeed();
+
     void SetParams(uint32_t p_manualControlOverideSpeed);
     void RestoreParams();
 

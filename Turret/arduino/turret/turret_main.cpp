@@ -326,6 +326,7 @@ static void updateWeapons()
     //  BB MJS: Hammer control is going to be different this year.  There is no motor drive, just to Big
     //  cylindars for hard hit and gentral retract
 
+    /*
     if( (diff & HAMMER_RETRACT_BIT) && (s_currentRCBitfield & HAMMER_RETRACT_BIT)){
       if (s_currentRCBitfield & DANGER_CTRL_BIT){
         gentleRetract(HAMMER_RETRACT_BIT);
@@ -339,6 +340,7 @@ static void updateWeapons()
     if( (s_currentRCBitfield & GENTLE_HAM_R_BIT)) {
         gentleRetract(GENTLE_HAM_R_BIT);
     }
+    */
 }
 
 static void sendTelemetry()
@@ -368,9 +370,7 @@ static void sendTelemetry()
     reset_loop_stats();
     int16_t hammer_angle = HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
 
-    //  BB MJS: Get the turret speed to put in here
-
-    sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, 0);
+    sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetCurrentSpeed());
 
     telemetryIMU();
 }

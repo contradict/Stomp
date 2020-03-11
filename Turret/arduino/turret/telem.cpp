@@ -17,20 +17,21 @@ const uint16_t TLM_TERMINATOR=0x6666;
 struct TelemetryParameters {
     uint32_t telemetry_interval;
     uint32_t leddar_telemetry_interval;
-    uint32_t drive_telem_interval;
+    uint32_t turret_telemetry_interval;
     uint32_t enabled_telemetry;
 } __attribute__((packed));
 
 static struct TelemetryParameters EEMEM saved_params = {
     .telemetry_interval=100000L,
     .leddar_telemetry_interval=100000L,
-    .drive_telem_interval=500000L,
+    .turret_telemetry_interval=500000L,
     .enabled_telemetry=(
             _LBV(TLM_ID_SYS)|
             _LBV(TLM_ID_SBS)|
-            _LBV(TLM_ID_TRK)|
+            _LBV(TLM_ID_SNS)|
             _LBV(TLM_ID_AF)|
             _LBV(TLM_ID_TUR)|
+            _LBV(TLM_ID_LIDAR)|
             _LBV(TLM_ID_TROT)|
             _LBV(TLM_ID_AAIM)|
             _LBV(TLM_ID_ACK)
@@ -40,7 +41,7 @@ static struct TelemetryParameters EEMEM saved_params = {
 static struct TelemetryParameters params;
 
 static uint32_t last_telem_time = micros();
-static uint32_t last_drive_telem_time = micros();
+static uint32_t last_turret_telem_time = micros();
 static uint32_t last_leddar_telem_time = micros();
 
 template <uint8_t packet_id, typename packet_inner> struct TelemetryPacket
@@ -51,6 +52,28 @@ template <uint8_t packet_id, typename packet_inner> struct TelemetryPacket
     TelemetryPacket() : pkt_id(packet_id), terminator(TLM_TERMINATOR) {};
 } __attribute__((packed));
 
+bool isTimeToSendTelemetry(uint32_t now) {
+    bool send = now - last_telem_time > params.telemetry_interval;
+    if(send) {
+        last_telem_time = now;
+    }
+    return send;
+}
+
+bool isTimeToSendLeddarTelem(uint32_t now) {
+    bool send = now - last_leddar_telem_time > params.leddar_telemetry_interval;
+    if(send) {
+        last_leddar_telem_time = now;
+    }
+    return send;
+}
+bool isTimeToSendTurretTelemetry(uint32_t now) {
+    bool send = now - last_turret_telem_time > params.turret_telemetry_interval;
+    if(send) {
+        last_turret_telem_time = now;
+    }
+    return send;
+}
 
 struct SystemTelemetryInner 
 {
@@ -151,14 +174,6 @@ void debug_print(const String &msg){
     sendDebugMessageTelem(msg.c_str());
 }
 
-bool isTimeToSendTelemetry(uint32_t now) {
-    bool send = now - last_telem_time > params.telemetry_interval;
-    if(send) {
-        last_telem_time = now;
-    }
-    return send;
-}
-
 struct LeddarTelemetryInner {
     uint16_t state;
     uint16_t count;
@@ -177,13 +192,6 @@ bool sendLeddarTelem(const Detection (&min_detections)[LEDDAR_SEGMENTS], unsigne
   }
   return Xbee.enqueue((unsigned char *)&leddar_tlm, sizeof(leddar_tlm),
                       NULL, NULL);
-}
-bool isTimeToSendLeddarTelem(uint32_t now) {
-    bool send = now - last_leddar_telem_time > params.leddar_telemetry_interval;
-    if(send) {
-        last_leddar_telem_time = now;
-    }
-    return send;
 }
 
 struct SwingTelemInner {
@@ -380,11 +388,11 @@ bool sendCommandAcknowledge(uint8_t command, uint16_t valid, uint16_t invalid) {
 
 void setTelemetryParams(uint32_t telemetry_interval,
                         uint32_t leddar_telemetry_interval,
-                        uint32_t drive_telem_interval,
+                        uint32_t turret_telemetry_interval,
                         uint32_t enabled_telemetry) {
     params.telemetry_interval = telemetry_interval;
     params.leddar_telemetry_interval = leddar_telemetry_interval;
-    params.drive_telem_interval = drive_telem_interval;
+    params.turret_telemetry_interval = turret_telemetry_interval;
     params.enabled_telemetry = enabled_telemetry;
     saveTelemetryParmeters();
 }
