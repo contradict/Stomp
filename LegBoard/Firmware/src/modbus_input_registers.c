@@ -36,12 +36,12 @@ const struct MODBUS_InputRegister modbus_input_registers[] = {
         .read = Linearize_ReadFeedbackVoltage,
     },
     {
-        .address = CURL_BASE + IBaseEndPressure,
+        .address = CURL_BASE + ICachedBaseEndPressure,
         .context = (void *)JOINT_CURL,
         .read = Enfield_ReadBaseEndPresure,
     },
     {
-        .address = CURL_BASE + IRodEndPressure,
+        .address = CURL_BASE + ICachedRodEndPressure,
         .context = (void *)JOINT_CURL,
         .read = Enfield_ReadRodEndPresure,
     },
@@ -121,12 +121,12 @@ const struct MODBUS_InputRegister modbus_input_registers[] = {
         .read = Linearize_ReadFeedbackVoltage,
     },
     {
-        .address = SWING_BASE + IBaseEndPressure,
+        .address = SWING_BASE + ICachedBaseEndPressure,
         .context = (void *)JOINT_SWING,
         .read = Enfield_ReadBaseEndPresure,
     },
     {
-        .address = SWING_BASE + IRodEndPressure,
+        .address = SWING_BASE + ICachedRodEndPressure,
         .context = (void *)JOINT_SWING,
         .read = Enfield_ReadRodEndPresure,
     },
@@ -206,12 +206,12 @@ const struct MODBUS_InputRegister modbus_input_registers[] = {
         .read = Linearize_ReadFeedbackVoltage,
     },
     {
-        .address = LIFT_BASE + IBaseEndPressure,
+        .address = LIFT_BASE + ICachedBaseEndPressure,
         .context = (void *)JOINT_LIFT,
         .read = Enfield_ReadBaseEndPresure,
     },
     {
-        .address = LIFT_BASE + IRodEndPressure,
+        .address = LIFT_BASE + ICachedRodEndPressure,
         .context = (void *)JOINT_LIFT,
         .read = Enfield_ReadRodEndPresure,
     },
