@@ -29,7 +29,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
-#include "joint.h"
+#include "export/joint.h"
 #include "feedback_adc.h"
 #include "modbus_uart.h"
 #include "chomplegboard.h"

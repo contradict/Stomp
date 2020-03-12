@@ -1,6 +1,6 @@
 #include "stm32f7xx_hal.h"
 #include "feedback_adc.h"
-#include "joint.h"
+#include "export/joint.h"
 
 ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
 TIM_HandleTypeDef feedback_timer;

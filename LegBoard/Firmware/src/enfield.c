@@ -5,7 +5,7 @@
 #include "enfield.h"
 #include "modbus.h"
 #include "enfield_uart.h"
-#include "joint.h"
+#include "export/joint.h"
 #include "status_led.h"
 
 #define ENFIELD_BAUD 115200

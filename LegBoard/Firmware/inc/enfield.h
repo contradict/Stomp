@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "cmsis_os.h"
-#include "joint.h"
+#include "export/joint.h"
 #include "modbus.h"
 
 enum EnfieldReadRegister {

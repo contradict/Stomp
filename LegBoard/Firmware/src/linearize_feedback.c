@@ -1,6 +1,6 @@
 #include <math.h>
 #include <complex.h>
-#include "joint.h"
+#include "export/joint.h"
 #include "cmsis_os.h"
 #include "stm32f7xx_hal.h"
 #include "ads57x4.h"

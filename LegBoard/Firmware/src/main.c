@@ -5,7 +5,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdbool.h>
 #include "stm32f7xx_hal.h"
-#include "joint.h"
+#include "export/joint.h"
 #include "cmsis_os.h"
 #include "linearize_feedback.h"
 #include "storage.h"
