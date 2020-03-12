@@ -322,7 +322,7 @@ void Enfield_Thread(const void *arg)
                 }
                 osMailPut(st->req->responseQ, st->resp);
                 osMailFree(st->commandQ, st->req);
-                st->state = st->successfulInit ? WaitRequest : SetZero;
+                st->state = st->successfulInit ? Update : SetZero;
                 break;
             case Update:
                 LED_SetOne(st->joint, 2, 64);
