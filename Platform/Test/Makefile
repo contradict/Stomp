@@ -1,5 +1,5 @@
 
-CFLAGS=-g3
+CFLAGS=-g3 -I ../../LegBoard/Firmware/inc/export
 
 MODBUS_CFLAGS=$(shell pkg-config --cflags libmodbus)
 NCURSES_CFLAGS=$(shell pkg-config --cflags ncurses)

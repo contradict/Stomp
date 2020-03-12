@@ -7,12 +7,18 @@
 #include "modbus_device.h"
 
 
-int configure_modbus_context(modbus_t *ctx, int custom_baud)
+int configure_modbus_context(modbus_t *ctx, int custom_baud, int32_t response_timeout)
 {
-    struct timeval rto;
-    rto.tv_sec = 0;
-    rto.tv_usec = 20;
-    modbus_set_byte_timeout(ctx, &rto);
+    struct timeval to;
+    to.tv_sec = 0;
+    to.tv_usec = 2*10*1000000 / custom_baud;
+    modbus_set_byte_timeout(ctx, &to);
+
+    to.tv_sec = 0;
+    to.tv_usec = response_timeout;
+    // This is weird. The device responds in ~2ms with a
+    // full round-trip to the servo. Local port latency?
+    modbus_set_response_timeout(ctx, &to);
 
     modbus_connect(ctx);
 

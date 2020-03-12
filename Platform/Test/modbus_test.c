@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     modbus_set_debug(ctx, true);
 
     // Actual baud rate here
-    if(configure_modbus_context(ctx, 1000000))
+    if(configure_modbus_context(ctx, 1000000, 100000))
     {
         exit(1);
     }
