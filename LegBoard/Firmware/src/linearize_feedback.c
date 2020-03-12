@@ -57,8 +57,10 @@ static osThreadId linearize;
 static osMessageQId dataQ;
 
 static uint32_t channel_values[JOINT_COUNT];
+static float sensor_voltage[JOINT_COUNT];
 static float joint_angle[JOINT_COUNT];
 static float cylinder_edge_length[JOINT_COUNT];
+static float feedback_voltage[JOINT_COUNT];
 
 /* Map joint order to ADC order */
 static const uint8_t joint_adc_channel[JOINT_COUNT] = {0, 1, 2};
@@ -132,29 +134,41 @@ void Linearize_ThreadInit(void)
     dataQ = osMessageCreate(osMessageQ(adcdata), linearize);
 }
 
+#define GETJOINT(x) \
+    enum JointIndex x = (enum JointIndex)ctx; \
+    if((x < 0) || (x >= JOINT_COUNT)) \
+    { \
+        return ILLEGAL_DATA_ADDRESS; \
+    }
+
 int Linearize_ReadAngle(void *ctx, uint16_t *v)
 {
-    enum JointIndex joint = (enum JointIndex)ctx;
-    if((joint < 0) || (joint >= JOINT_COUNT))
-    {
-        return ILLEGAL_DATA_ADDRESS;
-    }
+    GETJOINT(joint);
     *(int16_t *)v = roundf(joint_angle[joint] * JOINT_ANGLE_SCALE);
     return 0;
 }
 
 int Linearize_ReadLength(void *ctx, uint16_t *v)
 {
-    enum JointIndex joint = (enum JointIndex)ctx;
-    if((joint < 0) || (joint >= JOINT_COUNT))
-    {
-        return ILLEGAL_DATA_ADDRESS;
-    }
+    GETJOINT(joint);
     *v = roundf((cylinder_edge_length[joint] -
                  linearization_constants.links[joint].min) * JOINT_ANGLE_SCALE);
     return 0;
 }
 
+int Linearize_ReadSensorVoltage(void *ctx, uint16_t *v)
+{
+    GETJOINT(joint);
+    *v = round(sensor_voltage[joint] * JOINT_ANGLE_SCALE);
+    return 0;
+}
+
+int Linearize_ReadFeedbackVoltage(void *ctx, uint16_t *v)
+{
+    GETJOINT(joint);
+    *v = round(feedback_voltage[joint] * JOINT_ANGLE_SCALE);
+    return 0;
+}
 
 static void setup_dac(void)
 {
@@ -208,8 +222,6 @@ static void Linearize_Thread(const void* args)
 {
     (void)args;
     osEvent event;
-    float joint_voltage[JOINT_COUNT];
-    float feedback_voltage[JOINT_COUNT];
     uint16_t feedback_code[JOINT_COUNT];
     int sendjoint=JOINT_COUNT; // start past end, need to reset to start sending
 
@@ -244,10 +256,10 @@ static void Linearize_Thread(const void* args)
         else if(event.value.signals & ADC_CONV_COMPLETE)
         {
             DAC_IO_LDAC(false);
-            compute_joint_angles(channel_values, joint_voltage, joint_angle);
+            compute_joint_angles(channel_values, sensor_voltage, joint_angle);
             compute_cylinder_edge_lengths(joint_angle, cylinder_edge_length);
             compute_feedback_voltage(cylinder_edge_length, feedback_voltage, feedback_code);
-            compute_led_brightness(joint_voltage);
+            compute_led_brightness(sensor_voltage);
             sendjoint = 0;
             ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
             sendjoint++;

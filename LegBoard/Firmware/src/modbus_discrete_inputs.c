@@ -1,5 +1,7 @@
 #include "modbus.h"
-#include "modbus_common.h"
+#include "export/modbus_register_map.h"
+
+#define ENFIELD_CONTEXT_VALUE(j, w, r) ((void *)(((j&3)<<30) | ((w&0xff)<<8) | (r&0xff)))
 
 static uint16_t scratchpad = 0x55;
 

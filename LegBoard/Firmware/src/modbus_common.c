@@ -1,21 +1,25 @@
 #include "modbus_common.h"
 
-uint16_t return_context(void *context)
+int return_context(void *context, uint16_t *v)
 {
-    return *(uint16_t *)context;
+    *v = *(uint16_t *)context;
+    return 0;
 }
 
-bool return_context_bool(void *context)
+int return_context_bool(void *context, bool *v)
 {
-    return *(bool *)context;
+    *v = *(bool *)context;
+    return 0;
 }
 
-void save_to_context(void *context, uint16_t value)
+int save_to_context(void *context, uint16_t value)
 {
     *(uint16_t *)context = value;
+    return 0;
 }
 
-void save_to_context_bool(void *context, bool v)
+int save_to_context_bool(void *context, bool v)
 {
     *(bool *)context = v;
+    return 0;
 }
