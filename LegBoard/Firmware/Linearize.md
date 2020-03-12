@@ -21,12 +21,13 @@ Parameters determined by leg geometry.
 | $(L_x, L_y)$ | $(4.287, 2.06)$ | Position of Lift Link Pivot relative to Lift Cylinder Pivot |
 | $L_1$     | $4.4$      | Length of link from Lift Cylinder Rod End to Lift Cylinder Pivot |
 | $L_2$     | $6.3$      | Length of link from Lift Cylinder Pivot to Curl Link Pivot     |
-| $(C_x, C_y)$ | $(4.287, -0.44)$ | Position of Curl Cylinder Pivot relative to Lift Link Pivot           |
+| $(C_x, C_y)$ | $(4.287, -0.44)$ | Position of Curl Cylinder Pivot relative to Lift Link Pivot |
 | $C_4$     | $2.5$      | Distance from Curl Cylinder Pivot to Lift Link Pivot           |
 | $C_1$     | $2.5$      | Length of link from Curl Link Pivot to Curl Cylinder Rod End   |
 | $C_2$     |            | Length of Curl Link                                            |
 | $S_1$     | $3.90$     | Length of link from Swing Cylinder Rod End to Swing Cylinder Pivot |
 | $S_3$     | $4.427$    | Length of link from Swing Cylinder Pivot to Swink Link Pivot   |
+| $(S_x, S_y)$ | $(3.603, 2.572)$ | Position of Swing Link Pivot relative to Swing Cylinder Pivot|
 | $R_c^{\textrm{min}}$ | $5.8$ | Minimum distance from Curl Cylinder Pivot to Curl Cylinder Rod End |
 | $R_c^{\textrm{max}}$ | $6.8$ | Maximum distance from Curl Cylinder Pivot to Curl Cylinder Rod End |
 | $R_l^{\textrm{min}}$ | $1.07$ | Minimum distance from Lift Cylinder Pivot to Lift Cylinder Rod End |

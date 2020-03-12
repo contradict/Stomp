@@ -107,7 +107,7 @@ static struct LinearizationConstants linearization_constants __attribute__ ((sec
             .l1 = 3.90,
             .l2 = 0.0,
             .min = 1.080,
-            .max = 2.572
+            .max = 4.065
         },
         { //LIFT
             .pivot = 4.287 + 2.06I,
