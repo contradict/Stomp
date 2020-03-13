@@ -40,7 +40,7 @@ void sensor_display(modbus_t *mctx, void *sctx)
         }
         else
         {
-            snprintf(display, 256, "%s  s: %5.3fV a: %06.1fd l: %06.3fin f: %06.3fV b: %04x r: %04x",
+            snprintf(display, 256, "%s  s: %5.3fV a: %06.1fd f: %06.3fV l: %06.3fin b: %04x r: %04x",
                 joint_name[j],
                 data[0] / 1000.0f, data[1] / 1000.0f * 180.0f / M_PI,
                 data[2] / 1000.0f, data[3] / 1000.0f,
@@ -57,45 +57,57 @@ void sensor_handle_key(modbus_t *mctx, void *sctx, int ch)
 
 struct ServoContext
 {
-    int16_t pgain[3], dgain[3];
+    int16_t params[3][13];
     int16_t measured[3];
     int16_t command[3];
     int joint;
+    int param;
+    bool isinit[3];
+    char error[3][256];
 };
+
+const char *param_names[13] = {
+       " P",    " D",   " F",     " O",    " A",    " C",    "MN",    "MX",
+       "RU",    "RD",   "DB",     "DI",    " V"};
+const char *param_formats[13] = {
+    "%6.1f", "%6.1f", "%6.1f", "%6.1f", "%6.4f", "%6.4f", "%6.1f", "%6.1f",
+    "%6.1f", "%6.1f", "%6.1f", "%6.1f", "%6.1f"};
+const float param_scale[13] = {
+      10.0f,   10.0f,   10.0f,   10.0f,32767.0f, 1024.0f,   10.0f,   10.0f,
+      10.0f,   10.0f,   10.0f,   10.0f,   10.0f};
+const int16_t param_max[13] = {
+       1000,   1000,     1000,    1000,   32767,   32767,    1000,    1000,
+       1000,   1000,     1000,    1000,    1000};
 
 void servo_init(modbus_t *mctx, void *sctx)
 {
     struct ServoContext *sc = (struct ServoContext *)sctx;
     char display[256];
-    int16_t data[2];
-    int n;
+    int16_t data[1];
     sc->joint = 0;
+    sc->param = 0;
+    int n;
     for(int j=0;j<3;j++)
     {
+        sc->isinit[j] = true;
         n = 0;
-        if(modbus_read_registers(mctx, joint[j]+HProportionalGain, 2, data) == -1)
+        if(modbus_read_registers(mctx, joint[j]+HProportionalGain, 13, sc->params[j]) == -1)
         {
-            n = snprintf(display, 256, "%s: Gain read failed: %s",
-                         joint_name[j], modbus_strerror(errno));
+            n = snprintf(sc->error[j], 256,
+                    "%s: Gain read failed: %s %04x",
+                    joint_name[j], modbus_strerror(errno), joint[j] + HProportionalGain);
+            sc->isinit[j] = false;
+        }
+        if(modbus_read_registers(mctx, joint[j]+HCachedDigitalCommand, 1, data) == -1)
+        {
+            n += snprintf(sc->error[j] + n, 256 - n,
+                    "Command read failed: %s", modbus_strerror(errno));
+            sc->isinit[j] = false;
         }
         else
         {
-            n = snprintf(display, 256, "%s  p: % 5.1f d: % f5.1f",
-                         joint_name[j], data[0] / 10.0f, data[1] / 10.0f);
-            sc->pgain[j] = data[0];
-            sc->dgain[j] = data[1];
-        }
-        if(modbus_read_registers(mctx, joint[j]+HDigitalCommand, 1, data) == -1)
-        {
-            snprintf(display + n, 256-n, " Command read failed: %s",
-                     modbus_strerror(errno));
-        }
-        else
-        {
-            snprintf(display + n, 256 - n, "c: 0x%04x", data[0]);
             sc->command[j] = data[0];
         }
-        mvaddstr(4 + 2 * j, 4, display);
         usleep(50000);
     }
 }
@@ -105,56 +117,95 @@ void servo_display(modbus_t *mctx, void *sctx)
     struct ServoContext *sc = (struct ServoContext *)sctx;
     char display[256];
     int16_t data[1];
-    mvaddstr(3, 2, joint_name[sc->joint]);
+    int n;
     for(int j=0;j<3;j++)
     {
+        if(!sc->isinit[j])
+        {
+            if(sc->joint == j)
+                attron(A_BOLD);
+            mvaddstr(4 + 4 * j + 0, 2, sc->error[j]);
+            refresh();
+            attroff(A_BOLD);
+            continue;
+        }
         if(modbus_read_input_registers(mctx, joint[j]+IFeedbackPosition, 1, data) == -1)
         {
             snprintf(display, 256, "%s: Feedback read failed: %s",
                      joint_name[j], modbus_strerror(errno));
+            mvaddstr(4 + 4 * j + 0, 2, sc->error[j]);
+            refresh();
         }
         else
         {
-            snprintf(display, 256, "%s  p: % 5.1f d: % 5.1f m: 0x%04x c: 0x%04x",
-                joint_name[j],
-                sc->pgain[j] / 10.0f, sc->dgain[j] / 10.0f, data[0],
-                sc->command[j]);
+            if(sc->joint == j)
+                attron(A_BOLD);
+            mvaddstr(4 + 4 * j + 0, 2, joint_name[j]);
+            refresh();
+            attroff(A_BOLD);
             sc->measured[j] = data[0];
         }
-        mvaddstr(4 + 2 * j, 4, display);
+        n = 0;
+        for(int p=0;p<7;p++)
+        {
+            n += snprintf(display + n, 256 - n, "%s:", param_names[p]);
+            n += snprintf(display + n, 256 - n, param_formats[p],
+                          sc->params[j][p] / param_scale[p]);
+            display[n++] = ' ';
+            display[n] = 0;
+        }
+        mvaddstr(4 + 4 * j + 1, 2, display);
+        refresh();
+        n = 0;
+        for(int p=7;p<13;p++)
+        {
+            n += snprintf(display + n, 256 - n, "%s:", param_names[p]);
+            n += snprintf(display + n, 256 - n, param_formats[p],
+                          sc->params[j][p] / param_scale[p]);
+            display[n++] = ' ';
+            display[n] = 0;
+        }
+        snprintf(display + n, 256 - n, "c: 0x%04x", sc->command[j]);
+        mvaddstr(4 + 4 * j + 2, 2, display);
+        refresh();
+        mvprintw(4 + 4 * j + 3, 2 + n, "m: 0x%04x", sc->measured[j]);
         refresh();
         usleep(1000);
     }
+    if(sc->param < 7)
+        move(4 + 4*sc->joint + 1, 2 + 10*sc->param);
+    else
+        move(4 + 4*sc->joint + 2, 2 + 10*(sc->param - 7));
 }
 
+//            sc->pgain[sc->joint] += 1;
+//            sc->pgain[sc->joint] = sc->pgain[sc->joint]>1000 ? 1000 : sc->pgain[sc->joint];
+//            modbus_write_register(mctx, joint[sc->joint] + HProportionalGain, sc->pgain[sc->joint]);
+//            sc->pgain[sc->joint] -= 1;
+//            sc->pgain[sc->joint] = sc->pgain[sc->joint]< 0 ? 0 : sc->pgain[sc->joint]; 
+//            modbus_write_register(mctx, joint[sc->joint] + HProportionalGain, sc->pgain[sc->joint]);
+//            sc->command[sc->joint] -= 1;
+//            sc->command[sc->joint] = sc->command[sc->joint] < 0 ? 0 : sc->command[sc->joint];
+//            modbus_write_register(mctx, joint[sc->joint] + HCachedDigitalCommand, sc->command[sc->joint]);
+//            sc->command[sc->joint] += 1;
+//            sc->command[sc->joint] = sc->command[sc->joint] > 4095 ? 4095 : sc->command[sc->joint];
+//            modbus_write_register(mctx, joint[sc->joint] + HCachedDigitalCommand, sc->command[sc->joint]);
 void servo_handle_key(modbus_t *mctx, void *sctx, int ch)
 {
     struct ServoContext *sc = (struct ServoContext *)sctx;
     switch(ch)
     {
-        case KEY_UP:
-            sc->pgain[sc->joint] += 1;
-            sc->pgain[sc->joint] = sc->pgain[sc->joint]>1000 ? 1000 : sc->pgain[sc->joint];
-            modbus_write_register(mctx, joint[sc->joint] + HProportionalGain, sc->pgain[sc->joint]);
-            break;
-        case KEY_DOWN:
-            sc->pgain[sc->joint] -= 1;
-            sc->pgain[sc->joint] = sc->pgain[sc->joint]< 0 ? 0 : sc->pgain[sc->joint]; 
-            modbus_write_register(mctx, joint[sc->joint] + HProportionalGain, sc->pgain[sc->joint]);
-            break;
         case KEY_LEFT:
-            sc->command[sc->joint] -= 1;
-            sc->command[sc->joint] = sc->command[sc->joint] < 0 ? 0 : sc->command[sc->joint];
-            modbus_write_register(mctx, joint[sc->joint] + HDigitalCommand, sc->command[sc->joint]);
+            sc->param = (sc->param - 1) % 14;
+            if(sc->param < 0) sc->param += 14;
             break;
         case KEY_RIGHT:
-            sc->command[sc->joint] += 1;
-            sc->command[sc->joint] = sc->command[sc->joint] > 4095 ? 4095 : sc->command[sc->joint];
-            modbus_write_register(mctx, joint[sc->joint] + HDigitalCommand, sc->command[sc->joint]);
+            sc->param = (sc->param + 1) % 14;
             break;
         case 'M':
             sc->command[sc->joint] = sc->measured[sc->joint];
-            modbus_write_register(mctx, joint[sc->joint] + HDigitalCommand, sc->command[sc->joint]);
+            modbus_write_register(mctx, joint[sc->joint] + HCachedDigitalCommand,
+                                  sc->command[sc->joint]);
             break;
         case 'C':
             sc->joint = 0;
@@ -165,7 +216,79 @@ void servo_handle_key(modbus_t *mctx, void *sctx, int ch)
         case 'L':
             sc->joint = 2;
             break;
-    }
+        case 'w':
+            if(sc->param < 13)
+            {
+                sc->params[sc->joint][sc->param] += 1;
+                if(sc->params[sc->joint][sc->param] > param_max[sc->param])
+                    sc->params[sc->joint][sc->param] = param_max[sc->param];
+                modbus_write_register(mctx, joint[sc->joint] + HProportionalGain + sc->param,
+                                      sc->params[sc->joint][sc->param]);
+            }
+            else
+            {
+                sc->command[sc->joint] += 1;
+                if(sc->command[sc->joint] > 4095)
+                    sc->command[sc->joint] = 4095;
+                modbus_write_register(mctx, joint[sc->joint] + HCachedDigitalCommand,
+                                      sc->command[sc->joint]);
+            }
+            break;
+        case 'W':
+            if(sc->param < 13)
+            {
+                sc->params[sc->joint][sc->param] += 10;
+                if(sc->params[sc->joint][sc->param] > param_max[sc->param])
+                    sc->params[sc->joint][sc->param] = param_max[sc->param];
+                modbus_write_register(mctx, joint[sc->joint] + HProportionalGain + sc->param,
+                                      sc->params[sc->joint][sc->param]);
+            }
+            else
+            {
+                sc->command[sc->joint] += 100;
+                if(sc->command[sc->joint] > 4095)
+                    sc->command[sc->joint] = 4095;
+                modbus_write_register(mctx, joint[sc->joint] + HCachedDigitalCommand,
+                                      sc->command[sc->joint]);
+            }
+            break;
+        case 'a':
+            if(sc->param < 13)
+            {
+                sc->params[sc->joint][sc->param] -= 1;
+                if(sc->params[sc->joint][sc->param] < 0)
+                    sc->params[sc->joint][sc->param] = 0;
+                modbus_write_register(mctx, joint[sc->joint] + HProportionalGain + sc->param,
+                                      sc->params[sc->joint][sc->param]);
+            }
+            else
+            {
+                sc->command[sc->joint] -= 1;
+                if(sc->command[sc->joint] < 0)
+                    sc->command[sc->joint] = 0;
+                modbus_write_register(mctx, joint[sc->joint] + HCachedDigitalCommand,
+                                      sc->command[sc->joint]);
+            }
+            break;
+        case 'A':
+            if(sc->param < 13)
+            {
+                sc->params[sc->joint][sc->param] -= 10;
+                if(sc->params[sc->joint][sc->param] < 0)
+                    sc->params[sc->joint][sc->param] = 0;
+                modbus_write_register(mctx, joint[sc->joint] + HProportionalGain + sc->param,
+                                      sc->params[sc->joint][sc->param]);
+            }
+            else
+            {
+                sc->command[sc->joint] -= 100;
+                if(sc->command[sc->joint] < 0)
+                    sc->command[sc->joint] = 0;
+                modbus_write_register(mctx, joint[sc->joint] + HCachedDigitalCommand,
+                                      sc->command[sc->joint]);
+            }
+            break;
+     }
 }
 
 int main(int argc, char **argv)
@@ -230,18 +353,24 @@ int main(int argc, char **argv)
     struct SensorContext sensor;
 
     initscr();
+    start_color();
     cbreak();
     noecho();
     clear();
     nodelay(stdscr, true);
     keypad(stdscr, true);
     bool go=true;
-    int ch;
+    int ch, pch;
     enum UIModes mode = SENSOR;
     while(go)
     {
         ch = getch();
-        clear();
+        if(ch != -1)
+        {
+            pch = ch;
+        }
+        mvprintw(0, 30, "'%s':(%d)", keyname(pch), pch);
+        refresh();
         switch(ch)
         {
             case ERR:
@@ -254,17 +383,18 @@ int main(int argc, char **argv)
                         servo_display(ctx, &servo);
                         break;
                 }
+                refresh();
                 usleep(period*1000);
+                clear();
                 break;
-            case 'Q':
-            case 'q':
+            case '':
                 go = false;
                 break;
-            case 's':
+            case KEY_F(1):
                 sensor_init(ctx, &sensor);
                 mode = SENSOR;
                 break;
-            case 'v':
+            case KEY_F(2):
                 servo_init(ctx, &servo);
                 mode = SERVO;
                 break;
