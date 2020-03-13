@@ -44,13 +44,13 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .write = MODBUS_WriteEnfieldHoldingRegister,
     },
     {
-        .address = CURL_BASE + 4,
+        .address = CURL_BASE + HAreaRatio,
         .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetAreaRatio,       ReadAreaRatio),
         .read = MODBUS_ReadEnfieldHoldingRegister,
         .write = MODBUS_WriteEnfieldHoldingRegister,
     },
     {
-        .address = CURL_BASE + 5,
+        .address = CURL_BASE + HCylinderBore,
         .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetCylinderBore,    ReadCylinderBore),
         .read = MODBUS_ReadEnfieldHoldingRegister,
         .write = MODBUS_WriteEnfieldHoldingRegister,
