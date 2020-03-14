@@ -264,7 +264,7 @@ static void updateTracking()
 
     s_autoFire = updateAutoFire(g_trackedObject, s_hammerDistance, s_hammerIntensity);
 
-    if((s_autoFire==AF_HIT) && (s_currentRCBitfield & AUTO_HAMMER_ENABLE_BIT)) 
+    if((s_autoFire==AF_HIT) && (s_currentRCBitfield & AUTO_FIRE_ENABLE_BIT)) 
     {
         fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, true);
     }

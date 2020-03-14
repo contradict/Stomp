@@ -113,14 +113,29 @@ bool isRadioConnected()
     return s_radioConnected;
 }
 
+bool isWeaponEnabled()
+{
+    return s_radioConnected && (bitfield & WEAPONS_ENABLE_BIT);
+}
+
 bool isManualTurretEnabled()
 {
-    return s_radioConnected && ((bitfield & MANUAL_TURRET_BIT) || (bitfield & AUTO_AIM_BIT));
+    return s_radioConnected && ((bitfield & MANUAL_TURRET_BIT) || (bitfield & AUTO_AIM_ENABLED_BIT));
 }
 
 bool isAutoAimEnabled()
 {
-    return s_radioConnected && (bitfield & AUTO_AIM_BIT);
+    return s_radioConnected && (bitfield & AUTO_AIM_ENABLED_BIT);
+}
+
+bool isAutoFireEnabled()
+{
+    return s_radioConnected && (bitfield & AUTO_FIRE_ENABLE_BIT);
+}
+
+bool isSelfRightEnabled()
+{
+    return s_radioConnected && (bitfield & AUTO_SELF_RIGHT_BIT);
 }
 
 static bool parseSbus(){
@@ -169,7 +184,11 @@ static bool parseSbus(){
 #define TURRET_SPEED_ROBOTECT_MAX 1000
 #define TURRET_SPEED_DEADZONE_MIN -10
 #define TURRET_SPEED_DEADZONE_MAX 10
- 
+
+#define AUTO_SELF_RIGHT_THRESHOLD 1500
+#define MANUAL_SELF_RIGHT_LEFT_THRESHOLD 500
+#define MANUAL_SELF_RIGHT_RIGHT_THRESHOLD 1500
+
 #define DANGER_MODE_THRESHOLD 1500
 
 static uint16_t computeRCBitfield() {
@@ -181,7 +200,7 @@ static uint16_t computeRCBitfield() {
   setWeaponsEnabled(bitfield&WEAPONS_ENABLE_BIT);
 
   if ( sbusChannels[AUTO_HAMMER_ENABLE] > AUTO_HAMMER_THRESHOLD){
-    bitfield |= AUTO_HAMMER_ENABLE_BIT;
+    bitfield |= AUTO_FIRE_ENABLE_BIT;
   }
   if ( sbusChannels[HAMMER_CTRL] > HAMMER_FIRE_THRESHOLD){
     bitfield |= HAMMER_FIRE_BIT;
@@ -200,7 +219,7 @@ static uint16_t computeRCBitfield() {
   }
 
  if( sbusChannels[TURRET_CTL_MODE] > AUTO_AIM_THRESHOLD ){
-      bitfield |= AUTO_AIM_BIT;
+      bitfield |= AUTO_AIM_ENABLED_BIT;
   }
   else if(MANUAL_TURRET_THRESHOLD < sbusChannels[TURRET_CTL_MODE] &&
       sbusChannels[TURRET_CTL_MODE] < AUTO_AIM_THRESHOLD ){
@@ -212,6 +231,9 @@ static uint16_t computeRCBitfield() {
   }
   if ( sbusChannels[GENTLE_HAM_CTRL] > GENTLE_HAM_R_THRESHOLD){
     bitfield |= GENTLE_HAM_R_BIT;
+  }
+if ( sbusChannels[AUTO_SELF_RIGHT] > AUTO_SELF_RIGHT_THRESHOLD){
+    bitfield |= AUTO_SELF_RIGHT_BIT;
   }
   if ( sbusChannels[DANGER_MODE] > DANGER_MODE_THRESHOLD){
     bitfield |= DANGER_CTRL_BIT;

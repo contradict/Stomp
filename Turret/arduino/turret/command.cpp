@@ -4,6 +4,7 @@
 #include "targeting.h"
 #include "autofire.h"
 #include "imu.h"
+#include "turretController.h"
 
 #define MAXIMUM_COMMAND_LENGTH 64
 enum Commands {
@@ -11,6 +12,7 @@ enum Commands {
     CMD_ID_TRKFLT = 11,
     CMD_ID_OBJSEG = 12,
     CMD_ID_AF = 13,
+    CMD_ID_AAIM = 14,
     CMD_ID_IMUP = 15,
     CMD_ID_LDDR = 17,
 };
@@ -52,6 +54,15 @@ struct AutoFireInner {
     uint32_t telemetry_interval;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_AF, AutoFireInner> AutoFireCommand;
+
+struct AutoAimInner {
+    int32_t steer_p;
+    int32_t steer_d;
+    int32_t steer_max;
+    int32_t gyro_gain;
+    uint32_t telemetry_interval;
+} __attribute__((packed));
+typedef CommandPacket<CMD_ID_AAIM, AutoAimInner> AutoAimCommand;
 
 struct TrackingFilterInner {
     int16_t alpha;
@@ -102,6 +113,7 @@ void serialEvent(void) {
             }
         }
     }
+
     if(command_length>2 &&
        command_buffer[command_length-1] == '\x66' &&
        command_buffer[command_length-2] == '\x66') {
@@ -109,57 +121,70 @@ void serialEvent(void) {
     }
 }
 
-void handleCommands(void) {
-  TelemetryRateCommand *trate_cmd;
-  TrackingFilterCommand *trkflt_cmd;
-  ObjectSegmentationCommand *objseg_cmd;
-  AutoFireCommand *af_cmd;
-  IMUParameterCommand *imup_cmd;
-  LeddarCommand *leddar_cmd;
+void handleCommands(void) 
+{
+    TelemetryRateCommand *trate_cmd;
+    TrackingFilterCommand *trkflt_cmd;
+    ObjectSegmentationCommand *objseg_cmd;
+    AutoFireCommand *af_cmd;
+    AutoAimCommand *aaim_cmd;
+    IMUParameterCommand *imup_cmd;
+    LeddarCommand *leddar_cmd;
 
-  if(command_ready) {
-      last_command = command_buffer[0];
-      switch(last_command) {
-          case CMD_ID_TRATE:
-              trate_cmd = (TelemetryRateCommand *)command_buffer;
-              setTelemetryParams(trate_cmd->inner.small_telem_period,
-                                 trate_cmd->inner.leddar_telem_period,
-                                 trate_cmd->inner.drive_telem_period,
-                                 trate_cmd->inner.enabled_messages);
-              debug_print(String("enabled_telemetry=")+
-                          String(trate_cmd->inner.enabled_messages, 16));
-              valid_command++;
-              break;
-          case CMD_ID_TRKFLT:
-              trkflt_cmd = (TrackingFilterCommand *)command_buffer;
-              g_trackedObject.setTrackingFilterParams(trkflt_cmd->inner.alpha,
-                                      trkflt_cmd->inner.beta,
-                                      trkflt_cmd->inner.min_num_updates,
-                                      trkflt_cmd->inner.track_lost_dt,
-                                      trkflt_cmd->inner.max_off_track,
-                                      trkflt_cmd->inner.max_start_distance);
-              valid_command++;
-              break;
-          case CMD_ID_OBJSEG:
-              objseg_cmd = (ObjectSegmentationCommand *)command_buffer;
-              setObjectSegmentationParams(
-                                      objseg_cmd->inner.min_object_size,
-                                      objseg_cmd->inner.max_object_size,
-                                      objseg_cmd->inner.edge_call_threshold,
-                                      objseg_cmd->inner.closest_only);
-              valid_command++;
-              break;
-          case CMD_ID_AF:
-              af_cmd = (AutoFireCommand *)command_buffer;
-              setAutoFireParams(af_cmd->inner.xtol,
+    if(command_ready) 
+    {
+        last_command = command_buffer[0];
+        switch(last_command) 
+        {
+            case CMD_ID_TRATE:
+                trate_cmd = (TelemetryRateCommand *)command_buffer;
+                setTelemetryParams(trate_cmd->inner.small_telem_period,
+                                    trate_cmd->inner.leddar_telem_period,
+                                    trate_cmd->inner.drive_telem_period,
+                                    trate_cmd->inner.enabled_messages);
+                debug_print(String("enabled_telemetry=")+
+                            String(trate_cmd->inner.enabled_messages, 16));
+                valid_command++;
+                break;
+            case CMD_ID_TRKFLT:
+                trkflt_cmd = (TrackingFilterCommand *)command_buffer;
+                g_trackedObject.setTrackingFilterParams(trkflt_cmd->inner.alpha,
+                                        trkflt_cmd->inner.beta,
+                                        trkflt_cmd->inner.min_num_updates,
+                                        trkflt_cmd->inner.track_lost_dt,
+                                        trkflt_cmd->inner.max_off_track,
+                                        trkflt_cmd->inner.max_start_distance);
+                valid_command++;
+                break;
+            case CMD_ID_OBJSEG:
+                objseg_cmd = (ObjectSegmentationCommand *)command_buffer;
+                setObjectSegmentationParams(
+                                        objseg_cmd->inner.min_object_size,
+                                        objseg_cmd->inner.max_object_size,
+                                        objseg_cmd->inner.edge_call_threshold,
+                                        objseg_cmd->inner.closest_only);
+                valid_command++;
+                break;
+            case CMD_ID_AF:
+                af_cmd = (AutoFireCommand *)command_buffer;
+                setAutoFireParams(af_cmd->inner.xtol,
                                 af_cmd->inner.ytol,
                                 af_cmd->inner.max_omegaZ,
                                 af_cmd->inner.telemetry_interval);
-              valid_command++;
-              break;
-          case CMD_ID_IMUP:
-              imup_cmd = (IMUParameterCommand *)command_buffer;
-              setIMUParameters(
+                valid_command++;
+                break;
+            case CMD_ID_AAIM:
+                aaim_cmd = (AutoAimCommand *)command_buffer;
+                Turret.SetAutoAimParameters(
+                    aaim_cmd->inner.steer_p,
+                    aaim_cmd->inner.steer_d,
+                    aaim_cmd->inner.steer_max,
+                    aaim_cmd->inner.gyro_gain,
+                    aaim_cmd->inner.telemetry_interval);
+                break;
+            case CMD_ID_IMUP:
+                imup_cmd = (IMUParameterCommand *)command_buffer;
+                setIMUParameters(
                     imup_cmd->inner.dlpf, imup_cmd->inner.imu_period,
                     imup_cmd->inner.stationary_threshold,
                     imup_cmd->inner.upright_cross,
@@ -168,19 +193,19 @@ void handleCommands(void) {
                     imup_cmd->inner.max_total_norm,
                     imup_cmd->inner.x_threshold,
                     imup_cmd->inner.z_threshold);
-              valid_command++;
-              break;
-          case CMD_ID_LDDR:
-              leddar_cmd = (LeddarCommand *)command_buffer;
-              setLeddarParameters(leddar_cmd->inner.min_detection_distance,
-                                  leddar_cmd->inner.max_detection_distance);
-              break;
-          default:
-              invalid_command++;
-              break;
-      }
-      command_length = 0;
-      command_ready = false;
-      sendCommandAcknowledge(last_command, valid_command, invalid_command);
-  }
+                valid_command++;
+                break;
+            case CMD_ID_LDDR:
+                leddar_cmd = (LeddarCommand *)command_buffer;
+                setLeddarParameters(leddar_cmd->inner.min_detection_distance,
+                                    leddar_cmd->inner.max_detection_distance);
+                break;
+            default:
+                invalid_command++;
+                break;
+        }
+        command_length = 0;
+        command_ready = false;
+        sendCommandAcknowledge(last_command, valid_command, invalid_command);
+    }
 }

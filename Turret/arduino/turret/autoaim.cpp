@@ -35,13 +35,12 @@
 
 static struct AutoAim::Params EEMEM s_savedParams = 
 {
-    .steer_p = 3000,
-    .steer_d = 0,
-    .steer_max = 600,
+    .proportionalConstant = 3000,
+    .derivativeConstant = 0,
+    .speedMax = 1000,
     .gyro_gain = 0,
     .autoaimTelemInterval = 50000,
 };
-
 
 //  ====================================================================
 //
@@ -158,12 +157,13 @@ int32_t AutoAim::GetDesiredTurretSpeed()
     return m_desiredTurretSpeed;
 }
 
-void AutoAim::SetParams(int16_t p_steer_p, int16_t p_steer_d, int16_t p_steer_max, int16_t p_gyro_gain)
+void AutoAim::SetParams(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval)
 {
-    m_params.steer_p = p_steer_p;
-    m_params.steer_d = p_steer_d;
+    m_params.proportionalConstant = p_proportionalConstant;
+    m_params.derivativeConstant = p_derivativeConstant;
     m_params.gyro_gain = p_gyro_gain;
-    m_params.steer_max = p_steer_max;
+    m_params.speedMax = p_steer_max;
+    m_params.autoaimTelemInterval = p_telemetry_interval;
 
     saveParams();
 }
@@ -209,12 +209,13 @@ void AutoAim::updateDesiredTurretSpeed()
         return;
     }    
 
-    int32_t theta = m_pTarget->angle();
-    int32_t vtheta = m_pTarget->vtheta();
+    int32_t error = m_pTarget->angle();
+    int32_t deltaError = m_pTarget->vtheta();
 
-    m_desiredTurretSpeed = m_params.steer_p * (0 - theta) / 16384L;
-    m_desiredTurretSpeed += -m_params.steer_d * vtheta / 16384L;
-
+    m_desiredTurretSpeed = FROM_FP_32x14(m_params.proportionalConstant * (0 - error));
+    m_desiredTurretSpeed += FROM_FP_32x14(-m_params.derivativeConstant * deltaError);
+    m_desiredTurretSpeed = constrain(m_desiredTurretSpeed, -m_params.speedMax, m_params.speedMax);
+    
     /*
      int16_t omegaZ = 0;
     if(getOmegaZ(&omegaZ)) 

@@ -321,16 +321,16 @@ bool sendAutofireTelemetry(enum AutoFireState st, int32_t swing, int32_t x, int3
 }
 
 struct AutoAimTelemetryInner {
-    int16_t state;
-    int16_t target_angular_velocity;
-    int16_t theta;
-    int16_t vtheta;
-    int16_t radius;
-    int16_t vradius;
+    int32_t state;
+    int32_t target_angular_velocity;
+    int32_t theta;
+    int32_t vtheta;
+    int32_t radius;
+    int32_t vradius;
 } __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_AAIM, AutoAimTelemetryInner> AAIMTelemetry;
 
-bool sendAutoAimTelemetry(int16_t state, int16_t target_angular_velocity, int16_t theta, int16_t vtheta, int16_t r, int16_t vr) 
+bool sendAutoAimTelemetry(int32_t state, int32_t target_angular_velocity, int32_t theta, int32_t vtheta, int32_t r, int32_t vr) 
 {
     CHECK_ENABLED(TLM_ID_AAIM);
     AAIMTelemetry tlm;

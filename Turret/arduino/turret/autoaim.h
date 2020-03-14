@@ -21,9 +21,9 @@ public:
 
     struct Params 
     {
-        int32_t steer_p;
-        int32_t steer_d;
-        int32_t steer_max;
+        int32_t proportionalConstant;
+        int32_t derivativeConstant;
+        int32_t speedMax;
         int32_t gyro_gain;
         uint32_t autoaimTelemInterval;
     } __attribute__((packed));
@@ -41,9 +41,9 @@ public:
 
     int32_t GetDesiredTurretSpeed();
 
-    void SetParams(int16_t p_steer_p, int16_t p_steer_d, int16_t p_steer_max, int16_t p_gyro_gain);
+    void SetParams(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval);
     void RestoreParams();
-
+    
     void SendTelem();
 
 private: 

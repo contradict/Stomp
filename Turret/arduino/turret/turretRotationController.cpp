@@ -222,6 +222,11 @@ int32_t TurretRotationController::GetCurrentSpeed()
     return m_currentSpeed; 
 }
 
+void TurretRotationController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval)
+{
+    m_pAutoAim->SetParams(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain, p_telemetry_interval);  
+}
+
 void TurretRotationController::SetParams(uint32_t p_manualControlOverideSpeed)
 {
     m_params.ManualControlOverideSpeed = p_manualControlOverideSpeed;
@@ -351,10 +356,10 @@ void TurretRotationController::setState(controllerState p_state)
 void TurretRotationController::initAllControllers()
 {
     m_pAutoAim->Init();
-    initMotorController();
+    initRoboTeq();
 }
 
-void TurretRotationController::initMotorController()
+void TurretRotationController::initRoboTeq()
 {
     TurretRotationMotorSerial.begin(115200);
 

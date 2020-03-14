@@ -99,7 +99,7 @@ bool sendTurretTelemetry(int16_t state);
 
 bool sendTurretRotationTelemetry(int16_t state, int16_t current_speed);
 
-bool sendAutoAimTelemetry(int16_t state, int16_t target_angular_velocity, int16_t theta, int16_t vtheta, int16_t r, int16_t vr);
+bool sendAutoAimTelemetry(int32_t state, int32_t target_angular_velocity, int32_t theta, int32_t vtheta, int32_t r, int32_t vr);
 
 bool sendCommandAcknowledge(uint8_t cmdid, uint16_t valid_commands, uint16_t invalid_commands);
 

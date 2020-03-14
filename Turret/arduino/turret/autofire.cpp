@@ -14,7 +14,7 @@ struct AutoFireParameters {
 static struct AutoFireParameters params;
 static uint32_t last_autofire_telem = 0;
 
-static struct AutoFireParameters EEMEM saved_params = {
+static struct AutoFireParameters EEMEM saved_params_old = {
     .xtol = 200,   // currently unused, front of box is depth
     .ytol = 200,
     .max_omegaZ = 1787,   // rad/s * 2048 = 50 deg/sec
@@ -80,9 +80,200 @@ void setAutoFireParams(int16_t p_xtol,
 }
 
 void saveAutoFireParameters(void) {
-    eeprom_write_block(&params, &saved_params, sizeof(struct AutoFireParameters));
+    eeprom_write_block(&params, &saved_params_old, sizeof(struct AutoFireParameters));
 }
 
 void restoreAutoFireParameters(void) {
-    eeprom_read_block(&params, &saved_params, sizeof(struct AutoFireParameters));
+    eeprom_read_block(&params, &saved_params_old, sizeof(struct AutoFireParameters));
+}
+
+//  ====================================================================
+//
+//  Auto Fire
+//
+//  The Auto Fire object is owned by the Hammer Controller
+//  and has only 1 job...
+//
+//  Figure out when target is in the killzone and tell the hammer
+//  controller when to fire
+//
+//  ====================================================================
+
+
+#include <Arduino.h>
+
+#include "turretController.h"
+#include "autofire.h"
+#include "imu.h"
+#include "sbus.h"
+#include "telem.h"
+#include "fixedpoint.h"
+#include "autofire.h"
+
+//  ====================================================================
+//
+//  External references
+//
+//  ====================================================================
+
+//  ====================================================================
+//
+//  File static variables
+//
+//  ====================================================================
+
+static struct AutoFire::Params EEMEM s_savedParams = 
+{
+    .xtol = 200,   // currently unused, front of box is depth
+    .ytol = 200,
+    .max_omegaZ = 1787,   // rad/s * 2048 = 50 deg/sec
+    .autofire_telem_interval = 100000,
+};
+
+//  ====================================================================
+//
+//  Constructors
+//
+//  ====================================================================
+
+//  ====================================================================
+//
+//  Public API methods
+//
+//  ====================================================================
+
+void AutoFire::Init()
+{
+    m_state = EInvalid;
+    setState(EInit);
+}
+
+void AutoFire::Update() 
+{
+    uint32_t now = micros();
+
+    while(true)
+    {
+        autoFireState prevState = m_state;
+
+        switch (m_state)
+        {
+            case EInit:
+            {
+                setState(ESafe);
+            }
+            break;
+
+            case ESafe:
+            {
+                //  Stay in safe mode for a minimum of k_safeStateMinDt
+
+                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                {
+                    if (isAutoFireEnabled())
+                    {
+                        setState(ENoTarget);
+                    }
+                    else
+                    {
+                        setState(EDisabled);
+                    }                    
+                }
+            }
+            break;     
+
+            case EDisabled:
+            {
+                if (!isRadioConnected())
+                {
+                    setState(ESafe);
+                }
+                else if (isAutoFireEnabled())
+                {
+                    setState(ENoTarget);
+                }
+            }
+            break;
+
+            case ENoTarget:
+            {
+                if (!isRadioConnected())
+                {
+                    setState(ESafe);
+                }
+                else if (!isAutoFireEnabled())
+                {
+                    setState(EDisabled);
+                }
+            }
+            break;
+        }
+
+        //  No more state changes, move on
+        
+        if (m_state == prevState)
+        {
+            break;
+        }
+    }
+
+    //  Now that the state is stable, do our updateDesiredSpeed
+
+}
+
+void AutoFire::SetParams(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
+{
+    m_params.xtol = p_xtol;
+    m_params.ytol = p_ytol;
+    m_params.max_omegaZ = p_max_omegaz;
+    m_params.autofire_telem_interval = telemetry_interval;
+
+    saveAutoFireParameters();
+}
+
+void AutoFire::RestoreParams()
+{
+    eeprom_read_block(&m_params, &s_savedParams, sizeof(struct AutoFire::Params));
+}
+
+void AutoFire::SendTelem()
+{
+}
+
+//  ====================================================================
+//
+//  Private methods
+//
+//  ====================================================================
+
+void AutoFire::setState(autoFireState p_state)
+{
+    if (m_state == p_state)
+    {
+        return;
+    }
+
+    //  exit state transition
+
+    switch (m_state)
+    {
+    }
+
+    m_state = p_state;
+    m_stateStartTime = micros();
+
+    //  enter state transition
+
+    switch (m_state)
+    {
+        case EInit:
+        {
+        }
+        break;
+    }
+}
+
+void AutoFire::saveParams() 
+{
+    eeprom_write_block(&m_params, &s_savedParams, sizeof(struct AutoFire::Params));
 }

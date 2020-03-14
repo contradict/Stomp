@@ -37,6 +37,7 @@ public:
 
     int32_t GetCurrentSpeed();
 
+    void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t telemetry_interval);
     void SetParams(uint32_t p_manualControlOverideSpeed);
     void RestoreParams();
 
@@ -69,7 +70,7 @@ private:
     void setSpeed(int32_t p_speed);
 
     void initAllControllers();
-    void initMotorController();
+    void initRoboTeq();
 
     void saveParams();
 
