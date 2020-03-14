@@ -434,6 +434,12 @@ static int Enfield_Transfer(struct EnfieldContext *enf,  uint8_t r, uint16_t *v)
     {
         return err;
     }
+    // don't wait for unacked commands
+    if((r == SetZeroGains) || (r == SetSaveConfiguration))
+    {
+        osDelay(500);
+        return Enfield_WaitTransmit(enf);
+    }
     err = Enfield_ReceiveResponse(enf);
     if(err != ENFIELD_OK)
     {
@@ -459,9 +465,7 @@ static int Enfield_Get(struct EnfieldContext *enf, enum EnfieldReadRegister r, u
 
 static int Enfield_Write(struct EnfieldContext *enf, enum EnfieldWriteRegister r, uint16_t *v)
 {
-    uint8_t err;
-    err = Enfield_Transfer(enf, r, v);
-    return err;
+    return Enfield_Transfer(enf, r, v);
 }
 
 void Enfield_RxCplt(UART_HandleTypeDef *huart)
