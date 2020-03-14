@@ -1,5 +1,4 @@
 #include <math.h>
-#include <complex.h>
 #include "export/joint.h"
 #include "cmsis_os.h"
 #include "stm32f7xx_hal.h"
@@ -9,6 +8,7 @@
 #include "chomplegboard.h"
 #include "linearize_feedback.h"
 #include "modbus.h"
+#include "kinematics.h"
 
 // theta = (V - Vmin) / (Vmax - Vmin) * (Thetamax - Thetamin) + Thetamin
 // theta = V * (Thetamax - Thetamin) / (Vmax - Vmin) + (Thetamin - (Vmin * (Thetamax - Thetamin) / (Vmax - Vmin)))
@@ -33,8 +33,6 @@ static void Linearize_Thread(const void* args);
 void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
                           float voltage[JOINT_COUNT],
                           float joint_angle[JOINT_COUNT]);
-void compute_cylinder_edge_lengths(const float joint_angle[JOINT_COUNT],
-                                   float cylinder_edge_length[JOINT_COUNT]);
 void compute_feedback_voltage(const float cylinder_length[JOINT_COUNT],
                               float feedback_voltage[JOINT_COUNT],
                               uint16_t feedback_code[JOINT_COUNT]);
@@ -72,19 +70,14 @@ static const uint8_t joint_led_channel[JOINT_COUNT] = {0, 1, 2};
 static const enum ads57x4_channel joint_dac_channel[JOINT_COUNT] = {
     ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_C, ADS57x4_CHANNEL_B};
 
-struct link {
-    complex float pivot;
-    float l1, l2;
-    float min, max;
-};
-
-struct LinearizationConstants {
+struct SensorCalibration {
     float theta_offset[JOINT_COUNT];
     float theta_scale[JOINT_COUNT];
-    struct link links[3];
+    float joint_min[JOINT_COUNT];
+    float joint_max[JOINT_COUNT];
 };
 
-static struct LinearizationConstants linearization_constants __attribute__ ((section (".storage.linearize"))) = {
+static struct SensorCalibration calibration_constants __attribute__ ((section (".storage.linearize"))) = {
     .theta_offset = {
       //THETA_OFFSET(Vmin,     Vmax,                 Thetamin,                 Thetamax)
         THETA_OFFSET(0.916f, 4.774f, -M_PI_2-25.1*M_PI/180.0f, -M_PI_2+25.1*M_PI/180.0f),  // CURL
@@ -94,28 +87,15 @@ static struct LinearizationConstants linearization_constants __attribute__ ((sec
         THETA_SCALE( 0.916f, 4.774f, -M_PI_2-25.1*M_PI/180.0f, -M_PI_2+25.1*M_PI/180.0f),  // CURL
         THETA_SCALE( 0.225f, 4.768f,               -M_PI/8.0f,                M_PI/8.0f),  // SWING
         THETA_SCALE( 1.009f, 3.637f,          -13*M_PI/180.0f,          13*M_PI/180.0f)},  // LIFT
-    .links = {
-        { //CURL
-            .pivot = 4.287 - 0.44I,
-            .l1 = 2.5,
-            .l2 = 6.0,
-            .min = 5.8,
-            .max = 6.8
-        },
-        { //SWING
-            .pivot = 3.603 + 2.572I,
-            .l1 = 3.90,
-            .l2 = 0.0,
-            .min = 1.080,
-            .max = 4.065
-        },
-        { //LIFT
-            .pivot = 4.287 + 2.06I,
-            .l1 = 4.4,
-            .l2 = 6.3,
-            .min = 1.07,
-            .max = 3.05
-        }
+    .joint_min = {
+        5.8, // CURL
+        1.080, // SWING
+        1.07, // LIFT
+    },
+    .joint_max = {
+        6.8, // CURL
+        4.065, // SWING 
+        3.05, // LIFT
     }
 };
 
@@ -152,7 +132,7 @@ int Linearize_ReadLength(void *ctx, uint16_t *v)
 {
     GETJOINT(joint);
     *v = roundf((cylinder_edge_length[joint] -
-                 linearization_constants.links[joint].min) * JOINT_ANGLE_SCALE);
+                 calibration_constants.joint_min[joint]) * JOINT_ANGLE_SCALE);
     return 0;
 }
 
@@ -257,7 +237,7 @@ static void Linearize_Thread(const void* args)
         {
             DAC_IO_LDAC(false);
             compute_joint_angles(channel_values, sensor_voltage, joint_angle);
-            compute_cylinder_edge_lengths(joint_angle, cylinder_edge_length);
+            Kinematics_cylinder_edge_lengths(joint_angle, cylinder_edge_length);
             compute_feedback_voltage(cylinder_edge_length, feedback_voltage, feedback_code);
             compute_led_brightness(sensor_voltage);
             sendjoint = 0;
@@ -274,25 +254,9 @@ void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
     for(enum JointIndex joint=0;joint<JOINT_COUNT;joint++)
     {
         voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) / JOINT_DIVIDER);
-        joint_angle[joint] = (linearization_constants.theta_offset[joint] +
-                linearization_constants.theta_scale[joint] * voltage[joint]);
+        joint_angle[joint] = (calibration_constants.theta_offset[joint] +
+                calibration_constants.theta_scale[joint] * voltage[joint]);
     }
-}
-
-void compute_cylinder_edge_lengths(const float joint_angle[JOINT_COUNT],
-                                   float cylinder_edge_length[JOINT_COUNT])
-{
-    cylinder_edge_length[JOINT_LIFT] = cabsf(
-            linearization_constants.links[JOINT_LIFT].pivot -
-            linearization_constants.links[JOINT_LIFT].l1 * cexpf(I * joint_angle[JOINT_LIFT]));
-    cylinder_edge_length[JOINT_CURL] = cabsf(
-            linearization_constants.links[JOINT_LIFT].pivot -
-            linearization_constants.links[JOINT_CURL].pivot +
-            linearization_constants.links[JOINT_CURL].l1 * cexpf(I * (joint_angle[JOINT_CURL] + joint_angle[JOINT_LIFT])) +
-            linearization_constants.links[JOINT_LIFT].l2 * cexpf(I * joint_angle[JOINT_LIFT]));
-    cylinder_edge_length[JOINT_SWING] = cabsf(
-            linearization_constants.links[JOINT_SWING].pivot -
-            linearization_constants.links[JOINT_SWING].l1 * cexpf(I * joint_angle[JOINT_SWING]));
 }
 
 void compute_feedback_voltage(const float cylinder_edge_length[JOINT_COUNT],
@@ -302,11 +266,11 @@ void compute_feedback_voltage(const float cylinder_edge_length[JOINT_COUNT],
     float scale, offset;
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
-        scale =  FEEDBACK_SCALE(linearization_constants.links[joint].min,
-                                linearization_constants.links[joint].max,
+        scale =  FEEDBACK_SCALE(calibration_constants.joint_min[joint],
+                                calibration_constants.joint_max[joint],
                                 0.0f, 10.0f);
-        offset = FEEDBACK_OFFSET(linearization_constants.links[joint].min,
-                                 linearization_constants.links[joint].max,
+        offset = FEEDBACK_OFFSET(calibration_constants.joint_min[joint],
+                                 calibration_constants.joint_max[joint],
                                  0.0f, 10.0f);
 
         feedback_voltage[joint] = (scale * cylinder_edge_length[joint] + offset);

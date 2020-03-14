@@ -95,26 +95,26 @@ $$ R_s = \left\|S_x + i S_y - S_2 e^{i \theta_s}\right\| $$
 
 # Toe position to cylinder lengths
 
-Toe position in from angles
+The previous result gives cylinder lenghts in terms of join angles, so just
+solve for joint angles in terms of toe position.
 
-$$ T = L_x + i L_y + L_2 e^{i \theta_l } + C_2 e^{i (\theta_l + \theta_c)} $$
+Toe position in terms of joint angles
 
-The loops from above with the cylinders.
+$$ L + L_2 e^{i \theta_L} + C_2 e^{i (\theta_L + \theta_c)} = T $$
 
-$$ C_x + i C_y + R_c e^{i \alpha_c} - C_1 e^{i (\theta_c + \theta_l)} - L_2 e^{i \theta_l} \
-   = L_x + i L_y $$
+First isolate and solve for $\theta_c$
 
-$$ R_l e^{i \alpha_l} + L_1 e^{i \theta_l} = L_x + i L_y $$
+$$ L_2 e^{i \theta_L} + C_2 e^{i (\theta_L + \theta_c)} = T - L $$
+$$ e^{i \theta_L} (L_2 + C_2 e^{i \theta_c}) = T - L $$
+$$ \|L_2 + C_2 e^{i \theta_c}\| = \|T - L\| $$
+$$ (L_2 + C_2 \cos(\theta_c))^2 + C_2^2 \sin^2(\theta_c) = \|T - L\| $$
+$$ L_2^2 + 2 L_2 C_2 \cos(\theta_c) + C_2^2 \cos^2(\theta_c) + C_2^2 (1-\cos^2(\theta_c)) = \|T - L\| $$
+$$ L_2^2 + 2 L_2 C_2 \cos(\theta_c) + C_2^2 = \|T - L\| $$
+$$ 2 L_2 C_2 \cos(\theta_c) C_2^2 = \|T - L\| - (L_2^2 + C_2^2) $$
+$$ \theta_c = \arccos\left(\frac{\|T - L\| - (L_2^2 + C_2^2)}{2 L_2 C_2}\right) $$
 
-Substitute for angular terms
+Solve for $\theta_l$
 
-
-$$ e^{i \theta_l} = \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1} $$
-
-$$ e^{i (\theta_c + \theta_l)} = \frac{L_x + i L_y - C_x - i C_y - \
-   R_c e^{i \alpha_c} + L_2 \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1}}{-C_1} $$
-
-
-$$ T = L_x + i L_y + L_2 \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1} + \
-   C_2  \frac{L_x + i L_y - C_x - i C_y - \
-   R_c e^{i \alpha_c} + L_2 \frac{L_x + i L_y - R_l e^{i \alpha_l}}{L_1}}{-C_1} $$
+$$ e^{i \theta_L} = \frac{T - L}{L_2 + C_2 e^{i \theta_c}}$$
+$$ \theta_l = \
+\arcsin\left(\Im\left(\frac{T - L}{L_2 + C_2 e^{i \theta_c}}\right)\right)$$
