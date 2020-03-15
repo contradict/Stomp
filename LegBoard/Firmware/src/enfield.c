@@ -189,10 +189,12 @@ bool Enfield_IsValidWriteRegister(enum EnfieldWriteRegister r)
     return false;
 }
 
+#define CLIP(x, mn, mx) (((x)<(mn))?(mn):(((x)>(mx))?(mx):(x)))
+
 void Enfield_SetCommand(uint16_t command[JOINT_COUNT])
 {
     for(int j=0;j<3;j++)
-        enfield_context[j].DigitalCommand = command[j];
+        enfield_context[j].DigitalCommand = CLIP(command[j], 0, 4095);
 }
 
 static void Curl_UART_Init()
