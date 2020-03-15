@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string.h>
 #include "export/joint.h"
 #include "cmsis_os.h"
 #include "stm32f7xx_hal.h"
@@ -33,9 +34,9 @@ static void Linearize_Thread(const void* args);
 void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
                           float voltage[JOINT_COUNT],
                           float joint_angle[JOINT_COUNT]);
-void compute_feedback_voltage(const float cylinder_length[JOINT_COUNT],
-                              float feedback_voltage[JOINT_COUNT],
-                              uint16_t feedback_code[JOINT_COUNT]);
+void Linearize_ComputeFeedback(const float cylinder_length[JOINT_COUNT],
+                               float feedback_voltage[JOINT_COUNT],
+                               uint16_t feedback_code[JOINT_COUNT]);
 void compute_led_brightness(const float joint_voltage[JOINT_COUNT]);
 
 #define __MAX_DAC_OUTPUT 10.8f
@@ -58,6 +59,7 @@ static uint32_t channel_values[JOINT_COUNT];
 static float sensor_voltage[JOINT_COUNT];
 static float joint_angle[JOINT_COUNT];
 static float cylinder_edge_length[JOINT_COUNT];
+static float cylinder_scaled_values[JOINT_COUNT];
 static float feedback_voltage[JOINT_COUNT];
 
 /* Map joint order to ADC order */
@@ -120,6 +122,11 @@ void Linearize_ThreadInit(void)
     { \
         return ILLEGAL_DATA_ADDRESS; \
     }
+
+void Linearize_GetJointAngles(float a[3])
+{
+    memcpy(a, joint_angle, sizeof(joint_angle));
+}
 
 int Linearize_ReadAngle(void *ctx, uint16_t *v)
 {
@@ -237,8 +244,9 @@ static void Linearize_Thread(const void* args)
         {
             DAC_IO_LDAC(false);
             compute_joint_angles(channel_values, sensor_voltage, joint_angle);
-            Kinematics_cylinder_edge_lengths(joint_angle, cylinder_edge_length);
-            compute_feedback_voltage(cylinder_edge_length, feedback_voltage, feedback_code);
+            Kinematics_CylinderEdgeLengths(joint_angle, cylinder_edge_length);
+            Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_values);
+            Linearize_ComputeFeedback(cylinder_scaled_values, feedback_voltage, feedback_code);
             compute_led_brightness(sensor_voltage);
             sendjoint = 0;
             ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
@@ -259,22 +267,30 @@ void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
     }
 }
 
-void compute_feedback_voltage(const float cylinder_edge_length[JOINT_COUNT],
-                              float feedback_voltage[JOINT_COUNT],
-                              uint16_t feedback_code[JOINT_COUNT])
+void Linearize_ScaleCylinders(const float cylinder_edge_length[JOINT_COUNT],
+                              float scaled_values[JOINT_COUNT])
 {
     float scale, offset;
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
         scale =  FEEDBACK_SCALE(calibration_constants.joint_min[joint],
                                 calibration_constants.joint_max[joint],
-                                0.0f, 10.0f);
+                                0.0, 1.0);
         offset = FEEDBACK_OFFSET(calibration_constants.joint_min[joint],
                                  calibration_constants.joint_max[joint],
-                                 0.0f, 10.0f);
+                                 0.0, 1.0);
+        scaled_values[joint] = scale*cylinder_edge_length[joint] + offset;
+    }
+}
 
-        feedback_voltage[joint] = (scale * cylinder_edge_length[joint] + offset);
-        feedback_code[joint] = feedback_voltage[joint] * DAC_MAX_CODE / MAX_DAC_OUTPUT;
+void Linearize_ComputeFeedback(const float scaled_values[JOINT_COUNT],
+                               float feedback_voltage[JOINT_COUNT],
+                               uint16_t feedback_code[JOINT_COUNT])
+{
+    for(int joint = 0; joint < JOINT_COUNT; joint++)
+    {
+        feedback_voltage[joint] = scaled_values[joint] * MAX_DAC_OUTPUT;
+        feedback_code[joint] = scaled_values[joint] * DAC_MAX_CODE;
     }
 }
 

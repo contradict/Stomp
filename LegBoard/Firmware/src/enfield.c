@@ -189,6 +189,12 @@ bool Enfield_IsValidWriteRegister(enum EnfieldWriteRegister r)
     return false;
 }
 
+void Enfield_SetCommand(uint16_t command[JOINT_COUNT])
+{
+    for(int j=0;j<3;j++)
+        enfield_context[j].DigitalCommand = command[j];
+}
+
 static void Curl_UART_Init()
 {
     enfield_uart[JOINT_CURL].Instance = CURL_UART_Instance;

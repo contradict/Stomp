@@ -7,12 +7,32 @@
 
 #include "enfield.h"
 
+#include "kinematics.h"
+
 static uint16_t scratchpad = 0x55;
 
 static const uint8_t EnfieldHoldingRegister[] = {
 };
 
 struct MODBUS_HoldingRegister modbus_holding_registers[] = {
+    {
+        .address = 0x40,
+        .context = (void *)0,
+        .read = Kinematics_ReadToePosition,
+        .write = Kinematics_WriteToePosition,
+    },
+    {
+        .address = 0x41,
+        .context = (void *)1,
+        .read = Kinematics_ReadToePosition,
+        .write = Kinematics_WriteToePosition,
+    },
+    {
+        .address = 0x42,
+        .context = (void *)2,
+        .read = Kinematics_ReadToePosition,
+        .write = Kinematics_WriteToePosition,
+    },
     {
         .address = 0x55,
         .context = (void *)&scratchpad,

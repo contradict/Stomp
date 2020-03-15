@@ -89,3 +89,4 @@ int Enfield_ReadDigitalCommand(void *ctx, uint16_t *v);
 int Enfield_WriteDigitalCommand(void *ctx, uint16_t v);
 bool Enfield_IsValidWriteRegister(enum EnfieldWriteRegister r);
 bool Enfield_IsValidReadRegister(enum EnfieldReadRegister r);
+void Enfield_SetCommand(uint16_t command[JOINT_COUNT]);

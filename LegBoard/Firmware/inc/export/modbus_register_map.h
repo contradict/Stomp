@@ -53,3 +53,10 @@ enum HoldingRegisterOffset {
     HDigitalCommand = 0x3d,
     HCachedDigitalCommand = 0x3e,
 };
+
+enum LegCommands {
+    SetToeX = 0x40,
+    SetToeY = 0x41,
+    SetToeZ = 0x42, // Causes write to servos
+};
+
