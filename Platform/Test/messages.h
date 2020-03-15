@@ -15,7 +15,8 @@
 // N.B: Reordering these IDs may have consequences for e.g. Cosmos telemetry files.
 // In a better world there would be autogeneration to eliminate this pitfall.
 typedef enum msg_id {
-    TANK_PSI = 65,
+    INVALID = 0,  // Avoid having a meaningful ID of 0
+    TANK_PSI,
     HIGHEST_ID
 } msg_id;
 // Our msg_id has to be safely castable to a uint8_t

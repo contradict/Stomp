@@ -28,7 +28,7 @@ rfd900x.o: rfd900x.c
 telem.o: telem.c messages.h
 	gcc -c $(CFLAGS) telem.c
 
-test_publisher.o: test_publisher.c
+test_publisher.o: test_publisher.c messages.h
 	gcc -c $(CFLAGS) test_publisher.c
 
 test_publisher: test_publisher.o telem.o rfd900x.o
