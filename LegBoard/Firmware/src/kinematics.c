@@ -23,7 +23,7 @@ static struct GeometryConstants geometry_constants __attribute__ ((section (".st
         { //CURL
             .pivot = 4.287 - 0.44I,
             .l1 = 2.5,
-            .l2 = 6.0,
+            .l2 = 8.0,
         },
         { //SWING
             .pivot = 3.603 + 2.572I,
