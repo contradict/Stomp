@@ -3,10 +3,8 @@ CFLAGS=-g3 -I ../../LegBoard/Firmware/inc/export
 
 MODBUS_CFLAGS=$(shell pkg-config --cflags libmodbus)
 NCURSES_CFLAGS=$(shell pkg-config --cflags ncurses)
-ZMQ_CFLAGS=$(shell pkg-config --cflags libzmq)
 MODBUS_LDFLAGS=$(shell pkg-config --libs libmodbus)
 NCURSES_LDFLAGS=$(shell pkg-config --libs ncurses)
-ZMQ_LDFLAGS=$(shell pkg-config --libs libzmq)
 
 all: modbus rs485test enfield ui test_publisher
 
@@ -27,7 +25,7 @@ rs485test: modbus_crc.o
 rfd900x.o: rfd900x.c
 	gcc -c $(CFLAGS) rfd900x.c
 
-telem.o: telem.c
+telem.o: telem.c messages.h
 	gcc -c $(CFLAGS) telem.c
 
 test_publisher.o: test_publisher.c
