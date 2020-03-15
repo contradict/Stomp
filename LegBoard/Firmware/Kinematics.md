@@ -100,21 +100,23 @@ solve for joint angles in terms of toe position.
 
 Toe position in terms of joint angles
 
-$$ L + L_2 e^{i \theta_L} + C_2 e^{i (\theta_L + \theta_c)} = T $$
+$$ L + L_2 e^{i \theta_l} + C_2 e^{i (\theta_l + \theta_c)} = T $$
 
 First isolate and solve for $\theta_c$
 
-$$ L_2 e^{i \theta_L} + C_2 e^{i (\theta_L + \theta_c)} = T - L $$
-$$ e^{i \theta_L} (L_2 + C_2 e^{i \theta_c}) = T - L $$
+$$ L_2 e^{i \theta_l} + C_2 e^{i (\theta_l + \theta_c)} = T - L $$
+$$ e^{i \theta_l} (L_2 + C_2 e^{i \theta_c}) = T - L $$
 $$ \|L_2 + C_2 e^{i \theta_c}\| = \|T - L\| $$
-$$ (L_2 + C_2 \cos(\theta_c))^2 + C_2^2 \sin^2(\theta_c) = \|T - L\| $$
-$$ L_2^2 + 2 L_2 C_2 \cos(\theta_c) + C_2^2 \cos^2(\theta_c) + C_2^2 (1-\cos^2(\theta_c)) = \|T - L\| $$
-$$ L_2^2 + 2 L_2 C_2 \cos(\theta_c) + C_2^2 = \|T - L\| $$
-$$ 2 L_2 C_2 \cos(\theta_c) C_2^2 = \|T - L\| - (L_2^2 + C_2^2) $$
-$$ \theta_c = \arccos\left(\frac{\|T - L\| - (L_2^2 + C_2^2)}{2 L_2 C_2}\right) $$
+$$ (L_2 + C_2 \cos(\theta_c))^2 + C_2^2 \sin^2(\theta_c) = \|T - L\|^2 $$
+$$ L_2^2 + 2 L_2 C_2 \cos(\theta_c) + C_2^2 \cos^2(\theta_c) + C_2^2 (1-\cos^2(\theta_c)) = \|T - L\|^2 $$
+$$ L_2^2 + 2 L_2 C_2 \cos(\theta_c) + C_2^2 = \|T - L\|^2 $$
+$$ 2 L_2 C_2 \cos(\theta_c) C_2^2 = \|T - L\|^2 - (L_2^2 + C_2^2) $$
+$$ \theta_c = \pm \arccos\left(\frac{\|T - L\|^2 - (L_2^2 + C_2^2)}{2 L_2 C_2}\right) $$
+
+The positive branch is not physical, use the negative one.
 
 Solve for $\theta_l$
 
-$$ e^{i \theta_L} = \frac{T - L}{L_2 + C_2 e^{i \theta_c}}$$
+$$ e^{i \theta_l} = \frac{T - L}{L_2 + C_2 e^{i \theta_c}}$$
 $$ \theta_l = \
 \arcsin\left(\Im\left(\frac{T - L}{L_2 + C_2 e^{i \theta_c}}\right)\right)$$

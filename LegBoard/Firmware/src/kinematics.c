@@ -53,13 +53,13 @@ void Kinematics_joint_angles(float toe[3], float joint_angle[JOINT_COUNT])
 {
     complex float T = hypotf(toe[0], toe[1]) + I * toe[2];
 
-    joint_angle[JOINT_CURL] = acosf(
-        (cabsf(T - geometry_constants.links[JOINT_LIFT].pivot) - 
+    joint_angle[JOINT_CURL] = -acosf(
+        (powf(cabsf(T - geometry_constants.links[JOINT_LIFT].pivot), 2.0f) - 
          (powf(geometry_constants.links[JOINT_LIFT].l2, 2.0f) + 
           powf(geometry_constants.links[JOINT_CURL].l2, 2.0f))) / 
         (2.0f * geometry_constants.links[JOINT_LIFT].l2 * geometry_constants.links[JOINT_CURL].l2));
 
-    joint_angle[JOINT_LIFT] = asin(
+    joint_angle[JOINT_LIFT] = asinf(
         cimagf((T - geometry_constants.links[JOINT_LIFT].pivot) /
                (geometry_constants.links[JOINT_LIFT].l2 +
                 geometry_constants.links[JOINT_CURL].l2 * cexpf(I * joint_angle[JOINT_CURL]))));
