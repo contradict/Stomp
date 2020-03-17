@@ -221,6 +221,15 @@ const int16_t param_max[NUM_SERVO_PARAMS] = {
       32767,    1000,    1000,    1000,    1000,
        1000,    1000,    1000,    4095};
 
+void showerror(struct ErrorContext *ec, const char *msg, int err)
+{
+    if(err == -1 && !ec->iserror)
+    {
+        snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(errno));
+        ec->iserror = true;
+    }
+}
+
 void servo_init(modbus_t *mctx, void *sctx)
 {
     struct ServoContext *sc = (struct ServoContext *)sctx;
@@ -236,44 +245,35 @@ void servo_init(modbus_t *mctx, void *sctx)
     sc->input.input_fields = param_names;
     sc->input.field_count = NUM_SERVO_PARAMS;
     int n;
+    int err;
+    struct timeval rto, srto;
+    modbus_get_response_timeout(mctx, &srto);
+    rto.tv_sec = 0;
+    rto.tv_usec = 100000;
+    modbus_set_response_timeout(mctx, &rto);
     for(int j=0;j<3;j++)
     {
         sc->error[j].iserror = false;
         sc->error[j].error[0] = 0;
         sc->isinit[j] = true;
         n = 0;
-        if(modbus_read_registers(
-                mctx, joint[j]+HProportionalGain, 13, sc->params[j]) == -1)
+        err = modbus_read_registers(
+                mctx, joint[j]+HProportionalGain, 13, sc->params[j]);
+        showerror(&sc->error[j], "Initial Gain Read failed", err);
+        if(err == -1)
         {
-            n = snprintf(sc->error[j].error, 256,
-                    "%s: Gain read failed: %s %04x",
-                    joint_name[j], modbus_strerror(errno),
-                    joint[j] + HProportionalGain);
             sc->isinit[j] = false;
         }
-        if(modbus_read_registers(
-                mctx, joint[j]+HCachedDigitalCommand, 1, data) == -1)
-        {
-            n += snprintf(sc->error[j].error + n, 256 - n,
-                    "Command read failed: %s", modbus_strerror(errno));
-            sc->isinit[j] = false;
-        }
-        else
+        err = modbus_read_registers(
+                mctx, joint[j]+HCachedDigitalCommand, 1, data);
+        showerror(&sc->error[j], "Initial Command Read failed", err);
+        if(err != -1)
         {
             sc->params[j][13] = data[0];
         }
-        usleep(50000);
     }
+    modbus_set_response_timeout(mctx, &srto);
     clear();
-}
-
-void showerror(struct ErrorContext *ec, const char *msg, int err)
-{
-    if(err == -1 && !ec->iserror)
-    {
-        snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(errno));
-        ec->iserror = true;
-    }
 }
 
 void start_signal_generator(struct ServoContext *sc)
@@ -329,18 +329,7 @@ void servo_display(modbus_t *mctx, void *sctx)
     int err;
     for(int j=0;j<3;j++)
     {
-        if(!sc->isinit[j])
-        {
-            move(4 + 2 * j + 0, 2);
-            clrtoeol();
-            if(sc->joint == j)
-                attron(A_BOLD);
-            addstr(joint_name[j]);
-            attroff(A_BOLD);
-            move(4 + 2 * j + 0, 15);
-            addstr(sc->error[j].error);
-        }
-        err = modbus_read_input_registers(mctx, joint[j]+IFeedbackPosition, 1, data);
+        err = modbus_read_input_registers(mctx, joint[j]+ICachedFeedbackPosition, 1, data);
         showerror(&sc->error[j], "Read feedback failed", err);
         if(err != -1)
         {
@@ -351,10 +340,10 @@ void servo_display(modbus_t *mctx, void *sctx)
         clrtoeol();
         if(sc->joint == j)
             attron(A_BOLD);
-        addstr(joint_name[j]);
+        printw("%s(%c)", joint_name[j], sc->isinit[j]?'t':'f');
         attroff(A_BOLD);
         if(j == sc->joint)
-            input_display(4 + 4 * j + 0, 2 + 6, &sc->input);
+            input_display(4 + 4 * j + 0, 2 + 9, &sc->input);
         error_display(4 + 4 * j + 0, 2 + 15, &sc->error[j]);
         move(4 + 4 * j + 1, 2);
         clrtoeol();
@@ -754,7 +743,7 @@ int main(int argc, char **argv)
     }
 
     // Actual baud rate here
-    if(configure_modbus_context(ctx, baud, 10000))
+    if(configure_modbus_context(ctx, baud, 4000))
     {
         exit(1);
     }
