@@ -46,6 +46,11 @@ const struct MODBUS_InputRegister modbus_input_registers[] = {
         .read = Enfield_ReadRodEndPresure,
     },
     {
+        .address = CURL_BASE + ICachedFeedbackPosition,
+        .context = (void *)JOINT_CURL,
+        .read = Enfield_ReadFeedbackPosition,
+    },
+    {
         .address = CURL_BASE + ISerialNumberLo,
         .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, -1, ReadSerialNumberLo),
         .read = MODBUS_ReadEnfieldHoldingRegister
@@ -131,6 +136,11 @@ const struct MODBUS_InputRegister modbus_input_registers[] = {
         .read = Enfield_ReadRodEndPresure,
     },
     {
+        .address = SWING_BASE + ICachedFeedbackPosition,
+        .context = (void *)JOINT_SWING,
+        .read = Enfield_ReadFeedbackPosition,
+    },
+    {
         .address = SWING_BASE + ISerialNumberLo,
         .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, -1, ReadSerialNumberLo),
         .read = MODBUS_ReadEnfieldHoldingRegister
@@ -214,6 +224,11 @@ const struct MODBUS_InputRegister modbus_input_registers[] = {
         .address = LIFT_BASE + ICachedRodEndPressure,
         .context = (void *)JOINT_LIFT,
         .read = Enfield_ReadRodEndPresure,
+    },
+    {
+        .address = LIFT_BASE + ICachedFeedbackPosition,
+        .context = (void *)JOINT_LIFT,
+        .read = Enfield_ReadFeedbackPosition,
     },
     {
         .address = LIFT_BASE + ISerialNumberLo,

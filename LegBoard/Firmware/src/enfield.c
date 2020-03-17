@@ -34,13 +34,14 @@ enum EnfieldInterruptSignal {
 };
 
 enum EnfieldThreadState {
-    Start,            // Initial state
-    SetZero,          // Set all gains to zero
-    GetCurrent,       // Retrieve current position
-    SetCommand,       // Set command source to digital
-    WaitRequest,      // Wait sample_period for a command, execute if recieved
-    ExecuteRequest,   // Execute command
-    Update            // smaple period timeout, write position and read pressure
+    StStart,            // Initial state
+    StSetZero,          // Set all gains to zero
+    StGetCurrent,       // Retrieve current position
+    StSetCommandValue,  // Set digital command to current feedback
+    StSetCommandSource, // Set command source to digital
+    StWaitRequest,      // Wait sample_period for a command, execute if recieved
+    StExecuteRequest,   // Execute command
+    StUpdate            // smaple period timeout, write position and read pressure
 };
 
 struct EnfieldContext
@@ -53,6 +54,7 @@ struct EnfieldContext
     uint16_t BaseEndPressure;
     uint16_t RodEndPressure;
     uint16_t DigitalCommand;
+    uint16_t FeedbackPosition;
     osMailQId commandQ;
     uint8_t txpkt[8];
     uint8_t rxpkt[6];
@@ -158,6 +160,17 @@ int Enfield_ReadDigitalCommand(void *ctx, uint16_t *v)
     return 0;
 }
 
+int Enfield_ReadFeedbackPosition(void *ctx, uint16_t *v)
+{
+    enum JointIndex joint = (enum JointIndex)ctx;
+    if((joint < 0) || (joint >= JOINT_COUNT))
+    {
+        return ILLEGAL_DATA_ADDRESS;
+    }
+    *v = enfield_context[joint].FeedbackPosition;
+    return 0;
+}
+
 int Enfield_WriteDigitalCommand(void *ctx, uint16_t v)
 {
     enum JointIndex joint = (enum JointIndex)ctx;
@@ -250,18 +263,18 @@ void Enfield_Thread(const void *arg)
 {
     osEvent evt;
     struct EnfieldContext *st = (struct EnfieldContext *)arg;
-    st->state = Start;
+    st->state = StStart;
     uint16_t read_data, write_data;
-    int err, errs[3];
+    int err, errs[4];
     while(1)
     {
         switch(st->state)
         {
-            case Start:
-                st->state = SetZero;
+            case StStart:
+                st->state = StSetZero;
                 st->successfulInit = false;
                 break;
-            case SetZero:
+            case StSetZero:
                 LED_SetOne(st->joint, 0, 128);
                 write_data = 0x0000;
                 // Command has no response, ignore RX error
@@ -276,25 +289,37 @@ void Enfield_Thread(const void *arg)
                 err += Enfield_Write(st, SetDerivativeGain, &write_data);
                 if(ENFIELD_OK == err)
                 {
-                    st->state = GetCurrent;
+                    st->state = StGetCurrent;
                 }
                 else
                 {
-                    st->state = WaitRequest;
+                    st->state = StWaitRequest;
                 }
                 break;
-            case GetCurrent:
-                err = Enfield_Get(st, ReadFeedbackPosition, &st->DigitalCommand);
+            case StGetCurrent:
+                err = Enfield_Get(st, ReadFeedbackPosition, &st->FeedbackPosition);
                 if(ENFIELD_OK == err)
                 {
-                    st->state = SetCommand;
+                    st->state = StSetCommandValue;
                 }
                 else
                 {
-                    st->state = WaitRequest;
+                    st->state = StWaitRequest;
                 }
                 break;
-            case SetCommand:
+            case StSetCommandValue:
+                err = Enfield_Write(st, SetDigitalCommand, &st->FeedbackPosition);
+                if(ENFIELD_OK == err)
+                {
+                    st->DigitalCommand = st->FeedbackPosition;
+                    st->state = StSetCommandSource;
+                }
+                else
+                {
+                    st->state = StWaitRequest;
+                }
+                break;
+            case StSetCommandSource:
                 write_data = COMMAND_SOURCE_DIGITAL;
                 err = Enfield_Write(st, SetCommandSource, &write_data);
                 if(ENFIELD_OK == err)
@@ -302,22 +327,22 @@ void Enfield_Thread(const void *arg)
                     LED_SetOne(st->joint, 0, 0);
                     st->successfulInit = true;
                 }
-                st->state = WaitRequest;
+                st->state = StWaitRequest;
                 break;
-            case WaitRequest:
+            case StWaitRequest:
                 evt = osMailGet(st->commandQ, enfield_parameters.sample_period);
                 if(evt.status == osEventTimeout)
                 {
-                    st->state = st->successfulInit ? Update : SetZero;
+                    st->state = st->successfulInit ? StUpdate : StSetZero;
                 }
                 else if(evt.status == osEventMail)
                 {
                     st->req = (struct EnfieldRequest *)evt.value.p;
                     st->resp = st->req->response;
-                    st->state = ExecuteRequest;
+                    st->state = StExecuteRequest;
                 }
                 break;
-            case ExecuteRequest:
+            case StExecuteRequest:
                 LED_BlinkOne(st->joint, 2, 255, 20);
                 if(st->req->write)
                 {
@@ -332,7 +357,7 @@ void Enfield_Thread(const void *arg)
                 osMailFree(st->commandQ, st->req);
                 st->state = st->successfulInit ? Update : SetZero;
                 break;
-            case Update:
+            case StUpdate:
                 LED_SetOne(st->joint, 2, 64);
                 errs[0] = Enfield_Get(st, ReadBaseEndPressure, &read_data);
                 if(ENFIELD_OK == errs[0])
@@ -342,15 +367,20 @@ void Enfield_Thread(const void *arg)
                 errs[1] = Enfield_Get(st, ReadRodEndPressure, &read_data);
                 if(ENFIELD_OK == errs[1])
                 {
-                    (st->RodEndPressure) = read_data;
+                    st->RodEndPressure = read_data;
+                }
+                errs[2] = Enfield_Get(st, ReadFeedbackPosition, &read_data);
+                if(ENFIELD_OK == errs[1])
+                {
+                    st->FeedbackPosition = read_data;
                 }
                 write_data = st->DigitalCommand;
-                errs[2] = Enfield_Write(st, SetDigitalCommand, &write_data);
+                errs[3] = Enfield_Write(st, SetDigitalCommand, &write_data);
                 if(errs[0] || errs[1] || errs[2])
                 {
                     err = 1;
                 }
-                st->state = WaitRequest;
+                st->state = StWaitRequest;
                 break;
         }
     }
