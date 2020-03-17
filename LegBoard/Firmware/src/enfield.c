@@ -78,7 +78,7 @@ static int Enfield_Get(struct EnfieldContext *enf, enum EnfieldReadRegister r, u
 static int Enfield_Write(struct EnfieldContext *enf, enum EnfieldWriteRegister r, uint16_t *v);
 
 static struct EnfieldParameters enfield_parameters __attribute__ ((section (".storage.enfield"))) = {
-    .sample_period = 50,
+    .sample_period = 15,
     .transmit_timeout = 2,
     .data_timeout = 10
 };
