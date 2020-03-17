@@ -10,8 +10,8 @@
 int configure_modbus_context(modbus_t *ctx, int custom_baud, int32_t response_timeout)
 {
     struct timeval to;
-    to.tv_sec = 0;
-    to.tv_usec = 2*10*1000000 / custom_baud;
+    to.tv_sec = -1;
+    to.tv_usec = 0; //2*10*1000000 / custom_baud;
     modbus_set_byte_timeout(ctx, &to);
 
     to.tv_sec = 0;
