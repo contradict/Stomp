@@ -2114,9 +2114,9 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
   errorflags = (isrflags & (uint32_t)(USART_ISR_PE | USART_ISR_FE | USART_ISR_ORE | USART_ISR_NE));
   if (errorflags == 0U)
   {
-    /* UART in mode Receiver, character received -------------------------------*/
+    /* UART in mode Receiver ---------------------------------------------------*/
     if (((isrflags & USART_ISR_RXNE) != 0U)
-         && ((cr1its & USART_CR1_RXNEIE) != 0U))
+        && ((cr1its & USART_CR1_RXNEIE) != 0U))
     {
       if (huart->RxISR != NULL)
       {
@@ -2124,33 +2124,7 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
       }
       return;
     }
-    /* UART in mode Receiver, receive timeout ----------------------------------*/
-    else if((((isrflags & USART_ISR_RTOF) != 0U)
-            && ((cr1its & USART_CR1_RTOIE) != 0U)))
-    {
-      SET_BIT(huart->Instance->ICR, USART_ICR_RTOCF);
-      /* Disable the UART Parity Error Interrupt, Timeout and RXNE interrupts */
-      CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_RTOIE));
-
-      /* Disable the UART Error Interrupt: (Frame error, noise error, overrun error) */
-      CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);
-
-      /* Rx process is completed, restore huart->RxState to Ready */
-      huart->RxState = HAL_UART_STATE_READY;
-
-      /* Clear RxISR function pointer */
-      huart->RxISR = NULL;
-
-#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)
-      /*Call registered Rx complete callback*/
-      huart->RxToCallback(huart);
-#else
-      /*Call legacy weak Rx complete callback*/
-      HAL_UART_RxToCallback(huart);
-#endif /* USE_HAL_UART_REGISTER_CALLBACKS */
-
-    }
- }
+  }
 
   /* If some errors occur */
   if ((errorflags != 0U)
@@ -2303,7 +2277,6 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
     return;
   }
 
-
 }
 
 /**
@@ -2365,17 +2338,6 @@ __weak void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
            the HAL_UART_RxHalfCpltCallback can be implemented in the user file.
    */
 }
-
-__weak void HAL_UART_RxToCallback(UART_HandleTypeDef *huart)
-{
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-
-  /* NOTE: This function should not be modified, when the callback is needed,
-           the HAL_UART_RxHalfCpltCallback can be implemented in the user file.
-   */
-}
-
 
 /**
   * @brief  UART error callback.
@@ -3414,7 +3376,6 @@ static void UART_RxISR_8BIT(UART_HandleTypeDef *huart)
   /* Check that a Rx process is ongoing */
   if (huart->RxState == HAL_UART_STATE_BUSY_RX)
   {
-
     uhdata = (uint16_t) READ_REG(huart->Instance->RDR);
     *huart->pRxBuffPtr = (uint8_t)(uhdata & (uint8_t)uhMask);
     huart->pRxBuffPtr++;
