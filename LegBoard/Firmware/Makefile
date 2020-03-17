@@ -2,7 +2,8 @@ TEMPLATEROOT=.
 
 # compilation flags for gdb
 
-CFLAGS  = -O0 -g3
+OPT_FLAGS = -O0
+CFLAGS  = -g3
 # CFLAGS  = -O3
 ASFLAGS = -g3
 
@@ -32,4 +33,10 @@ include $(TEMPLATEROOT)/Makefile.common
 Kinematics.pdf: Kinematics.md LiftCurlGeometry.jpg
 	pandoc Kinematics.md -o $@
 
+src/kinematics.o: src/kinematics.c inc/kinematics.h inc/linearize_feedback.h inc/kinematics.h inc/modbus.h inc/enfield.h
+	$(CC) -c $(CFLAGS) -O3 $< -o $@
+	$(CC) -MM $(CFLAGS) -O3 $< > $*.d
 
+src/linearize_feedback.o: src/linearize_feedback.c inc/linearize_feedback.h inc/export/joint.h inc/feedback_adc.h inc/status_led.h inc/modbus.h inc/kinematics.h Drivers/BSP/Components/ads57x4/ads57x4.h Drivers/BSP/ChompLegBoard/chomplegboard.h
+	$(CC) -c $(CFLAGS) -O3 $< -o $@
+	$(CC) -MM $(CFLAGS) -O3 $< > $*.d
