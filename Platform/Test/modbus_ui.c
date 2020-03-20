@@ -224,11 +224,18 @@ const int16_t param_max[NUM_SERVO_PARAMS] = {
       32767,    1000,    1000,    1000,    1000,
        1000,    1000,    1000,    4095};
 
-void showerror(struct ErrorContext *ec, const char *msg, int err)
+void showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt)
 {
     if(err == -1 && !ec->iserror)
     {
-        snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(errno));
+        if(dt)
+        {
+            snprintf(ec->error, 256, "%s(%d): %s", msg, dt->tv_usec, modbus_strerror(errno));
+        }
+        else
+        {
+            snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(errno));
+        }
         ec->iserror = true;
     }
 }
@@ -260,14 +267,14 @@ void servo_init(modbus_t *mctx, void *sctx)
         n = 0;
         err = modbus_read_registers(
                 mctx, joint[j]+HProportionalGain, 13, sc->params[j]);
-        showerror(&sc->error[j], "Initial Gain Read failed", err);
+        showerror(&sc->error[j], "Initial Gain Read failed", err, NULL);
         if(err == -1)
         {
             sc->isinit[j] = false;
         }
         err = modbus_read_registers(
                 mctx, joint[j]+HCachedDigitalCommand, 1, data);
-        showerror(&sc->error[j], "Initial Command Read failed", err);
+        showerror(&sc->error[j], "Initial Command Read failed", err, NULL);
         if(err != -1)
         {
             sc->params[j][13] = data[0];
@@ -315,7 +322,7 @@ void step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
             err = modbus_write_register(
                 mctx, joint[sc->joint] + HCachedDigitalCommand,
                 sc->params[sc->joint][13]);
-            showerror(&sc->error[sc->joint], "siggen set failed", err);
+            showerror(&sc->error[sc->joint], "siggen set failed", err, NULL);
             sc->siggen_start = true;
         }
         memcpy(&sc->last_siggen_output, &now, sizeof(struct timeval));
@@ -328,6 +335,7 @@ void servo_display(modbus_t *mctx, void *sctx)
     char display[256];
     int16_t data[1];
     int err;
+    struct timeval before, after;
     for(int j=0;j<3;j++)
     {
         err = modbus_read_input_registers(mctx, joint[j]+ICachedFeedbackPosition, 1, data);
@@ -335,6 +343,11 @@ void servo_display(modbus_t *mctx, void *sctx)
         if(err != -1)
         {
             sc->measured[j] = data[0];
+            gettimeofday(&before, NULL);
+            err = modbus_read_input_registers(mctx, joint[j]+ICachedFeedbackPosition, 1, data);
+            gettimeofday(&after, NULL);
+            timersub(&after, &before, &after);
+            showerror(&sc->error[j], "Read feedback failed", err, &after);
         }
         step_signal_generator(mctx, sc);
         move(4 + 4 * j + 0, 2);
@@ -431,7 +444,7 @@ void set_param(modbus_t *mctx, struct ServoContext *sc, float value)
         err = modbus_write_register(
                 mctx, joint[sc->joint] + param_register[sc->param],
                 sc->params[sc->joint][sc->param]);
-        showerror(&sc->error[sc->joint], "change param failed", err);
+        showerror(&sc->error[sc->joint], "change param failed", err, NULL);
     }
     else if(sc->siggen_enable)
     {
@@ -460,7 +473,7 @@ void increment_param(modbus_t *mctx, struct ServoContext *sc, int increment)
         err = modbus_write_register(
                 mctx, joint[sc->joint] + param_register[sc->param],
                 sc->params[sc->joint][sc->param]);
-        showerror(&sc->error[sc->joint], "change param failed", err);
+        showerror(&sc->error[sc->joint], "change param failed", err, NULL);
     }
     else if(sc->siggen_enable)
     {
@@ -514,11 +527,11 @@ void servo_handle_key(modbus_t *mctx, void *sctx, int ch)
             err = modbus_write_register(
                 mctx, joint[sc->joint] + HCachedDigitalCommand,
                 sc->params[sc->joint][13]);
-            showerror(&sc->error[sc->joint], "Set command failed", err);
+            showerror(&sc->error[sc->joint], "Set command failed", err, NULL);
             break;
         case '>':
             err = modbus_write_bit(mctx, joint[sc->joint] + CSaveConfiguration, 0);
-            showerror(&sc->error[sc->joint], "Save failed", err);
+            showerror(&sc->error[sc->joint], "Save failed", err, NULL);
             break;
         case '\x09': // TAB
             sc->joint = (sc->joint + 1) % 3;
@@ -586,7 +599,7 @@ void position_init(modbus_t *mctx, void *pctx)
     pc->input.input_fields = coordinate_names;
     pc->input.field_count = 3;
     err = modbus_read_registers(mctx, 0x40, 3, pos);
-    showerror(&pc->error, "Read initial position failed", err);
+    showerror(&pc->error, "Read initial position failed", err, NULL);
     if(err != -1)
     {
         for(int i=0;i<3;i++)
@@ -605,7 +618,7 @@ void position_display(modbus_t *mctx, void *pctx)
     int16_t pos[3];
 
     err = modbus_read_registers(mctx, 0x40, 3, pos);
-    showerror(&pc->error, "Read position failed", err);
+    showerror(&pc->error, "Read position failed", err, NULL);
     if(err != -1)
     {
         for(int i=0;i<3;i++)
@@ -633,7 +646,7 @@ void position_go(modbus_t *mctx, struct PositionContext *pc)
     for(int c=0;c<3;c++)
         pos[c] = 1000.0f * pc->position_command[c];
     err = modbus_write_registers(mctx, 0x40, 3, pos);
-    showerror(&pc->error, "Go position failed", err);
+    showerror(&pc->error, "Go position failed", err, NULL);
 }
 
 void position_handle_key(modbus_t *mctx, void *pctx, int ch)
