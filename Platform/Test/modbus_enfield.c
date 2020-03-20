@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <modbus.h>
 #include "modbus_device.h"
+#include "modbus_register_map.h"
 
 int main(int argc, char **argv)
 {
@@ -36,7 +37,7 @@ int main(int argc, char **argv)
     {
         printf("base: 0x%x\n", base);
         bzero(serial_number, sizeof(serial_number));
-        if(modbus_read_input_registers(ctx, base + 4, 2, serial_number) == -1)
+        if(modbus_read_input_registers(ctx, base + ISerialNumberLo, 2, serial_number) == -1)
             printf("  Read serial number failed: %s\n", modbus_strerror(errno));
         else
             printf("  Serial Number: %d\n", *(uint32_t *)serial_number);
