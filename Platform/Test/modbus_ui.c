@@ -246,11 +246,9 @@ void servo_init(modbus_t *mctx, void *sctx)
     sc->input.field_count = NUM_SERVO_PARAMS;
     int n;
     int err;
-    struct timeval rto, srto;
-    modbus_get_response_timeout(mctx, &srto);
-    rto.tv_sec = 0;
-    rto.tv_usec = 100000;
-    modbus_set_response_timeout(mctx, &rto);
+    uint32_t sto_sec, sto_usec;
+    modbus_get_response_timeout(mctx, &sto_sec, &sto_usec);
+    modbus_set_response_timeout(mctx, 0, 100000);
     for(int j=0;j<3;j++)
     {
         sc->error[j].iserror = false;
@@ -272,7 +270,7 @@ void servo_init(modbus_t *mctx, void *sctx)
             sc->params[j][13] = data[0];
         }
     }
-    modbus_set_response_timeout(mctx, &srto);
+    modbus_set_response_timeout(mctx, sto_sec, sto_usec);
     clear();
 }
 
@@ -408,7 +406,6 @@ void servo_display(modbus_t *mctx, void *sctx)
         }
         move(4 + 4 * j + 3, 2 + 6*10);
         printw("m:%6.1f", sc->measured[j] / 40.95f);
-        usleep(1000);
     }
     if(sc->param < 7)
         move(4 + 4*sc->joint + 1, 2 + 10*sc->param);
@@ -701,10 +698,11 @@ int main(int argc, char **argv)
     uint32_t baud = 1000000;
     uint8_t address = 0x55;
     int period = 100;
+    uint32_t response_timeout = 2000;
 
     int opt, err;
     char *offset;
-    while((opt = getopt(argc, argv, "p:b:a:t:")) != -1)
+    while((opt = getopt(argc, argv, "p:b:a:t:r:")) != -1)
     {
         switch(opt)
         {
@@ -729,6 +727,9 @@ int main(int argc, char **argv)
             case 't':
                 period = atoi(optarg);
                 break;
+            case 'r':
+                response_timeout = 1000*atoi(optarg);
+                break;
         }
     }
 
@@ -743,7 +744,7 @@ int main(int argc, char **argv)
     }
 
     // Actual baud rate here
-    if(configure_modbus_context(ctx, baud, 4000))
+    if(configure_modbus_context(ctx, baud, response_timeout))
     {
         exit(1);
     }
