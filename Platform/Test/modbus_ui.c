@@ -8,6 +8,8 @@
 #include <curses.h>
 #include <math.h>
 #include <sched.h>
+#include <sys/time.h>
+
 #include "modbus_device.h"
 #include "modbus_register_map.h"
 
@@ -778,9 +780,9 @@ int main(int argc, char **argv)
     bool go=true;
     int ch, pch;
     enum UIModes mode = SENSOR;
-    struct timeval now, dt, last_sleep;
+    struct timeval now, dt, last_wakeup;
     suseconds_t sleep;
-    gettimeofday(&last_sleep, NULL);
+    gettimeofday(&last_wakeup, NULL);
     while(go)
     {
         ch = getch();
@@ -808,11 +810,11 @@ int main(int argc, char **argv)
                 }
                 refresh();
                 gettimeofday(&now, NULL);
-                timersub(&now, &last_sleep, &dt);
+                timersub(&now, &last_wakeup, &dt);
                 sleep = period*1000 - dt.tv_usec;
                 if(sleep>0)
                     usleep(sleep);
-                memcpy(&last_sleep, &now, sizeof(struct timeval));
+                gettimeofday(&last_wakeup, NULL);
                 break;
             case '':
                 go = false;
