@@ -186,6 +186,7 @@ enum InputAction input_handle_key(struct InputContext *ic, int ch, float *v)
 
 struct ServoContext
 {
+    bool stoponerror;
     int16_t params[3][NUM_SERVO_PARAMS];
     int16_t measured[3];
     int joint;
@@ -245,6 +246,7 @@ void servo_init(modbus_t *mctx, void *sctx)
     struct ServoContext *sc = (struct ServoContext *)sctx;
     char display[256];
     int16_t data[1];
+    sc->stoponerror = true;
     sc->joint = 0;
     sc->param = 0;
     sc->param_max = NUM_SERVO_PARAMS;
@@ -305,10 +307,10 @@ void stop_signal_generator(struct ServoContext *sc)
     sc->siggen_enable = false;
 }
 
-void step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
+int step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
 {
     struct timeval now, dt;
-    int err;
+    int err = 0;
     if(sc->siggen_enable)
     {
         gettimeofday(&now, NULL);
@@ -327,6 +329,7 @@ void step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
         }
         memcpy(&sc->last_siggen_output, &now, sizeof(struct timeval));
     }
+    return err;
 }
 
 void servo_display(modbus_t *mctx, void *sctx)
@@ -336,20 +339,38 @@ void servo_display(modbus_t *mctx, void *sctx)
     int16_t data[1];
     int err;
     struct timeval before, after;
+
+    bool anyerr = false;
     for(int j=0;j<3;j++)
     {
-        err = modbus_read_input_registers(mctx, joint[j]+ICachedFeedbackPosition, 1, data);
-        showerror(&sc->error[j], "Read feedback failed", err);
-        if(err != -1)
+        anyerr |= sc->error[j].iserror;
+    }
+
+    for(int j=0;j<3;j++)
+    {
+        if(!sc->stoponerror | !anyerr)
         {
-            sc->measured[j] = data[0];
             gettimeofday(&before, NULL);
             err = modbus_read_input_registers(mctx, joint[j]+ICachedFeedbackPosition, 1, data);
             gettimeofday(&after, NULL);
             timersub(&after, &before, &after);
             showerror(&sc->error[j], "Read feedback failed", err, &after);
+            if(err != -1)
+            {
+                sc->measured[j] = data[0];
+            }
+            else
+            {
+                anyerr = true;
+            }
         }
-        step_signal_generator(mctx, sc);
+        if(!sc->stoponerror | !anyerr)
+        {
+            if(sc->joint == j)
+            {
+                anyerr = (-1 == step_signal_generator(mctx, sc));
+            }
+        }
         move(4 + 4 * j + 0, 2);
         clrtoeol();
         if(sc->joint == j)
@@ -436,15 +457,17 @@ void servo_display(modbus_t *mctx, void *sctx)
 void set_param(modbus_t *mctx, struct ServoContext *sc, float value)
 {
     int err;
+    int16_t pv;
     if(sc->param<NUM_SERVO_PARAMS)
     {
-        sc->params[sc->joint][sc->param] = value * param_scale[sc->param];
-        sc->params[sc->joint][sc->param] = CLIP(
-            sc->params[sc->joint][sc->param], 0, param_max[sc->param]);
+        pv =  CLIP(value * param_scale[sc->param], 0, param_max[sc->param]);
         err = modbus_write_register(
-                mctx, joint[sc->joint] + param_register[sc->param],
-                sc->params[sc->joint][sc->param]);
+                mctx, joint[sc->joint] + param_register[sc->param], pv);
         showerror(&sc->error[sc->joint], "change param failed", err, NULL);
+        if(err != -1)
+        {
+            sc->params[sc->joint][sc->param] = pv;
+        }
     }
     else if(sc->siggen_enable)
     {
@@ -465,15 +488,18 @@ void set_param(modbus_t *mctx, struct ServoContext *sc, float value)
 void increment_param(modbus_t *mctx, struct ServoContext *sc, int increment)
 {
     int err;
+    int16_t pv;
     if(sc->param<NUM_SERVO_PARAMS)
     {
-        sc->params[sc->joint][sc->param] += increment;
-        sc->params[sc->joint][sc->param] = CLIP(
-            sc->params[sc->joint][sc->param], 0, param_max[sc->param]);
+        pv = CLIP(sc->params[sc->joint][sc->param] + increment,
+                  0, param_max[sc->param]);
         err = modbus_write_register(
-                mctx, joint[sc->joint] + param_register[sc->param],
-                sc->params[sc->joint][sc->param]);
+                mctx, joint[sc->joint] + param_register[sc->param], pv);
         showerror(&sc->error[sc->joint], "change param failed", err, NULL);
+        if(err != -1)
+        {
+            sc->params[sc->joint][sc->param] = pv;
+        }
     }
     else if(sc->siggen_enable)
     {
@@ -568,7 +594,11 @@ void servo_handle_key(modbus_t *mctx, void *sctx, int ch)
             stop_signal_generator(sc);
             break;
         case KEY_F(12):
-            sc->error[sc->joint].iserror = false;
+            for(int j=0;j<JOINT_COUNT;j++)
+                sc->error[j].iserror = false;
+            break;
+        case 'e':
+            sc->stoponerror ^= 1;
             break;
     }
 }
