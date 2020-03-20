@@ -7,6 +7,7 @@
 #include <modbus.h>
 #include <curses.h>
 #include <math.h>
+#include <sched.h>
 #include "modbus_device.h"
 #include "modbus_register_map.h"
 
@@ -734,6 +735,16 @@ int main(int argc, char **argv)
     }
 
     modbus_t *ctx;
+
+    struct sched_param sched = {
+        .sched_priority = 10
+    };
+    if(sched_setscheduler(0, SCHED_FIFO, &sched) != 0)
+    {
+        perror("Unable to set scheduler");
+        printf("Try:\nsudo setcap \"cap_sys_nice=ep\" %s\n", argv[0]);
+        exit(1);
+    }
 
     // Phony baud
     ctx = modbus_new_rtu(devname, 9600, 'N', 8, 1);
