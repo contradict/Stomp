@@ -561,18 +561,37 @@ void servo_handle_key(modbus_t *mctx, void *sctx, int ch)
             break;
         case '\x09': // TAB
             sc->joint = (sc->joint + 1) % 3;
+            sc->siggen_enable = false;
+            sc->siggen_start = false;
             break;
         case KEY_BTAB:
             sc->joint = (sc->joint - 1) % 3;
             if(sc->joint < 0) sc->joint += 3;
+            sc->siggen_enable = false;
+            sc->siggen_start = false;
             break;
         case 'C':
+            if(sc->joint != 0)
+            {
+                sc->siggen_enable = false;
+                sc->siggen_start = false;
+            }
             sc->joint = 0;
             break;
         case 'S':
+            if(sc->joint != 1)
+            {
+                sc->siggen_enable = false;
+                sc->siggen_start = false;
+            }
             sc->joint = 1;
             break;
         case 'L':
+            if(sc->joint != 2)
+            {
+                sc->siggen_enable = false;
+                sc->siggen_start = false;
+            }
             sc->joint = 2;
             break;
         case 'w':
