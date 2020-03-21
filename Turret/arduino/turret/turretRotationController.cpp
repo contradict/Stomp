@@ -285,7 +285,10 @@ void TurretRotationController::updateSpeed()
 
         default:
         {
-            setSpeed(0);
+            if (m_currentSpeed != 0)
+            {
+                setSpeed(0);
+            }
         }
         break;
     }
@@ -296,21 +299,10 @@ void TurretRotationController::setSpeed(int32_t p_speed)
     m_currentSpeed = p_speed;
     m_currentSpeed = constrain(p_speed, k_minSpeed, k_maxSpeed);
 
-    // BB MJS: Should only need to send to 1 node, figure out which one
-
     //  send "@nn!G mm" over software serial. mm is a command 
     //  value, -1000 to 1000. nn is node number in RoboCAN network.
     
     TurretRotationMotorSerial.print("@01!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
-
-    TurretRotationMotorSerial.print("@02!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
-
-    TurretRotationMotorSerial.print("@03!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
-
-    TurretRotationMotorSerial.print("@04!G ");
     TurretRotationMotorSerial.println(m_currentSpeed);
 }
 
