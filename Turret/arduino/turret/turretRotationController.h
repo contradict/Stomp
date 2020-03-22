@@ -50,7 +50,6 @@ private:
         EInit,
         ESafe,
         EDisabled,
-        EIdle,
         EManualControl,
         EAutoAim,
         EAutoAimWithManualAssist,

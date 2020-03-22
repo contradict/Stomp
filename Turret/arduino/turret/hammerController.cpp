@@ -1,8 +1,23 @@
 //
-//  Flame Thrower Controller
+//  Hammer Controller
+//
+//  Throw (or swing) the hammer with pneumatic valve open for a period of
+//  of time, then close that valve and the the throw continue.  Then retract
+//  the hammer and get ready for another throw.
+//
+//  This is accomplished with 4 valves to control pneumatics: 
+//
+//      Throw Pressure, Throw Vent, Retract Pressure, Retract Vent
+//
+//  Due to the strict and short timing requirements, the valve control
+//  and hammer angular velocity calculations are handled in an 
+//  interrupt drive state machine, implemented at the end of this file
+//  after the class method implementation
 //
 
 #include "Arduino.h"
+#include <avr/interrupt.h>
+#include <util/atomic.h>
 #include "pins.h"
 
 #include "sbus.h"
@@ -27,8 +42,20 @@
 
 static struct HammerController::Params EEMEM s_savedParams = 
 {
-    .tmp = 0,
+    .selfRightIntensity = 75,
+    .telemetryFrequency = 10000,
 };
+
+static uint32_t s_throwPressureDt;
+
+//  ====================================================================
+//
+//  Forward references to internal (private) methods
+//
+//  ====================================================================
+
+void startFullCycleStateMachine();
+void startRetractOnlyStateMachine();
 
 //  ====================================================================
 //
@@ -78,7 +105,7 @@ void HammerController::Update()
                 {
                     if (isWeaponEnabled())
                     {
-                        setState(EReadyToFire);
+                        setState(EReady);
                     }
                     else
                     {
@@ -93,6 +120,23 @@ void HammerController::Update()
                 if (!isRadioConnected())
                 {
                     setState(ESafe);
+                }
+                else if (isWeaponEnabled())
+                {
+                    setState(EReady);
+                }
+            }
+            break;
+
+            case EReady:
+            {
+                if (!isRadioConnected())
+                {
+                    setState(ESafe);
+                }
+                else if (!isWeaponEnabled())
+                {
+                    setState(EDisabled);
                 }
             }
             break;
@@ -111,51 +155,37 @@ void HammerController::Update()
 }
 
 //
-//  IMPORTANT: Fire and FireSelfRight completly take over processing
-//  Neither of these functions reutrn until the hammer strike 
-//  has completed.
+//  IMPORTANT: Fire, FireSelfRight and Retract setup a secondary state
+//  machine that is driven using timmer interrupts.  The normal
+//  update loop is too variable and often not responsive enought.
 //
 
 void HammerController::Fire()
 {
-    uint32_t loopStartTime;
-    uint32_t loopDt;
-    uint32_t delayDt;
-
-    setState(EFire);
-
-    while (m_state != ESwingComplete && micros() - m_swingStartTime < k_swingTimeMaxDt)
-    {
-        uint32_t loopStartTime = micros();
-
-        Update();
-
-        uint32_t loopDt = micros() - loopStartTime;
-        uint32_t delayDt = max(0, k_swingUpdateDt - loopDt);
-
-        delay(k_swingUpdateDt);
-    }
+    setState(EThrow);
+    setState(EFullCycleInterruptMode);
 }
+
+//
+//  Swing the hammer with fixed parameters to try and flip
+//  us back over to right side up!
+//
 
 void HammerController::FireSelfRight()
 {
-    uint32_t loopStartTime;
-    uint32_t loopDt;
-    uint32_t delayDt;
+    setState(EThrowSelfRight);
+    setState(EFullCycleInterruptMode);
+}
 
-    setState(EFireSelfRight);
+//
+//  Just incase the normal cycle retract didn't get the job done,
+//  try to just fully retract the hammer
+//
 
-    while (m_state != ESwingComplete && micros() - m_swingStartTime < k_swingTimeMaxDt)
-    {
-        uint32_t loopStartTime = micros();
-
-        Update();
-
-        uint32_t loopDt = micros() - loopStartTime;
-        uint32_t delayDt = max(0, k_swingUpdateDt - loopDt);
-
-        delay(k_swingUpdateDt);
-    }
+void HammerController::Retract()
+{
+    setState(ERetract);
+    setState(ERetractOnlyInterruptMode);
 }
 
 void HammerController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
@@ -163,8 +193,11 @@ void HammerController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int
     m_pAutoFire->SetParams(p_xtol, p_ytol, p_max_omegaz, telemetry_interval);
 }
 
-void HammerController::SetParams(uint32_t p_manualControlOverideSpeed)
+void HammerController::SetParams(uint32_t p_selfRightIntensity, uint32_t p_telemetryFrequency)
 {
+    m_params.selfRightIntensity = p_selfRightIntensity;
+    m_params.telemetryFrequency = p_telemetryFrequency;
+
     saveParams();
 }
 
@@ -230,18 +263,47 @@ void HammerController::setState(controllerState p_state)
         }
         break;
 
-        case EFire:
+        case EThrow:
         {
-            m_swingStartTime = m_stateStartTime;
+            resetTelem();
+
+            int32_t requestedIntensity = getHammerIntensity();
+
+            m_throwStartTime = m_stateStartTime;
+            m_throwPressureAngle = k_throwIntensityToAngle[requestedIntensity];
+            m_throwPressureDt = k_throwIntensityToDt[requestedIntensity];
         }
         break;
         
-        case EFireSelfRight:
+        case EThrowSelfRight:
         {
-            m_swingStartTime = m_stateStartTime;
+            resetTelem();
+
+            m_throwStartTime = m_stateStartTime;
+            m_throwPressureAngle = k_throwPressureAngleSelfRight;
+            m_throwPressureDt = m_params.selfRightIntensity;
         }
         break;
 
+        case ERetract:
+        {
+            resetTelem();
+
+            m_retractOnlyPhase = true;
+        }
+        break;
+
+        case EFullCycleInterruptMode:
+        {
+            s_throwPressureDt = m_throwPressureDt;
+            startFullCycleStateMachine();
+        }
+        break;
+
+        case ERetractOnlyInterruptMode:
+        {
+            startRetractOnlyStateMachine();
+        }
         break;
     }
 }
@@ -251,8 +313,129 @@ void HammerController::initAllControllers()
     m_pAutoFire->Init();
 }
 
+void HammerController::resetTelem()
+{
+    m_retractOnlyPhase = false;
+}
 
 void HammerController::saveParams() 
 {
     eeprom_write_block(&m_params, &s_savedParams, sizeof(struct HammerController::Params));
 }
+
+//  ====================================================================
+//
+//  Interrupt driven state machine implementation
+//
+//  ====================================================================
+
+const uint8_t k_valveCloseDt = 10;
+const uint8_t k_valveOpenDt = 10;
+
+enum hammerSubState
+{
+    EThrowSetup,
+    EThrowPressurize,
+    EThrowExpand,
+    ERetractSetup,
+    ERetractPressurize,
+    ERetractComplete
+};
+
+static hammerSubState s_hammerSubState;
+
+static uint32_t s_cycleTimeStart = 0;
+static uint32_t s_hammerSubStateStart = 0;
+static uint32_t s_hammerSubStateDt = 0;
+
+static int32_t s_angularVelocity = 0;
+
+void startFullCycleStateMachine()
+{
+    s_cycleTimeStart = micros();
+    s_hammerSubState = EThrowSetup;
+
+    //  Easier to just do a delay(k_valveCloseDt) here than
+    //  deal with interrupts for this.
+
+    // closeThrowVent();
+    delay(k_valveCloseDt);
+
+    s_hammerSubState = EThrowPressurize;
+    //  openThrowPressure()
+}
+
+void startRetractOnlyStateMachine()
+{
+    s_cycleTimeStart = micros();
+    s_hammerSubState = ERetractSetup;
+
+    //  Easier to just do a delay(k_valveCloseDt) here than
+    //  deal with interrupts for this.
+
+    //openThrowVent();
+    //closeRetractVent();
+
+    delay(max(k_valveCloseDt, k_valveOpenDt));
+
+    s_hammerSubState = ERetractPressurize;
+    // openRetractPressure();
+}
+
+//  Interrupt Service Routine to collect telemetry, at defined frequency, durring a hammer throw and retract
+
+ISR(TIMER4_COMPA_vect)
+{
+    if (s_hammerSubState != ERetractComplete)
+    {
+    }
+}
+
+//  Interrupt Service Routing that triggers when we have waited the the desired amount of
+//  time to leave the throwPressure valve open.
+//  
+//  Handles State Transitions:
+//
+//      * EThrowPressurize -> EThrowExpand state transition)
+//
+
+ISR(TIMER5_COMPA_vect)
+{
+    // closeThrowPressure();
+    s_hammerSubState = EThrowExpand;
+}
+
+//  Interrupt Service Routing triggerd at a defined frequency to chech for state transitions.
+//  
+//  Handles State Transitions:
+//
+//      * EThrowExpand -> ERetractSetup
+//      * ERetractSetup -> ERetractPressurize
+//      * ERetractPressurize -> ERetractComplete
+//
+
+ISR(TIMER4_COMPB_vect)
+{
+    if (s_hammerSubState == EThrowExpand)
+    {
+        //  Wait until angle >= max angle || timeout
+
+        // openThrowVent();
+        s_hammerSubState = ERetractSetup;
+    }
+    else if (s_hammerSubState == ERetractSetup)
+    {
+        //  Wait until we have been in this start at lease k_valveCloseDt
+
+        // openRetractPressure();
+        s_hammerSubState = ERetractPressurize;
+    }
+    else if (s_hammerSubState == ERetractPressurize)
+    {
+        //  Wait until angle <= retracted angle || timeout
+
+        //  openRetractVent();
+        s_hammerSubState = ERetractComplete;
+    }
+}
+

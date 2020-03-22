@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.cps": "javascript",
-        "ios": "cpp"
+        "ios": "cpp",
+        "memory": "cpp"
     }
 }

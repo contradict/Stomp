@@ -86,7 +86,7 @@ void TurretRotationController::Update()
                 {
                     if (isManualTurretEnabled())
                     {
-                        setState(EIdle);
+                        setState(EManualControl);
                     }
                     else
                     {
@@ -104,28 +104,7 @@ void TurretRotationController::Update()
                 }
                 else if (isManualTurretEnabled())
                 {
-                    setState(EIdle);
-                }
-            }
-            break;
-
-            case EIdle:
-            {
-                if (!isRadioConnected())
-                {
-                    setState(ESafe);
-                }
-                else if (!isManualTurretEnabled())
-                {
-                    setState(EDisabled);
-                }
-                else if (desiredSBusSpeed != 0)
-                {
                     setState(EManualControl);
-                }
-                else if (desiredAutoAimSpeed != 0)
-                {
-                    setState(EAutoAim);
                 }
             }
             break;
@@ -140,13 +119,9 @@ void TurretRotationController::Update()
                 {
                     setState(EDisabled);
                 }
-                else if (desiredSBusSpeed == 0)
+                else if (isAutoAimEnabled() && abs(desiredSBusSpeed) < m_params.ManualControlOverideSpeed)
                 {
-                    setState(EIdle);
-                }
-                else if (desiredAutoAimSpeed != 0 && abs(desiredSBusSpeed) < m_params.ManualControlOverideSpeed)
-                {
-                    setState(EAutoAimWithManualAssist);
+                    setState(EAutoAim);
                 }
             }
             break;
@@ -161,20 +136,17 @@ void TurretRotationController::Update()
                 {
                     setState(EDisabled);
                 }
-                else if (desiredAutoAimSpeed == 0)
+                else if (!isAutoAimEnabled())
                 {
-                    setState(EIdle);
+                    setState(EManualControl);
+                }
+                else if (abs(desiredSBusSpeed) >= m_params.ManualControlOverideSpeed)
+                {
+                    setState(EManualControl);
                 }
                 else if (desiredSBusSpeed != 0)
                 {
-                    if (abs(desiredSBusSpeed) >= m_params.ManualControlOverideSpeed)
-                    {
-                        setState(EManualControl);
-                    }
-                    else
-                    {
-                        setState(EAutoAimWithManualAssist);
-                    }
+                    setState(EAutoAimWithManualAssist);
                 }
             }
             break;
@@ -185,20 +157,13 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
+                else if (desiredSBusSpeed == 0)
+                {
+                    setState(EAutoAim);
+                }
                 else if (abs(desiredSBusSpeed) >= m_params.ManualControlOverideSpeed)
                 {
                     setState(EManualControl);
-                }
-                else if (desiredSBusSpeed == 0)
-                {
-                    if (abs(desiredAutoAimSpeed) > 0)
-                    {
-                        setState(EAutoAim);
-                    } 
-                    else
-                    {
-                        setState(EIdle);
-                    }
                 }
             }
             break;

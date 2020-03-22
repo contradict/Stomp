@@ -211,18 +211,21 @@ void AutoAim::updateDesiredTurretSpeed()
 
     int32_t error = m_pTarget->angle();
     int32_t deltaError = m_pTarget->vtheta();
+    int16_t omegaZ = 0;
+    
+    if(!getOmegaZ(&omegaZ)) 
+    {
+        omegaZ = 0;
+    }
+
 
     m_desiredTurretSpeed = FROM_FP_32x14(m_params.proportionalConstant * error);
     m_desiredTurretSpeed += FROM_FP_32x14(m_params.derivativeConstant * deltaError);
+    m_desiredTurretSpeed += FROM_FP_32x10(m_params.gyro_gain * omegaZ);
+
     m_desiredTurretSpeed = constrain(m_desiredTurretSpeed, -m_params.speedMax, m_params.speedMax);
     
     /*
-     int16_t omegaZ = 0;
-    if(getOmegaZ(&omegaZ)) 
-    {
-        m_desiredTurretSpeed += -m_params.gyro_gain * omegaZ / 1024;
-    }
-
    int32_t tracked_r = integer_sqrt(
         (m_pTarget->x / 4L) * (m_pTarget->x / 4L) +
         (m_pTarget->y / 4L) * (m_pTarget->y / 4L));

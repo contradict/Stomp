@@ -27,7 +27,8 @@ public:
 
     struct Params
     {
-        int32_t tmp;
+        int16_t selfRightIntensity;
+        int16_t telemetryFrequency;
     };
 
     //  ====================================================================
@@ -43,10 +44,10 @@ public:
 
     void Fire();
     void FireSelfRight();
-
+    void Retract();
 
     void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval);
-    void SetParams(uint32_t p_manualControlOverideSpeed);
+    void SetParams(uint32_t p_selfRightIntensity, uint32_t p_telemetryFrequency);
     void RestoreParams();
 
     void SendTelem();
@@ -58,19 +59,14 @@ private:
         EInit,
         ESafe,
         EDisabled,
+        EReady,
 
-        EReadyToFire,
-        EFire,
-        EFireSelfRight,
+        EThrow,
+        EThrowSelfRight,
+        ERetract,
 
-        ERetractStart,
-        ERetracting,
-        ERetractComplete,
-
-        ESwingStart,
-        ESwingMeasure,
-        ESwingComplete,
-        ESwingTooFar,
+        EFullCycleInterruptMode,
+        ERetractOnlyInterruptMode,
 
         EInvalid = -1
     };
@@ -81,12 +77,10 @@ private:
     //
     //  ====================================================================
 
-    void updateSpeed();
-
     void setState(controllerState p_state);
-
     void initAllControllers();
 
+    void resetTelem();
     void saveParams();
 
     //  ====================================================================
@@ -101,6 +95,11 @@ private:
     const uint32_t k_swingTimeMaxDt = 1000000;
     const uint32_t k_swingUpdateDt = 1000;
 
+    const uint8_t k_throwPressureAngleSelfRight = 0xFF;
+
+    const uint8_t k_throwIntensityToAngle[9] = { 3, 5, 10, 15, 20, 30, 40, 50, 65 };
+    const uint8_t k_throwIntensityToDt[9] = { 25, 35, 60, 70, 80, 95, 105, 115, 125 };
+
     //  ====================================================================
     //
     //  Private members
@@ -110,7 +109,11 @@ private:
     controllerState m_state;
     uint32_t m_stateStartTime;
 
-    uint32_t m_swingStartTime;
+    bool m_retractOnlyPhase;
+
+    uint32_t m_throwStartTime;
+    uint8_t m_throwPressureAngle;
+    uint8_t m_throwPressureDt;
 
     AutoFire* m_pAutoFire;
 
