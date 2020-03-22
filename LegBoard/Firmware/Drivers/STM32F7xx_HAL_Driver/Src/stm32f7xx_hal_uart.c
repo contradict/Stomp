@@ -2124,6 +2124,42 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
       }
       return;
     }
+    else if(((isrflags & USART_ISR_RTOF) != 0U)
+            && ((cr1its & USART_CR1_RTOIE) != 0U))
+    {
+      CLEAR_BIT(huart->Instance->CR2, USART_CR2_RTOEN);
+      CLEAR_BIT(huart->Instance->CR1, USART_CR1_RTOIE);
+      SET_BIT(huart->Instance->ICR, USART_ISR_RTOF);
+
+      CLEAR_BIT(huart->Instance->CR1, USART_CR1_PEIE);
+      CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);
+
+      if (HAL_IS_BIT_SET(huart->Instance->CR3, USART_CR3_DMAR))
+      {
+        /* Disable the DMA transfer for the receiver request by resetting the DMAR bit
+           in the UART CR3 register */
+        CLEAR_BIT(huart->Instance->CR3, USART_CR3_DMAR);
+
+        /* Abort the UART DMA Rx channel */
+        if (huart->hdmarx != NULL)
+        {
+          /* Abort DMA RX */
+          if (HAL_DMA_Abort_IT(huart->hdmarx) != HAL_OK)
+          {
+            /* Call Directly huart->hdmarx->XferAbortCallback function in case of error */
+            huart->hdmarx->XferAbortCallback(huart->hdmarx);
+          }
+        }
+      }
+#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)
+      /*Call registered Rx complete callback*/
+      huart->RxCpltCallback(huart);
+#else
+      /*Call legacy weak Rx complete callback*/
+      HAL_UART_RxCpltCallback(huart);
+#endif /* USE_HAL_UART_REGISTER_CALLBACKS */
+      huart->RxState = HAL_UART_STATE_READY;
+    }
   }
 
   /* If some errors occur */
@@ -2197,6 +2233,13 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
            Disable Rx Interrupts, and disable Rx DMA request, if ongoing */
         UART_EndRxTransfer(huart);
 
+        if(HAL_IS_BIT_SET(huart->Instance->CR2, USART_CR2_RTOEN))
+        {
+          CLEAR_BIT(huart->Instance->CR2, USART_CR2_RTOEN);
+          CLEAR_BIT(huart->Instance->CR1, USART_CR1_RTOIE);
+          SET_BIT(huart->Instance->ICR, USART_ISR_RTOF);
+        }
+
         /* Disable the UART DMA Rx request if enabled */
         if (HAL_IS_BIT_SET(huart->Instance->CR3, USART_CR3_DMAR))
         {
@@ -2205,9 +2248,8 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
           /* Abort the UART DMA Rx channel */
           if (huart->hdmarx != NULL)
           {
-            /* Set the UART DMA Abort callback :
-               will lead to call HAL_UART_ErrorCallback() at end of DMA abort procedure */
-            huart->hdmarx->XferAbortCallback = UART_DMAAbortOnError;
+              /* This is a normal RX, don't call the error callback */
+            huart->hdmarx->XferAbortCallback = NULL;
 
             /* Abort DMA RX */
             if (HAL_DMA_Abort_IT(huart->hdmarx) != HAL_OK)

@@ -22,7 +22,6 @@ enum ModbusSignalEvent
 {
     SIGNAL_TXCPLT = 1,
     SIGNAL_RXCPLT = 2,
-    SIGNAL_RXTO   = 4,
     SIGNAL_ERROR  = 8
 };
 
@@ -119,9 +118,9 @@ void MODBUS_UART_Init()
     modbus_uart.Init.OverSampling = UART_OVERSAMPLING_8;
     modbus_uart.Init.Parity = UART_PARITY_NONE;
     modbus_uart.Init.StopBits = UART_STOPBITS_1;
+    //modbus_uart.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_DMADISABLEONERROR_INIT;
     HAL_RS485Ex_Init(&modbus_uart, UART_DE_POLARITY_HIGH, 8, 8);
     LL_USART_SetRxTimeout(MODBUS_UART_Instance, 20);
-    LL_USART_EnableRxTimeout(MODBUS_UART_Instance);
 }
 
 uint16_t MODBUS_crc(uint8_t* buffer, uint16_t count)
@@ -584,14 +583,17 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
 
 void MODBUS_Thread(const void *args)
 {
+    int err;
     struct ModbusThreadState *st = (struct ModbusThreadState *)args;
     // start listening
-    HAL_UART_Receive_IT(&modbus_uart, st->rxBuffer, MAXPACKET);
+    HAL_UART_Receive_DMA(&modbus_uart, st->rxBuffer, MAXPACKET);
+    SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
     LL_USART_EnableIT_RTO(modbus_uart.Instance);
+    LL_USART_EnableRxTimeout(MODBUS_UART_Instance);
     while(1)
     {
         // waitfor something to happen
-        st->e = osSignalWait(SIGNAL_RXTO | SIGNAL_ERROR | SIGNAL_RXCPLT | SIGNAL_TXCPLT, osWaitForever);
+        st->e = osSignalWait(SIGNAL_ERROR | SIGNAL_RXCPLT | SIGNAL_TXCPLT, osWaitForever);
         if(st->e.status != osEventSignal)
         {
             continue;
@@ -599,31 +601,52 @@ void MODBUS_Thread(const void *args)
         st->evt = st->e.value.signals;
 
         // Handle event
-        if(st->evt & SIGNAL_RXTO)
+        if(st->evt & SIGNAL_ERROR)
         {
-            st->bytes_received = modbus_uart.pRxBuffPtr - st->rxBuffer;
+            st->responseLength = 0;
+        }
+        else if(st->evt & SIGNAL_TXCPLT)
+        {
+            st->responseLength = 0;
+        }
+        else if(st->evt & SIGNAL_RXCPLT)
+        {
             if(st->rxBuffer[0] == modbus_parameters.address &&
                     st->bytes_received > 4 &&
                     MODBUS_crc(st->rxBuffer, st->bytes_received) == 0)
             {
                 st->responseLength = MODBUS_Process(st->rxBuffer + 1, st->bytes_received - 3, st->txBuffer, MAXPACKET);
             }
-        }
-        else
-        {
-            st->responseLength = 0;
-        }
-		if(st->responseLength > 0)
-        {
-            HAL_UART_Transmit_IT(&modbus_uart, st->txBuffer, st->responseLength);
-            st->responseLength = 0;
-        }
-        else
-        {
-            HAL_UART_Receive_IT(&modbus_uart, st->rxBuffer, MAXPACKET);
-            LL_USART_EnableIT_RTO(modbus_uart.Instance);
+            else
+            {
+                st->responseLength = 0;
+            }
         }
 
+        if(st->responseLength > 0)
+        {
+            osDelay(1);
+            CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
+            SET_BIT(modbus_uart.Instance->CR1, USART_CR1_TE);
+            err = HAL_UART_Transmit_DMA(&modbus_uart, st->txBuffer, st->responseLength);
+            if(err != HAL_OK)
+                while(1);
+        }
+        else
+        {
+            SET_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
+            while(true)
+            {
+                err = HAL_UART_Receive_DMA(&modbus_uart, st->rxBuffer, MAXPACKET);
+                if(err != HAL_OK)
+                    osDelay(1);
+                else
+                    break;
+            }
+            SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
+            LL_USART_EnableIT_RTO(modbus_uart.Instance);
+            LL_USART_EnableRxTimeout(MODBUS_UART_Instance);
+        }
     }
 }
 
@@ -635,14 +658,9 @@ void MODBUS_TxCplt(UART_HandleTypeDef *huart)
 
 void MODBUS_RxCplt(UART_HandleTypeDef *huart)
 {
-    (void)huart;
+    int32_t ndtr = huart->hdmarx->Instance->NDTR;
+    modbus_state.bytes_received = MAXPACKET - ndtr;
     osSignalSet(modbus, SIGNAL_RXCPLT);
-}
-
-void MODBUS_RxTo(UART_HandleTypeDef *huart)
-{
-    (void)huart;
-    osSignalSet(modbus, SIGNAL_RXTO);
 }
 
 void MODBUS_UARTError(UART_HandleTypeDef *huart)
