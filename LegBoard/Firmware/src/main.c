@@ -5,7 +5,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdbool.h>
 #include "stm32f7xx_hal.h"
-#include "joint.h"
+#include "export/joint.h"
 #include "cmsis_os.h"
 #include "linearize_feedback.h"
 #include "storage.h"
@@ -13,6 +13,7 @@
 #include "modbus.h"
 #include "status_led.h"
 #include "enfield.h"
+#include "debug_pin.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -47,6 +48,8 @@ int main(void)
        - Low Level Initialization
      */
   HAL_Init();
+
+  DebugPin_Init();
 
   Storage_Init();
 

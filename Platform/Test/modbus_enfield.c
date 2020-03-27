@@ -6,9 +6,11 @@
 #include <errno.h>
 #include <modbus.h>
 #include "modbus_device.h"
+#include "modbus_register_map.h"
 
 int main(int argc, char **argv)
-{    modbus_t *ctx;
+{
+    modbus_t *ctx;
 
     // Phony baud
     ctx = modbus_new_rtu("/dev/ttyS4", 9600, 'N', 8, 1);
@@ -20,7 +22,7 @@ int main(int argc, char **argv)
     modbus_set_debug(ctx, true);
 
     // Actual baud rate here
-    if(configure_modbus_context(ctx, 1000000))
+    if(configure_modbus_context(ctx, 1000000, 100000))
     {
         exit(1);
     }
@@ -35,7 +37,7 @@ int main(int argc, char **argv)
     {
         printf("base: 0x%x\n", base);
         bzero(serial_number, sizeof(serial_number));
-        if(modbus_read_input_registers(ctx, base + 4, 2, serial_number) == -1)
+        if(modbus_read_input_registers(ctx, base + ISerialNumberLo, 2, serial_number) == -1)
             printf("  Read serial number failed: %s\n", modbus_strerror(errno));
         else
             printf("  Serial Number: %d\n", *(uint32_t *)serial_number);
@@ -74,7 +76,7 @@ int main(int argc, char **argv)
             printf("  Re-Re-Read dither failed: %s\n", modbus_strerror(errno));
         else
             printf("  Restored Dither: %d\n", value2);
-            */
+        */
     }
 
 

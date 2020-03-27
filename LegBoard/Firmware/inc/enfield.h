@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "cmsis_os.h"
-#include "joint.h"
+#include "export/joint.h"
 #include "modbus.h"
 
 enum EnfieldReadRegister {
@@ -85,7 +85,9 @@ struct EnfieldRequest * Enfield_AllocRequest(enum JointIndex joint);
 void Enfield_Request(struct EnfieldRequest *req);
 int Enfield_ReadRodEndPresure(void *ctx, uint16_t *v);
 int Enfield_ReadBaseEndPresure(void *ctx, uint16_t *v);
+int Enfield_ReadFeedbackPosition(void *ctx, uint16_t *v);
 int Enfield_ReadDigitalCommand(void *ctx, uint16_t *v);
 int Enfield_WriteDigitalCommand(void *ctx, uint16_t v);
 bool Enfield_IsValidWriteRegister(enum EnfieldWriteRegister r);
 bool Enfield_IsValidReadRegister(enum EnfieldReadRegister r);
+void Enfield_SetCommand(uint16_t command[JOINT_COUNT]);

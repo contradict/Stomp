@@ -106,5 +106,6 @@ ValveOffset       | 28  | 0-1000  |
 FeedbackPolarity  | 33  | 0-1     | 0-normal, 1-inverted
 CommandSource     | 89  | 0-1     | 1-analog, 0-slider
 DigitalCommand    | 88  | 0-4095  |
-SetZeroGains      | 224 | 0       | always written 0 after changing command input type
-SaveConfiguration | 225 | 0       | write 0 to save configuration
+SetZeroGains      | 224 | 0       | always written 0 after changing command input type, no response
+                  |     |         | also sent on 'reset to factory'
+SaveConfiguration | 225 | 0       | write 0 to save configuration, no response

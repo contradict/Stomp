@@ -456,11 +456,11 @@ $(TARGET).elf: $(OBJS)
 # compile and generate dependency info
 
 %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
-	$(CC) -MM $(CFLAGS) $< > $*.d
+	$(CC) -c $(CFLAGS) $(OPT_FLAGS) $< -o $@
+	$(CC) -MM $(CFLAGS) $(OPT_FLAGS) $< > $*.d
 
 %.o: %.s
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) $(ASFLAGS) $(OPT_FLAGS) $< -o $@
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@

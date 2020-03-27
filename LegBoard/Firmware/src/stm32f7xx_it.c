@@ -26,7 +26,7 @@
 #include "feedback_adc.h"
 #include "enfield_uart.h"
 #include "modbus_uart.h"
-#include "joint.h"
+#include "export/joint.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{

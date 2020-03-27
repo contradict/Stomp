@@ -2155,7 +2155,7 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
   /* If some errors occur */
   if ((errorflags != 0U)
       && (((cr3its & USART_CR3_EIE) != 0U)
-          || ((cr1its & (USART_CR1_RXNEIE | USART_CR1_PEIE)) != 0U)))
+          || ((cr1its & (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_RTOIE)) != 0U)))
   {
     /* UART parity error interrupt occurred -------------------------------------*/
     if ((isrflags & USART_ISR_PE) != 0U)

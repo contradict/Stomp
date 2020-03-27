@@ -1,143 +1,143 @@
 #include "modbus.h"
+#include "export/modbus_register_map.h"
 #include "modbus_common.h"
 
 #include "enfield.h"
 
-static uint16_t scratchpad = 0x55;
+#define ENFIELD_CONTEXT_VALUE(j, w, r) ((void *)(((j&3)<<30) | ((w&0xff)<<8) | (r&0xff)))
 
-static int return_context(void *ctx, bool *v);
-static int save_to_context(void *ctx, bool value);
+static uint16_t scratchpad = 0x55;
 
 const struct MODBUS_Coil modbus_coils[] = {
     {
         .address = 0x55,
         .context = &scratchpad,
-        .read = return_context,
-        .write = save_to_context
+        .read = return_context_bool,
+        .write = save_to_context_bool
     },
     {
-        .address = CURL_BASE,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, ReadFeedbackPolarity, SetFeedbackPolarity),
+        .address = CURL_BASE + CFeedbackPolarity,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetFeedbackPolarity,  ReadFeedbackPolarity),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = CURL_BASE + 1,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, ReadPortConnection,   SetPortConnection),
+        .address = CURL_BASE + CPortConnection,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetPortConnection,      ReadPortConnection),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = CURL_BASE + 2,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, ReadCommandInput,     SetCommandInput),
+        .address = CURL_BASE + CCommandInput,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetCommandInput,          ReadCommandInput),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = CURL_BASE + 3,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, ReadFeedbackInput,    SetFeedbackInput),
+        .address = CURL_BASE + CFeedbackInput,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetFeedbackInput,        ReadFeedbackInput),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = CURL_BASE + 4,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, ReadCommandSource,    SetCommandSource),
+        .address = CURL_BASE + CCommandSource,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetCommandSource,        ReadCommandSource),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = CURL_BASE + 5,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, -1,                   SetZeroGains),
+        .address = CURL_BASE + CZeroGain,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetZeroGains,                           -1),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = CURL_BASE + 6,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, -1,                   SetSaveConfiguration),
+        .address = CURL_BASE + CSaveConfiguration,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_CURL, SetSaveConfiguration,                   -1),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = SWING_BASE,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, ReadFeedbackPolarity, SetFeedbackPolarity),
+        .address = SWING_BASE + CFeedbackPolarity,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetFeedbackPolarity, ReadFeedbackPolarity),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = SWING_BASE + 1,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, ReadPortConnection,   SetPortConnection),
+        .address = SWING_BASE + CPortConnection,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetPortConnection,     ReadPortConnection),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = SWING_BASE + 2,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, ReadCommandInput,     SetCommandInput),
+        .address = SWING_BASE + CCommandInput,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetCommandInput,         ReadCommandInput),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = SWING_BASE + 3,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, ReadFeedbackInput,    SetFeedbackInput),
+        .address = SWING_BASE + CFeedbackInput,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetFeedbackInput,       ReadFeedbackInput),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = SWING_BASE + 4,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, ReadCommandSource,    SetCommandSource),
+        .address = SWING_BASE + CCommandSource,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetCommandSource,       ReadCommandSource),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = SWING_BASE + 5,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, -1,                   SetZeroGains),
+        .address = SWING_BASE + CZeroGain,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetZeroGains,                          -1),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = SWING_BASE + 6,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, -1,                   SetSaveConfiguration),
+        .address = SWING_BASE + CSaveConfiguration,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetSaveConfiguration,                  -1),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = LIFT_BASE,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, ReadFeedbackPolarity, SetFeedbackPolarity),
+        .address = LIFT_BASE + CFeedbackPolarity,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetFeedbackPolarity,  ReadFeedbackPolarity),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = LIFT_BASE + 1,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, ReadPortConnection,   SetPortConnection),
+        .address = LIFT_BASE + CPortConnection,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetPortConnection,      ReadPortConnection),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = LIFT_BASE + 2,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, ReadCommandInput,     SetCommandInput),
+        .address = LIFT_BASE + CCommandInput,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetCommandInput,          ReadCommandInput),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = LIFT_BASE + 3,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, ReadFeedbackInput,    SetFeedbackInput),
+        .address = LIFT_BASE + CFeedbackInput,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetFeedbackInput,        ReadFeedbackInput),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = LIFT_BASE + 4,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, ReadCommandSource,    SetCommandSource),
+        .address = LIFT_BASE + CCommandSource,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetCommandSource,        ReadCommandSource),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = LIFT_BASE + 5,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, -1,                   SetZeroGains),
+        .address = LIFT_BASE + CZeroGain,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetZeroGains,                           -1),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
     {
-        .address = LIFT_BASE + 6,
-        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, -1,                   SetSaveConfiguration),
+        .address = LIFT_BASE + CSaveConfiguration,
+        .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetSaveConfiguration,                   -1),
         .read = MODBUS_ReadEnfieldCoil,
         .write = MODBUS_WriteEnfieldCoil
     },
@@ -148,15 +148,3 @@ const struct MODBUS_Coil modbus_coils[] = {
         .write = 0
     }
 };
-
-static int return_context(void *ctx, bool *v)
-{
-    *v = *(bool *)ctx;
-    return 0;
-}
-
-static int save_to_context(void *ctx, bool value)
-{
-    *(uint16_t *)ctx = value;
-    return 0;
-}
