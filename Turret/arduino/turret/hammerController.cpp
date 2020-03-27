@@ -43,10 +43,13 @@
 static struct HammerController::Params EEMEM s_savedParams = 
 {
     .selfRightIntensity = 75,
-    .telemetryFrequency = 10000,
+    .telemetryFrequency = 100,
 };
 
-static uint32_t s_throwPressureDt;
+static uint16_t s_telemetryFrequency;
+
+volatile static uint16_t s_throwPressureAngle;
+volatile static bool s_swingComplete;
 
 //  ====================================================================
 //
@@ -56,6 +59,7 @@ static uint32_t s_throwPressureDt;
 
 void startFullCycleStateMachine();
 void startRetractOnlyStateMachine();
+void swingComplete();
 
 //  ====================================================================
 //
@@ -138,6 +142,22 @@ void HammerController::Update()
                 {
                     setState(EDisabled);
                 }
+            }
+            break;
+
+            case EFullCycleInterruptMode:
+            case ERetractOnlyInterruptMode:
+            {
+                if (s_swingComplete)
+                {
+                    setState(ESwingComplete);
+                }
+            }
+            break;
+
+            case ESwingComplete:
+            {
+                setState(EReady);
             }
             break;
         }
@@ -271,7 +291,6 @@ void HammerController::setState(controllerState p_state)
 
             m_throwStartTime = m_stateStartTime;
             m_throwPressureAngle = k_throwIntensityToAngle[requestedIntensity];
-            m_throwPressureDt = k_throwIntensityToDt[requestedIntensity];
         }
         break;
         
@@ -281,7 +300,6 @@ void HammerController::setState(controllerState p_state)
 
             m_throwStartTime = m_stateStartTime;
             m_throwPressureAngle = k_throwPressureAngleSelfRight;
-            m_throwPressureDt = m_params.selfRightIntensity;
         }
         break;
 
@@ -295,14 +313,30 @@ void HammerController::setState(controllerState p_state)
 
         case EFullCycleInterruptMode:
         {
-            s_throwPressureDt = m_throwPressureDt;
+            //  Write information into shared variables
+
+            s_throwPressureAngle = m_throwPressureAngle;
+            s_telemetryFrequency = m_params.telemetryFrequency;
+
             startFullCycleStateMachine();
         }
         break;
 
         case ERetractOnlyInterruptMode:
         {
+            //  Write information into shared variables
+            //  No need for s_throwPressureAngle becasue we are only retracting
+
+            s_telemetryFrequency = m_params.telemetryFrequency;
+
             startRetractOnlyStateMachine();
+        }
+        break;
+
+        case ESwingComplete:
+        {
+            swingComplete();
+            //sendSwingTelem();
         }
         break;
     }
@@ -329,8 +363,43 @@ void HammerController::saveParams()
 //
 //  ====================================================================
 
-const uint8_t k_valveCloseDt = 10;
-const uint8_t k_valveOpenDt = 10;
+//  ====================================================================
+//
+//  constants
+//
+//  ====================================================================
+
+const uint8_t k_valveCloseDt = 10;                          //  10 microseconds
+const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
+
+const uint16_t k_maxThrowAngle = 210;                       //  210 degrees
+const uint16_t k_maxThrowDt = 500000;                       //  0.5 seconds
+
+const uint16_t k_minRetractAngle = 0;                       //    0 degrees
+const uint16_t k_maxRetractDt = 2000000;                    //  2.0 seconds
+
+const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
+const uint32_t k_subStateMachineUpdateFrequency = 100000;   //  100kHz or update every 10 microseconds
+
+const uint16_t k_telmSamplesMax = 500;
+
+//  ====================================================================
+//
+//  File scope variables
+//
+//  ====================================================================
+
+struct swingTelm
+{
+    int16_t angle;
+    int16_t throwPressure;
+    int16_t retractPressure;
+    int8_t state;
+    int8_t valveState;
+};
+
+static swingTelm s_swingTelmSamples[k_telmSamplesMax];
+static uint16_t s_swingTelemSamplesCount = 0;
 
 enum hammerSubState
 {
@@ -343,44 +412,216 @@ enum hammerSubState
 };
 
 static hammerSubState s_hammerSubState;
-
-static uint32_t s_cycleTimeStart = 0;
 static uint32_t s_hammerSubStateStart = 0;
 static uint32_t s_hammerSubStateDt = 0;
 
+static uint8_t s_valveState = 0x00;
+
+static uint32_t s_swingTimeStart = 0;
+
+static int32_t s_hammerAngleCurrent = 0;
 static int32_t s_angularVelocity = 0;
+
+//  ====================================================================
+//
+//  Macros
+//
+//  ====================================================================
+
+//  Keep track of the state of each valve for telemerty reporting.
+//  
+//  0 in bit position means valve is CLOSED
+//  1 in bit position means valve is OPEN
+//
+
+#define TP_VALVE_BIT 0
+#define TV_VALVE_BIT 1
+#define RP_VALVE_BIT 2
+#define RV_VALVE_BIT 3
+
+#define UPDATE_VALVE_STATE_TP_OPEN { s_valveState |= 1 << TP_VALVE_BIT; }
+#define UPDATE_VALVE_STATE_TP_CLOSED { s_valveState &= ~(1 << TP_VALVE_BIT); }
+#define UPDATE_VALVE_STATE_TV_OPEN { s_valveState |= 1 << TV_VALVE_BIT; }
+#define UPDATE_VALVE_STATE_TV_CLOSED { s_valveState &= 1 << ~(TV_VALVE_BIT); }
+#define UPDATE_VALVE_STATE_RP_OPEN { s_valveState |= 1 << RP_VALVE_BIT; }
+#define UPDATE_VALVE_STATE_RP_CLOSED { s_valveState &= ~(1 << RP_VALVE_BIT); }
+#define UPDATE_VALVE_STATE_RV_OPEN { s_valveState |= 1 << RV_VALVE_BIT; }
+#define UPDATE_VALVE_STATE_RV_CLOSED { s_valveState &= 1 << ~(RV_VALVE_BIT); }
+
+//
+//  IMPORTANT: These MACROs are optomized for running from ISR (not for general use)
+//  Have insured that PWM is disconnected from these pins and interrupts are disabled
+//
+//  Also there is no abstraction between logical pin and ATMega2560 ports so this only
+//  works on our selected processor - the Mega2560
+//
+//  Pin assignemenst are as follows:
+//
+//                      normal          port
+//  valve               state   pin     bit     PWM
+//  ------------------- ------- ------- ------- ------
+//  Throw Pressure      NC      6       H:3     OC4A
+//  Throw Vent          NO      7       H:4     OC4B
+//  Retract Pressure    NC      8       H:5     OC4C
+//  Retract Vent        NO      9       H:6     OC2B
+//
+
+#define OPEN_THROW_PRESSURE { PORTH |= 1 << PORTH3; UPDATE_VALVE_STATE_TP_OPEN }
+#define CLOSE_THROW_PRESSURE { PORTH &= ~(1 << PORTH3); UPDATE_VALVE_STATE_TP_CLOSED }
+
+#define OPEN_THROW_VENT { PORTH &= ~(1 << PORTH4); UPDATE_VALVE_STATE_TV_OPEN }
+#define CLOSE_THROW_VENT { PORTH |= 1 << PORTH4; UPDATE_VALVE_STATE_TV_CLOSED }
+
+#define OPEN_RETRACT_PRESSURE { PORTH |= 1 << PORTH5; UPDATE_VALVE_STATE_RP_OPEN }
+#define CLOSE_RETRACT_PRESSURE { PORTH &= ~(1 << PORTH5); UPDATE_VALVE_STATE_RP_CLOSED} 
+
+#define OPEN_RETRACT_VENT { PORTH &= ~(1 << PORTH6); UPDATE_VALVE_STATE_RV_OPEN }
+#define CLOSE_RETRACT_VENT { PORTH |= 1 << PORTH6; UPDATE_VALVE_STATE_RV_CLOSED }
+
+#define READ_HAMMER_ANGLE (0)
+#define READ_THROW_PRESSURE (0)
+#define READ_RETRACT_PRESSURE (0)
+
+//  ====================================================================
+//
+//  Methods
+//
+//  ====================================================================
+
+void startTimers()
+{
+    noInterrupts();
+
+    //  Setup timer 4A to interrupt at s_telemetryFrequency
+
+    uint32_t timer4Count = (k_ATMega2560_ClockFrequency / s_telemetryFrequency);
+
+    TCCR4A = 0;                             //  Clear control register A
+    TCCR4B = 0;                             //  Clear control register B
+    TCCR4B |= 1 << WGM42;                   //  Set Counter4A to CTC mode
+
+    TIMSK4 |= 1 << OCIE4A;                  //  Turn on interrupt bit in mask
+    OCR4A = timer4Count;                    //  Initialize the count to match
+    TCNT5 = 0x0000;                         //  Clear the counter
+
+    //  Setup timer 5A to interrupt at k_subStateMachineUpdateFrequency
+
+    uint32_t timer5Count = (k_ATMega2560_ClockFrequency / k_subStateMachineUpdateFrequency);
+
+    TCCR5A = 0;                             //  Clear control register A
+    TCCR5B = 0;                             //  Clear control register B
+    TCCR5B |= 1 << WGM52;                   //  Set Counter5A to CTC mode
+
+    TIMSK5 |= 1 << OCIE5A;                  //  Turn on interrupt bit in mask
+    OCR5A = timer5Count;                    //  Initialize the count to match
+    TCNT5 = 0x0000;                         //  Clear the counter
+
+    //  Start both timers and enable interrupts
+
+    TCCR4B |= 1 << CS40;                    //  Enable timmer, no prescaller
+    TCCR5B |= 1 << CS50;                    //  Enable timmer, no prescaller
+
+    interrupts();
+}
+
+void stopTimers()
+{
+    noInterrupts();
+
+    //  Turn off Timer 4
+
+    TCCR4A = 0;                             //  Clear control register A
+    TCCR4B = 0;                             //  Clear control register B
+    TIMSK4 &= ~(1 << OCIE4A);               //  Turn off interrupt bit in mask
+
+    //  Turn off Timer 5
+
+    TCCR5A = 0;                             //  Clear control register A
+    TCCR5B = 0;                             //  Clear control register B
+    TIMSK5 &= ~(1 << OCIE5A);               //  Turn off interrupt bit in mask
+
+    interrupts();
+}
+
+//  Ensure that PWM functionality is NOT enabled on pins we are using
+//  to control valves.  This normally happens in the digitalWrite function
+//  but the ISR here are using optimized digialWrite macros (above)
+
+void clearPWMForDigitalWrites()
+{
+    TCCR2B &= ~(1 << COM2B0 | 1 << COM2B1);
+
+    //  Timer 4 is one we are using and managing TCCR4A & TCCR4B and are cleared
+    //  in the setTimers method, but just for clearity's sake this method is 
+    //  going to clear PWM on each pin used.
+
+    TCCR4A &= ~(1 << COM4A0 | 1 << COM4A1);
+    TCCR4B &= ~(1 << COM4B0 | 1 << COM4B1);
+    TCCR4C &= ~(1 << COM4C0 | 1 << COM4B1);
+}
 
 void startFullCycleStateMachine()
 {
-    s_cycleTimeStart = micros();
+    uint32_t now = micros();
+
+    s_swingTelemSamplesCount = 0;
+    s_valveState = 1 << TP_VALVE_BIT | 1 << RP_VALVE_BIT;
+
+    s_swingTimeStart = now;
+
+    //  Enter start state
+
     s_hammerSubState = EThrowSetup;
+    s_hammerSubStateStart = now;
 
-    //  Easier to just do a delay(k_valveCloseDt) here than
-    //  deal with interrupts for this.
+    //  close throw vent
+    digitalWrite(7, HIGH); 
+    UPDATE_VALVE_STATE_TV_CLOSED;
 
-    // closeThrowVent();
-    delay(k_valveCloseDt);
+    //  close retract vent
+    digitalWrite(9, HIGH); 
+    UPDATE_VALVE_STATE_RV_CLOSED;
 
-    s_hammerSubState = EThrowPressurize;
-    //  openThrowPressure()
+    clearPWMForDigitalWrites();
+    startTimers();
 }
 
 void startRetractOnlyStateMachine()
 {
-    s_cycleTimeStart = micros();
+    uint32_t now = micros();
+
+    s_swingTelemSamplesCount = 0;
+    s_valveState = 1 << TP_VALVE_BIT | 1 << RP_VALVE_BIT;
+
+    s_swingTimeStart = now;
+
+    //  Enter start state
+
     s_hammerSubState = ERetractSetup;
+    s_hammerSubStateStart = now;
 
-    //  Easier to just do a delay(k_valveCloseDt) here than
-    //  deal with interrupts for this.
-
-    //openThrowVent();
-    //closeRetractVent();
-
-    delay(max(k_valveCloseDt, k_valveOpenDt));
-
-    s_hammerSubState = ERetractPressurize;
-    // openRetractPressure();
+    //  open throw vent
+    digitalWrite(7, LOW); 
+    UPDATE_VALVE_STATE_TV_OPEN;
+    
+    //  close retract vent
+    digitalWrite(9, HIGH); 
+    UPDATE_VALVE_STATE_RV_CLOSED;
+    
+    clearPWMForDigitalWrites();
+    startTimers();
 }
+
+void swingComplete()
+{
+    stopTimers();
+}
+
+//  ====================================================================
+//
+//  Interrupt Service Routines
+//
+//  ====================================================================
 
 //  Interrupt Service Routine to collect telemetry, at defined frequency, durring a hammer throw and retract
 
@@ -388,54 +629,86 @@ ISR(TIMER4_COMPA_vect)
 {
     if (s_hammerSubState != ERetractComplete)
     {
+        s_swingTelmSamples[s_swingTelemSamplesCount].angle = READ_HAMMER_ANGLE;
+        s_swingTelmSamples[s_swingTelemSamplesCount].throwPressure = READ_THROW_PRESSURE;
+        s_swingTelmSamples[s_swingTelemSamplesCount].retractPressure = READ_RETRACT_PRESSURE;
+        s_swingTelmSamples[s_swingTelemSamplesCount].state = s_hammerSubState;
+        s_swingTelmSamples[s_swingTelemSamplesCount].valveState = s_valveState;
+        s_swingTelemSamplesCount++;
     }
 }
 
-//  Interrupt Service Routing that triggers when we have waited the the desired amount of
-//  time to leave the throwPressure valve open.
-//  
-//  Handles State Transitions:
-//
-//      * EThrowPressurize -> EThrowExpand state transition)
-//
+//  Interrupt Service Routing triggerd at a defined frequency to check for and execute state transitions.
 
 ISR(TIMER5_COMPA_vect)
 {
-    // closeThrowPressure();
-    s_hammerSubState = EThrowExpand;
-}
+    uint32_t now = micros();
+    
+    s_hammerSubStateDt = now - s_hammerSubStateStart;
+    s_hammerAngleCurrent = READ_HAMMER_ANGLE;
 
-//  Interrupt Service Routing triggerd at a defined frequency to chech for state transitions.
-//  
-//  Handles State Transitions:
-//
-//      * EThrowExpand -> ERetractSetup
-//      * ERetractSetup -> ERetractPressurize
-//      * ERetractPressurize -> ERetractComplete
-//
-
-ISR(TIMER4_COMPB_vect)
-{
-    if (s_hammerSubState == EThrowExpand)
+    switch (s_hammerSubState)
     {
-        //  Wait until angle >= max angle || timeout
+        case EThrowSetup:
+        {
+            if (s_hammerSubStateDt >= k_valveCloseDt)
+            {
+                //  Go to EThrowPressurize state
+                s_hammerSubState = EThrowPressurize;
+                s_hammerSubStateStart = now;
+                OPEN_THROW_PRESSURE;
+            }
+        }
+        break;
 
-        // openThrowVent();
-        s_hammerSubState = ERetractSetup;
-    }
-    else if (s_hammerSubState == ERetractSetup)
-    {
-        //  Wait until we have been in this start at lease k_valveCloseDt
+        case EThrowPressurize:
+        {
+            if (s_hammerAngleCurrent > s_throwPressureAngle)
+            {
+                //  Go to EThrowExpand state
+                s_hammerSubState = EThrowExpand;
+                s_hammerSubStateStart = now;
+                CLOSE_THROW_PRESSURE;
+            }
+        }
+        break;
 
-        // openRetractPressure();
-        s_hammerSubState = ERetractPressurize;
-    }
-    else if (s_hammerSubState == ERetractPressurize)
-    {
-        //  Wait until angle <= retracted angle || timeout
+        case EThrowExpand:
+        {
+            if (s_hammerAngleCurrent >= k_maxThrowAngle || s_hammerSubStateDt > k_maxThrowDt)
+            {
+                // Go to ERetractSetup state
+                s_hammerSubState = ERetractSetup;
+                s_hammerSubStateStart = now;
+                OPEN_THROW_VENT;
+            }
+        }
+        break;
 
-        //  openRetractVent();
-        s_hammerSubState = ERetractComplete;
+        case ERetractSetup:
+        {
+            if (s_hammerSubStateDt >= k_valveCloseDt)
+            {
+                //  Go to ERetractPressurize state
+                s_hammerSubState = ERetractPressurize;
+                s_hammerSubStateStart = now;
+                OPEN_RETRACT_PRESSURE;
+            }
+        }
+        break;
+
+        case ERetractPressurize:
+        {
+            if (s_hammerAngleCurrent <= k_minRetractAngle || s_hammerSubStateDt > k_maxRetractDt)
+            {
+                //  Go to ERetractComplete state
+                s_hammerSubState = ERetractComplete;
+                s_hammerSubStateStart = now;
+                CLOSE_RETRACT_PRESSURE;
+                OPEN_RETRACT_VENT;
+            }
+        }
+        break;
     }
 }
 

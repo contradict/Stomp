@@ -68,6 +68,8 @@ private:
         EFullCycleInterruptMode,
         ERetractOnlyInterruptMode,
 
+        ESwingComplete,
+        
         EInvalid = -1
     };
 
@@ -91,14 +93,13 @@ private:
     
 private:
 
+    const uint32_t k_throwPressureAngleSelfRight = 30;
+    
     const uint32_t k_safeStateMinDt = 500000;
     const uint32_t k_swingTimeMaxDt = 1000000;
     const uint32_t k_swingUpdateDt = 1000;
 
-    const uint8_t k_throwPressureAngleSelfRight = 0xFF;
-
     const uint8_t k_throwIntensityToAngle[9] = { 3, 5, 10, 15, 20, 30, 40, 50, 65 };
-    const uint8_t k_throwIntensityToDt[9] = { 25, 35, 60, 70, 80, 95, 105, 115, 125 };
 
     //  ====================================================================
     //
@@ -113,7 +114,6 @@ private:
 
     uint32_t m_throwStartTime;
     uint8_t m_throwPressureAngle;
-    uint8_t m_throwPressureDt;
 
     AutoFire* m_pAutoFire;
 
