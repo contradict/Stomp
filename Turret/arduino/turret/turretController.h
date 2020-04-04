@@ -65,6 +65,7 @@ private:
         EInit,
         ESafe,
         EActive,
+        EHammerTriggered,
 
         EInvalid = -1
     };

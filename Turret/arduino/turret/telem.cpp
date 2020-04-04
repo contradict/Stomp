@@ -323,23 +323,21 @@ bool sendAutofireTelemetry(enum AutoFireState st, int32_t swing, int32_t x, int3
 struct AutoAimTelemetryInner {
     int32_t state;
     int32_t target_angular_velocity;
-    int32_t theta;
-    int32_t vtheta;
-    int32_t radius;
-    int32_t vradius;
+    int32_t error;
+    int32_t errorDerivitive;
+    int32_t errorIntegral;
 } __attribute__((packed));
 typedef TelemetryPacket<TLM_ID_AAIM, AutoAimTelemetryInner> AAIMTelemetry;
 
-bool sendAutoAimTelemetry(int32_t state, int32_t target_angular_velocity, int32_t theta, int32_t vtheta, int32_t r, int32_t vr) 
+bool sendAutoAimTelemetry(int32_t state, int32_t target_angular_velocity, int32_t error, int32_t errorIntegral,  int32_t errorDerivitive) 
 {
     CHECK_ENABLED(TLM_ID_AAIM);
     AAIMTelemetry tlm;
     tlm.inner.state = state;
     tlm.inner.target_angular_velocity = target_angular_velocity;
-    tlm.inner.theta = theta;
-    tlm.inner.vtheta = vtheta;
-    tlm.inner.radius = r;
-    tlm.inner.vradius = vr;
+    tlm.inner.error = error;
+    tlm.inner.errorIntegral = errorIntegral;
+    tlm.inner.errorDerivitive = errorDerivitive;
     return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
 }
 

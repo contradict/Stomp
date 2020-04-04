@@ -57,9 +57,9 @@ typedef CommandPacket<CMD_ID_AF, AutoFireInner> AutoFireCommand;
 
 struct AutoAimInner {
     int32_t steer_p;
+    int32_t steer_i;
     int32_t steer_d;
     int32_t steer_max;
-    int32_t gyro_gain;
     uint32_t telemetry_interval;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_AAIM, AutoAimInner> AutoAimCommand;
@@ -177,9 +177,9 @@ void handleCommands(void)
                 aaim_cmd = (AutoAimCommand *)command_buffer;
                 Turret.SetAutoAimParameters(
                     aaim_cmd->inner.steer_p,
+                    aaim_cmd->inner.steer_i,
                     aaim_cmd->inner.steer_d,
                     aaim_cmd->inner.steer_max,
-                    aaim_cmd->inner.gyro_gain,
                     aaim_cmd->inner.telemetry_interval);
                 break;
             case CMD_ID_IMUP:

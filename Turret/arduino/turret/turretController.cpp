@@ -55,15 +55,13 @@ void TurretController::Init()
 
 void TurretController::Update()
 {
-    uint32_t now = micros();
-
     //  Pass update to our owned objects
 
     m_pTurretRotationController->Update();
     m_pHammerController->Update();
     m_pFlameThrowerController->Update();
     m_pSelfRightController->Update();
-    
+
     //  Update our state
 
     while(true)
@@ -82,7 +80,7 @@ void TurretController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (micros() - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
                     setState(EActive);
                 }
@@ -94,6 +92,18 @@ void TurretController::Update()
                 if (!isRadioConnected())
                 {
                     setState(ESafe);
+                }
+                if (hammerManualFire() && m_pHammerController->ReadyToFire())
+                {
+                    setState(EHammerTriggered);
+                }
+            }
+
+            case EHammerTriggered:
+            {
+                if (m_pHammerController->ReadyToFire())
+                {
+                    setState(EActive);
                 }
             }
             break;
@@ -211,6 +221,12 @@ void TurretController::setState(controllerState p_state)
 
         case ESafe:
         {
+        }
+        break;
+
+        case EHammerTriggered:
+        {
+            m_pHammerController->Fire();
         }
         break;
     }

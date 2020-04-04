@@ -42,6 +42,8 @@ public:
     void Init();
     void Update();
 
+    bool ReadyToFire();
+
     void Fire();
     void FireSelfRight();
     void Retract();

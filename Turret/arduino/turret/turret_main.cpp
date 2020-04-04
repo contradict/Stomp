@@ -296,6 +296,9 @@ static void updateTracking()
 
 static void updateWeapons()
 {
+    // BB MJS: Move this to Turret Controller
+
+    /*
     // React to RC state changes (change since last time this call was made)
     int16_t diff = getRcBitfieldChanges();
     
@@ -319,10 +322,11 @@ static void updateWeapons()
         if (s_currentRCBitfield & DANGER_CTRL_BIT){
           noAngleFire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT);
         } else {
-          fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, false /*autofire*/);
+          fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, false);
         }
     }
 
+    */
     //  BB MJS: Hammer control is going to be different this year.  There is no motor drive, just to Big
     //  cylindars for hard hit and gentral retract
 

@@ -138,6 +138,11 @@ bool isSelfRightEnabled()
     return s_radioConnected && (bitfield & AUTO_SELF_RIGHT_BIT);
 }
 
+bool hammerManualFire()
+{
+    return isWeaponEnabled && (bitfield & HAMMER_FIRE_BIT);
+}
+
 static bool parseSbus(){
     if (sbusData[0] == 0x0F && sbusData[24] == 0x00) {
         // perverse little endian-ish packet structure-- low bits come in first byte, remaining high bits

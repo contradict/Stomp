@@ -31,10 +31,13 @@
 
 #define HAMMER_PNEUMATICS_ENABLE_VALVE 4
 
-#define THROW_PRESSURE_VALVE 5
-#define THROW_VENT_VALVE 6
-#define RETRACT_PRESSURE_VALVE 7
-#define RETRACT_VENT_VALVE 8
+//  VERY IMPORTANT: In HammerController.cpp there is optimized code that requires
+//  these pin asignments DONT change.  Chaning just here will break things.  
+
+#define THROW_PRESSURE_VALVE_DO 6
+#define THROW_VENT_VALVE_DO 7
+#define RETRACT_PRESSURE_VALVE_DO 8
+#define RETRACT_VENT_VALVE_DO 9
 
 //  BB MJS: Old Pneumatics control
 

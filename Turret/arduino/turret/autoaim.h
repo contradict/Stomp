@@ -1,6 +1,7 @@
 #pragma once
 
 #include "track.h"
+#include "fixedpoint.h"
 
 //  ====================================================================
 //
@@ -22,9 +23,9 @@ public:
     struct Params 
     {
         int32_t proportionalConstant;
+        int32_t integralConstant;
         int32_t derivativeConstant;
         int32_t speedMax;
-        int32_t gyro_gain;
         uint32_t autoaimTelemInterval;
     } __attribute__((packed));
 
@@ -41,7 +42,7 @@ public:
 
     int32_t GetDesiredTurretSpeed();
 
-    void SetParams(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval);
+    void SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_steer_max, uint32_t p_telemetry_interval);
     void RestoreParams();
     
     void SendTelem();
@@ -91,6 +92,12 @@ private:
     uint32_t m_stateStartTime;
 
     Track *m_pTarget;
+
+    FP_32x20 m_error;
+    FP_32x20 m_errorIntegral;
+    FP_32x20 m_errorDerivative;
+
+    uint32_t m_updateTime;
 
     int32_t m_desiredTurretSpeed = 0;
     uint32_t m_lastAutoaimTelem = 0;

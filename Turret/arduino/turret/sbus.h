@@ -45,6 +45,8 @@ bool isAutoAimEnabled();
 bool isAutoFireEnabled();
 bool isSelfRightEnabled();
 
+bool hammerManualFire();
+
 uint16_t getRange();
 uint16_t getHammerIntensity();
 int16_t getDesiredManualTurretSpeed();
