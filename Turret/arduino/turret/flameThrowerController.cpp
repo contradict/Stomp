@@ -45,12 +45,13 @@ static struct FlameThrowerController::Params EEMEM s_savedParams =
 void FlameThrowerController::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void FlameThrowerController::Update()
 {
-    uint32_t now = micros();
+    m_lastUpdateTime= micros();
 
     //  Pass update to our owned objects
 
@@ -72,7 +73,7 @@ void FlameThrowerController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
                     if (isWeaponEnabled())
                     {
@@ -147,7 +148,7 @@ void FlameThrowerController::setState(controllerState p_state)
     }
 
     m_state = p_state;
-    m_stateStartTime = micros();
+    m_stateStartTime = m_lastUpdateTime;
 
     //  enter state transition
 
@@ -168,7 +169,6 @@ void FlameThrowerController::setState(controllerState p_state)
 void FlameThrowerController::initAllControllers()
 {
 }
-
 
 void FlameThrowerController::saveParams() 
 {

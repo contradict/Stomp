@@ -76,11 +76,14 @@ void swingComplete();
 void HammerController::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void HammerController::Update()
 {
+    m_lastUpdateTime = micros();
+
     //  Pass update to our owned objects
 
     m_pAutoFire->Update();
@@ -103,7 +106,7 @@ void HammerController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (micros() - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
                     if (isWeaponEnabled())
                     {
@@ -268,7 +271,7 @@ void HammerController::setState(controllerState p_state)
     }
 
     m_state = p_state;
-    m_stateStartTime = micros();
+    m_stateStartTime = m_lastUpdateTime;
 
     //  enter state transition
 

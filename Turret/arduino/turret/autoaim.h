@@ -89,6 +89,7 @@ private:
     //  ====================================================================
 
     autoAimState m_state;
+    uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
     Track *m_pTarget;
