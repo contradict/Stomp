@@ -50,11 +50,14 @@ static struct TurretController::Params EEMEM s_savedParams =
 void TurretController::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void TurretController::Update()
 {
+    m_lastUpdateTime = micros();
+
     //  Pass update to our owned objects
 
     m_pTurretRotationController->Update();
@@ -202,7 +205,7 @@ void TurretController::setState(controllerState p_state)
     }
 
     m_state = p_state;
-    m_stateStartTime = micros();
+    m_stateStartTime = m_lastUpdateTime;
 
     //  enter state transition
 

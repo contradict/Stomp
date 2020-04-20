@@ -2,6 +2,7 @@
     "files.associations": {
         "*.cps": "javascript",
         "ios": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "chrono": "cpp"
     }
 }

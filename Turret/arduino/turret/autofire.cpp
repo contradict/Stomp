@@ -145,12 +145,13 @@ static struct AutoFire::Params EEMEM s_savedParams =
 void AutoFire::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void AutoFire::Update() 
 {
-    uint32_t now = micros();
+    m_lastUpdateTime = micros();
 
     while(true)
     {
@@ -168,7 +169,7 @@ void AutoFire::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
                     if (isAutoFireEnabled())
                     {
@@ -260,7 +261,8 @@ void AutoFire::setState(autoFireState p_state)
     }
 
     m_state = p_state;
-    m_stateStartTime = micros();
+    m_stateStartTime = m_lastUpdateTime;
+;
 
     //  enter state transition
 

@@ -84,6 +84,7 @@ private:
     //  ====================================================================
     
     controllerState m_state;
+    uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
     Params m_params;

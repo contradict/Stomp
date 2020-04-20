@@ -57,13 +57,13 @@ static struct AutoAim::Params EEMEM s_savedParams =
 void AutoAim::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void AutoAim::Update() 
 {
-    uint32_t now = micros();
-
+    m_lastUpdateTime = micros();
 
     while(true)
     {
@@ -81,7 +81,7 @@ void AutoAim::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
                     if (isAutoAimEnabled())
                     {
@@ -118,7 +118,7 @@ void AutoAim::Update()
                 {
                     setState(EDisabled);
                 }
-                else if (Turret.GetCurrentTarget()->valid(now))
+                else if (Turret.GetCurrentTarget()->valid(m_lastUpdateTime))
                 {
                     setState(ETrackingTarget);
                 }
@@ -131,7 +131,7 @@ void AutoAim::Update()
                 {
                     setState(ESafe);
                 }
-                else if (!Turret.GetCurrentTarget()->valid(now))
+                else if (!Turret.GetCurrentTarget()->valid(m_lastUpdateTime))
                 {
                     setState(ENoTarget);
                 }
@@ -259,7 +259,7 @@ void AutoAim::setState(autoAimState p_state)
     }
 
     m_state = p_state;
-    m_stateStartTime = micros();
+    m_stateStartTime = m_lastUpdateTime;
 
     //  enter state transition
 

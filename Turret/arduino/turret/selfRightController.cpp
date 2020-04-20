@@ -45,12 +45,13 @@ static struct SelfRightController::Params EEMEM s_savedParams =
 void SelfRightController::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void SelfRightController::Update()
 {
-    uint32_t now = micros();
+    m_lastUpdateTime = micros();
 
     //  Update our state
 
@@ -70,7 +71,7 @@ void SelfRightController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
                     if (isSelfRightEnabled())
                     {
@@ -145,7 +146,7 @@ void SelfRightController::setState(controllerState p_state)
     }
 
     m_state = p_state;
-    m_stateStartTime = micros();
+    m_stateStartTime = m_lastUpdateTime;
 
     //  enter state transition
 
