@@ -176,7 +176,7 @@ void AutoAim::RestoreParams()
 
 void AutoAim::SendTelem()
 {
-    if (m_state == ETrackingTarget && m_pTarget != nullptr)
+    if (m_pTarget != nullptr)
     {
         sendAutoAimTelemetry(m_state, m_desiredTurretSpeed, m_error, m_errorIntegral, m_errorDerivative);
     }
