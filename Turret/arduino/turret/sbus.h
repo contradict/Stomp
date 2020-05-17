@@ -10,28 +10,27 @@ enum SBUSChannels {
     INTENSITY = 6,
     DANGER_MODE = 7,
     RANGE = 8,
-    AUTOAIM_ENABLE = 9,
-    HOLD_DOWN = 10,
-    TURRET_SPIN = 9
+    TURRET_SPIN = 9,
+    TURRET_CTL_MODE = 10
 };
 
 // Boolean values coming in over RC are stored in a bitfield for ease of comparison
 // to detect state changes.
 enum RCBitfield {
-    AUTO_HAMMER_ENABLE_BIT = 1,
+    AUTO_FIRE_ENABLE_BIT = 1,
     HAMMER_FIRE_BIT = 2,
     HAMMER_RETRACT_BIT = 4,
     FLAME_CTRL_BIT = 8,
     FLAME_PULSE_BIT = 16,
     GENTLE_HAM_F_BIT = 32,
     GENTLE_HAM_R_BIT = 64,
-    // = 128,
+    AUTO_SELF_RIGHT_BIT = 128,
     // = 256,
     DANGER_CTRL_BIT = 512,
     // = 1024,
     // = 2048,
-    AUTO_AIM_ENABLE_BIT =  4096,
-    // = 8192,
+    AUTO_AIM_ENABLED_BIT =  4096,
+    MANUAL_TURRET_BIT = 8192,
     // = 16384,
     WEAPONS_ENABLE_BIT = 32768
 };
@@ -40,14 +39,18 @@ void initSBus();
 void updateSBus();
 
 bool isRadioConnected();
+bool isWeaponEnabled();
+bool isManualTurretEnabled();
+bool isAutoAimEnabled();
+bool isAutoFireEnabled();
+bool isSelfRightEnabled();
 
-uint16_t getHammerIntensity();
-
-int16_t desiredSBusTurretSpeed();
+bool hammerManualFire();
 
 uint16_t getRange();
+uint16_t getHammerIntensity();
+int16_t getDesiredManualTurretSpeed();
 
 uint16_t getRcBitfield();
-
 uint16_t getRcBitfieldChanges();
 

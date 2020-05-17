@@ -113,6 +113,36 @@ bool isRadioConnected()
     return s_radioConnected;
 }
 
+bool isWeaponEnabled()
+{
+    return s_radioConnected && (bitfield & WEAPONS_ENABLE_BIT);
+}
+
+bool isManualTurretEnabled()
+{
+    return s_radioConnected && ((bitfield & MANUAL_TURRET_BIT) || (bitfield & AUTO_AIM_ENABLED_BIT));
+}
+
+bool isAutoAimEnabled()
+{
+    return s_radioConnected && (bitfield & AUTO_AIM_ENABLED_BIT);
+}
+
+bool isAutoFireEnabled()
+{
+    return s_radioConnected && (bitfield & AUTO_FIRE_ENABLE_BIT);
+}
+
+bool isSelfRightEnabled()
+{
+    return s_radioConnected && (bitfield & AUTO_SELF_RIGHT_BIT);
+}
+
+bool hammerManualFire()
+{
+    return isWeaponEnabled && (bitfield & HAMMER_FIRE_BIT);
+}
+
 static bool parseSbus(){
     if (sbusData[0] == 0x0F && sbusData[24] == 0x00) {
         // perverse little endian-ish packet structure-- low bits come in first byte, remaining high bits
@@ -147,13 +177,11 @@ static bool parseSbus(){
 #define FLAME_PULSE_THRESHOLD 500
 #define FLAME_CTRL_THRESHOLD 1500
 
-#define AUTO_HOLD_DOWN_THRESHOLD 500
-#define MANUAL_HOLD_DOWN_THRESHOLD 1500
+#define MANUAL_TURRET_THRESHOLD 500
+#define AUTO_AIM_THRESHOLD 1500
 
 #define GENTLE_HAM_F_THRESHOLD 500
 #define GENTLE_HAM_R_THRESHOLD 1500
-
-#define AUTOAIM_THRESHOLD 1500
 
 #define TURRET_SPEED_RC_MIN 170
 #define TURRET_SPEED_RC_MAX 1800
@@ -161,7 +189,11 @@ static bool parseSbus(){
 #define TURRET_SPEED_ROBOTECT_MAX 1000
 #define TURRET_SPEED_DEADZONE_MIN -10
 #define TURRET_SPEED_DEADZONE_MAX 10
- 
+
+#define AUTO_SELF_RIGHT_THRESHOLD 1500
+#define MANUAL_SELF_RIGHT_LEFT_THRESHOLD 500
+#define MANUAL_SELF_RIGHT_RIGHT_THRESHOLD 1500
+
 #define DANGER_MODE_THRESHOLD 1500
 
 static uint16_t computeRCBitfield() {
@@ -173,7 +205,7 @@ static uint16_t computeRCBitfield() {
   setWeaponsEnabled(bitfield&WEAPONS_ENABLE_BIT);
 
   if ( sbusChannels[AUTO_HAMMER_ENABLE] > AUTO_HAMMER_THRESHOLD){
-    bitfield |= AUTO_HAMMER_ENABLE_BIT;
+    bitfield |= AUTO_FIRE_ENABLE_BIT;
   }
   if ( sbusChannels[HAMMER_CTRL] > HAMMER_FIRE_THRESHOLD){
     bitfield |= HAMMER_FIRE_BIT;
@@ -191,11 +223,22 @@ static uint16_t computeRCBitfield() {
     bitfield |= FLAME_PULSE_BIT;
   }
 
+ if( sbusChannels[TURRET_CTL_MODE] > AUTO_AIM_THRESHOLD ){
+      bitfield |= AUTO_AIM_ENABLED_BIT;
+  }
+  else if(MANUAL_TURRET_THRESHOLD < sbusChannels[TURRET_CTL_MODE] &&
+      sbusChannels[TURRET_CTL_MODE] < AUTO_AIM_THRESHOLD ){
+      bitfield |= MANUAL_TURRET_BIT;
+  }
+
   if ( sbusChannels[GENTLE_HAM_CTRL] < GENTLE_HAM_F_THRESHOLD){
     bitfield |= GENTLE_HAM_F_BIT;
   }
   if ( sbusChannels[GENTLE_HAM_CTRL] > GENTLE_HAM_R_THRESHOLD){
     bitfield |= GENTLE_HAM_R_BIT;
+  }
+if ( sbusChannels[AUTO_SELF_RIGHT] > AUTO_SELF_RIGHT_THRESHOLD){
+    bitfield |= AUTO_SELF_RIGHT_BIT;
   }
   if ( sbusChannels[DANGER_MODE] > DANGER_MODE_THRESHOLD){
     bitfield |= DANGER_CTRL_BIT;
@@ -226,13 +269,16 @@ uint16_t getHammerIntensity(){
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
       channel_val = sbusChannels[INTENSITY];
   }
-  if (channel_val < 172) { channel_val = 172; } else if (channel_val > 1811) { channel_val = 1811; }
+
+  channel_val = constrain(channel_val, 172, 1811);
+
   // Taranis throttle has been tuned for linearity, 9 steps on throttle lines. intensity is 0-based, 0-8.
-  uint16_t intensity = (channel_val - 172 + 102) / 205;
+
+  uint16_t intensity = constrain((channel_val - 172 + 102) / 205, 0, 8);
   return intensity;
 }
 
-int16_t desiredSBusTurretSpeed()
+int16_t getDesiredManualTurretSpeed()
 {
     uint16_t channel_val;
  

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "autoaim.h"
+
 //  ====================================================================
 //
 //  Class decleration
@@ -33,11 +35,44 @@ public:
     void Init();
     void Update();
 
+    int32_t GetCurrentSpeed();
+
+    void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t telemetry_interval);
     void SetParams(uint32_t p_manualControlOverideSpeed);
     void RestoreParams();
 
     void SendTelem();
     
+private:
+
+    enum controllerState 
+    {
+        EInit,
+        ESafe,
+        EDisabled,
+        EManualControl,
+        EAutoAim,
+        EAutoAimWithManualAssist,
+
+        EInvalid = -1
+    };
+
+    //  ====================================================================
+    //
+    //  Private methods
+    //
+    //  ====================================================================
+
+    void updateSpeed();
+
+    void setState(controllerState p_state);
+    void setSpeed(int32_t p_speed);
+
+    void initAllControllers();
+    void initRoboTeq();
+
+    void saveParams();
+
     //  ====================================================================
     //
     //  Private constants
@@ -57,37 +92,13 @@ private:
     //
     //  ====================================================================
     
-    enum controllerState 
-    {
-        EInit,
-        ESafe,
-        EIdle,
-        EManualControl,
-        EAutoAim,
-        EAutoAimWithManualAssist,
-
-        EInvalid = -1
-    };
-
     controllerState m_state;
+    uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
     int32_t m_currentSpeed;
 
+    AutoAim *m_pAutoAim;
+
     Params m_params;
-
-    //  ====================================================================
-    //
-    //  Private methods
-    //
-    //  ====================================================================
-
-    void initMotorController();
-
-    void updateSpeed();
-
-    void setState(controllerState p_state);
-    void setSpeed(int32_t p_speed);
-
-    void saveParams();
 };

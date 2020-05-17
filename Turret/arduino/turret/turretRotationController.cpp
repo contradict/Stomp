@@ -50,14 +50,22 @@ static struct TurretRotationController::Params EEMEM s_savedParams =
 void TurretRotationController::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void TurretRotationController::Update()
 {
-    uint32_t now = micros();
-    int32_t desiredAutoAimSpeed = Turret.GetDesiredAutoAimSpeed();
-    int32_t desiredSBusSpeed = Turret.GetDesiredSBusSpeed();
+    m_lastUpdateTime = micros();
+
+    //  Pass update to our owned objects
+
+    m_pAutoAim->Update();
+
+    //  Update our state
+
+    int32_t desiredAutoAimSpeed = m_pAutoAim->GetDesiredTurretSpeed();
+    int32_t desiredSBusSpeed = Turret.GetDesiredManualTurretSpeed();
 
     while(true)
     {
@@ -75,26 +83,29 @@ void TurretRotationController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
-                    setState(EIdle);
+                    if (isManualTurretEnabled())
+                    {
+                        setState(EManualControl);
+                    }
+                    else
+                    {
+                        setState(EDisabled);
+                    }
                 }
             }
             break;
 
-            case EIdle:
+            case EDisabled:
             {
                 if (!isRadioConnected())
                 {
                     setState(ESafe);
                 }
-                else if (desiredSBusSpeed != 0)
+                else if (isManualTurretEnabled())
                 {
                     setState(EManualControl);
-                }
-                else if (desiredAutoAimSpeed != 0)
-                {
-                    setState(EAutoAim);
                 }
             }
             break;
@@ -105,13 +116,13 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (desiredSBusSpeed == 0)
+                else if (!isManualTurretEnabled())
                 {
-                    setState(EIdle);
+                    setState(EDisabled);
                 }
-                else if (desiredAutoAimSpeed != 0 && abs(desiredSBusSpeed) < m_params.ManualControlOverideSpeed)
+                else if (isAutoAimEnabled() && abs(desiredSBusSpeed) < m_params.ManualControlOverideSpeed)
                 {
-                    setState(EAutoAimWithManualAssist);
+                    setState(EAutoAim);
                 }
             }
             break;
@@ -122,20 +133,21 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (desiredAutoAimSpeed == 0)
+                else if (!isManualTurretEnabled())
                 {
-                    setState(EIdle);
+                    setState(EDisabled);
+                }
+                else if (!isAutoAimEnabled())
+                {
+                    setState(EManualControl);
+                }
+                else if (abs(desiredSBusSpeed) >= m_params.ManualControlOverideSpeed)
+                {
+                    setState(EManualControl);
                 }
                 else if (desiredSBusSpeed != 0)
                 {
-                    if (abs(desiredSBusSpeed) >= m_params.ManualControlOverideSpeed)
-                    {
-                        setState(EManualControl);
-                    }
-                    else
-                    {
-                        setState(EAutoAimWithManualAssist);
-                    }
+                    setState(EAutoAimWithManualAssist);
                 }
             }
             break;
@@ -146,26 +158,20 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
+                else if (desiredSBusSpeed == 0)
+                {
+                    setState(EAutoAim);
+                }
                 else if (abs(desiredSBusSpeed) >= m_params.ManualControlOverideSpeed)
                 {
                     setState(EManualControl);
                 }
-                else if (desiredSBusSpeed == 0)
-                {
-                    if (abs(desiredAutoAimSpeed) > 0)
-                    {
-                        setState(EAutoAim);
-                    } 
-                    else
-                    {
-                        setState(EIdle);
-                    }
-                }
             }
             break;
-
         }
 
+        //  No more state changes, move on
+        
         if (m_state == prevState)
         {
             break;
@@ -177,6 +183,16 @@ void TurretRotationController::Update()
     updateSpeed();
 }
 
+int32_t TurretRotationController::GetCurrentSpeed() 
+{ 
+    return m_currentSpeed; 
+}
+
+void TurretRotationController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval)
+{
+    m_pAutoAim->SetParams(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain, p_telemetry_interval);  
+}
+
 void TurretRotationController::SetParams(uint32_t p_manualControlOverideSpeed)
 {
     m_params.ManualControlOverideSpeed = p_manualControlOverideSpeed;
@@ -185,11 +201,14 @@ void TurretRotationController::SetParams(uint32_t p_manualControlOverideSpeed)
 
 void TurretRotationController::RestoreParams()
 {
+    m_pAutoAim->RestoreParams();
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct TurretRotationController::Params));
 }
 
 void TurretRotationController::SendTelem()
 {
+    m_pAutoAim->SendTelem();
+    sendTurretRotationTelemetry(m_state, m_currentSpeed);
 }
 
 //  ====================================================================
@@ -198,7 +217,107 @@ void TurretRotationController::SendTelem()
 //
 //  ====================================================================
 
-void TurretRotationController::initMotorController()
+void TurretRotationController::updateSpeed()
+{
+    switch (m_state)
+    {
+        case EManualControl:
+        {
+            //  In manual control, just take the request from the radio and 
+            //  make that our speed
+
+            setSpeed(Turret.GetDesiredManualTurretSpeed());
+        }
+        break;
+
+        case EAutoAim:
+        {
+            //  In AutoAim, just take the request from targeting and
+            //  make that our speed
+
+            setSpeed(m_pAutoAim->GetDesiredTurretSpeed());
+        }
+        break;
+
+        case EAutoAimWithManualAssist:
+        {
+            //  Here, the auto aim is tracking, but the human is trying to
+            //  do minimal adjustments.  So, keep auto aim and just add on
+            //  the radio requested speed
+
+            setSpeed(Turret.GetDesiredManualTurretSpeed() + m_pAutoAim->GetDesiredTurretSpeed());
+        }
+        break;
+
+        default:
+        {
+            if (m_currentSpeed != 0)
+            {
+                setSpeed(0);
+            }
+        }
+        break;
+    }
+}
+
+void TurretRotationController::setSpeed(int32_t p_speed)
+{
+    m_currentSpeed = p_speed;
+    m_currentSpeed = constrain(p_speed, k_minSpeed, k_maxSpeed);
+
+    //  send "@nn!G mm" over software serial. mm is a command 
+    //  value, -1000 to 1000. nn is node number in RoboCAN network.
+    
+    TurretRotationMotorSerial.print("@01!G ");
+    TurretRotationMotorSerial.println(m_currentSpeed);
+}
+
+void TurretRotationController::setState(controllerState p_state)
+{
+    if (m_state == p_state)
+    {
+        return;
+    }
+
+    //  exit state transition
+
+    switch (m_state)
+    {
+        case EInit:
+        {
+        }
+        break;
+    }
+
+    m_state = p_state;
+    m_stateStartTime = m_lastUpdateTime;
+
+    //  enter state transition
+
+    switch (m_state)
+    {
+        case EInit:
+        {
+            m_pAutoAim = new AutoAim();
+            initAllControllers();
+        }
+        break;
+
+        case ESafe:
+        {
+            setSpeed(0);
+        }
+        break;
+    }
+}
+
+void TurretRotationController::initAllControllers()
+{
+    m_pAutoAim->Init();
+    initRoboTeq();
+}
+
+void TurretRotationController::initRoboTeq()
 {
     TurretRotationMotorSerial.begin(115200);
 
@@ -216,100 +335,6 @@ void TurretRotationController::initMotorController()
 
     // set RS232 watchdog to 100 ms
     TurretRotationMotorSerial.println("@00^RWD 100");
-}
-
-void TurretRotationController::updateSpeed()
-{
-    switch (m_state)
-    {
-        case EManualControl:
-        {
-            //  In manual control, just take the request from the radio and 
-            //  make that our peed
-
-            setSpeed(desiredSBusTurretSpeed());
-        }
-        break;
-
-        case EAutoAim:
-        {
-            //  In AutoAim, just take the request from targeting and
-            //  make that our speed
-
-            setSpeed(desiredAutoAimTurretSpeed());
-        }
-        break;
-
-        case EAutoAimWithManualAssist:
-        {
-            //  Here, the auto aim is tracking, but the human is trying to
-            //  do minimal adjustments.  So, keep auto aim and just add on
-            //  the radio requested speed
-
-            setSpeed(desiredSBusTurretSpeed() + desiredAutoAimTurretSpeed());
-        }
-        break;
-
-        default:
-        {
-            setSpeed(0);
-        }
-        break;
-    }
-}
-
-void TurretRotationController::setState(controllerState p_state)
-{
-    if (m_state == p_state)
-    {
-        return;
-    }
-
-    //  exit state transition
-
-    switch (m_state)
-    {
-        case EInit:
-        {
-            initMotorController();
-        }
-        break;
-    }
-
-    m_state = p_state;
-    m_stateStartTime = micros();
-
-    //  enter state transition
-
-    switch (m_state)
-    {
-        case ESafe:
-        {
-            setSpeed(0);
-        }
-        break;
-    }
-}
-
-void TurretRotationController::setSpeed(int32_t p_speed)
-{
-    m_currentSpeed = p_speed;
-    m_currentSpeed = constrain(p_speed, k_minSpeed, k_maxSpeed);
-
-    //  send "@nn!G mm" over software serial. mm is a command 
-    //  value, -1000 to 1000. nn is node number in RoboCAN network.
-    
-    TurretRotationMotorSerial.print("@01!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
-
-    TurretRotationMotorSerial.print("@02!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
-
-    TurretRotationMotorSerial.print("@03!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
-
-    TurretRotationMotorSerial.print("@04!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
 }
 
 void TurretRotationController::saveParams() 

@@ -2,8 +2,6 @@
 #include "sensors.h"
 #include "pins.h"
 
-//  BB MJS: Removed VACUUM LEFT AND VACUUM_AI_RIGHT
-
 static uint16_t cached_angle;
 static int16_t cached_pressure;
 

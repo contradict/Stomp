@@ -12,6 +12,9 @@
 
 #include "turretController.h"
 #include "turretRotationController.h"
+#include "hammerController.h"
+#include "flameThrowerController.h"
+#include "selfRightController.h"
 
 //  ====================================================================
 //
@@ -19,13 +22,13 @@
 //
 //  ====================================================================
 
+extern Track g_trackedObject;
+
 //  ====================================================================
 //
 //  File static variables
 //
 //  ====================================================================
-
-static TurretRotationController s_turretRotationController;
 
 static struct TurretController::Params EEMEM s_savedParams = 
 {
@@ -47,12 +50,22 @@ static struct TurretController::Params EEMEM s_savedParams =
 void TurretController::Init()
 {
     m_state = EInvalid;
+    m_lastUpdateTime = micros();
     setState(EInit);
 }
 
 void TurretController::Update()
 {
-    uint32_t now = micros();
+    m_lastUpdateTime = micros();
+
+    //  Pass update to our owned objects
+
+    m_pTurretRotationController->Update();
+    m_pHammerController->Update();
+    m_pFlameThrowerController->Update();
+    m_pSelfRightController->Update();
+
+    //  Update our state
 
     while(true)
     {
@@ -70,7 +83,7 @@ void TurretController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (now - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (micros() - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
                     setState(EActive);
                 }
@@ -83,29 +96,54 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
+                if (hammerManualFire() && m_pHammerController->ReadyToFire())
+                {
+                    setState(EHammerTriggered);
+                }
+            }
+
+            case EHammerTriggered:
+            {
+                if (m_pHammerController->ReadyToFire())
+                {
+                    setState(EActive);
+                }
             }
             break;
         }
 
+        //  No more state changes, move on
+        
         if (m_state == prevState)
         {
             break;
         }
     }
-
-    //  Now that the state is stable, take action based on stable state
-
-    s_turretRotationController.Update();
 }
 
-int32_t TurretController::GetDesiredAutoAimSpeed()
+Track* TurretController::GetCurrentTarget()
 {
-    return desiredAutoAimTurretSpeed();
+    return &g_trackedObject;
 }
 
-int32_t TurretController::GetDesiredSBusSpeed()
+int32_t TurretController::GetCurrentSpeed()
 {
-    return desiredSBusTurretSpeed();
+    m_pTurretRotationController->GetCurrentSpeed();
+}
+
+int32_t TurretController::GetDesiredManualTurretSpeed()
+{
+    return getDesiredManualTurretSpeed();
+}
+
+void TurretController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval)
+{
+    m_pTurretRotationController->SetAutoAimParameters(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain, p_telemetry_interval);
+}
+
+void TurretController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
+{
+    m_pHammerController->SetAutoFireParameters(p_xtol, p_ytol, p_max_omegaz, telemetry_interval);
 }
 
 void TurretController::SetParams(uint32_t p_watchDogTimerTriggerDt)
@@ -116,11 +154,22 @@ void TurretController::SetParams(uint32_t p_watchDogTimerTriggerDt)
 
 void TurretController::RestoreParams()
 {
+    m_pTurretRotationController->RestoreParams();
+    m_pHammerController->RestoreParams();
+    m_pFlameThrowerController->RestoreParams();
+    m_pSelfRightController->RestoreParams();
+
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct TurretController::Params));
 }
 
 void TurretController::SendTelem()
 {
+    m_pTurretRotationController->SendTelem();
+    m_pHammerController->SendTelem();
+    m_pFlameThrowerController->SendTelem();
+    m_pSelfRightController->SendTelem();
+
+    sendTurretTelemetry(m_state);
 }
 
 //  ====================================================================
@@ -131,7 +180,10 @@ void TurretController::SendTelem()
 
 void TurretController::initAllControllers()
 {
-    s_turretRotationController.Init();
+    m_pTurretRotationController->Init();
+    m_pHammerController->Init();
+    m_pFlameThrowerController->Init();
+    m_pSelfRightController->Init();
 }
 
 void TurretController::setState(controllerState p_state)
@@ -145,22 +197,39 @@ void TurretController::setState(controllerState p_state)
 
     switch (m_state)
     {
-        case EInit:
+        case ESafe:
         {
-            initAllControllers();
+            //  No action on leaving ESafe at this time
         }
         break;
     }
 
     m_state = p_state;
-    m_stateStartTime = micros();
+    m_stateStartTime = m_lastUpdateTime;
 
     //  enter state transition
 
     switch (m_state)
     {
+        case EInit:
+        {
+            m_pTurretRotationController = new TurretRotationController();
+            m_pHammerController = new HammerController();
+            m_pFlameThrowerController = new FlameThrowerController();
+            m_pSelfRightController = new SelfRightController();
+
+            initAllControllers();            
+        }
+        break;
+
         case ESafe:
         {
+        }
+        break;
+
+        case EHammerTriggered:
+        {
+            m_pHammerController->Fire();
         }
         break;
     }

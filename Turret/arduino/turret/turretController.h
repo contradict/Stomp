@@ -1,5 +1,7 @@
 #pragma once
 
+#include "track.h"
+
 //  ====================================================================
 //
 //  Forward declerations
@@ -7,6 +9,9 @@
 //  ====================================================================
 
 class TurretRotationController;
+class HammerController;
+class FlameThrowerController;
+class SelfRightController;
 
 //  ====================================================================
 //
@@ -41,14 +46,42 @@ public:
     void Init();
     void Update();
 
-    int32_t GetDesiredAutoAimSpeed();
-    int32_t GetDesiredSBusSpeed();
+    Track* GetCurrentTarget();
+    int32_t GetCurrentSpeed();
+    int32_t GetDesiredManualTurretSpeed();
+
+    void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t telemetry_interval);
+    void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval);
 
     void SetParams(uint32_t p_watchDogTimerTriggerDt);
     void RestoreParams();
 
     void SendTelem();
-    
+
+private:
+
+    enum controllerState 
+    {
+        EInit,
+        ESafe,
+        EActive,
+        EHammerTriggered,
+
+        EInvalid = -1
+    };
+
+    //  ====================================================================
+    //
+    //  Private methods
+    //
+    //  ====================================================================
+
+    void setState(controllerState p_state);
+
+    void initAllControllers();
+
+    void saveParams();
+
     //  ====================================================================
     //
     //  Private constants
@@ -65,33 +98,17 @@ private:
     //
     //  ====================================================================
     
-    enum controllerState 
-    {
-        EInit,
-        ESafe,
-        EActive,
-
-        EInvalid = -1
-    };
-
     TurretRotationController *m_pTurretRotationController;
+    HammerController *m_pHammerController;
+    FlameThrowerController *m_pFlameThrowerController;
+    SelfRightController *m_pSelfRightController;
 
     controllerState m_state;
+    uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
     Params m_params;
 
-    //  ====================================================================
-    //
-    //  Private methods
-    //
-    //  ====================================================================
-
-    void initAllControllers();
-    
-    void setState(controllerState p_state);
-
-    void saveParams();
 };
 
 extern TurretController Turret;

@@ -42,7 +42,7 @@ def displaystream(dev, flname, stdscr, twin, dwin, owin, left):
                 twin.addstr(height - SHEIGHT - 1, 0,
                             (tfmt % t)[:TWIDTH - 1])
                 dwin.addstr(height - SHEIGHT - 1, 0, hpkt)
-                fl.write((tfmt+"\t%s\n") % (t, hpkt.decode('utf-8')))
+                fl.write((tfmt + "\t%s\n") % (t, hpkt.decode('utf-8')))
             global ALLPKTS
             ALLPKTS.append((t, pkt))
             ALLPKTS = ALLPKTS[-MAXPKTS:]
