@@ -51,21 +51,19 @@ TELEMETRY CHOMP ACK LITTLE_ENDIAN "Command Acknowledge"
 
 TELEMETRY CHOMP AAIM LITTLE_ENDIAN "Auto Aim telemetry"
    APPEND_ID_ITEM PKTID 8 UINT 7 "Packet ID which must be 7"
-   APPEND_ITEM AIM_STATE 16 UINT "Auto Aim State"
+   APPEND_ITEM AIM_STATE 32 UINT "Auto Aim State"
        STATE INIT 	0 GREEN
        STATE SAFE 	1 GREEN
        STATE DISABLED 	2 GREEN
        STATE NO_TARGET 	3 YELLOW
        STATE TRACKING 	4 RED
-   APPEND_ITEM WANT_SPEED 16 INT "Desired turret speed"
-   APPEND_ITEM THETA 16 INT "Computed filter angle"
-       POLY_READ_CONVERSION 0.0 0.0280
-   APPEND_ITEM VTHETA 16 INT "Computed filter angular velocity"
-       POLY_READ_CONVERSION 0.0 0.0280
-   APPEND_ITEM RADIUS 16 INT "Computed filter radius"
-       POLY_READ_CONVERSION 0.0 0.001
-   APPEND_ITEM VRADIUS 16 INT "Computed filter radial velocity"
-       POLY_READ_CONVERSION 0.0 0.001
+   APPEND_ITEM WANT_SPEED 32 INT "Desired turret speed"
+   APPEND_ITEM ERROR 32 INT "Aim Error"
+       POLY_READ_CONVERSION 0.0 0.00005464151
+   APPEND_ITEM ERROR 32 INT "Aim Error Integral"
+       POLY_READ_CONVERSION 0.0 0.00000095367
+   APPEND_ITEM ERROR 32 INT "Aim Error Derivitive"
+       POLY_READ_CONVERSION 0.0 0.00000095367
 
 #
 #  TUR - Turret (Packet ID 8)
@@ -88,9 +86,8 @@ TELEMETRY CHOMP TROT LITTLE_ENDIAN "Turret Rotation telemetry"
        STATE INIT 		0 GREEN
        STATE SAFE 		1 GREEN
        STATE DISABLED 		2 GREEN
-       STATE IDLE 		3 YELLOW
-       STATE MANUAL	 	4 YELLOW
-       STATE AUTO_AIM 		5 RED
+       STATE MANUAL	 	3 YELLOW
+       STATE AUTO_AIM 		4 RED
        STATE AUTO_ASSIST 	5 YELLOW
    APPEND_ITEM CUR_SPEED 16 INT "Current turret speed"
 
@@ -284,54 +281,69 @@ TELEMETRY CHOMP OBJC LITTLE_ENDIAN "Object calculated telemetry"
 #
 ####################################
 
+#
+#  TCNTRL - Telemetry Control (Packet ID 10)
+#
+
 COMMAND CHOMP TCNTRL LITTLE_ENDIAN "Telementry Control"
     APPEND_ID_PARAMETER CMDID 8 UINT 10 10 10 "Command ID which must be 10"
     APPEND_PARAMETER SPERIOD 32 UINT 10000 30000000 100000 "Interval between small telemetry transmissions"
         UNITS "microseconds" "us"
     APPEND_PARAMETER LPERIOD 32 UINT 10000 30000000 100000 "Interval between LEDDAR telemetry transmissions"
         UNITS "microseconds" "us"
-    APPEND_PARAMETER DPERIOD 32 UINT 5000 30000000 500000 "Interval between Drive telemetry transmissions"
+    APPEND_PARAMETER DPERIOD 32 UINT 5000 30000000 500000 "Interval between Turret telemetry transmissions"
         UNITS "microseconds" "us"
-    APPEND_PARAMETER EN_ADRV 1 UINT 0 1 0 "Enable Autodrive telemetry"
+    # BYTE 0
+    APPEND_PARAMETER EN_AAIM 1 UINT 0 1 1 "Eanable Auto Aim Telemetry"
     APPEND_PARAMETER EN_ACK 1 UINT 0 1 1 "Enable Command Acknowledge"
     APPEND_PARAMETER EN_AF 1 UINT 0 1 1 "Enable Autofire telemetry"
-    APPEND_PARAMETER EN_TRK 1 UINT 0 1 1 "Enable tracking filter telemetry"
-    APPEND_PARAMETER EN_DBGM_AUTOFIRE 1 UINT 0 1 0 "Enable Autofire debug messages"
-    APPEND_PARAMETER EN_LEDDAR 1 UINT 0 1 0 "Enable LEDDAR telemetry packet"
-    APPEND_PARAMETER EN_HS 1 UINT 0 1 0 "Enable HS telemetry packet"
+    APPEND_PARAMETER EN_TRK 1 UINT 0 1 0 "Enable tracking filter telemetry"
+    APPEND_PARAMETER PAD03 1 UINT 0 0 0
+    APPEND_PARAMETER PAD02 1 UINT 0 0 0
+    APPEND_PARAMETER PAD01 1 UINT 0 0 0
     APPEND_PARAMETER PAD00 1 UINT 0 0 0
-    APPEND_PARAMETER EN_LEDDARV2 1 UINT 0 1 0 "Enable LEDDARV2 telemetry packet"
+    # BYTE 1
+    APPEND_PARAMETER EN_LIDAR 1 UINT 0 1 1 "Enable LIDAR telemetry packet"
     APPEND_PARAMETER EN_SWG 1 UINT 0 1 0 "Enable SWG telemetry packet"
     APPEND_PARAMETER EN_DBGM 1 UINT 0 1 0 "Enable DBGM telemetry packet"
     APPEND_PARAMETER EN_SBS 1 UINT 0 1 1 "Enable SBS telemetry packet"
     APPEND_PARAMETER EN_SYS 1 UINT 0 1 1 "Enable SYS telemetry packet"
     APPEND_PARAMETER EN_SNS 1 UINT 0 1 0 "Enable SNS telemetry packet"
-    APPEND_PARAMETER PADDING11  1 UINT 0 0 0
-    APPEND_PARAMETER EN_DRV 1 UINT 0 1 0 "Enable drive control telemetry"
-    APPEND_PARAMETER EN_VAC 1 UINT 0 1 0 "Enable vacuum trace capture"
+    APPEND_PARAMETER EN_TROT  1 UINT 0 1 1 "Enable turret rotation telemetry"
+    APPEND_PARAMETER EN_TUR 1 UINT 0 1 1 "Enable turret telemetry"
+    # BYTE 2
+    APPEND_PARAMETER PAD23 1 UINT 0 0 0
     APPEND_PARAMETER EN_OBJC 1 UINT 0 1 0 "Enable Object Calculated telemetry"
     APPEND_PARAMETER EN_OBJM 1 UINT 0 1 0 "Enable Object Measured telemetry"
-    APPEND_PARAMETER EN_SRT 1 UINT 0 1 1 "Enable SRT telemetry packet"
+    APPEND_PARAMETER PAD20 1 UINT 0 0 0
     APPEND_PARAMETER EN_ORN 1 UINT 0 1 0 "Enable ORN telemetry packet"
-    APPEND_PARAMETER EN_DMP 1 UINT 0 1 0 "Enable DMP telemetry packet"
+    APPEND_PARAMETER PAD18 1 UINT 0 0 0
     APPEND_PARAMETER EN_IMU 1 UINT 0 1 0 "Enable IMU telemetry packet"
-    APPEND_PARAMETER EN_PWM 1 UINT 0 1 1 "Enable PWM telemetry packet"
+    APPEND_PARAMETER PAD16 1 UINT 0 0 0
+    #BYTE 3
     APPEND_PARAMETER PADDING32 8 UINT 0 0 0
 
+#
+#  TRKFLT - Tracking Filter (Packet ID 11)
+#
 
 COMMAND CHOMP TRKFLT LITTLE_ENDIAN "Tracking Filter Settings"
     APPEND_ID_PARAMETER CMDID 8 UINT 11 11 11 "Command ID which must be 11"
     APPEND_PARAMETER ALPHA 16 INT 0 32767 9000 "Filter position update coefficient (scale 32767)"
     APPEND_PARAMETER BETA 16 INT 0 32767 8192 "Filter velocity update coefficient (scale 4096)"
-    APPEND_PARAMETER MNUP 8 INT 0 127 3 "Minimum updates for valid filter"
     APPEND_PARAMETER TRKLST 32 UINT 0 10000000 250000 "Track lost timeout"
         UNITS "microseconds" "us"
-    APPEND_PARAMETER MXOT 16 INT 0 32767 1000 "Maximum distance from track"
+    APPEND_PARAMETER MNUP 32 INT 0 127 3 "Minimum updates for valid filter"
+    APPEND_PARAMETER MXOT 32 INT 0 100000000 1000000 "Maximum distance from track"
         UNITS "milimeter" "mm"
-    APPEND_PARAMETER MXST 16 INT 0 32767 6000 "Maximum initial object distance"
+    APPEND_PARAMETER MXST 32 INT 0 100000000 36000000 "Maximum initial object distance"
         UNITS "milimeter" "mm"
 
-COMMAND CHOMP OBJSEG LITTLE_ENDIAN "Object Segmentation Settings"
+#
+#  OBJSEG - Object Segmentation Parameters (Packet ID 12)
+#
+
+COMMAND CHOMP OBJSEG LITTLE_ENDIAN "Object Segmentation Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 12 12 12 "Command ID which must be 12"
     APPEND_PARAMETER MNOS 16 INT 0 32767 200 "Minimum object size"
         UNITS "centimeters" "cm"
@@ -343,28 +355,37 @@ COMMAND CHOMP OBJSEG LITTLE_ENDIAN "Object Segmentation Settings"
     APPEND_PARAMETER CLOSE 1 INT 0 1 1 "Only inspect closest object"
 
 
-COMMAND CHOMP AF LITTLE_ENDIAN "Auto Fire Settings"
+#
+#  AF - Auto Fire Parameters (Packet ID 13)
+#
+
+COMMAND CHOMP AF LITTLE_ENDIAN "Auto Fire Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 13 13 13 "Command ID which must be 13"
-    APPEND_PARAMETER XTOL 16 INT 0 32767 200 "X tolerance for hit"
+    APPEND_PARAMETER XTOL 32 INT 0 32767 200 "X tolerance for hit"
         UNITS "milimeter" "mm"
-    APPEND_PARAMETER YTOL 16 INT 0 32767 200 "Y tolerance for hit"
+    APPEND_PARAMETER YTOL 32 INT 0 32767 200 "Y tolerance for hit"
         UNITS "milimeter" "mm"
-    APPEND_PARAMETER MAXRT 16 INT 0 32767 50 "Max angular rate"
+    APPEND_PARAMETER MAXRT 32 INT 0 32767 50 "Max angular rate"
         UNITS "degrees/sec" "deg/sec"
         POLY_WRITE_CONVERSION 0.0 35.7
     APPEND_PARAMETER TLMRT 32 UINT 0 10000000 100000 "Telemetry interval"
         UNITS "microseconds" "us"
 
-COMMAND CHOMP ADRV LITTLE_ENDIAN "Auto Drive Settings"
+#
+#  AAIM - Auto Aim Parameters (Packet ID 14)
+#
+
+COMMAND CHOMP AAIM LITTLE_ENDIAN "Auto Aim Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 14 14 14 "Command ID which must be 14"
-    APPEND_PARAMETER STEERP 16 INT 0 32767 3000 "Steering proportional coefficient"
-    APPEND_PARAMETER STEERD 16 INT 0 32767 0 "Steering derivative coefficient"
-    APPEND_PARAMETER STEERMAX 16 INT 0 1000 600 "Steering maximum command"
-    APPEND_PARAMETER GYROG 16 INT 0 32767 0 "Gyro gain"
-    APPEND_PARAMETER DRIVEP 16 INT 0 32767 1500 "Drive proportional coefficient"
-    APPEND_PARAMETER DRIVED 16 INT 0 32767 0 "Drive derivative coefficient"
-    APPEND_PARAMETER DRIVEMAX 16 INT 0 32767 600 "Drive maximum command"
-    APPEND_PARAMETER TINT 32 INT 0 1000000 50000 "Drive telemetry interval"
+    APPEND_PARAMETER STEERP 32 INT 0 32767 2500 "Turret Rotation proportional coefficient"
+    APPEND_PARAMETER STEERI 32 INT 0 32767 7500 "Turret Rotation integral coefficient"
+    APPEND_PARAMETER STEERD 32 INT 0 32767 5 "Turret Rotation derivative coefficient"
+    APPEND_PARAMETER STEERMAX 32 INT 0 1000 1000 "Steering maximum command"
+    APPEND_PARAMETER TINT 32 INT 0 1000000 50000 "Auto Aim telemetry interval"
+
+#
+#  IMUP - IMU Parameters (Packet ID 15)
+#
 
 COMMAND CHOMP IMUP LITTLE_ENDIAN "IMU Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 15 15 15 "Command ID which must be 15"
@@ -400,23 +421,12 @@ COMMAND CHOMP IMUP LITTLE_ENDIAN "IMU Parameters"
         UNITS "g" "g"
         POLY_WRITE_CONVERSION 0.0 2048
 
-COMMAND CHOMP SRTP LITTLE_ENDIAN "Self Right Parameters"
-    APPEND_ID_PARAMETER CMDID 8 UINT 16 16 16 "Command ID which must be 16"
-    APPEND_PARAMETER MINHSRA 16 INT 0 360 0 "min hammer self-right angle"
-    APPEND_PARAMETER MAXHSRA 16 INT 0 360 30 "max hammer self-right angle"
-    APPEND_PARAMETER MAXHMD 32 INT 0 30000000 4000000 "max hammer move duration"
-    APPEND_PARAMETER MAXROD 32 INT 0 60000000 3000000 "max reorient duration"
-    APPEND_PARAMETER MINRETD 32 INT 0 10000000 1000000 "min retract duration"
-    APPEND_PARAMETER MINVNTD 32 INT 0 10000000 1000000 "min vent duration"
-    APPEND_PARAMETER MRETD 32 INT 0 10000000 1000000 "Manual retract duration"
-    APPEND_PARAMETER MDEADD 32 INT 0 10000000 250000 "Manual deadtime"
+#
+#  LDDR - Leddar Paramerters (Packet ID 17)
+#
 
 COMMAND CHOMP LDDR LITTLE_ENDIAN "LEDDAR Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 17 17 17 "Command ID which must be 17"
     APPEND_PARAMETER MINDD 16 INT 0 100 20 "Detections closer than this are ignored"
     APPEND_PARAMETER MAXDD 16 INT 0 1000 600 "Detections farther than this are ignored"
 
-COMMAND CHOMP HLD LITTLE_ENDIAN "Hold down Parameters"
-    APPEND_ID_PARAMETER CMDID 8 UINT 18 18 18 "Command ID which must be 18"
-    APPEND_PARAMETER SPRD 32 UINT 1000 1000000 10000 "Trace sample period"
-    APPEND_PARAMETER SDELAY 32 UINT 1000 1000000 300000 "Autohold start delay"
