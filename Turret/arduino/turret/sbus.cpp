@@ -5,6 +5,8 @@
 #include "wiring_private.h"
 #include "telem.h"
 
+#include "telemetryController.h"
+
 static void setWeaponsEnabled(bool state);
 static uint16_t computeRCBitfield();
 static bool parseSbus();
@@ -140,7 +142,7 @@ bool isSelfRightEnabled()
 
 bool hammerManualFire()
 {
-    return isWeaponEnabled && (bitfield & HAMMER_FIRE_BIT);
+    return isWeaponEnabled() && (bitfield & HAMMER_FIRE_BIT);
 }
 
 static bool parseSbus(){
@@ -207,6 +209,7 @@ static uint16_t computeRCBitfield() {
   if ( sbusChannels[AUTO_HAMMER_ENABLE] > AUTO_HAMMER_THRESHOLD){
     bitfield |= AUTO_FIRE_ENABLE_BIT;
   }
+
   if ( sbusChannels[HAMMER_CTRL] > HAMMER_FIRE_THRESHOLD){
     bitfield |= HAMMER_FIRE_BIT;
   }

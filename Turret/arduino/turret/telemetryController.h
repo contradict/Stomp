@@ -6,22 +6,8 @@
 //
 //  ====================================================================
 
-class FlameThrowerController
+class TelemetryController
 {
-
-    //  ====================================================================
-    //
-    //  Internal structure decleration
-    //
-    //  ====================================================================
-
-public:
-
-    struct Params
-    {
-        int32_t tmp;
-    };
-
     //  ====================================================================
     //
     //  Public API
@@ -32,26 +18,23 @@ public:
 
     void Init();
     void Update();
-    void Safe();
 
-    void Fire();
+    size_t Write(const uint8_t *buffer, size_t size);
+    bool Enqueue(const unsigned char *buffer, size_t size);
 
-    void SetParams();
-    void RestoreParams();
-
-    void SendTelem();
-
+    void LogError(const String& p_message);
+    void LogMessage(const String& p_message);
+    
 private:
 
     enum controllerState 
     {
         EInit,
-        ESafe,
-        EDisabled,
 
-        EReadyToFire,
-        EFire,
- 
+        EChooseChannel,
+        EXBeeChannel,
+        EUSBChannel,
+
         EInvalid = -1
     };
 
@@ -61,12 +44,13 @@ private:
     //
     //  ====================================================================
 
+    void xbeeWrite(const String&p_string);
+    void usbWrite(const String& p_string);
+
     void setState(controllerState p_state);
 
-    void initAllControllers();
-
-    void sendTelem();
-    void saveParams();
+    void initXBee();
+    void initUSB();
 
     //  ====================================================================
     //
@@ -74,9 +58,7 @@ private:
     //
     //  ====================================================================
     
-private:
-
-    const uint32_t k_safeStateMinDt = 500000;
+    const uint32_t k_usbChannelTimeout = 500000;
 
     //  ====================================================================
     //
@@ -88,5 +70,7 @@ private:
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
-    Params m_params;
+    bool m_invalidStateLog;
 };
+
+extern TelemetryController Telem;

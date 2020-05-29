@@ -1,14 +1,13 @@
 #include "Arduino.h"
 #include "telem.h"
-#include "xbee.h"
 #include "leddar_io.h"
 #include "pins.h"
 #include "DMASerial.h"
 #include "utils.h"
 
-static void saveTelemetryParmeters(void);
+#include "telemetryController.h"
 
-extern DMASerial& Xbee;
+static void saveTelemetryParmeters(void);
 
 const uint16_t TLM_TERMINATOR=0x6666;
 
@@ -115,7 +114,7 @@ bool sendSystemTelem(uint32_t loop_speed_min, uint32_t loop_speed_avg,
     tlm.inner.invalid_command = invalid_command;
     tlm.inner.valid_command = valid_command;
     tlm.inner.system_time = millis();
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct SensorTelemetryInner 
@@ -132,7 +131,7 @@ bool sendSensorTelem(int16_t pressure, uint16_t angle)
     SensorTelemetry tlm;
     tlm.inner.pressure = pressure;
     tlm.inner.angle = angle;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct SBusTelemetryInner 
@@ -152,7 +151,7 @@ bool sendSbusTelem(uint16_t cmd_bitfield, int16_t hammer_intensity, int16_t hamm
     tlm.inner.hammer_intensity = hammer_intensity;
     tlm.inner.hammer_distance = hammer_distance;
     tlm.inner.turret_speed = turret_speed;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 const size_t MAX_DEBUG_MSG_LENGTH=128;
@@ -167,11 +166,11 @@ bool sendDebugMessageTelem(const char *msg){
     }
     *((uint16_t *)(pkt+pos)) = TLM_TERMINATOR;
     size_t sendlen = 1+copied+sizeof(TLM_TERMINATOR);
-    return Xbee.write(pkt, sendlen);
+    return Telem.Write(pkt, sendlen);
 }
 
 void debug_print(const String &msg){
-    sendDebugMessageTelem(msg.c_str());
+    Telem.LogMessage(msg);
 }
 
 struct LeddarTelemetryInner {
@@ -190,8 +189,7 @@ bool sendLeddarTelem(const Detection (&min_detections)[LEDDAR_SEGMENTS], unsigne
       leddar_tlm.inner.range[i] = min_detections[i].Distance;
       leddar_tlm.inner.amplitude[i] = min_detections[i].Amplitude;
   }
-  return Xbee.enqueue((unsigned char *)&leddar_tlm, sizeof(leddar_tlm),
-                      NULL, NULL);
+  return Telem.Enqueue((unsigned char *)&leddar_tlm, sizeof(leddar_tlm));
 }
 
 struct SwingTelemInner {
@@ -220,13 +218,13 @@ bool sendSwingTelem(uint16_t datapoints_collected,
     tlm.inner.throw_close_angle = throw_close_angle;
     tlm.inner.start_angle = start_angle;
     tlm.inner.datapoints = datapoints_collected;
-    bool success = Xbee.write((unsigned char *)&tlm, sizeof(tlm)-sizeof(TLM_TERMINATOR));
+    bool success = Telem.Write((unsigned char *)&tlm, sizeof(tlm)-sizeof(TLM_TERMINATOR));
     if(success)
     {
-        success &= Xbee.enqueue((uint8_t *)angle_data, sizeof(uint16_t)*256, NULL, NULL);
-        success &= Xbee.enqueue((uint8_t *)pressure_data, sizeof(int16_t)*256, NULL, NULL);
+        success &= Telem.Enqueue((uint8_t *)angle_data, sizeof(uint16_t) * 256);
+        success &= Telem.Enqueue((uint8_t *)pressure_data, sizeof(int16_t) * 256);
     }
-    success &= Xbee.write((uint8_t *)&tlm.terminator, sizeof(tlm.terminator));
+    success &= Telem.Write((uint8_t *)&tlm.terminator, sizeof(tlm.terminator));
 
     return success;
 }
@@ -247,7 +245,7 @@ bool sendIMUTelem(int16_t (&a)[3], int16_t (&g)[3], int16_t t)
         tlm.inner.g[i] = g[i];
     }
     tlm.inner.t = t;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct ORNTelemInner {
@@ -268,7 +266,7 @@ bool sendORNTelem(bool stationary, uint8_t orientation, int32_t sum_angular_rate
     tlm.inner.sum_angular_rate = sum_angular_rate;
     tlm.inner.total_norm = total_norm;
     tlm.inner.cross_norm = cross_norm;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct TrackingTelemetryInner {
@@ -300,7 +298,7 @@ bool sendTrackingTelemetry(int16_t detection_x,
     tlm.inner.filtered_vx = (int16_t)clip(filtered_vx, -32768L, 32767L);
     tlm.inner.filtered_y = (int16_t)clip(filtered_y, -32768L, 32767L);
     tlm.inner.filtered_vy = (int16_t)clip(filtered_vy, -32768L, 32767L);
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct AutofireTelemetryInner {
@@ -317,7 +315,7 @@ bool sendAutofireTelemetry(enum AutoFireState st, int32_t swing, int32_t x, int3
     tlm.inner.swing = swing;
     tlm.inner.x = (int16_t)clip(x, -32768L, 32767L);
     tlm.inner.y = (int16_t)clip(y, -32768L, 32767L);
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct AutoAimTelemetryInner {
@@ -338,7 +336,7 @@ bool sendAutoAimTelemetry(int32_t state, int32_t target_angular_velocity, int32_
     tlm.inner.error = error;
     tlm.inner.errorIntegral = errorIntegral;
     tlm.inner.errorDerivitive = errorDerivitive;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct TurretTelemetryInner {
@@ -351,7 +349,7 @@ bool sendTurretTelemetry(int16_t state)
     CHECK_ENABLED(TLM_ID_TUR);
     TURTelemetry tlm;
     tlm.inner.state = state;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct TurretRotationTelemetryInner {
@@ -366,7 +364,7 @@ bool sendTurretRotationTelemetry(int16_t state, int16_t current_speed)
     TurretRotationTelemetry tlm;
     tlm.inner.state = state;
     tlm.inner.current_speed = current_speed;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 struct CommandAcknolwedgeInner {
@@ -381,7 +379,7 @@ bool sendCommandAcknowledge(uint8_t command, uint16_t valid, uint16_t invalid) {
     tlm.inner.cmdid = command;
     tlm.inner.valid = valid;
     tlm.inner.invalid = invalid;
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 void setTelemetryParams(uint32_t telemetry_interval,
@@ -445,7 +443,7 @@ bool sendObjectsCalculatedTelemetry(uint8_t num_objects, const Object (&objects)
         tlm.inner.object_x[i] = -1;
         tlm.inner.object_y[i] = -1;
     }
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 bool sendObjectsMeasuredTelemetry(uint8_t num_objects, const Object (&objects)[8])
@@ -466,7 +464,7 @@ bool sendObjectsMeasuredTelemetry(uint8_t num_objects, const Object (&objects)[8
         tlm.inner.right_edge[i] = -1;
         tlm.inner.object_sum_distance[i] = -1;
     }
-    return Xbee.write((unsigned char *)&tlm, sizeof(tlm));
+    return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
 bool sendObjectsTelemetry(uint8_t num_objects, const Object (&objects)[8])

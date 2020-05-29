@@ -6,6 +6,7 @@
 #include "pins.h"
 
 #include "sbus.h"
+#include "imu.h"
 #include "telem.h"
 #include "autoaim.h"
 #include "DMASerial.h"
@@ -15,6 +16,7 @@
 #include "hammerController.h"
 #include "flameThrowerController.h"
 #include "selfRightController.h"
+#include "telemetryController.h"
 
 //  ====================================================================
 //
@@ -83,30 +85,91 @@ void TurretController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (micros() - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
                 {
-                    setState(EActive);
+                    setState(EUnknown);
                 }
             }
             break;
 
-            case EActive:
+            case EUnknown:
             {
                 if (!isRadioConnected())
                 {
                     setState(ESafe);
                 }
-                if (hammerManualFire() && m_pHammerController->ReadyToFire())
+                else if (getOrientation() == ORN_UPRIGHT && m_pHammerController->ReadyToFire())
                 {
-                    setState(EHammerTriggered);
+                    setState(ENominal);
+                }
+                else if (getOrientation() == ORN_NOT_UPRIGHT)
+                {
+                    setState(ENeedsSelfRight);
                 }
             }
+            break;
 
-            case EHammerTriggered:
+            case ENominal:
             {
-                if (m_pHammerController->ReadyToFire())
+                if (!isRadioConnected())
                 {
-                    setState(EActive);
+                    setState(ESafe);
+                }
+                else if (m_pHammerController->ReadyToFire() && hammerManualFire())
+                {
+                    setState(EHammerTrigger);
+                }
+            }
+            break;
+
+            case EHammerTrigger:
+            {
+                if (m_lastUpdateTime != m_stateStartTime)
+                {
+                    setState(EHammerActive);
+                }
+            }
+            break;
+
+            case EHammerActive:
+            {
+                if (!isRadioConnected())
+                {
+                    setState(ESafe);
+                }
+                else if (!isWeaponEnabled())
+                {
+                    setState(EUnknown);
+                }
+                else if (m_pHammerController->ReadyToFire())
+                {
+                    if (getOrientation() == ORN_UPRIGHT)
+                    {
+                        setState(ENominal);
+                    }
+                    else
+                    {
+                        setState(EUnknown);
+                    }
+                }
+            }
+            break;
+
+            case ESelfRightTrigger:
+            {
+                setState(EHammerActive);
+            }
+            break;
+
+            case ENeedsSelfRight:
+            {
+                if (getOrientation() == ORN_UPRIGHT)
+                {
+                    setState(EUnknown);
+                }
+                if (m_lastUpdateTime - m_stateStartTime > k_selfRightTriggerDt)
+                {
+                    setState(ESelfRightTrigger);
                 }
             }
             break;
@@ -119,6 +182,11 @@ void TurretController::Update()
             break;
         }
     }
+}
+
+bool TurretController::Nominal()
+{
+    return m_state == ENominal;
 }
 
 Track* TurretController::GetCurrentTarget()
@@ -180,7 +248,7 @@ void TurretController::SendTelem()
 
 void TurretController::initAllControllers()
 {
-    m_pTurretRotationController->Init();
+    m_pTurretRotationController->Init(this);
     m_pHammerController->Init();
     m_pFlameThrowerController->Init();
     m_pSelfRightController->Init();
@@ -224,12 +292,25 @@ void TurretController::setState(controllerState p_state)
 
         case ESafe:
         {
+            //  Everybody should be in safe state, but for extra caution
+            //  send an explict safe to all controllers
+
+            m_pTurretRotationController->Safe();
+            m_pHammerController->Safe();
+            m_pFlameThrowerController->Safe();
         }
         break;
 
-        case EHammerTriggered:
+        case EHammerTrigger:
         {
+            Telem.LogMessage("HammerTrigger");
             m_pHammerController->Fire();
+        }
+        break;
+
+        case ESelfRightTrigger:
+        {
+            m_pHammerController->FireSelfRight();
         }
         break;
     }

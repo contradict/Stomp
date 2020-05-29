@@ -47,8 +47,10 @@ static struct TurretRotationController::Params EEMEM s_savedParams =
 //
 //  ====================================================================
 
-void TurretRotationController::Init()
+void TurretRotationController::Init(TurretController* p_pTurret)
 {
+    m_pTurret = p_pTurret;
+
     m_state = EInvalid;
     m_lastUpdateTime = micros();
     setState(EInit);
@@ -137,7 +139,7 @@ void TurretRotationController::Update()
                 {
                     setState(EDisabled);
                 }
-                else if (!isAutoAimEnabled())
+                else if (!isAutoAimEnabled() || !m_pTurret->Nominal())
                 {
                     setState(EManualControl);
                 }
@@ -157,6 +159,10 @@ void TurretRotationController::Update()
                 if (!isRadioConnected())
                 {
                     setState(ESafe);
+                }
+                else if (!isAutoAimEnabled() || !m_pTurret->Nominal())
+                {
+                    setState(EManualControl);
                 }
                 else if (desiredSBusSpeed == 0)
                 {
@@ -181,6 +187,11 @@ void TurretRotationController::Update()
     //  Now that the state is stable, take action based on stable state
 
     updateSpeed();
+}
+
+void TurretRotationController::Safe()
+{
+    setState(ESafe);
 }
 
 int32_t TurretRotationController::GetCurrentSpeed() 

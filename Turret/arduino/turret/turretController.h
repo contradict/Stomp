@@ -46,6 +46,7 @@ public:
     void Init();
     void Update();
 
+    bool Nominal();
     Track* GetCurrentTarget();
     int32_t GetCurrentSpeed();
     int32_t GetDesiredManualTurretSpeed();
@@ -64,8 +65,17 @@ private:
     {
         EInit,
         ESafe,
-        EActive,
-        EHammerTriggered,
+
+        ENominal,
+
+        EHammerTrigger,
+        EHammerActive,
+
+        ENeedsSelfRight,
+        ESelfRightTrigger,
+
+        EUnknown,
+        EDegraded,
 
         EInvalid = -1
     };
@@ -91,7 +101,8 @@ private:
 private:
 
     const uint32_t k_safeStateMinDt = 500000;
-
+    const uint32_t k_selfRightTriggerDt = 3000000;
+    
     //  ====================================================================
     //
     //  Private members

@@ -109,6 +109,11 @@ void FlameThrowerController::Update()
 
 }
 
+void FlameThrowerController::Safe()
+{
+    setState(ESafe);
+}
+
 void FlameThrowerController::SetParams()
 {
     saveParams();

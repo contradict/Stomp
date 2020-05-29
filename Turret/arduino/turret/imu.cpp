@@ -1,7 +1,7 @@
 #include "I2C.h"
-#include "telem_message_stream.h"
 #include "MPU6050.h"
 #include "imu.h"
+#include "telem.h"
 
 static void saveIMUParameters(void);
 static void restoreIMUParameters(void);
@@ -116,19 +116,18 @@ void updateIMU(void) {
         {
             best_orientation = ORN_UPRIGHT;
             stationary = true;
-        } else if((params.min_valid_cross < cross_norm) &&
-                  (cross_norm<params.max_valid_cross)) {
-            if(acceleration[0] > params.x_threshold)
+        } 
+        else if((params.min_valid_cross < cross_norm) &&
+                  (cross_norm<params.max_valid_cross)) 
+        {
+            if(abs(acceleration[0]) > params.x_threshold)
             {
-                best_orientation = ORN_LEFT;
+                best_orientation = ORN_NOT_UPRIGHT;
                 stationary = true;
             }
-            else if(acceleration[0] < -params.x_threshold)
-            {
-                best_orientation = ORN_RIGHT;
-                stationary = true;
-            }
-        } else {
+        } 
+        else 
+        {
             best_orientation = ORN_UNKNOWN;
             stationary = false;
         }

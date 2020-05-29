@@ -27,6 +27,7 @@
 
 #include "turretController.h"
 #include "hammerController.h"
+#include "telemetryController.h"
 
 //  ====================================================================
 //
@@ -149,6 +150,7 @@ void HammerController::Update()
             case EFullCycleInterruptMode:
             case ERetractOnlyInterruptMode:
             {
+                Telem.LogMessage("Swing Complete");
                 if (s_swingComplete)
                 {
                     setState(ESwingComplete);
@@ -175,6 +177,11 @@ void HammerController::Update()
 
 }
 
+void HammerController::Safe()
+{
+    setState(ESafe);
+}
+
 bool HammerController::ReadyToFire()
 {
     return m_state == EReady;
@@ -188,6 +195,7 @@ bool HammerController::ReadyToFire()
 
 void HammerController::Fire()
 {
+    Telem.LogMessage("FIRE");
     setState(EThrow);
     setState(EFullCycleInterruptMode);
 }
@@ -259,6 +267,11 @@ void HammerController::setState(controllerState p_state)
     {
         return;
     }
+
+    Telem.LogMessage("HammerController::setState");
+    String stateString = String(p_state);
+    Telem.LogMessage(stateString);
+
 
     //  exit state transition
 

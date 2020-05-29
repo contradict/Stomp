@@ -3,9 +3,8 @@
 
 enum Orientation {
     ORN_UPRIGHT = 0,
-    ORN_LEFT = 1,
-    ORN_RIGHT = 2,
-    ORN_UNKNOWN = 3
+    ORN_NOT_UPRIGHT = 1,
+    ORN_UNKNOWN = 2
 };
 
 void initIMU(void);

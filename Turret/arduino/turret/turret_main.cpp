@@ -3,7 +3,6 @@
 #include "sbus.h"
 #include "leddar_io.h"
 #include "sensors.h"
-#include "xbee.h"
 #include "telem.h"
 #include "pins.h"
 #include "weapons.h"
@@ -15,6 +14,7 @@
 #include "autofire.h"
 #include "autoaim.h"
 
+#include "telemetryController.h"
 #include "turretController.h"
 
 //  ====================================================================
@@ -38,6 +38,7 @@ uint32_t g_loop_count;
 //  Controller Objects 
 
 Track g_trackedObject;
+TelemetryController Telem;
 
 //  ====================================================================
 //
@@ -113,14 +114,19 @@ void turretSetup()
     safeState();
     wdt_enable(WDTO_4S);
 
+    //  Before anyone starts using Telem, make sure it is initialized
+
+    Telem.Init();
+
     //  Initialize all of the various subsystems
     //  to initial state
-    
-    initXbee();
+
     initSBus();
     initLeddarWrapper();
     initSensors();
     initIMU();
+
+    //  Init global objects
 
     Turret.Init();
 
@@ -137,8 +143,6 @@ void turretSetup()
 
     reset_loop_stats();
     g_start_time = micros();
-
-    debug_print("STARTUP");
 }
 
 //
@@ -158,6 +162,7 @@ void turretLoop()
     //  the sensors their update tick
     
     updateWatchDogTimer();
+    Telem.Update();
     updateSensors();
     updateIMU();
 

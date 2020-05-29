@@ -41,7 +41,8 @@ public:
 
     void Init();
     void Update();
-
+    void Safe();
+    
     bool ReadyToFire();
 
     void Fire();

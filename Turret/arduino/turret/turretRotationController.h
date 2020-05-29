@@ -4,6 +4,14 @@
 
 //  ====================================================================
 //
+//  Forward declerations
+//
+//  ====================================================================
+
+class TurretController;
+
+//  ====================================================================
+//
 //  Class decleration
 //
 //  ====================================================================
@@ -32,9 +40,10 @@ public:
  
 public:
 
-    void Init();
+    void Init(TurretController* p_pTurret);
     void Update();
-
+    void Safe();
+    
     int32_t GetCurrentSpeed();
 
     void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t telemetry_interval);
@@ -98,7 +107,8 @@ private:
 
     int32_t m_currentSpeed;
 
-    AutoAim *m_pAutoAim;
+    TurretController* m_pTurret;
+    AutoAim* m_pAutoAim;
 
     Params m_params;
 };
