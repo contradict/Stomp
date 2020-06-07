@@ -154,21 +154,6 @@ bool sendSbusTelem(uint16_t cmd_bitfield, int16_t hammer_intensity, int16_t hamm
     return Telem.Write((unsigned char *)&tlm, sizeof(tlm));
 }
 
-const size_t MAX_DEBUG_MSG_LENGTH=128;
-bool sendDebugMessageTelem(const char *msg){
-    CHECK_ENABLED(TLM_ID_DBGM);
-    unsigned char pkt[1+MAX_DEBUG_MSG_LENGTH+2]={0};
-    pkt[0] = TLM_ID_DBGM;
-    size_t copied = 0;
-    size_t pos=1;
-    while(copied<MAX_DEBUG_MSG_LENGTH && msg[copied]) {
-        pkt[pos++] = msg[copied++];
-    }
-    *((uint16_t *)(pkt+pos)) = TLM_TERMINATOR;
-    size_t sendlen = 1+copied+sizeof(TLM_TERMINATOR);
-    return Telem.Write(pkt, sendlen);
-}
-
 void debug_print(const String &msg){
     Telem.LogMessage(msg);
 }

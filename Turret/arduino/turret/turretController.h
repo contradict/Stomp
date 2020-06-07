@@ -68,7 +68,8 @@ private:
 
         ENominal,
 
-        EHammerTrigger,
+        EHammerTriggerThrowRetract,
+        EHammerTriggerRetract,
         EHammerActive,
 
         ENeedsSelfRight,

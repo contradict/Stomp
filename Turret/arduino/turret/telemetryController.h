@@ -27,6 +27,32 @@ public:
     
 private:
 
+    enum TelemetryPacketId 
+    {
+        // =1,
+        // =2,
+        // =3,
+        TLM_ID_TRK=4,
+        TLM_ID_AF=5,
+        TLM_ID_ACK=6,
+        TLM_ID_AAIM=7,
+        TLM_ID_TUR=8,
+        TLM_ID_TROT=9,
+        TLM_ID_SNS=10,
+        TLM_ID_SYS=11,
+        TLM_ID_SBS=12,
+        TLM_ID_DBGM=13,
+        TLM_ID_SWG=14,
+        TLM_ID_LIDAR=15,
+        // =16,
+        TLM_ID_IMU=17,
+        // =18,
+        TLM_ID_ORN=19,
+        // =20,
+        TLM_ID_OBJM=21,
+        TLM_ID_OBJC=22,
+    };
+
     enum controllerState 
     {
         EInit,
@@ -44,8 +70,8 @@ private:
     //
     //  ====================================================================
 
-    void xbeeWrite(const String&p_string);
-    void usbWrite(const String& p_string);
+    void xbeeSendMessage(const String&p_string);
+    void usbSendMessage(const String& p_string);
 
     void setState(controllerState p_state);
 
@@ -58,7 +84,8 @@ private:
     //
     //  ====================================================================
     
-    const uint32_t k_usbChannelTimeout = 500000;
+    const uint32_t k_xbeeChannelTimeout = 500000;
+    const size_t k_maxDebugMessageLength = 128;
 
     //  ====================================================================
     //

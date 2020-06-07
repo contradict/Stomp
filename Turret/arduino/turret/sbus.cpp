@@ -140,9 +140,14 @@ bool isSelfRightEnabled()
     return s_radioConnected && (bitfield & AUTO_SELF_RIGHT_BIT);
 }
 
-bool hammerManualFire()
+bool hammerManualThrowRetract()
 {
     return isWeaponEnabled() && (bitfield & HAMMER_FIRE_BIT);
+}
+
+bool hammerManualRetract()
+{
+    return isWeaponEnabled() && (bitfield & HAMMER_RETRACT_BIT);
 }
 
 static bool parseSbus(){

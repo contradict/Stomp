@@ -150,9 +150,9 @@ void HammerController::Update()
             case EFullCycleInterruptMode:
             case ERetractOnlyInterruptMode:
             {
-                Telem.LogMessage("Swing Complete");
                 if (s_swingComplete)
                 {
+                    Telem.LogMessage("Swing Complete");
                     setState(ESwingComplete);
                 }
             }
@@ -268,10 +268,7 @@ void HammerController::setState(controllerState p_state)
         return;
     }
 
-    Telem.LogMessage("HammerController::setState");
-    String stateString = String(p_state);
-    Telem.LogMessage(stateString);
-
+    Telem.LogMessage(String("HammerController::setState = ") + p_state);
 
     //  exit state transition
 
@@ -411,7 +408,8 @@ const uint16_t k_minRetractAngle = 0;                       //    0 degrees
 const uint32_t k_maxRetractDt = 1000000;                    //  1.0 seconds
 
 const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
-const uint32_t k_subStateMachineUpdateFrequency = 100000;   //  100kHz or update every 10 microseconds
+const uint32_t k_subStateMachineUpdateFrequency = 50000;    //  50kHz or update every 20 microseconds
+                                                            //  at 100kHz, serail communication to Robotek stoped working
 
 const uint16_t k_telmSamplesMax = 500;
 

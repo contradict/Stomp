@@ -66,7 +66,6 @@ bool sendSensorTelem(int16_t pressure, uint16_t angle);
 
 bool sendSbusTelem(uint16_t cmd_bitfield, int16_t hammer_intensity, int16_t hammer_distance, int16_t turret_speed);
 
-bool sendDebugMessageTelem(const char *msg);
 void debug_print(const String &msg);
 
 bool sendLeddarTelem(const Detection (&detections)[LEDDAR_SEGMENTS], unsigned int count);

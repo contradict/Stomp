@@ -16,6 +16,11 @@
 //  Get LogMessage and ErrorMessage to work over XBee
 //
 
+//  Need to esnure that we can get the telemetry over XBee, reguardless of
+//  the serial port selection logic.  Define FORCE_XBEE to true or false
+
+#define FORCE_XBEE true
+
 //  ====================================================================
 //
 //  File static variables
@@ -73,13 +78,13 @@ void TelemetryController::Update()
 
             case EChooseChannel:
             {
-                if (g_outputChannel)
-                {
-                    setState(EUSBChannel);
-                }
-                else if (m_lastUpdateTime - m_stateStartTime > k_usbChannelTimeout)
+                if (FORCE_XBEE || digitalRead(XBEE_CTS))
                 {
                     setState(EXBeeChannel);
+                }
+                else
+                {
+                    setState(EUSBChannel);
                 }
             }
             break;
@@ -122,11 +127,11 @@ void TelemetryController::LogError(const String& p_message)
 {
     if (m_state == EUSBChannel)
     {
-        usbWrite(p_message);
+        usbSendMessage(p_message);
     }
     else if (m_state == EXBeeChannel)
     {
-        xbeeWrite(p_message);
+        xbeeSendMessage(p_message);
     }
     else
     {
@@ -138,11 +143,11 @@ void TelemetryController::LogMessage(const String& p_message)
 {
     if (m_state == EUSBChannel)
     {
-        usbWrite(p_message);
+        usbSendMessage(p_message);
     }
     else if (m_state == EXBeeChannel)
     {
-        xbeeWrite(p_message);
+        xbeeSendMessage(p_message);
     }
     else
     {
@@ -156,13 +161,32 @@ void TelemetryController::LogMessage(const String& p_message)
 //
 //  ====================================================================
 
-void TelemetryController::usbWrite(const String& p_string)
+void TelemetryController::usbSendMessage(const String& p_string)
 {
     g_outputChannel.println(p_string);
 }
 
-void TelemetryController::xbeeWrite(const String& p_string)
+const uint16_t TLM_TERMINATOR=0x6666;
+
+void TelemetryController::xbeeSendMessage(const String& p_string)
 {
+    const char *c_str = p_string.c_str();
+    // BB MJS: CHECK_ENABLED(TLM_ID_DBGM);
+
+    unsigned char pkt[1+k_maxDebugMessageLength+2]={0};
+    pkt[0] = TLM_ID_DBGM;
+    size_t copied = 0;
+    size_t pos=1;
+
+    while(copied < k_maxDebugMessageLength && c_str[copied]) 
+    {
+        pkt[pos++] = c_str[copied++];
+    }
+
+    *((uint16_t *)(pkt+pos)) = TLM_TERMINATOR;
+    size_t sendlen = 1+copied+sizeof(TLM_TERMINATOR);
+    
+    // g_outputChannel.write(pkt, sendlen);
 }
 
 void TelemetryController::setState(controllerState p_state)
@@ -191,20 +215,16 @@ void TelemetryController::setState(controllerState p_state)
     {
         case EInit:
         {
-            m_invalidStateLog = false;        
-        }
-        break;
-
-        case EChooseChannel:
-        {
-            //  First, try to init USB, then fall back to XBee if we can not
-
-            initUSB();
+            m_invalidStateLog = false;
+            
+            pinMode(XBEE_CTS, INPUT);
         }
         break;
 
         case EUSBChannel:
         {
+            initUSB();
+
             if (m_invalidStateLog)
             {
                 LogError("There was a call to Telem.Log before Serial Channel was ready");
@@ -214,7 +234,6 @@ void TelemetryController::setState(controllerState p_state)
 
         case EXBeeChannel:
         {
-            g_outputChannel.end();
             initXBee();
 
             if (m_invalidStateLog)
@@ -226,6 +245,11 @@ void TelemetryController::setState(controllerState p_state)
     }
 }
 
+void TelemetryController::initUSB()
+{
+    g_outputChannel.begin(57600);
+}
+
 void TelemetryController::initXBee()
 {
     // Xbee Series 2 configuration notes:
@@ -234,18 +258,10 @@ void TelemetryController::initXBee()
     // Xbee SN 13A200 40B9D1B1 is set to Router AT, and DH/DL programmed to the SN of the Coordinator AT
     // They're talking on PAN ID 2001 (A Space Odyssey)
 
-/*
     g_outputChannel.begin(57600);
-    pinMode(XBEE_CTS, INPUT);
     *digitalPinToPCMSK(XBEE_CTS) |= bit (digitalPinToPCMSKbit(XBEE_CTS));
     PCIFR  |= bit (digitalPinToPCICRbit(XBEE_CTS));
     PCICR  |= bit (digitalPinToPCICRbit(XBEE_CTS));
+
     g_outputChannel.set_cts_pin(XBEE_CTS);
-*/
 }
-
-void TelemetryController::initUSB()
-{
-    g_outputChannel.begin(19200);
-}
-

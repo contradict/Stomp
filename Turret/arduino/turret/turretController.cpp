@@ -115,14 +115,19 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (m_pHammerController->ReadyToFire() && hammerManualFire())
+                else if (m_pHammerController->ReadyToFire() && hammerManualThrowRetract())
                 {
-                    setState(EHammerTrigger);
+                    setState(EHammerTriggerThrowRetract);
+                }
+                else if (hammerManualRetract())
+                {
+                    setState(EHammerTriggerRetract);
                 }
             }
             break;
 
-            case EHammerTrigger:
+            case EHammerTriggerThrowRetract:
+            case EHammerTriggerRetract:
             {
                 if (m_lastUpdateTime != m_stateStartTime)
                 {
@@ -301,10 +306,16 @@ void TurretController::setState(controllerState p_state)
         }
         break;
 
-        case EHammerTrigger:
+        case EHammerTriggerThrowRetract:
         {
             Telem.LogMessage("HammerTrigger");
             m_pHammerController->Fire();
+        }
+        break;
+
+        case EHammerTriggerRetract:
+        {
+            m_pHammerController->Retract();
         }
         break;
 
