@@ -7,6 +7,7 @@
 #include "enfield_uart.h"
 #include "export/joint.h"
 #include "status_led.h"
+#include "debug_pin.h"
 
 #define ENFIELD_BAUD 115200
 
@@ -61,6 +62,7 @@ struct EnfieldContext
     osThreadId thread;
     uint16_t BaseEndPressure;
     uint16_t RodEndPressure;
+    uint16_t DigitalCommandNew;
     uint16_t DigitalCommand;
     uint16_t FeedbackPosition;
     osMailQId commandQ;
@@ -186,6 +188,7 @@ int Enfield_WriteDigitalCommand(void *ctx, uint16_t v)
     {
         return ILLEGAL_DATA_ADDRESS;
     }
+    enfield_context[joint].DigitalCommandNew = 1;
     enfield_context[joint].DigitalCommand = v;
     return 0;
 }
@@ -215,7 +218,10 @@ bool Enfield_IsValidWriteRegister(enum EnfieldWriteRegister r)
 void Enfield_SetCommand(uint16_t command[JOINT_COUNT])
 {
     for(int j=0;j<3;j++)
+    {
         enfield_context[j].DigitalCommand = CLIP(command[j], 0, 4095);
+        enfield_context[j].DigitalCommandNew = 1;
+    }
 }
 
 static void Curl_UART_Init()
@@ -306,6 +312,7 @@ void Enfield_Thread(const void *arg)
                 if(ENFIELD_OK == err)
                 {
                     st->DigitalCommand = st->FeedbackPosition;
+                    st->DigitalCommandNew = 0;
                 }
                 st->state = (ENFIELD_OK == err) ? StSetCommandSource : StWaitRequest;
                 break;
@@ -362,6 +369,8 @@ void Enfield_Thread(const void *arg)
                 st->state = StWaitRequest;
                 break;
             case StUpdate:
+                if(st->joint == JOINT_CURL && st->DigitalCommandNew)
+                    DebugPin_Set(1, 1);
                 LED_SetOne(st->joint, 2, 64);
                 switch(st->UpdateWhichRead) {
                     case UPDATE_READ_BASE_END:
@@ -400,6 +409,12 @@ void Enfield_Thread(const void *arg)
                     LED_SetOne(st->joint, 0, 128);
                     st->loopstate = StPing;
                 }
+                else
+                {
+                    st->DigitalCommandNew = 0;
+                }
+                if(st->joint == JOINT_CURL && (st->DigitalCommandNew == 0))
+                    DebugPin_Set(1, 0);
                 st->state = StWaitRequest;
                 break;
         }
