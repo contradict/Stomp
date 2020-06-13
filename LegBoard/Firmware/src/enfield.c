@@ -45,11 +45,18 @@ enum EnfieldThreadState {
     StUpdate            // smaple period timeout, write position and read pressure
 };
 
+enum EnfieldUpdateWhichRead {
+    UPDATE_READ_BASE_END,
+    UPDATE_READ_ROD_END,
+    UPDATE_READ_FEEDBACK
+};
+
 struct EnfieldContext
 {
     enum JointIndex joint;
     enum EnfieldThreadState state;
     enum EnfieldThreadState loopstate;
+    enum EnfieldUpdateWhichRead UpdateWhichRead;
     UART_HandleTypeDef *uart;
     osThreadId thread;
     uint16_t BaseEndPressure;
@@ -267,7 +274,7 @@ void Enfield_Thread(const void *arg)
     st->state = StStart;
     st->loopstate = StStart;
     uint16_t read_data, write_data;
-    int err, errs[4];
+    int err, errs[4] = {0,0,0,0};
     while(1)
     {
         switch(st->state)
@@ -310,6 +317,7 @@ void Enfield_Thread(const void *arg)
                     LED_SetOne(st->joint, 0, 0);
                 }
                 st->loopstate = StUpdate;
+                st->UpdateWhichRead = UPDATE_READ_BASE_END;
                 st->state = StWaitRequest;
                 break;
             case StPing:
@@ -321,6 +329,7 @@ void Enfield_Thread(const void *arg)
                 {
                     LED_SetOne(st->joint, 0, 0);
                     st->loopstate = StUpdate;
+                    st->UpdateWhichRead = UPDATE_READ_BASE_END;
                 }
                 st->state = StWaitRequest;
                 break;
@@ -354,20 +363,34 @@ void Enfield_Thread(const void *arg)
                 break;
             case StUpdate:
                 LED_SetOne(st->joint, 2, 64);
-                errs[0] = Enfield_Get(st, ReadBaseEndPressure, &read_data);
-                if(ENFIELD_OK == errs[0])
-                {
-                    st->BaseEndPressure = read_data;
-                }
-                errs[1] = Enfield_Get(st, ReadRodEndPressure, &read_data);
-                if(ENFIELD_OK == errs[1])
-                {
-                    st->RodEndPressure = read_data;
-                }
-                errs[2] = Enfield_Get(st, ReadFeedbackPosition, &read_data);
-                if(ENFIELD_OK == errs[1])
-                {
-                    st->FeedbackPosition = read_data;
+                switch(st->UpdateWhichRead) {
+                    case UPDATE_READ_BASE_END:
+                        errs[0] = Enfield_Get(st, ReadBaseEndPressure, &read_data);
+                        if(ENFIELD_OK == errs[0])
+                        {
+                            st->BaseEndPressure = read_data;
+                            st->UpdateWhichRead = UPDATE_READ_ROD_END;
+                        }
+                        break;
+                    case UPDATE_READ_ROD_END:
+                        errs[1] = Enfield_Get(st, ReadRodEndPressure, &read_data);
+                        if(ENFIELD_OK == errs[1])
+                        {
+                            st->RodEndPressure = read_data;
+                            st->UpdateWhichRead = UPDATE_READ_FEEDBACK;
+                        }
+                        break;
+                    case UPDATE_READ_FEEDBACK:
+                        errs[2] = Enfield_Get(st, ReadFeedbackPosition, &read_data);
+                        if(ENFIELD_OK == errs[2])
+                        {
+                            st->FeedbackPosition = read_data;
+                            st->UpdateWhichRead = UPDATE_READ_BASE_END;
+                        }
+                        break;
+                    default:
+                        st->UpdateWhichRead = UPDATE_READ_BASE_END;
+                        break;
                 }
                 write_data = st->DigitalCommand;
                 errs[3] = Enfield_Write(st, SetDigitalCommand, &write_data);
