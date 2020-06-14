@@ -85,11 +85,12 @@ static struct SensorCalibration calibration_constants __attribute__ ((section ("
       //THETA_OFFSET(Vmin,     Vmax,                 Thetamin,                 Thetamax)
         THETA_OFFSET(0.900f, 4.800f, -M_PI_2-25.1*M_PI/180.0f, -M_PI_2+25.1*M_PI/180.0f),  // CURL
         THETA_OFFSET(0.250f, 4.800f,               -M_PI/8.0f,                M_PI/8.0f),  // SWING
-        THETA_OFFSET(1.016f, 3.660f,          -13*M_PI/180.0f,           13*M_PI/180.0f)}, // LIFT
+        THETA_OFFSET(1.010f, 3.660f,          -13*M_PI/180.0f,           13*M_PI/180.0f)}, // LIFT
+
     .theta_scale = {
         THETA_SCALE( 0.900f, 4.800f, -M_PI_2-25.1*M_PI/180.0f, -M_PI_2+25.1*M_PI/180.0f),  // CURL
         THETA_SCALE( 0.250f, 4.800f,               -M_PI/8.0f,                M_PI/8.0f),  // SWING
-        THETA_SCALE( 1.016f, 3.660f,          -13*M_PI/180.0f,          13*M_PI/180.0f)},  // LIFT
+        THETA_SCALE( 1.010f, 3.660f,          -13*M_PI/180.0f,          13*M_PI/180.0f)},  // LIFT
     .joint_min = {
         5.8, // CURL
         1.080, // SWING
