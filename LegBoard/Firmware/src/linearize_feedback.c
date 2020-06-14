@@ -44,6 +44,7 @@ static const float ADC_VREF = 3.3f;
 static const float ADC_MAX_CODE = (float)((1<<12) - 1);
 static const float JOINT_DIVIDER = 2.0f / 3.0f;
 static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
+static const float MAX_ENFIELD_SCALE = 9.99f / __MAX_DAC_OUTPUT; // Limit Enfield voltage, it wraps above 10.0
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 static const float JOINT_ANGLE_SCALE = 1000.0f;
 
@@ -275,10 +276,10 @@ void Linearize_ScaleCylinders(const float cylinder_edge_length[JOINT_COUNT],
     {
         scale =  FEEDBACK_SCALE(calibration_constants.joint_min[joint],
                                 calibration_constants.joint_max[joint],
-                                0.0, 1.0);
+                                0.0, MAX_ENFIELD_SCALE);
         offset = FEEDBACK_OFFSET(calibration_constants.joint_min[joint],
                                  calibration_constants.joint_max[joint],
-                                 0.0, 1.0);
+                                 0.0, MAX_ENFIELD_SCALE);
         scaled_values[joint] = scale*cylinder_edge_length[joint] + offset;
     }
 }
