@@ -4,6 +4,7 @@
 #include "kinematics.h"
 #include "modbus.h"
 #include "enfield.h"
+#include "errno.h"
 
 #define LENGTH_SCALE 1000.0f
 
@@ -131,9 +132,14 @@ int Kinematics_WriteToePosition(void *ctx, uint16_t v)
     commanded_position[coordinate] = (int16_t)v / LENGTH_SCALE;
     if(coordinate == 2)
     {
+        set_errno(0);
         Kinematics_JointAngles(commanded_position, joint_angle);
         Kinematics_CylinderEdgeLengths(joint_angle, cylinder_edge_length);
         Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_value);
+        if(get_errno() != 0)
+        {
+            return ILLEGAL_DATA_VALUE;
+        }
         for(int j=0;j<JOINT_COUNT;j++)
             cylinder_command[j] = cylinder_scaled_value[j] * 4095;
         Enfield_SetCommand(cylinder_command);
