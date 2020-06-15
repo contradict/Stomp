@@ -91,30 +91,34 @@ int Kinematics_ReadCurrentEdgeLengths(void *ctx, uint16_t *v)
     int joint = (int)ctx;
     float joint_angle[3];
     float edge_length[3];
+    int16_t len;
 
     if((joint < 0) || (joint > JOINT_COUNT))
         return ILLEGAL_DATA_ADDRESS;
     Linearize_GetJointAngles(joint_angle);
     Kinematics_CylinderEdgeLengths(joint_angle, edge_length);
-    *v = roundf(LENGTH_SCALE * edge_length[joint]);
+    len = roundf(LENGTH_SCALE * edge_length[joint]);
+    *v = *((uint16_t *)&len);
     return 0;
 }
 
-int Kinematics_ReadToePosition(void *ctx, int16_t *v)
+int Kinematics_ReadToePosition(void *ctx, uint16_t *v)
 {
     int coordinate = (int)ctx;
     float joint_angle[JOINT_COUNT];
     float toe_postion[3];
+    int16_t pos;
 
     if((coordinate < 0) || (coordinate > 2))
         return ILLEGAL_DATA_ADDRESS;
     Linearize_GetJointAngles(joint_angle);
     Kinematics_ToePosition(joint_angle, toe_postion);
-    *v = roundf(LENGTH_SCALE * toe_postion[coordinate]);
+    pos = roundf(LENGTH_SCALE * toe_postion[coordinate]);
+    *v = *((uint16_t *)&pos);
     return 0;
 }
 
-int Kinematics_WriteToePosition(void *ctx, int16_t v)
+int Kinematics_WriteToePosition(void *ctx, uint16_t v)
 {
     int coordinate = (int)ctx;
     float joint_angle[3];
@@ -124,7 +128,7 @@ int Kinematics_WriteToePosition(void *ctx, int16_t v)
 
     if((coordinate < 0) || (coordinate > 2))
         return ILLEGAL_DATA_ADDRESS;
-    commanded_position[coordinate] = v / LENGTH_SCALE;
+    commanded_position[coordinate] = (int16_t)v / LENGTH_SCALE;
     if(coordinate == 2)
     {
         Kinematics_JointAngles(commanded_position, joint_angle);

@@ -7,5 +7,5 @@ void Kinematics_CylinderEdgeLengths(const float joint_angle[JOINT_COUNT],
 
 void Kinematics_JointAngles(const float toe[3], float joint_angle[JOINT_COUNT]);
 
-int Kinematics_ReadToePosition(void *context, int16_t *v);
-int Kinematics_WriteToePosition(void *context, int16_t v);
+int Kinematics_ReadToePosition(void *context, uint16_t *v);
+int Kinematics_WriteToePosition(void *context, uint16_t v);
