@@ -9,7 +9,7 @@ ASFLAGS = -g3
 
 # object files
 
-OBJS=$(STARTUP) src/main.o
+OBJS=$(STARTUP) src/errno.o src/main.o
 OBJS += src/stm32f7xx_hal_timebase_tim.o
 OBJS += src/storage.o
 OBJS += src/status_led.o
