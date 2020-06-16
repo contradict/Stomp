@@ -7,7 +7,6 @@
 #include "enfield_uart.h"
 #include "export/joint.h"
 #include "status_led.h"
-#include "debug_pin.h"
 
 #define ENFIELD_BAUD 115200
 
@@ -377,8 +376,6 @@ void Enfield_Thread(const void *arg)
                 st->state = StWaitRequest;
                 break;
             case StUpdate:
-                if(st->joint == JOINT_CURL && st->DigitalCommandNew)
-                    DebugPin_Set(1, 1);
                 st->last_update = xTaskGetTickCount();
                 LED_SetOne(st->joint, 2, 64);
                 switch(st->UpdateWhichRead) {
@@ -425,8 +422,6 @@ void Enfield_Thread(const void *arg)
                         st->DigitalCommandNew = 0;
                     }
                 }
-                if(st->joint == JOINT_CURL && (st->DigitalCommandNew == 0))
-                    DebugPin_Set(1, 0);
                 st->state = StWaitRequest;
                 break;
         }
