@@ -322,7 +322,7 @@ int step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
         {
             sc->params[sc->joint][13] = sc->siggen_signal;
             err = modbus_write_register(
-                mctx, joint[sc->joint] + HCachedDigitalCommand,
+                mctx, joint[sc->joint] + HDigitalCommand,
                 sc->params[sc->joint][13]);
             showerror(&sc->error[sc->joint], "siggen set failed", err, NULL);
             sc->siggen_start = true;
