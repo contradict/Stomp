@@ -58,6 +58,7 @@ struct EnfieldContext
     enum EnfieldThreadState state;
     enum EnfieldThreadState loopstate;
     enum EnfieldUpdateWhichRead UpdateWhichRead;
+    uint32_t last_update;
     UART_HandleTypeDef *uart;
     osThreadId thread;
     uint16_t BaseEndPressure;
@@ -281,6 +282,7 @@ void Enfield_Thread(const void *arg)
     st->loopstate = StStart;
     uint16_t read_data, write_data;
     int err, errs[4] = {0,0,0,0};
+    uint32_t now, wait;
     while(1)
     {
         switch(st->state)
@@ -325,6 +327,7 @@ void Enfield_Thread(const void *arg)
                 }
                 st->loopstate = StUpdate;
                 st->UpdateWhichRead = UPDATE_READ_BASE_END;
+                st->last_update = xTaskGetTickCount();
                 st->state = StWaitRequest;
                 break;
             case StPing:
@@ -341,8 +344,13 @@ void Enfield_Thread(const void *arg)
                 st->state = StWaitRequest;
                 break;
             case StWaitRequest:
-                evt = osMailGet(st->commandQ, enfield_parameters.sample_period);
-                if(evt.status == osEventTimeout)
+                now = xTaskGetTickCount();
+                if(st->last_update + enfield_parameters.sample_period <= now)
+                    wait = 0;
+                else
+                    wait = st->last_update + enfield_parameters.sample_period - now;
+                evt = osMailGet(st->commandQ, wait);
+                if(evt.status == osEventTimeout || evt.status == osOK)
                 {
                     st->state = st->loopstate;
                 }
@@ -371,6 +379,7 @@ void Enfield_Thread(const void *arg)
             case StUpdate:
                 if(st->joint == JOINT_CURL && st->DigitalCommandNew)
                     DebugPin_Set(1, 1);
+                st->last_update = xTaskGetTickCount();
                 LED_SetOne(st->joint, 2, 64);
                 switch(st->UpdateWhichRead) {
                     case UPDATE_READ_BASE_END:
