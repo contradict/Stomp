@@ -401,17 +401,20 @@ void Enfield_Thread(const void *arg)
                         st->UpdateWhichRead = UPDATE_READ_BASE_END;
                         break;
                 }
-                write_data = st->DigitalCommand;
-                errs[3] = Enfield_Write(st, SetDigitalCommand, &write_data);
-                if(errs[0] || errs[1] || errs[2] || errs[3])
+                if(st->DigitalCommandNew)
                 {
-                    err = 1;
-                    LED_SetOne(st->joint, 0, 128);
-                    st->loopstate = StPing;
-                }
-                else
-                {
-                    st->DigitalCommandNew = 0;
+                    write_data = st->DigitalCommand;
+                    errs[3] = Enfield_Write(st, SetDigitalCommand, &write_data);
+                    if(errs[0] || errs[1] || errs[2] || errs[3])
+                    {
+                        err = 1;
+                        LED_SetOne(st->joint, 0, 128);
+                        st->loopstate = StPing;
+                    }
+                    else
+                    {
+                        st->DigitalCommandNew = 0;
+                    }
                 }
                 if(st->joint == JOINT_CURL && (st->DigitalCommandNew == 0))
                     DebugPin_Set(1, 0);
