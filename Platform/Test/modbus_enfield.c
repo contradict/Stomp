@@ -32,15 +32,23 @@ int main(int argc, char **argv)
     modbus_flush(ctx);
 
     uint16_t serial_number[2];
+    uint16_t value[6];
 
-    for(uint16_t base = 0x100; base<0x400; base += 0x100)
+    for(uint16_t base = 0x100; base<0x200; base += 0x100)
     {
         printf("base: 0x%x\n", base);
+        /*
         bzero(serial_number, sizeof(serial_number));
         if(modbus_read_input_registers(ctx, base + ISerialNumberLo, 2, serial_number) == -1)
             printf("  Read serial number failed: %s\n", modbus_strerror(errno));
         else
             printf("  Serial Number: %d\n", *(uint32_t *)serial_number);
+        */
+        if(modbus_read_input_registers(ctx, base + ISensorVoltage, 6, value) == -1)
+            printf("  Read Cached values failed: %s\n", modbus_strerror(errno));
+        else
+            printf("  cached : %04x %04x %04x %04x %04x %04x\n",
+                   value[0], value[1], value[2], value[3], value[4], value[5]);
 
         /*
         usleep(500000);
