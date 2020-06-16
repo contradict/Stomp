@@ -43,7 +43,7 @@ enum EnfieldThreadState {
     StPing,             // Wait for a sensible response
     StWaitRequest,      // Wait sample_period for a command, execute if recieved
     StExecuteRequest,   // Execute command
-    StUpdate            // smaple period timeout, write position and read pressure
+    StUpdate            // sample period timeout, write position and read pressure
 };
 
 enum EnfieldUpdateWhichRead {
