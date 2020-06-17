@@ -67,3 +67,6 @@ int MODBUS_ReadEnfieldHoldingRegister(void *ctx, uint16_t *v);
 int MODBUS_WriteEnfieldHoldingRegister(void *ctx, uint16_t v);
 int MODBUS_WriteEnfieldCoil(void *ctx, bool v);
 int MODBUS_ReadEnfieldCoil(void *ctx, bool *v);
+
+int MODBUS_GetAddress(void *ctx, uint16_t *addr);
+int MODBUS_SetAddress(void *ctx, uint16_t addr);

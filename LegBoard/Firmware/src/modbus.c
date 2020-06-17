@@ -788,3 +788,16 @@ int MODBUS_WriteEnfieldCoil(void *ctx, bool v)
     uint16_t hv = v ? 0x0001 : 0x0000;
     return MODBUS_WriteEnfieldHoldingRegister(ctx, hv);
 }
+
+
+int MODBUS_GetAddress(void *ctx, uint16_t *addr)
+{
+    *addr = modbus_parameters.address;
+    return 0;
+}
+
+int MODBUS_SetAddress(void *ctx, uint16_t addr)
+{
+    modbus_parameters.address = addr;
+    return 0;
+}

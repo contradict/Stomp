@@ -16,6 +16,12 @@ static const uint8_t EnfieldHoldingRegister[] = {
 
 struct MODBUS_HoldingRegister modbus_holding_registers[] = {
     {
+        .address = HMODBUSAddress,
+        .context = (void *)0,
+        .read = MODBUS_GetAddress,
+        .write = MODBUS_SetAddress,
+    },
+    {
         .address = 0x40,
         .context = (void *)0,
         .read = Kinematics_ReadToePosition,
