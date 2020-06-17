@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "stm32f7xx_hal.h"
 
 #define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base address of Sector 0, 32 Kbytes */
@@ -63,8 +64,10 @@ void Storage_Init(void)
     memcpy(&_sstdata, &_ldstdata, &_estdata - &_sstdata);
 }
 
-void Storage_Save(void)
+int Storage_Save(void *context, bool dummy)
 {
+    (void)context;
+    (void)dummy;
     FLASH_EraseInitTypeDef eraseInitStruct;
     uint32_t SECTORError;
 
@@ -83,4 +86,11 @@ void Storage_Save(void)
     }
 
     HAL_FLASH_Lock();
+    return 0;
+}
+
+int Storage_IsSaved(void *context, bool *state)
+{
+    *state = memcmp(&_sstdata, &_ldstdata, &_estdata - &_sstdata) == 0;
+    return 0;
 }

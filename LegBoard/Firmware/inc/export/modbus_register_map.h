@@ -6,6 +6,8 @@
 #define SWING_BASE ((JOINT_SWING + 1) * 0x100)
 #define LIFT_BASE ((JOINT_LIFT + 1) * 0x100)
 
+#define CSaveConstants 0x10
+
 enum CoilOffset {
     CFeedbackPolarity = 0x20,
     CPortConnection = 0x21,

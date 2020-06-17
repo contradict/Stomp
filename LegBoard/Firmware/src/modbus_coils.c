@@ -1,6 +1,7 @@
 #include "modbus.h"
 #include "export/modbus_register_map.h"
 #include "modbus_common.h"
+#include "storage.h"
 
 #include "enfield.h"
 
@@ -9,6 +10,12 @@
 static uint16_t scratchpad = 0x55;
 
 const struct MODBUS_Coil modbus_coils[] = {
+    {
+        .address = CSaveConstants,
+        .context = NULL,
+        .read = Storage_IsSaved,
+        .write = Storage_Save,
+    },
     {
         .address = 0x55,
         .context = &scratchpad,
