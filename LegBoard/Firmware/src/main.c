@@ -20,7 +20,6 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-int __errno;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);

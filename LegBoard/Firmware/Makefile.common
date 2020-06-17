@@ -439,12 +439,13 @@ endif
 
 FULLASSERT = -DUSE_FULL_ASSERT
 
-ARCH_FLAGS= -mcpu=cortex-m7 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard 
+ARCH_FLAGS= -mcpu=cortex-m7 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard
 LDFLAGS+= -T$(LDSCRIPT) $(ARCH_FLAGS) -specs=nosys.specs -Wl,--gc-sections
 CFLAGS+= $(ARCH_FLAGS)
 CFLAGS += -fdata-sections -ffunction-sections
 CFLAGS+= -I$(DEVICE)/Include -I$(CORE)/Include -I$(PERIPH)/Inc -I$(BSP) -I $(LIBROOT_FILENAME)/Drivers/BSP/STM32F7xx_Nucleo_144/
 CFLAGS+= -D$(PTYPE_FILENAME_UPPERCASE) -D$(CONFIG_BTYPE) -DUSE_HAL_DRIVER $(FULLASSERT) $(USE_LL_DRIVER) -D_TIMEVAL_DEFINED -D_SYS_TIME_H_
+LDLIBS=-lm -lc
 
 # Build executable
 
