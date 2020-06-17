@@ -41,6 +41,12 @@ enum InputRegisterOffset {
 };
 
 enum HoldingRegisterOffset {
+    HSensorVmin = 0x10,
+    HSensorVmax = 0x11,
+    HSensorThetamin = 0x12,
+    HSensorThetamax = 0x13,
+    HCylinderLengthMin = 0x14,
+    HCylinderLengthMax = 0x15,
     HProportionalGain = 0x30,
     HDerivativeGain = 0x31,
     HForceDamping = 0x32,

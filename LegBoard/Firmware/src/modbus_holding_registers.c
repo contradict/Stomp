@@ -9,6 +9,8 @@
 
 #include "kinematics.h"
 
+#include "linearize_feedback.h"
+
 static uint16_t scratchpad = 0x55;
 
 static const uint8_t EnfieldHoldingRegister[] = {
@@ -44,6 +46,42 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .context = (void *)&scratchpad,
         .read = return_context,
         .write = save_to_context
+    },
+    {
+        .address = CURL_BASE + HSensorVmin,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorVmin,
+        .write = Linearize_SetSensorVmin,
+    },
+    {
+        .address = CURL_BASE + HSensorVmax,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorVmax,
+        .write = Linearize_SetSensorVmax,
+    },
+    {
+        .address = CURL_BASE + HSensorThetamin,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorThetamin,
+        .write = Linearize_SetSensorThetamin,
+    },
+    {
+        .address = CURL_BASE + HSensorThetamax,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorThetamax,
+        .write = Linearize_SetSensorThetamax,
+    },
+    {
+        .address = CURL_BASE + HCylinderLengthMin,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetCylinderLengthMin,
+        .write = Linearize_SetCylinderLengthMin,
+    },
+    {
+        .address = CURL_BASE + HCylinderLengthMax,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetCylinderLengthMax,
+        .write = Linearize_SetCylinderLengthMax,
     },
     {
         .address = CURL_BASE + HProportionalGain,

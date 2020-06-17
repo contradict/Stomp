@@ -30,6 +30,7 @@
 #define ADC_CONV_COMPLETE 4
 #define ADC_CONV_ERROR    8
 
+static void Linearize_ConstantInit(void);
 static void Linearize_Thread(const void* args);
 void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
                           float voltage[JOINT_COUNT],
@@ -47,6 +48,8 @@ static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
 static const float MAX_ENFIELD_SCALE = 9.99f / __MAX_DAC_OUTPUT; // Limit Enfield voltage, it wraps above 10.0
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 static const float JOINT_ANGLE_SCALE = 1000.0f;
+static const float VOLTAGE_SCALE = 1000.0f;
+static const float CYLINDER_LENGTH_SCALE = 1000.0f;
 
 extern SPI_HandleTypeDef DAC_SPIHandle;
 extern ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
@@ -73,35 +76,59 @@ static const uint8_t joint_led_channel[JOINT_COUNT] = {0, 1, 2};
 static const enum ads57x4_channel joint_dac_channel[JOINT_COUNT] = {
     ADS57x4_CHANNEL_A, ADS57x4_CHANNEL_C, ADS57x4_CHANNEL_B};
 
-struct SensorCalibration {
+struct SensorCalibrationStorage {
+    float v_min[JOINT_COUNT];
+    float v_max[JOINT_COUNT];
+    float theta_min[JOINT_COUNT];
+    float theta_max[JOINT_COUNT];
+    float cylinder_length_min[JOINT_COUNT];
+    float cylinder_length_max[JOINT_COUNT];
+};
+
+struct SensorCalibrationProcessed {
     float theta_offset[JOINT_COUNT];
     float theta_scale[JOINT_COUNT];
-    float joint_min[JOINT_COUNT];
-    float joint_max[JOINT_COUNT];
 };
 
-static struct SensorCalibration calibration_constants __attribute__ ((section (".storage.linearize"))) = {
-    .theta_offset = {
-      //THETA_OFFSET(Vmin,     Vmax,                 Thetamin,                 Thetamax)
-        THETA_OFFSET(0.900f, 4.800f, -M_PI_2-25.1*M_PI/180.0f, -M_PI_2+25.1*M_PI/180.0f),  // CURL
-        THETA_OFFSET(0.250f, 4.800f,               -M_PI/8.0f,                M_PI/8.0f),  // SWING
-        THETA_OFFSET(1.010f, 3.660f,          -13*M_PI/180.0f,           13*M_PI/180.0f)}, // LIFT
-
-    .theta_scale = {
-        THETA_SCALE( 0.900f, 4.800f, -M_PI_2-25.1*M_PI/180.0f, -M_PI_2+25.1*M_PI/180.0f),  // CURL
-        THETA_SCALE( 0.250f, 4.800f,               -M_PI/8.0f,                M_PI/8.0f),  // SWING
-        THETA_SCALE( 1.010f, 3.660f,          -13*M_PI/180.0f,          13*M_PI/180.0f)},  // LIFT
-    .joint_min = {
-        5.8, // CURL
-        1.080, // SWING
-        1.07, // LIFT
+static struct SensorCalibrationStorage calibration_constants_stored __attribute__ ((section (".storage.linearize"))) = {
+    .v_min = {
+        0.900f, // CURL
+        0.250f, // SWING
+        1.010f, // LIFT
     },
-    .joint_max = {
-        6.8, // CURL
-        4.065, // SWING 
-        3.05, // LIFT
+
+    .v_max = {
+        4.800f, // CURL
+        4.800f, // SWING
+        3.660f, // LIFT
+    },
+
+    .theta_min = {
+        -M_PI_2-25.1*M_PI/180.0f, // CURL
+        -M_PI/8.0f,               // SWING
+        -13*M_PI/180.0f,          // LIFT
+    },
+
+    .theta_max = {
+        -M_PI_2+25.1*M_PI/180.0f, // CURL
+        M_PI/8.0f,                // SWING
+        13*M_PI/180.0f,           // LIFT
+    },
+
+    .cylinder_length_min = {
+        5.8f, // CURL
+        1.080f, // SWING
+        1.07f, // LIFT
+    },
+
+    .cylinder_length_max = {
+        6.8f, // CURL
+        4.065f, // SWING
+        3.05f, // LIFT
     }
 };
+
+static struct SensorCalibrationProcessed calibration_constants_processed;
 
 void Linearize_ThreadInit(void)
 {
@@ -114,6 +141,8 @@ void Linearize_ThreadInit(void)
 
     FeedbackADC_Init();
 
+    Linearize_ConstantInit();
+
     linearize = osThreadCreate(osThread(lin), NULL);
     dataQ = osMessageCreate(osMessageQ(adcdata), linearize);
 }
@@ -125,9 +154,106 @@ void Linearize_ThreadInit(void)
         return ILLEGAL_DATA_ADDRESS; \
     }
 
+static void Linearize_ConstantInit(void)
+{
+    for(int j=0; j<JOINT_COUNT; j++)
+    {
+        calibration_constants_processed.theta_offset[j] = THETA_OFFSET(calibration_constants_stored.v_min[j], calibration_constants_stored.v_max[j], calibration_constants_stored.theta_min[j], calibration_constants_stored.theta_max[j]);
+        calibration_constants_processed.theta_scale[j] = THETA_SCALE(calibration_constants_stored.v_min[j], calibration_constants_stored.v_max[j], calibration_constants_stored.theta_min[j], calibration_constants_stored.theta_max[j]);
+    }
+}
+
 void Linearize_GetJointAngles(float a[3])
 {
     memcpy(a, joint_angle, sizeof(joint_angle));
+}
+
+int Linearize_GetSensorVmin(void *ctx, uint16_t *vmin)
+{
+    GETJOINT(joint);
+    *(int16_t *)vmin = roundf(calibration_constants_stored.v_min[joint] * VOLTAGE_SCALE);
+    return 0;
+}
+
+int Linearize_GetSensorVmax(void *ctx, uint16_t *vmax)
+{
+    GETJOINT(joint);
+    *(int16_t *)vmax = roundf(calibration_constants_stored.v_max[joint] * VOLTAGE_SCALE);
+    return 0;
+}
+
+int Linearize_GetSensorThetamin(void *ctx, uint16_t *tmin)
+{
+    GETJOINT(joint);
+    *(int16_t *)tmin = roundf(calibration_constants_stored.theta_min[joint] * JOINT_ANGLE_SCALE);
+    return 0;
+}
+
+int Linearize_GetSensorThetamax(void *ctx, uint16_t *tmax)
+{
+    GETJOINT(joint);
+    *(int16_t *)tmax = roundf(calibration_constants_stored.theta_max[joint] * JOINT_ANGLE_SCALE);
+    return 0;
+}
+
+int Linearize_GetCylinderLengthMin(void *ctx, uint16_t *lmin)
+{
+    GETJOINT(joint);
+    *(int16_t *)lmin = roundf(calibration_constants_stored.cylinder_length_min[joint] * CYLINDER_LENGTH_SCALE);
+    return 0;
+}
+
+int Linearize_GetCylinderLengthMax(void *ctx, uint16_t *lmax)
+{
+    GETJOINT(joint);
+    *(int16_t *)lmax = roundf(calibration_constants_stored.cylinder_length_max[joint] * CYLINDER_LENGTH_SCALE);
+    return 0;
+}
+
+int Linearize_SetSensorVmin(void *ctx, uint16_t vmin)
+{
+    GETJOINT(joint);
+    calibration_constants_stored.v_min[joint] = ((int16_t)vmin) / VOLTAGE_SCALE;
+    Linearize_ConstantInit();
+    return 0;
+}
+
+int Linearize_SetSensorVmax(void *ctx, uint16_t vmax)
+{
+    GETJOINT(joint);
+    calibration_constants_stored.v_max[joint] = ((int16_t)vmax) / VOLTAGE_SCALE;
+    Linearize_ConstantInit();
+    return 0;
+}
+
+int Linearize_SetSensorThetamin(void *ctx, uint16_t tmin)
+{
+    GETJOINT(joint);
+    calibration_constants_stored.theta_min[joint] = ((int16_t)tmin) / JOINT_ANGLE_SCALE;
+    Linearize_ConstantInit();
+    return 0;
+}
+
+int Linearize_SetSensorThetamax(void *ctx, uint16_t tmax)
+{
+    GETJOINT(joint);
+    calibration_constants_stored.theta_max[joint] = ((int16_t)tmax) / JOINT_ANGLE_SCALE;
+    Linearize_ConstantInit();
+    return 0;
+}
+
+int Linearize_SetCylinderLengthMin(void *ctx, uint16_t lmin)
+{
+    GETJOINT(joint);
+    calibration_constants_stored.cylinder_length_min[joint] = ((int16_t)lmin) / CYLINDER_LENGTH_SCALE;
+    return 0;
+}
+
+int Linearize_SetCylinderLengthMax(void *ctx, uint16_t lmax)
+{
+    GETJOINT(joint);
+    calibration_constants_stored.cylinder_length_max[joint] = ((int16_t)lmax) / CYLINDER_LENGTH_SCALE;
+    return 0;
 }
 
 int Linearize_ReadAngle(void *ctx, uint16_t *v)
@@ -141,7 +267,7 @@ int Linearize_ReadLength(void *ctx, uint16_t *v)
 {
     GETJOINT(joint);
     *v = roundf((cylinder_edge_length[joint] -
-                 calibration_constants.joint_min[joint]) * JOINT_ANGLE_SCALE);
+                 calibration_constants_stored.cylinder_length_min[joint]) * JOINT_ANGLE_SCALE);
     return 0;
 }
 
@@ -264,8 +390,8 @@ void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
     for(enum JointIndex joint=0;joint<JOINT_COUNT;joint++)
     {
         voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) / JOINT_DIVIDER);
-        joint_angle[joint] = (calibration_constants.theta_offset[joint] +
-                calibration_constants.theta_scale[joint] * voltage[joint]);
+        joint_angle[joint] = (calibration_constants_processed.theta_offset[joint] +
+                calibration_constants_processed.theta_scale[joint] * voltage[joint]);
     }
 }
 
@@ -275,11 +401,11 @@ void Linearize_ScaleCylinders(const float cylinder_edge_length[JOINT_COUNT],
     float scale, offset;
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
-        scale =  FEEDBACK_SCALE(calibration_constants.joint_min[joint],
-                                calibration_constants.joint_max[joint],
+        scale =  FEEDBACK_SCALE(calibration_constants_stored.cylinder_length_min[joint],
+                                calibration_constants_stored.cylinder_length_max[joint],
                                 0.0, MAX_ENFIELD_SCALE);
-        offset = FEEDBACK_OFFSET(calibration_constants.joint_min[joint],
-                                 calibration_constants.joint_max[joint],
+        offset = FEEDBACK_OFFSET(calibration_constants_stored.cylinder_length_min[joint],
+                                 calibration_constants_stored.cylinder_length_max[joint],
                                  0.0, MAX_ENFIELD_SCALE);
         scaled_values[joint] = scale*cylinder_edge_length[joint] + offset;
     }
