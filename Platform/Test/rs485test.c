@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     printf("\n");
     for(int i=0;npkt==0 || i<npkt;i++)
     {
-        printf("i=%d w=%d ", i, write(fd, data, 8));
+        printf("i=%d w=%zu ", i, write(fd, data, 8));
         usleep(400);
         int32_t available;
         ioctl(fd, FIONREAD, &available);
