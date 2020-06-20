@@ -40,18 +40,36 @@ void sensor_display(modbus_t *mctx, void *sctx)
     {
         if(modbus_read_input_registers(mctx, joint[j] + ISensorVoltage, 6, data) == -1)
         {
-            snprintf(display, 256, "%s: Cached read failed: %s",
+            snprintf(display, sizeof(display), "%s: Cached read failed: %s",
                      joint_name[j], modbus_strerror(errno));
         }
         else
         {
-            snprintf(display, 256, "%s  s: %5.3fV a: %06.1fd f: %06.3fV l: %06.3fin b: %04x r: %04x",
+            snprintf(display, sizeof(display), "%s  s: %5.3fV a: %06.1fd f: %06.3fV l: %06.3fin b: %04x r: %04x",
                 joint_name[j],
                 data[0] / 1000.0f, data[1] / 1000.0f * 180.0f / M_PI,
                 data[2] / 1000.0f, data[3] / 1000.0f,
                 data[4], data[5]);
         }
-        move(4 + 2 * j, 4);
+        move(4 + 3 * j, 4);
+        clrtoeol();
+        addstr(display);
+        if(modbus_read_registers(mctx, joint[j] + HSensorVmin, 6, data) == -1)
+        {
+            snprintf(display, sizeof(display), "%s: read failed: %s",
+                     joint_name[j], modbus_strerror(errno));
+        }
+        else
+        {
+            snprintf(display, sizeof(display),
+                "      Vmin: %5.3fV Vmax: %5.3fV "
+                "Thetamin: %06.1fd Thetamax: %06.1fd"
+                "lmin: %06.3fin lmax: %06.3fin",
+                data[0] / 1000.0f, data[1] / 1000.0f,
+                data[2] / 1000.0f * 180.0f / M_PI, data[3] / 1000.0f * 180.0f / M_PI,
+                data[4] / 1000.0f, data[5] / 1000.0f);
+        }
+        move(4 + 3 * j + 1, 4);
         clrtoeol();
         addstr(display);
     }
@@ -231,7 +249,7 @@ void showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval
     {
         if(dt)
         {
-            snprintf(ec->error, 256, "%s(%d): %s", msg, dt->tv_usec, modbus_strerror(errno));
+            snprintf(ec->error, 256, "%s(%ld): %s", msg, dt->tv_usec, modbus_strerror(errno));
         }
         else
         {
@@ -758,10 +776,9 @@ void position_handle_key(modbus_t *mctx, void *pctx, int ch)
 
 int main(int argc, char **argv)
 {
-    
     char *devname = "/dev/ttyS4";
     uint32_t baud = 1000000;
-    uint8_t address = 0x55;
+    int addr = 0x55;
     int period = 100;
     uint32_t response_timeout = 2000;
 
@@ -781,13 +798,13 @@ int main(int argc, char **argv)
                 offset = strchr(optarg, 'x');
                 if(offset)
                 {
-                    sscanf(offset + 1, "%lx", &address);
+                    sscanf(offset + 1, "%x", &addr);
                 }
                 else
                 {
-                    address = atoi(optarg);
+                    addr = atoi(optarg);
                 }
-                printf("address: 0x%x\n", address);
+                printf("address: 0x%x\n", addr);
                 break;
             case 't':
                 period = atoi(optarg);
@@ -797,6 +814,8 @@ int main(int argc, char **argv)
                 break;
         }
     }
+
+    uint8_t address = 0xFF & addr;
 
     modbus_t *ctx;
 
