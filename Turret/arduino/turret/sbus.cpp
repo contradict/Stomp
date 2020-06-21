@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <util/atomic.h>
+
+#include "sbus.h"
 #include "pins.h"
-#include "weapons.h"
 #include "wiring_private.h"
 #include "telem.h"
 
 #include "telemetryController.h"
 
-static void setWeaponsEnabled(bool state);
 static uint16_t computeRCBitfield();
 static bool parseSbus();
 
@@ -59,7 +59,7 @@ static void processSBus(void) {
             computeRCBitfield();
         } else {
             bitfield = 0;
-            setWeaponsEnabled(false);
+            // BB MJS: Imediatly disable weapon on failed processSBus -> setWeaponsEnabled(false);
         }
         last_parse_time = micros();
         new_packet = false;
@@ -89,25 +89,6 @@ void updateSBus()
  
     bool timeout = ((micros() - last_parse_time) > radio_lost_timeout);
     s_radioConnected = !(failsafe || timeout);
- 
-    if(!s_radioConnected) 
-    {
-        setWeaponsEnabled(false);
-    }
-}
-
-
-static void setWeaponsEnabled(bool state)
-{
-    if(state) {
-        if (!g_enabled) {
-            g_enabled = true;
-            enableState();
-        }
-    } else {
-        safeState();
-        g_enabled = false;
-    }
 }
 
 bool isRadioConnected()
@@ -209,7 +190,6 @@ static uint16_t computeRCBitfield() {
   if(sbusChannels[WEAPONS_ENABLE] > WEAPONS_ENABLE_THRESHOLD) {
     bitfield |= WEAPONS_ENABLE_BIT;
   }
-  setWeaponsEnabled(bitfield&WEAPONS_ENABLE_BIT);
 
   if ( sbusChannels[AUTO_HAMMER_ENABLE] > AUTO_HAMMER_THRESHOLD){
     bitfield |= AUTO_FIRE_ENABLE_BIT;

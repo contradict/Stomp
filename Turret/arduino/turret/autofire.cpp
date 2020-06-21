@@ -2,9 +2,7 @@
 #include "autofire.h"
 #include "imu.h"
 #include "telem.h"
-
-extern uint8_t HAMMER_INTENSITIES_ANGLE[9];
-
+/*
 struct AutoFireParameters {
     int32_t xtol, ytol;
     int32_t max_omegaZ;   // rad/s * 2048 = 50 deg/sec
@@ -68,16 +66,6 @@ enum AutoFireState updateAutoFire(const Track &tracked_object,
     return st;
 }
 
-void setAutoFireParams(int16_t p_xtol,
-                       int16_t p_ytol,
-                       int16_t p_max_omegaz,
-                       uint32_t telemetry_interval){
-    params.xtol = p_xtol;
-    params.ytol = p_ytol;
-    params.max_omegaZ = p_max_omegaz;
-    params.autofire_telem_interval = telemetry_interval;
-    saveAutoFireParameters();
-}
 
 void saveAutoFireParameters(void) {
     eeprom_write_block(&params, &saved_params_old, sizeof(struct AutoFireParameters));
@@ -86,6 +74,7 @@ void saveAutoFireParameters(void) {
 void restoreAutoFireParameters(void) {
     eeprom_read_block(&params, &saved_params_old, sizeof(struct AutoFireParameters));
 }
+*/
 
 //  ====================================================================
 //
@@ -229,7 +218,7 @@ void AutoFire::SetParams(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, u
     m_params.max_omegaZ = p_max_omegaz;
     m_params.autofire_telem_interval = telemetry_interval;
 
-    saveAutoFireParameters();
+    saveParams();
 }
 
 void AutoFire::RestoreParams()

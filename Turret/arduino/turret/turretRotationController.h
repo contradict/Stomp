@@ -44,7 +44,8 @@ public:
     void Update();
     void Safe();
     
-    int32_t GetCurrentSpeed();
+    int32_t GetTurretSpeed();
+    int16_t GetTurretAngle();
 
     void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t telemetry_interval);
     void SetParams(uint32_t p_manualControlOverideSpeed);
@@ -73,6 +74,7 @@ private:
     //  ====================================================================
 
     void updateSpeed();
+    void updateAngle();
 
     void setState(controllerState p_state);
     void setSpeed(int32_t p_speed);
@@ -105,7 +107,8 @@ private:
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
-    int32_t m_currentSpeed;
+    int32_t m_turretSpeedCurrent;
+    int16_t m_turretAngleCurrent;
 
     TurretController* m_pTurret;
     AutoAim* m_pAutoAim;

@@ -29,11 +29,22 @@
 #include "hammerController.h"
 #include "telemetryController.h"
 
+
 //  ====================================================================
 //
 //  External references
 //
 //  ====================================================================
+
+//  ====================================================================
+//
+//  File constants 
+//
+//  ====================================================================
+
+static const int16_t k_invalidHammerAngleRead = -1;
+static const int16_t k_invalidHammerThrowPressureRead = -1;
+static const int16_t k_invalidHammerRetractPressureRead = -1;
 
 //  ====================================================================
 //
@@ -47,10 +58,21 @@ static struct HammerController::Params EEMEM s_savedParams =
     .telemetryFrequency = 100,
 };
 
+    
 static uint16_t s_telemetryFrequency;
-
-volatile static uint16_t s_throwPressureAngle;
 volatile static bool s_swingComplete;
+
+//  These are file static rather than member variables because they are 
+//  being accesses from an interrupt service routing
+
+volatile static int16_t s_hammerAngleCurrent = k_invalidHammerAngleRead;
+volatile static int32_t s_hammerSpeedCurrent = 0;
+
+volatile static int16_t s_hammerThrowPressure = k_invalidHammerThrowPressureRead;
+volatile static int16_t s_hammerRetractPressure = k_invalidHammerRetractPressureRead;
+
+volatile static int16_t s_hammerThrowAngle = 0;
+
 
 //  ====================================================================
 //
@@ -61,6 +83,7 @@ volatile static bool s_swingComplete;
 void startFullCycleStateMachine();
 void startRetractOnlyStateMachine();
 void swingComplete();
+void updateAngleLocal();
 
 //  ====================================================================
 //
@@ -175,6 +198,9 @@ void HammerController::Update()
 
     //  Now that the state is stable, take action based on stable state
 
+    updateSpeed();
+    updateAngle();
+    updatePressure();
 }
 
 void HammerController::Safe()
@@ -222,6 +248,16 @@ void HammerController::Retract()
     setState(ERetractOnlyInterruptMode);
 }
 
+int32_t HammerController::GetHammerSpeed()
+{
+    return s_hammerSpeedCurrent;
+}
+
+int16_t HammerController::GetHammerAngle()
+{
+    return s_hammerAngleCurrent;
+}
+
 void HammerController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
 {
     m_pAutoFire->SetParams(p_xtol, p_ytol, p_max_omegaz, telemetry_interval);
@@ -260,6 +296,28 @@ void HammerController::SendTelem()
 //  Private methods
 //
 //  ====================================================================
+
+void HammerController::updateSpeed()
+{
+    s_hammerSpeedCurrent;
+}
+
+void HammerController::updateAngle()
+{
+    if (m_state == EFullCycleInterruptMode || m_state == ERetractOnlyInterruptMode)
+    {
+        return;        
+    }
+
+    updateAngleLocal();
+}
+
+void HammerController::updatePressure()
+{
+    s_hammerThrowPressure = k_invalidHammerThrowPressureRead;
+    s_hammerRetractPressure = k_invalidHammerRetractPressureRead;
+}
+
 
 void HammerController::setState(controllerState p_state)
 {
@@ -315,7 +373,7 @@ void HammerController::setState(controllerState p_state)
             resetTelem();
 
             m_throwStartTime = m_stateStartTime;
-            m_throwPressureAngle = k_throwPressureAngleSelfRight;
+            m_throwPressureAngle = m_params.selfRightIntensity;
         }
         break;
 
@@ -331,7 +389,7 @@ void HammerController::setState(controllerState p_state)
         {
             //  Write information into shared variables
 
-            s_throwPressureAngle = m_throwPressureAngle;
+            s_hammerThrowAngle = m_throwPressureAngle;
             s_telemetryFrequency = m_params.telemetryFrequency;
 
             startFullCycleStateMachine();
@@ -404,7 +462,7 @@ const uint16_t k_maxThrowAngle = 210;                       //  210 degrees
 const uint32_t k_maxThrowPressureDt = 750000;               //  0.75 second
 const uint32_t k_maxThrowDt = 1000000;                      //  1.00 second
 
-const uint16_t k_minRetractAngle = 0;                       //    0 degrees
+const uint16_t k_minRetractAngle = 5;                       //    5 degrees
 const uint32_t k_maxRetractDt = 1000000;                    //  1.0 seconds
 
 const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
@@ -448,9 +506,6 @@ static uint32_t s_hammerSubStateDt = 0;
 static uint8_t s_valveState = 0x00;
 
 static uint32_t s_swingTimeStart = 0;
-
-static int32_t s_hammerAngleCurrent = 0;
-static int32_t s_angularVelocity = 0;
 
 //  ====================================================================
 //
@@ -637,12 +692,43 @@ void startRetractOnlyStateMachine()
     UPDATE_VALVE_STATE_RV_CLOSED;
     
     clearPWMForDigitalWrites();
-    //startTimers();
+    startTimers();
 }
 
 void swingComplete()
 {
     stopTimers();
+}
+
+static const int16_t k_minValidDifferential = 102;
+static const int16_t k_maxValidDifferential = 920;
+
+static const int16_t k_minExpectedDifferential = 350;
+static const int16_t k_maxExpectedDifferential = 920;
+
+void updateAngleLocal()
+{
+    //  Is system experienced shock, differential goes to zero.  If outside of 
+    //  valid range, then this is an invalid read and consumers of s_hammerAngleCurrent
+    //  should not use the value this update
+
+    s_hammerAngleCurrent = k_invalidHammerAngleRead;
+
+    int16_t differential = analogRead(ANGLE_AI);
+
+    if (differential >= k_minExpectedDifferential && differential <= k_maxExpectedDifferential)
+    {
+        //  ((differential * 11) / 25) = conversion of differential range into anggle range
+
+        s_hammerAngleCurrent = ((((1024 - differential) - k_minValidDifferential) * 11) / 25);
+    }
+    if (differential >= k_minValidDifferential && differential <= k_maxValidDifferential)
+    {
+        //  We believe the Analog read was good, but we don't expect the hammer to be in this
+        //  position.  It likely just retracted too far.  Set to 0 degrees
+
+        s_hammerAngleCurrent = 0;
+    }
 }
 
 //  ====================================================================
@@ -670,10 +756,13 @@ ISR(TIMER4_COMPA_vect)
 
 ISR(TIMER5_COMPA_vect)
 {
-    uint32_t now = micros();
-    
+    uint32_t now = micros();    
     s_hammerSubStateDt = now - s_hammerSubStateStart;
-    s_hammerAngleCurrent = READ_HAMMER_ANGLE;
+
+    //  file scope function for angle update, includes
+    //  an analogRead() call; should be around 20 cycles
+
+    updateAngleLocal();
 
     hammerSubState desiredState = s_hammerSubState;
 
@@ -692,7 +781,7 @@ ISR(TIMER5_COMPA_vect)
 
         case EThrowPressurize:
         {
-            if (s_hammerAngleCurrent > s_throwPressureAngle || s_hammerSubStateDt > k_maxThrowPressureDt)
+            if (s_hammerAngleCurrent > s_hammerThrowAngle || s_hammerSubStateDt > k_maxThrowPressureDt)
             {
                 //  Go to EThrowExpand state
                 desiredState = EThrowExpand;
@@ -725,7 +814,7 @@ ISR(TIMER5_COMPA_vect)
 
         case ERetractPressurize:
         {
-            if (s_hammerAngleCurrent <= k_minRetractAngle || s_hammerSubStateDt > k_maxRetractDt)
+            if ((s_hammerAngleCurrent >= 0 && s_hammerAngleCurrent <= k_minRetractAngle) || s_hammerSubStateDt > k_maxRetractDt)
             {
                 //  Go to ERetractComplete state
                 desiredState = ERetractComplete;

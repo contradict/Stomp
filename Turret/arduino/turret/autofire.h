@@ -14,13 +14,6 @@ enum AutoFireState updateAutoFire(const Track &tracked_object,
 
 bool omegaZLockout(int16_t *omegaZ);
 
-void setAutoFireParams(int16_t p_xtol,
-                       int16_t p_ytol,
-                       int16_t p_max_omegaz,
-                       uint32_t telemetry_interval);
-
-void restoreAutoFireParameters(void);
-
 //  ====================================================================
 //
 //  Class decleration

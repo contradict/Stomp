@@ -19,7 +19,8 @@
 //  Need to esnure that we can get the telemetry over XBee, reguardless of
 //  the serial port selection logic.  Define FORCE_XBEE to true or false
 
-#define FORCE_XBEE true
+#define FORCE_XBEE false
+#define FORCE_USB true
 
 //  ====================================================================
 //
@@ -78,7 +79,11 @@ void TelemetryController::Update()
 
             case EChooseChannel:
             {
-                if (FORCE_XBEE || digitalRead(XBEE_CTS))
+                if (FORCE_USB)
+                {
+                    setState(EUSBChannel);                  
+                }
+                else if (FORCE_XBEE || digitalRead(XBEE_CTS))
                 {
                     setState(EXBeeChannel);
                 }

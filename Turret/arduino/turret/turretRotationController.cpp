@@ -26,6 +26,14 @@ extern HardwareSerial& TurretRotationMotorSerial;
 
 //  ====================================================================
 //
+//  File constants 
+//
+//  ====================================================================
+
+static const int16_t k_invalidTurretAngleRead = -1;
+
+//  ====================================================================
+//
 //  File static variables
 //
 //  ====================================================================
@@ -187,6 +195,7 @@ void TurretRotationController::Update()
     //  Now that the state is stable, take action based on stable state
 
     updateSpeed();
+    updateAngle();
 }
 
 void TurretRotationController::Safe()
@@ -194,9 +203,14 @@ void TurretRotationController::Safe()
     setState(ESafe);
 }
 
-int32_t TurretRotationController::GetCurrentSpeed() 
+int32_t TurretRotationController::GetTurretSpeed() 
 { 
-    return m_currentSpeed; 
+    return m_turretSpeedCurrent; 
+}
+
+int16_t TurretRotationController::GetTurretAngle()
+{
+    return m_turretAngleCurrent;
 }
 
 void TurretRotationController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval)
@@ -219,7 +233,7 @@ void TurretRotationController::RestoreParams()
 void TurretRotationController::SendTelem()
 {
     m_pAutoAim->SendTelem();
-    sendTurretRotationTelemetry(m_state, m_currentSpeed);
+    sendTurretRotationTelemetry(m_state, m_turretSpeedCurrent);
 }
 
 //  ====================================================================
@@ -262,7 +276,7 @@ void TurretRotationController::updateSpeed()
 
         default:
         {
-            if (m_currentSpeed != 0)
+            if (m_turretSpeedCurrent != 0)
             {
                 setSpeed(0);
             }
@@ -271,16 +285,23 @@ void TurretRotationController::updateSpeed()
     }
 }
 
+void TurretRotationController::updateAngle()
+{
+    //  Don't currently have an angle sensor for turret position
+
+    m_turretAngleCurrent = k_invalidTurretAngleRead;
+}
+
 void TurretRotationController::setSpeed(int32_t p_speed)
 {
-    m_currentSpeed = p_speed;
-    m_currentSpeed = constrain(p_speed, k_minSpeed, k_maxSpeed);
+    m_turretSpeedCurrent = p_speed;
+    m_turretSpeedCurrent = constrain(p_speed, k_minSpeed, k_maxSpeed);
 
     //  send "@nn!G mm" over software serial. mm is a command 
     //  value, -1000 to 1000. nn is node number in RoboCAN network.
     
     TurretRotationMotorSerial.print("@01!G ");
-    TurretRotationMotorSerial.println(m_currentSpeed);
+    TurretRotationMotorSerial.println(m_turretSpeedCurrent);
 }
 
 void TurretRotationController::setState(controllerState p_state)
@@ -309,6 +330,9 @@ void TurretRotationController::setState(controllerState p_state)
     {
         case EInit:
         {
+            m_turretSpeedCurrent = 0;
+            m_turretAngleCurrent = k_invalidTurretAngleRead;
+
             m_pAutoAim = new AutoAim();
             initAllControllers();
         }

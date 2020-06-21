@@ -2,6 +2,8 @@
 #include "sensors.h"
 #include "pins.h"
 
+#include "turretController.h"
+
 static uint16_t cached_angle;
 static int16_t cached_pressure;
 
@@ -26,28 +28,15 @@ bool readMlhPressure(int16_t* pressure){
     return true;
 }
 
-#define MIN_ANGLE_ANALOG_READ 50
-#define ZERO_ANGLE_ANALOG_READ 102
-#define MAX_ANGLE_ANALOG_READ 920
-// 0 deg is 10% of input voltage, empirically observed to be 100 counts
-// 360 deg is 90% of input voltage, empirically observed to be 920 counts
-bool readAngle(uint16_t* angle){
-    uint16_t counts = analogRead(ANGLE_AI);
-    if ( counts < MIN_ANGLE_ANALOG_READ ) {
-        // Failure mode in shock, rails to 0;
+bool readAngle(uint16_t* p_angle)
+{
+    int16_t angle = Turret.GetHammerAngle();
+    if (angle < 0)
+    {
         return false;
     }
-    if ( counts < ZERO_ANGLE_ANALOG_READ ) {
-        *angle = 0;
-        return true;
-    }
-    if ( counts > MAX_ANGLE_ANALOG_READ ) {
-        *angle = 359;
-        return true;
-    }
 
-    // safe with 16 bit uints, accurate to 0.02%
-    *angle = (int16_t) (counts - ZERO_ANGLE_ANALOG_READ) * 11 / 25;
+    *p_angle = (uint16_t)angle;
     return true;
 }
 
@@ -65,6 +54,10 @@ bool readSensors(void) {
 }
 
 #define ANGLE_CONVERSION_FLOAT 0.4400978f  // 360 / (920 - 102)
+#define MIN_ANGLE_ANALOG_READ 50
+#define ZERO_ANGLE_ANALOG_READ 102
+#define MAX_ANGLE_ANALOG_READ 920
+
 bool readAngleFloat(float* angle){
     uint16_t counts = analogRead(ANGLE_AI);
     if ( counts < MIN_ANGLE_ANALOG_READ ) { return false; } // Failure mode in shock, rails to 0;

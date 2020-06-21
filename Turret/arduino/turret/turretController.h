@@ -47,8 +47,15 @@ public:
     void Update();
 
     bool Nominal();
+    
     Track* GetCurrentTarget();
-    int32_t GetCurrentSpeed();
+
+    int32_t GetTurretSpeed();
+    int16_t GetTurretAngle();
+    
+    int32_t GetHammerSpeed();
+    int16_t GetHammerAngle();
+
     int32_t GetDesiredManualTurretSpeed();
 
     void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t telemetry_interval);

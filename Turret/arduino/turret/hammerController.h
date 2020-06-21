@@ -49,6 +49,9 @@ public:
     void FireSelfRight();
     void Retract();
 
+    int32_t GetHammerSpeed();
+    int16_t GetHammerAngle();
+
     void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval);
     void SetParams(uint32_t p_selfRightIntensity, uint32_t p_telemetryFrequency);
     void RestoreParams();
@@ -82,6 +85,10 @@ private:
     //
     //  ====================================================================
 
+    void updateSpeed();
+    void updateAngle();
+    void updatePressure();
+    
     void setState(controllerState p_state);
     void initAllControllers();
 

@@ -199,9 +199,24 @@ Track* TurretController::GetCurrentTarget()
     return &g_trackedObject;
 }
 
-int32_t TurretController::GetCurrentSpeed()
+int32_t TurretController::GetTurretSpeed()
 {
-    m_pTurretRotationController->GetCurrentSpeed();
+    m_pTurretRotationController->GetTurretSpeed();
+}
+
+int16_t TurretController::GetTurretAngle()
+{
+    m_pTurretRotationController->GetTurretAngle();
+}
+
+int32_t TurretController::GetHammerSpeed()
+{
+    m_pHammerController->GetHammerSpeed();
+}
+
+int16_t TurretController::GetHammerAngle()
+{
+    m_pHammerController->GetHammerAngle();
 }
 
 int32_t TurretController::GetDesiredManualTurretSpeed()

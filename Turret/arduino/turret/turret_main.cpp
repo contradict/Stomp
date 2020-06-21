@@ -5,7 +5,6 @@
 #include "sensors.h"
 #include "telem.h"
 #include "pins.h"
-#include "weapons.h"
 #include "utils.h"
 #include "targeting.h"
 #include <avr/wdt.h>
@@ -77,7 +76,6 @@ static enum AutoFireState s_autoFire = AF_NO_TARGET;
 extern uint16_t leddar_overrun;
 extern uint16_t leddar_crc_error;
 extern uint16_t sbus_overrun;
-extern uint8_t HAMMER_INTENSITIES_ANGLE[9];
 
 //  ====================================================================
 //
@@ -111,7 +109,7 @@ void turretSetup()
     //  Make sure we come up safly and enable watch dog to 
     //  ensure if we don't have communications, we reset.
 
-    safeState();
+    // BB MJS: safeState();
     wdt_enable(WDTO_4S);
 
     //  Before anyone starts using Telem, make sure it is initialized
@@ -133,7 +131,7 @@ void turretSetup()
     //  Restore any information stored in EEMEM
 
     restoreObjectSegmentationParameters();
-    restoreAutoFireParameters();
+    // restoreAutoFireParameters();
     restoreTelemetryParameters();
     g_trackedObject.restoreTrackingFilterParams();
 
@@ -267,12 +265,16 @@ static void updateTracking()
 
     //  Get the state of autoFire
 
+    // BB MJS: Get AutoFire working
+
+    /*
     s_autoFire = updateAutoFire(g_trackedObject, s_hammerDistance, s_hammerIntensity);
 
     if((s_autoFire==AF_HIT) && (s_currentRCBitfield & AUTO_FIRE_ENABLE_BIT)) 
     {
         fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, true);
     }
+    */
 
     //  Send out tracking / auto aim telemetry
   
@@ -377,9 +379,9 @@ static void sendTelemetry()
                     valid_command);
 
     reset_loop_stats();
-    int16_t hammer_angle = HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
+    int16_t hammer_angle = 0; // BB MJS -> HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
 
-    sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetCurrentSpeed());
+    sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetTurretSpeed());
 
     telemetryIMU();
 }

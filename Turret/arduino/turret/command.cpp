@@ -167,10 +167,13 @@ void handleCommands(void)
                 break;
             case CMD_ID_AF:
                 af_cmd = (AutoFireCommand *)command_buffer;
+                // BB MJS
+                /*
                 setAutoFireParams(af_cmd->inner.xtol,
                                 af_cmd->inner.ytol,
                                 af_cmd->inner.max_omegaZ,
                                 af_cmd->inner.telemetry_interval);
+                */
                 valid_command++;
                 break;
             case CMD_ID_AAIM:
