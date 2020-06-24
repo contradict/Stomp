@@ -23,5 +23,9 @@ ui: modbus_ui.o ../Common/modbus_device.o
 
 rs485test: modbus_crc.o
 
+.PHONY capabilities
+capabilities: simplegait
+	sudo setcap "cap_sys_nice=ep" $<
+
 clean:
 	rm *.o modbus rs485test
