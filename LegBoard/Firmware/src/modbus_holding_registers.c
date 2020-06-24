@@ -24,22 +24,40 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .write = MODBUS_SetAddress,
     },
     {
-        .address = 0x40,
+        .address = ToeXPosition,
         .context = (void *)0,
         .read = Kinematics_ReadToePosition,
         .write = Kinematics_WriteToePosition,
     },
     {
-        .address = 0x41,
+        .address = ToeYPosition,
         .context = (void *)1,
         .read = Kinematics_ReadToePosition,
         .write = Kinematics_WriteToePosition,
     },
     {
-        .address = 0x42,
+        .address = ToeZPosition,
         .context = (void *)2,
         .read = Kinematics_ReadToePosition,
         .write = Kinematics_WriteToePosition,
+    },
+    {
+        .address = JointAngleSwing,
+        .context = (void *)0,
+        .read = Kinematics_ReadJointAngle,
+        .write = Kinematics_WriteJointAngle,
+    },
+    {
+        .address = JointAngleLift,
+        .context = (void *)1,
+        .read = Kinematics_ReadJointAngle,
+        .write = Kinematics_WriteJointAngle,
+    },
+    {
+        .address = JointAngleCurl,
+        .context = (void *)2,
+        .read = Kinematics_ReadJointAngle,
+        .write = Kinematics_WriteJointAngle,
     },
     {
         .address = 0x55,

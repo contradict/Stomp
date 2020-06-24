@@ -65,8 +65,11 @@ enum HoldingRegisterOffset {
 };
 
 enum LegCommands {
-    SetToeX = 0x40,
-    SetToeY = 0x41,
-    SetToeZ = 0x42, // Causes write to servos
+    ToeXPosition = 0x40,
+    ToeYPosition = 0x41,
+    ToeZPosition = 0x42, // Causes write to servos
+    JointAngleCurl = 0x43,
+    JointAngleSwing = 0x44,
+    JointAngleLift = 0x45, // Causes write to servos
 };
 

@@ -6,9 +6,11 @@
 #include "enfield.h"
 #include <errno.h>
 
-#define LENGTH_SCALE 1000.0f
 
 // See Kinematics.md
+
+static const float JOINT_ANGLE_SCALE = 1000.0f;
+static const float LENGTH_SCALE = 1000.0f;
 
 struct Link {
     complex float pivot;
@@ -40,6 +42,7 @@ static struct GeometryConstants geometry_constants __attribute__ ((section (".st
 };
 
 static float commanded_position[3];
+static float commanded_angle[3];
 
 void Kinematics_CylinderEdgeLengths(const float joint_angle[JOINT_COUNT],
                                    float cylinder_edge_length[JOINT_COUNT])
@@ -135,6 +138,46 @@ int Kinematics_WriteToePosition(void *ctx, uint16_t v)
         errno = 0;
         Kinematics_JointAngles(commanded_position, joint_angle);
         Kinematics_CylinderEdgeLengths(joint_angle, cylinder_edge_length);
+        Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_value);
+        if(errno != 0)
+        {
+            return ILLEGAL_DATA_VALUE;
+        }
+        for(int j=0;j<JOINT_COUNT;j++)
+            cylinder_command[j] = cylinder_scaled_value[j] * 4095;
+        Enfield_SetCommand(cylinder_command);
+    }
+    return 0;
+}
+
+int Kinematics_ReadJointAngle(void *ctx, uint16_t *v)
+{
+    int coordinate = (int)ctx;
+    float joint_angle[JOINT_COUNT];
+    int16_t pos;
+
+    if((coordinate < 0) || (coordinate > 2))
+        return ILLEGAL_DATA_ADDRESS;
+    Linearize_GetJointAngles(joint_angle);
+    pos = roundf(JOINT_ANGLE_SCALE * joint_angle[coordinate]);
+    *v = *((uint16_t *)&pos);
+    return 0;
+}
+
+int Kinematics_WriteJointAngle(void *ctx, uint16_t v)
+{
+    int joint = (int)ctx;
+    float cylinder_edge_length[3];
+    float cylinder_scaled_value[3];
+    uint16_t cylinder_command[3];
+
+    if((joint < 0) || (joint > 2))
+        return ILLEGAL_DATA_ADDRESS;
+    commanded_angle[joint] = (int16_t)v / JOINT_ANGLE_SCALE;
+    if(joint == 2)
+    {
+        errno = 0;
+        Kinematics_CylinderEdgeLengths(commanded_angle, cylinder_edge_length);
         Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_value);
         if(errno != 0)
         {
