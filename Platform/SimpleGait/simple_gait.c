@@ -27,6 +27,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <string.h>
+#include <unistd.h>
 #include <modbus/modbus.h>
 #include "../../LegBoard/Firmware/inc/export/modbus_register_map.h"
 #include "realtimer.h"
@@ -184,16 +185,28 @@ int compute_leg_position(enum LegIdentity leg, float phase, float (*toe_position
 void walk(modbus_t *ctx, float period)
 {
     /* Ping all the legs */
-    for(int leg=0; leg<NUM_WORKING_LEGS; leg++)
+    int err = 0;
+    for(int try=0; try<10; try++)
     {
-        int err = modbus_set_slave(ctx, LegAddress[leg]);
-        uint16_t dummy;
-        err = modbus_read_registers(ctx, 0x55, 1, &dummy);
-        if(err == -1)
+        for(int leg=0; leg<NUM_WORKING_LEGS; leg++)
         {
-            printf("Unable to communicate with leg %d(0x%04x): %s\n",
-                    leg, LegAddress[leg], modbus_strerror(errno));
+            modbus_set_slave(ctx, LegAddress[leg]);
+            uint16_t dummy;
+            err = modbus_read_registers(ctx, 0x55, 1, &dummy);
+            if(err == -1)
+            {
+                printf("Unable to communicate with leg %d(0x%02x): %s\n",
+                        leg, LegAddress[leg], modbus_strerror(errno));
+                break;
+            }
         }
+        if(err==-1)
+            usleep(1000000);
+        else
+            break;
+    }
+    if(err == -1)
+    {
         return;
     }
 
@@ -204,7 +217,7 @@ void walk(modbus_t *ctx, float period)
         int err =set_initial_position(ctx, leg);
         if(err == -1)
         {
-            printf("Failed to set initial position for leg %d(0x%04x): %s.",
+            printf("Failed to set initial position for leg %d(0x%02x): %s.\n",
                    leg, LegAddress[leg], modbus_strerror(errno));
             return;
         }
@@ -227,7 +240,7 @@ void walk(modbus_t *ctx, float period)
             int err = set_servo_gains(ctx, leg, &current_gain);
             if(err == -1)
             {
-                printf("Failed to set servo gain for leg %d(0x%04x): %s.",
+                printf("Failed to set servo gain for leg %d(0x%02x): %s.\n",
                        leg, LegAddress[leg], modbus_strerror(errno));
                 return;
             }
@@ -257,7 +270,7 @@ void walk(modbus_t *ctx, float period)
                 int err = set_toe_postion(ctx, leg, &ramp_position);
                 if(err == -1)
                 {
-                    printf("Failed to ramp initial position for leg %d(0x%04x): %s",
+                    printf("Failed to ramp initial position for leg %d(0x%02x): %s\n",
                            leg, LegAddress[leg], modbus_strerror(errno));
                     goto lowgainexit;
                 }
@@ -273,7 +286,7 @@ lowgainexit:
         int err = set_servo_gains(ctx, leg, &ExitLowGains);
         if(err == -1)
         {
-            printf("Failed to set servo gain low for leg %d(0x%04x): %s.",
+            printf("Failed to set servo gain low for leg %d(0x%02x): %s.\n",
                    leg, LegAddress[leg], modbus_strerror(errno));
         }
     }
