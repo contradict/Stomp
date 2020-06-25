@@ -22,7 +22,8 @@ float elapsed_time(struct RealTimer *t)
 
 void sleep_period(struct RealTimer *t, float period)
 {
-    float e = elapsed_time(t);
+    timersub(&t->now, &t->wakeup, &t->elapsed);
+    float e = t->elapsed.tv_sec + 1e-6f * t->elapsed.tv_usec;
     if(e<period)
     {
         struct timespec req = {0, 0}, rem = {0, 0};

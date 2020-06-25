@@ -16,6 +16,9 @@ modbus_%.o: modbus_%.c
 simplegait: simple_gait.o simple_main.o realtimer.o ../Common/modbus_device.o
 	gcc $^ -o $@ $(LDFLAGS) $(MODBUS_LDFLAGS)
 
+timertest: timertest.o realtimer.o
+	gcc $^ -o $@ $(LDFLAGS)
+
 .PHONY: capabilities
 capabilities: simplegait
 	sudo setcap "cap_sys_nice=ep" $<
