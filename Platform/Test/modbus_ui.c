@@ -81,7 +81,7 @@ const int16_t sensor_param_max[NUM_SENSOR_PARAMS] = {
 struct ServoContext
 {
     bool stoponerror;
-    int16_t params[3][NUM_SERVO_PARAMS];
+    uint16_t params[3][NUM_SERVO_PARAMS];
     int16_t measured[3];
     int joint;
     int param;
@@ -169,7 +169,6 @@ void sensor_init_joint(modbus_t *mctx, struct SensorContext *sc, int j)
 
 void sensor_init(modbus_t *mctx, void *sctx)
 {
-    int err;
     struct SensorContext *sc = (struct SensorContext *)sctx;
     sc->param = 0;
     sc->param_max = NUM_SENSOR_PARAMS;
@@ -317,7 +316,6 @@ void sensor_handle_key(modbus_t *mctx, void *sctx, int ch)
 {
     struct SensorContext *sc = (struct SensorContext *)sctx;
     float input_value;
-    int err;
     int savejoint, saveparam;
     enum InputAction input;
     input = input_handle_key(&sc->input, ch, &input_value);
@@ -515,8 +513,7 @@ void showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval
 void servo_init(modbus_t *mctx, void *sctx)
 {
     struct ServoContext *sc = (struct ServoContext *)sctx;
-    char display[256];
-    int16_t data[1];
+    uint16_t data[1];
     sc->stoponerror = true;
     sc->joint = 0;
     sc->param = 0;
@@ -606,8 +603,7 @@ int step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
 void servo_display(modbus_t *mctx, void *sctx)
 {
     struct ServoContext *sc = (struct ServoContext *)sctx;
-    char display[256];
-    int16_t data[1];
+    uint16_t data[1];
     int err;
     struct timeval before, after;
 
@@ -893,7 +889,7 @@ void servo_handle_key(modbus_t *mctx, void *sctx, int ch)
 void position_init(modbus_t *mctx, void *pctx)
 {
     struct PositionContext *pc = (struct PositionContext *)pctx;
-    int16_t pos[3];
+    uint16_t pos[3];
     int err;
     pc->step = 0.100;
     pc->coordinate = 0;
@@ -921,7 +917,7 @@ void position_display(modbus_t *mctx, void *pctx)
 {
     struct PositionContext *pc = (struct PositionContext *)pctx;
     int err;
-    int16_t pos[3];
+    uint16_t pos[3];
 
     err = modbus_read_registers(mctx, 0x40, 3, pos);
     showerror(&pc->error, "Read position failed", err, NULL);
@@ -947,7 +943,7 @@ void position_display(modbus_t *mctx, void *pctx)
 
 void position_go(modbus_t *mctx, struct PositionContext *pc)
 {
-    int16_t pos[3];
+    uint16_t pos[3];
     int err;
     for(int c=0;c<3;c++)
         pos[c] = 1000.0f * pc->position_command[c];
@@ -1023,6 +1019,7 @@ const int16_t save_param_min[NUM_SERVO_PARAMS] = {0};
 
 void save_init(modbus_t *mctx, void *sctx)
 {
+    (void)mctx;
     struct SaveContext *sc = (struct SaveContext *)sctx;
     sc->param_max = 1;
     sc->param = 0;
@@ -1107,7 +1104,7 @@ int main(int argc, char **argv)
     int period = 100;
     uint32_t response_timeout = 2000;
 
-    int opt, err;
+    int opt;
     char *offset;
     while((opt = getopt(argc, argv, "p:b:a:t:r:")) != -1)
     {
