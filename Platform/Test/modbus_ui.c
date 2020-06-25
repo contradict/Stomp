@@ -900,14 +900,14 @@ void position_init(modbus_t *mctx, void *pctx)
     pc->input.input_search = false;
     pc->input.input_fields = coordinate_names;
     pc->input.field_count = 3;
-    err = modbus_read_registers(mctx, 0x40, 3, pos);
+    err = modbus_read_registers(mctx, ToeXPosition, 3, pos);
     showerror(&pc->error, "Read initial position failed", err, NULL);
     if(err != -1)
     {
         for(int i=0;i<3;i++)
         {
-            pc->position_display[i] = pos[i] / 1000.0f;
-            pc->position_command[i] = pos[i] / 1000.0f;
+            pc->position_display[i] = ((int16_t *)pos)[i] / 1000.0f;
+            pc->position_command[i] = ((int16_t *)pos)[i] / 1000.0f;
         }
     }
     clear();
@@ -919,12 +919,12 @@ void position_display(modbus_t *mctx, void *pctx)
     int err;
     uint16_t pos[3];
 
-    err = modbus_read_registers(mctx, 0x40, 3, pos);
+    err = modbus_read_registers(mctx, ToeXPosition, 3, pos);
     showerror(&pc->error, "Read position failed", err, NULL);
     if(err != -1)
     {
         for(int i=0;i<3;i++)
-            pc->position_display[i] = pos[i] / 1000.0f;
+            pc->position_display[i] = ((int16_t *)pos)[i] / 1000.0f;
     }
  
     move(5, 2);
@@ -946,8 +946,8 @@ void position_go(modbus_t *mctx, struct PositionContext *pc)
     uint16_t pos[3];
     int err;
     for(int c=0;c<3;c++)
-        pos[c] = 1000.0f * pc->position_command[c];
-    err = modbus_write_registers(mctx, 0x40, 3, pos);
+        ((int16_t *)pos)[c] = 1000.0f * pc->position_command[c];
+    err = modbus_write_registers(mctx, ToeXPosition, 3, pos);
     showerror(&pc->error, "Go position failed", err, NULL);
 }
 
