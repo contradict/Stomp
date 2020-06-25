@@ -1154,23 +1154,12 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // Phony baud
-    ctx = modbus_new_rtu(devname, 9600, 'N', 8, 1);
-    if(!ctx)
-    {
-        perror("Create modbus context");
-        exit(1);
-    }
-
-    // Actual baud rate here
-    if(configure_modbus_context(ctx, baud, response_timeout))
+    if(create_modbus_interface(devname, baud, response_timeout, &ctx))
     {
         exit(1);
     }
 
     modbus_set_slave(ctx, address);
-
-    modbus_flush(ctx);
 
     struct ServoContext servo;
     struct SensorContext sensor;

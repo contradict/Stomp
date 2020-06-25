@@ -1,5 +1,5 @@
 
-CFLAGS=-g3 -I ../../LegBoard/Firmware/inc/export
+CFLAGS=-g3 -I ../../LegBoard/Firmware/inc/export -I ../Common
 LDFLAGS=-lm
 
 MODBUS_CFLAGS=$(shell pkg-config --cflags libmodbus)
@@ -12,13 +12,13 @@ all: modbus rs485test enfield ui
 modbus_%.o: modbus_%.c
 	gcc -c $(CFLAGS) $(NCURSES_CFLAGS) $(MODBUS_CFLAGS) $? -o $@
 
-modbus: modbus_test.o modbus_device.o
+modbus: modbus_test.o ../Common/modbus_device.o
 	gcc $^ -o $@ $(LDFLAGS) $(MODBUS_LDFLAGS)
 
-enfield: modbus_enfield.o modbus_device.o
+enfield: modbus_enfield.o ../Common/modbus_device.o
 	gcc $^ -o $@ $(LDFLAGS) $(MODBUS_LDFLAGS)
 
-ui: modbus_ui.o modbus_device.o
+ui: modbus_ui.o ../Common/modbus_device.o
 	gcc $^ -o $@ $(LDFLAGS) $(MODBUS_LDFLAGS) $(NCURSES_LDFLAGS)
 
 rs485test: modbus_crc.o

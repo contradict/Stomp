@@ -50,4 +50,23 @@ int configure_modbus_context(modbus_t *ctx, uint32_t custom_baud, uint32_t respo
     return 0;
 }
 
+int create_modbus_interface(char *devname, uint32_t custom_baud, uint32_t response_timeout, modbus_t **ctx)
+{
+    // Phony baud
+    *ctx = modbus_new_rtu(devname, 9600, 'N', 8, 1);
+    if(!ctx)
+    {
+        perror("Create modbus context");
+        return -1;
+    }
 
+    // Actual baud rate here
+    if(configure_modbus_context(*ctx, custom_baud, response_timeout))
+    {
+        return -1;
+    }
+
+    modbus_flush(*ctx);
+
+    return 0;
+}
