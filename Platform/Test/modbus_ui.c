@@ -210,8 +210,8 @@ void sensor_display(modbus_t *mctx, void *sctx)
                 memcpy(sc->sensor_data[j], data, sizeof(data));
                 if(sc->minmax_mode)
                 {
-                    sc->min_v[j] = MIN(sc->min_v[j], sc->current_v[j]);
-                    sc->max_v[j] = MAX(sc->max_v[j], sc->current_v[j]);
+                    sc->min_v[j] = MIN(sc->min_v[j], sc->current_v[j] / sensor_param_scale[0]);
+                    sc->max_v[j] = MAX(sc->max_v[j], sc->current_v[j] / sensor_param_scale[1]);
                 }
             }
             else
@@ -268,9 +268,9 @@ void sensor_display(modbus_t *mctx, void *sctx)
         clrtoeol();
         if(sc->minmax_mode)
         {
-            printw(sensor_param_formats[0], sc->min_v[j] / sensor_param_scale[0]);
+            printw(sensor_param_formats[0], sc->min_v[j]);
             move(4 + 4 * j + 3, 12 + 6 + 2);
-            printw(sensor_param_formats[1], sc->max_v[j] / sensor_param_scale[1]);
+            printw(sensor_param_formats[1], sc->max_v[j]);
         }
     }
     move(4 + 4*sc->joint + 2, 2 + 13*sc->param);
@@ -372,8 +372,10 @@ void sensor_handle_key(modbus_t *mctx, void *sctx, int ch)
             sc->minmax_mode ^= true;
             if(sc->minmax_mode)
             {
-                memcpy(sc->min_v, sc->current_v, sizeof(sc->min_v));
-                memcpy(sc->max_v, sc->current_v, sizeof(sc->max_v));
+                for(int j=0;j<JOINT_COUNT;j++)
+                {
+                    sc->min_v[j] = sc->max_v[j] = sc->current_v[j] / sensor_param_scale[0];
+                }
             }
             break;
         case 'C':
