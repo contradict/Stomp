@@ -20,7 +20,7 @@ float elapsed_time(struct RealTimer *t)
     return t->elapsed.tv_sec + 1e-6f * t->elapsed.tv_usec;
 }
 
-void sleep_period(struct RealTimer *t, float period)
+float sleep_period(struct RealTimer *t, float period)
 {
     timersub(&t->now, &t->wakeup, &t->elapsed);
     float e = t->elapsed.tv_sec + 1e-6f * t->elapsed.tv_usec;
@@ -42,6 +42,8 @@ void sleep_period(struct RealTimer *t, float period)
         }
     }
     gettimeofday(&t->wakeup, NULL);
+    timersub(&t->wakeup, &t->now, &t->elapsed);
+    return t->elapsed.tv_sec + 1e-6f * t->elapsed.tv_usec;
 }
 
 

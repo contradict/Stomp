@@ -13,4 +13,4 @@ struct RealTimer
 
 void start_time(struct RealTimer *t);
 float elapsed_time(struct RealTimer *t);
-void sleep_period(struct RealTimer *t, float period);
+float sleep_period(struct RealTimer *t, float period);
