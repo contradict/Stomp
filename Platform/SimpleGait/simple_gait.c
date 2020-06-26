@@ -48,7 +48,7 @@ enum LegIdentity {
     NUM_LEGS
 };
 
-static const uint8_t LegAddress[NUM_LEGS] = {0x55, 0x20, 0x30, 0x40, 0x50, 0x60};
+static const uint8_t LegAddress[NUM_LEGS] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60};
 static const float SimpleGaitPhase[NUM_LEGS] = {0.0f, M_PI, 0.0f, M_PI, 0.0f, M_PI};
 
 #define SimpleStepPoints 4
