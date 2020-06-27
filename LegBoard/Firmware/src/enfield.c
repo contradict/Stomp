@@ -538,6 +538,11 @@ static int Enfield_Transfer(struct EnfieldContext *enf,  uint8_t r, uint16_t *v)
         return err;
     }
     err =  Enfield_WaitReceive(enf, v);
+    if(err == ENFIELD_CRCFAIL)
+    {
+        uint8_t dummy;
+        while(HAL_TIMEOUT != HAL_UART_Receive(enf->uart, &dummy, 1, 0));
+    }
     return err;
 }
 
