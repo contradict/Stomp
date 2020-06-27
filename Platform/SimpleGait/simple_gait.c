@@ -36,7 +36,7 @@ const float GainRampTime=1.0f;     // seconds
 const float ProportionalGains[3] = {15.0f, 12.0f, 12.0f}; 
 const float ExitLowGains[3] = {5.0f, 5.0f, 5.0f};
 const float InitialPositionRampTime=2.0f; // seconds
-const int NUM_WORKING_LEGS = 1;
+const int NUM_WORKING_LEGS = 2;
 
 enum LegIdentity {
     FrontLeft=0,
