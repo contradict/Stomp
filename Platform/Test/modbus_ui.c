@@ -144,7 +144,7 @@ static char *joint_name[3] = {"Curl ", "Swing", "Lift "};
 
 static void input_display(int y, int x, struct InputContext *ic);
 static enum InputAction input_handle_key(struct InputContext *ic, int ch, float *v);
-static void showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt);
+static int showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt);
 void error_display(int y, int x, struct ErrorContext *ec);
 
 void sensor_init_joint(modbus_t *mctx, struct SensorContext *sc, int j)
@@ -496,20 +496,22 @@ enum InputAction input_handle_key(struct InputContext *ic, int ch, float *v)
     return ret;
 }
 
-void showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt)
+int showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt)
 {
+    int modbus_err = errno;
     if(err == -1 && !ec->iserror)
     {
         if(dt)
         {
-            snprintf(ec->error, 256, "%s(%ld): %s", msg, dt->tv_usec, modbus_strerror(errno));
+            snprintf(ec->error, 256, "%s(%ld): %s", msg, dt->tv_usec, modbus_strerror(err));
         }
         else
         {
-            snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(errno));
+            snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(err));
         }
         ec->iserror = true;
     }
+    return modbus_err;
 }
 
 void servo_init(modbus_t *mctx, void *sctx)

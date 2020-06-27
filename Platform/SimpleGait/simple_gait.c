@@ -36,7 +36,7 @@ const float GainRampTime=1.0f;     // seconds
 const float ProportionalGains[3] = {15.0f, 12.0f, 12.0f}; 
 const float ExitLowGains[3] = {5.0f, 5.0f, 5.0f};
 const float InitialPositionRampTime=2.0f; // seconds
-const int NUM_WORKING_LEGS = 1;
+const int NUM_WORKING_LEGS = 2;
 
 enum LegIdentity {
     FrontLeft=0,
@@ -108,13 +108,15 @@ int set_servo_gains(modbus_t *ctx, enum LegIdentity leg, const float (*gain)[3])
     uint16_t gain_value;
     modbus_set_slave(ctx, LegAddress[leg]);
     gain_value = 10.0f * (*gain)[JOINT_CURL];
-    err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &gain_value);
-    gain_value = 10.0f * (*gain)[JOINT_SWING];
-    if(err != -1)
-        err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &gain_value);
-    gain_value = 10.0f * (*gain)[JOINT_LIFT];
-    if(err != -1)
-        err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &gain_value);
+    do {
+        err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &gain_value);
+        gain_value = 10.0f * (*gain)[JOINT_SWING];
+        if(err != -1)
+            err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &gain_value);
+        gain_value = 10.0f * (*gain)[JOINT_LIFT];
+        if(err != -1)
+            err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &gain_value);
+    } while(err == -1 && errno == EMBXSFAIL);
     return err;
 }
 
