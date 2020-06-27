@@ -365,14 +365,16 @@ void Enfield_Thread(const void *arg)
                 if(st->req->write)
                 {
                     st->resp->value = st->req->value;
-                    st->resp->err = Enfield_Write(st, st->req->w, &st->resp->value);
+                    err = st->resp->err = Enfield_Write(st, st->req->w, &st->resp->value);
                 }
                 else
                 {
-                    st->resp->err = Enfield_Get(st, st->req->r, &st->resp->value);
+                    err = st->resp->err = Enfield_Get(st, st->req->r, &st->resp->value);
                 }
                 osMailPut(st->req->responseQ, st->resp);
                 osMailFree(st->commandQ, st->req);
+                if(err != 0)
+                    st->loopstate = StPing;
                 st->state = StWaitRequest;
                 break;
             case StUpdate:
