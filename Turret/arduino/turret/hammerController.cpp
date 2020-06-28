@@ -19,6 +19,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 #include "pins.h"
+#include "Wire.h"
 
 #include "sbus.h"
 #include "telem.h"
@@ -68,11 +69,10 @@ volatile static bool s_swingComplete;
 volatile static int16_t s_hammerAngleCurrent = k_invalidHammerAngleRead;
 volatile static int32_t s_hammerSpeedCurrent = 0;
 
-volatile static int16_t s_hammerThrowPressure = k_invalidHammerThrowPressureRead;
-volatile static int16_t s_hammerRetractPressure = k_invalidHammerRetractPressureRead;
+volatile static int16_t s_hammerThrowPressureCurrent = k_invalidHammerThrowPressureRead;
+volatile static int16_t s_hammerRetractPressureCurrent = k_invalidHammerRetractPressureRead;
 
 volatile static int16_t s_hammerThrowAngle = 0;
-
 
 //  ====================================================================
 //
@@ -82,8 +82,9 @@ volatile static int16_t s_hammerThrowAngle = 0;
 
 void startFullCycleStateMachine();
 void startRetractOnlyStateMachine();
+void startSensorReadStateMachine();
+
 void swingComplete();
-void updateAngleLocal();
 
 //  ====================================================================
 //
@@ -199,8 +200,6 @@ void HammerController::Update()
     //  Now that the state is stable, take action based on stable state
 
     updateSpeed();
-    updateAngle();
-    updatePressure();
 }
 
 void HammerController::Safe()
@@ -299,25 +298,10 @@ void HammerController::SendTelem()
 
 void HammerController::updateSpeed()
 {
-    s_hammerSpeedCurrent;
+    //  Not calculating right Now
+
+    s_hammerSpeedCurrent = 0;
 }
-
-void HammerController::updateAngle()
-{
-    if (m_state == EFullCycleInterruptMode || m_state == ERetractOnlyInterruptMode)
-    {
-        return;        
-    }
-
-    updateAngleLocal();
-}
-
-void HammerController::updatePressure()
-{
-    s_hammerThrowPressure = k_invalidHammerThrowPressureRead;
-    s_hammerRetractPressure = k_invalidHammerRetractPressureRead;
-}
-
 
 void HammerController::setState(controllerState p_state)
 {
@@ -420,6 +404,8 @@ void HammerController::initAllControllers()
 {
     m_pAutoFire->Init();
 
+    startSensorReadStateMachine();
+
     digitalWrite(THROW_PRESSURE_VALVE_DO, LOW); 
     pinMode(THROW_PRESSURE_VALVE_DO, OUTPUT);
 
@@ -455,21 +441,37 @@ void HammerController::saveParams()
 //
 //  ====================================================================
 
-const uint8_t k_valveCloseDt = 10;                          //  10 microseconds
-const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
+static const uint8_t k_valveCloseDt = 10;                          //  10 microseconds
+static const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
 
-const uint16_t k_maxThrowAngle = 210;                       //  210 degrees
-const uint32_t k_maxThrowPressureDt = 750000;               //  0.75 second
-const uint32_t k_maxThrowDt = 1000000;                      //  1.00 second
+static const uint16_t k_maxThrowAngle = 210;                       //  210 degrees
+static const uint32_t k_maxThrowPressureDt = 750000;               //  0.75 second
+static const uint32_t k_maxThrowDt = 1000000;                      //  1.00 second
 
-const uint16_t k_minRetractAngle = 5;                       //    5 degrees
-const uint32_t k_maxRetractDt = 1000000;                    //  1.0 seconds
+static const uint16_t k_minRetractAngle = 5;                       //    5 degrees
+static const uint32_t k_maxRetractDt = 1000000;                    //  1.0 seconds
 
-const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
-const uint32_t k_subStateMachineUpdateFrequency = 50000;    //  50kHz or update every 20 microseconds
-                                                            //  at 100kHz, serail communication to Robotek stoped working
+static const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
+static const uint32_t k_subStateMachineUpdateFrequency = 50000;    //  50kHz or update every 20 microseconds
+                                                                   //  at 100kHz, serail communication to Robotek stoped working
 
-const uint16_t k_telmSamplesMax = 500;
+static const uint16_t k_telmSamplesMax = 500;
+static const int32_t k_angleReadSwitchToPressureCount = 10;        //  10 Angle Reads for each pressure read
+
+static const int16_t k_minValidHammerAngleDifferential = 102;
+static const int16_t k_maxValidHammerAngleDifferential = 920;
+static const int16_t k_minExpectedHammerAngleDifferential = 350;
+static const int16_t k_maxExpectedHammerAngleDifferential = 920;
+
+static const int16_t k_minValidThrowPressureDifferential = 102;
+static const int16_t k_maxValidThrowPressureDifferential = 920;
+static const int16_t k_minExpectedThrowPressureDifferential = 350;
+static const int16_t k_maxExpectedThrowPressureDifferential = 920;
+
+static const int16_t k_minValidRetractPressureDifferential = 102;
+static const int16_t k_maxValidRetractPressureDifferential = 920;
+static const int16_t k_minExpectedRetractPressureDifferential = 350;
+static const int16_t k_maxExpectedRetractPressureDifferential = 920;
 
 //  ====================================================================
 //
@@ -499,9 +501,19 @@ enum hammerSubState
     ERetractComplete
 };
 
+enum sensorReadState
+{
+    EReadHammerAngle,
+    EReadThrowPressure,
+    EReadRetractPressure
+};
+
 static hammerSubState s_hammerSubState;
 static uint32_t s_hammerSubStateStart = 0;
 static uint32_t s_hammerSubStateDt = 0;
+
+static sensorReadState s_sensorReadState;
+static int32_t s_sensorAngleReadCount = 0;
 
 static uint8_t s_valveState = 0x00;
 
@@ -533,6 +545,10 @@ static uint32_t s_swingTimeStart = 0;
 #define UPDATE_VALVE_STATE_RV_OPEN { s_valveState |= 1 << RV_VALVE_BIT; }
 #define UPDATE_VALVE_STATE_RV_CLOSED { s_valveState &= 1 << ~(RV_VALVE_BIT); }
 
+#define SELECT_THROW_PRESSURE_READ { s_sensorReadState = EReadThrowPressure; ADMUX = (0x01 << 6) | (HAMMER_THROW_PRESSURE_AI & 0x07); }
+#define SELECT_RETRACT_PRESSURE_READ { s_sensorReadState = EReadRetractPressure; ADMUX = (0x01 << 6) | (HAMMER_RETRACT_PRESSURE_AI & 0x07); }
+#define SELECT_HAMMER_ANGLE_READ { s_sensorReadState = EReadHammerAngle; ADMUX = (0x01 << 6) | (HAMMER_ANGLE_AI & 0x07); }
+
 //
 //  IMPORTANT: These MACROs are optomized for running from ISR (not for general use)
 //  Have insured that PWM is disconnected from these pins and interrupts are disabled
@@ -562,10 +578,6 @@ static uint32_t s_swingTimeStart = 0;
 
 #define OPEN_RETRACT_VENT { PORTH &= ~(1 << PORTH6); UPDATE_VALVE_STATE_RV_OPEN }
 #define CLOSE_RETRACT_VENT { PORTH |= 1 << PORTH6; UPDATE_VALVE_STATE_RV_CLOSED }
-
-#define READ_HAMMER_ANGLE (2)
-#define READ_THROW_PRESSURE (0)
-#define READ_RETRACT_PRESSURE (0)
 
 //  ====================================================================
 //
@@ -695,40 +707,25 @@ void startRetractOnlyStateMachine()
     startTimers();
 }
 
+void startSensorReadStateMachine()
+{
+    pinMode(HAMMER_ANGLE_AI, INPUT);
+    pinMode(HAMMER_THROW_PRESSURE_AI, INPUT);
+    pinMode(HAMMER_THROW_PRESSURE_AI, INPUT);
+
+    //  Enable ADC, ADC interruupts and set the prescaler to 64, not the default 128
+
+    ADCSRA = ADEN | ADIE | ADPS2 | ADPS1;
+
+    //  Start sesnor reads
+
+    SELECT_THROW_PRESSURE_READ;
+    ADCSRA |= ADSC;
+}
+
 void swingComplete()
 {
     stopTimers();
-}
-
-static const int16_t k_minValidDifferential = 102;
-static const int16_t k_maxValidDifferential = 920;
-
-static const int16_t k_minExpectedDifferential = 350;
-static const int16_t k_maxExpectedDifferential = 920;
-
-void updateAngleLocal()
-{
-    //  Is system experienced shock, differential goes to zero.  If outside of 
-    //  valid range, then this is an invalid read and consumers of s_hammerAngleCurrent
-    //  should not use the value this update
-
-    s_hammerAngleCurrent = k_invalidHammerAngleRead;
-
-    int16_t differential = analogRead(ANGLE_AI);
-
-    if (differential >= k_minExpectedDifferential && differential <= k_maxExpectedDifferential)
-    {
-        //  ((differential * 11) / 25) = conversion of differential range into anggle range
-
-        s_hammerAngleCurrent = ((((1024 - differential) - k_minValidDifferential) * 11) / 25);
-    }
-    if (differential >= k_minValidDifferential && differential <= k_maxValidDifferential)
-    {
-        //  We believe the Analog read was good, but we don't expect the hammer to be in this
-        //  position.  It likely just retracted too far.  Set to 0 degrees
-
-        s_hammerAngleCurrent = 0;
-    }
 }
 
 //  ====================================================================
@@ -737,15 +734,116 @@ void updateAngleLocal()
 //
 //  ====================================================================
 
+//  Interrupt Service Routine to do read hammer angle and pressures
+
+ISR(ADC_vect)
+{
+    //  Get ADC results
+
+    int16_t differential = ADCL | (ADCH << 8);
+
+    //  Need to keep track of which analog pin we are reading
+
+    switch (s_sensorReadState)
+    {
+        case EReadThrowPressure:
+        {
+            // calculate throw pressure
+
+            s_hammerThrowPressureCurrent = k_invalidHammerThrowPressureRead;
+
+            if (differential >= k_minExpectedThrowPressureDifferential && differential <= k_maxExpectedThrowPressureDifferential)
+            {
+                //  ((differential * 11) / 25) = conversion of differential range into anggle range
+
+                s_hammerThrowPressureCurrent = ((((1024 - differential) - k_minValidThrowPressureDifferential) * 11) / 25);
+            }
+            else if (differential >= k_minValidThrowPressureDifferential && differential <= k_maxValidThrowPressureDifferential)
+            {
+                //  We believe the Analog read was good, but we don't expect the hammer to be in this
+                //  position.  It likely just retracted too far.  Set to 0 degrees
+
+                s_hammerThrowPressureCurrent = 0;
+            }
+
+            //  Set up next analog read
+
+            SELECT_RETRACT_PRESSURE_READ;
+        }
+        break;
+
+        case EReadRetractPressure:
+        {
+            // calculate throw pressure
+
+            s_hammerRetractPressureCurrent = k_invalidHammerRetractPressureRead;
+
+            if (differential >= k_minExpectedRetractPressureDifferential && differential <= k_maxExpectedRetractPressureDifferential)
+            {
+                //  ((differential * 11) / 25) = conversion of differential range into anggle range
+
+                s_hammerRetractPressureCurrent = ((((1024 - differential) - k_minValidRetractPressureDifferential) * 11) / 25);
+            }
+            else if (differential >= k_minValidRetractPressureDifferential && differential <= k_maxValidRetractPressureDifferential)
+            {
+                //  We believe the Analog read was good, but we don't expect the hammer to be in this
+                //  position.  It likely just retracted too far.  Set to 0 degrees
+
+                s_hammerRetractPressureCurrent = 0;
+            }
+
+            //  Set up next analog read
+
+            SELECT_HAMMER_ANGLE_READ;
+        }
+
+        case EReadHammerAngle:
+        {
+            // calculate Hammer Angle
+
+            s_hammerAngleCurrent = k_invalidHammerAngleRead;
+
+            if (differential >= k_minExpectedHammerAngleDifferential && differential <= k_maxExpectedHammerAngleDifferential)
+            {
+                //  ((differential * 11) / 25) = conversion of differential range into anggle range
+
+                s_hammerAngleCurrent = ((((1024 - differential) - k_minValidHammerAngleDifferential) * 11) / 25);
+            }
+            else if (differential >= k_minValidHammerAngleDifferential && differential <= k_maxValidHammerAngleDifferential)
+            {
+                //  We believe the Analog read was good, but we don't expect the hammer to be in this
+                //  position.  It likely just retracted too far.  Set to 0 degrees
+
+                s_hammerAngleCurrent = 0;
+            }
+
+            //  Set up next analog read
+
+            s_sensorAngleReadCount++;
+
+            if (s_sensorAngleReadCount >= k_angleReadSwitchToPressureCount)
+            {
+                s_sensorAngleReadCount = 0;                
+                SELECT_THROW_PRESSURE_READ;
+            }
+        }
+        break;
+    }
+
+    //  Start next sesnor reads
+
+    ADCSRA |= ADSC;
+}
+
 //  Interrupt Service Routine to collect telemetry, at defined frequency, durring a hammer throw and retract
 
 ISR(TIMER4_COMPA_vect)
 {
     if (s_hammerSubState != ERetractComplete)
     {
-        s_swingTelmSamples[s_swingTelemSamplesCount].angle = READ_HAMMER_ANGLE;
-        s_swingTelmSamples[s_swingTelemSamplesCount].throwPressure = READ_THROW_PRESSURE;
-        s_swingTelmSamples[s_swingTelemSamplesCount].retractPressure = READ_RETRACT_PRESSURE;
+        s_swingTelmSamples[s_swingTelemSamplesCount].angle = s_hammerAngleCurrent;
+        s_swingTelmSamples[s_swingTelemSamplesCount].throwPressure = s_hammerThrowPressureCurrent;
+        s_swingTelmSamples[s_swingTelemSamplesCount].retractPressure = s_hammerRetractPressureCurrent;
         s_swingTelmSamples[s_swingTelemSamplesCount].state = s_hammerSubState;
         s_swingTelmSamples[s_swingTelemSamplesCount].valveState = s_valveState;
         s_swingTelemSamplesCount++;
@@ -758,11 +856,6 @@ ISR(TIMER5_COMPA_vect)
 {
     uint32_t now = micros();    
     s_hammerSubStateDt = now - s_hammerSubStateStart;
-
-    //  file scope function for angle update, includes
-    //  an analogRead() call; should be around 20 cycles
-
-    updateAngleLocal();
 
     hammerSubState desiredState = s_hammerSubState;
 
@@ -818,9 +911,11 @@ ISR(TIMER5_COMPA_vect)
             {
                 //  Go to ERetractComplete state
                 desiredState = ERetractComplete;
-                s_swingComplete = true;
+
                 CLOSE_RETRACT_PRESSURE;
                 OPEN_RETRACT_VENT;
+
+                s_swingComplete = true;
             }
         }
         break;

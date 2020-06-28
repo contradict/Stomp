@@ -2,7 +2,6 @@
 #include "turret_main.h"
 #include "sbus.h"
 #include "leddar_io.h"
-#include "sensors.h"
 #include "telem.h"
 #include "pins.h"
 #include "utils.h"
@@ -88,7 +87,6 @@ static void updateTurretRotation(void);
 static void updateWeapons(void);
 static void updateTracking(void);
 static void updateWatchDogTimer(void);
-static void updateSensors(void);
 static void updateRadio(void);
 
 static void reset_loop_stats(void);
@@ -121,7 +119,6 @@ void turretSetup()
 
     initSBus();
     initLeddarWrapper();
-    initSensors();
     initIMU();
 
     //  Init global objects
@@ -161,7 +158,6 @@ void turretLoop()
     
     updateWatchDogTimer();
     Telem.Update();
-    updateSensors();
     updateIMU();
 
     //  Update Tracking and auto fire using Lidar
@@ -203,17 +199,6 @@ static void updateRadio()
     s_currentRCBitfield = getRcBitfield();
     s_hammerIntensity = getHammerIntensity();
     s_hammerDistance = getRange();
-}
-
-static void updateSensors()
-{
-    //  Update the sensor data
-
-    if(micros() - s_last_sensor_time > k_sensor_period) 
-    {
-        readSensors();
-        s_last_sensor_time = micros();
-    }
 }
 
 static void updateWatchDogTimer()
@@ -366,7 +351,7 @@ static void sendTelemetry()
 
     Turret.SendTelem();
 
-    sendSensorTelem(getPressure(), getAngle());
+    sendSensorTelem(0, Turret.GetHammerAngle());
 
     sendSystemTelem(g_loop_speed_min, g_loop_speed_avg/g_loop_count,
                     g_loop_speed_max, g_loop_count,

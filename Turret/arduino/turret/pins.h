@@ -9,8 +9,10 @@
 
 // Sensors
 
-#define PRESSURE_AI A15
-#define ANGLE_AI A1
+#define HAMMER_ANGLE_AI A1
+#define HAMMER_THROW_PRESSURE_AI A2
+#define HAMMER_RETRACT_PRESSURE_AI A3
+
 #define XBEE_CTS A12
 
 // ----------------- DIGITAL  ---------------

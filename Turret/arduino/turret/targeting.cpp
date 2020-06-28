@@ -2,7 +2,6 @@
 #include "leddar_io.h"
 #include "targeting.h"
 #include "pins.h"
-#include "sensors.h"
 #include <stdlib.h>
 #include <math.h>
 #include "imu.h"
