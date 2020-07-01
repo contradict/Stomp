@@ -234,7 +234,7 @@ void walk(modbus_t *ctx, float period)
 
     struct RealTimer tau;
     float elapsed;
-    for(start_time(&tau); (elapsed = elapsed_time(&tau)) < GainRampTime * 1.1; sleep_period(&tau, period))
+    for(start_time(&tau); (elapsed = elapsed_time(&tau)) < GainRampTime * 1.1; sleep_period(&tau, 4*period))
     {
         float phase = MIN(elapsed / GainRampTime, 1.0f);
         float current_gain[3];
