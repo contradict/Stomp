@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <math.h>
 #include <sys/time.h>
@@ -295,15 +296,38 @@ void walk(modbus_t *ctx, float period)
 
     float slept;
 
+    bool acc=false, con=false, dec=false;
+    printf("Starting walk cycle.\n");
     for(start_time(&tau); (elapsed = elapsed_time(&tau)) < (WalkDuration + 3*period); slept=sleep_period(&tau, period))
     {
         float frequency;
         if(elapsed < FrequencyRampTime)
+        {
+            if(!acc)
+            {
+                printf("Walk cycle accelerate.\n");
+                acc = true;
+            }
             frequency = CycleFrequency * elapsed / FrequencyRampTime;
+        }
         else if(elapsed < (WalkDuration - FrequencyRampTime))
+        {
+            if(!con)
+            {
+                printf("Walk cycle constant.\n");
+                con = true;
+            }
             frequency = CycleFrequency;
+        }
         else
+        {
+            if(!dec)
+            {
+                printf("Walk cycle decelerate.\n");
+                dec = true;
+            }
             frequency = MAX(0.0f, CycleFrequency * (WalkDuration - elapsed) / FrequencyRampTime);
+        }
 
         float dummy;
         float phase = modff(phase + frequency * slept, &dummy);
@@ -312,8 +336,8 @@ void walk(modbus_t *ctx, float period)
         {
             float toe_position[3];
             compute_leg_position(leg, phase, &toe_position);
-            printf("elapsed %5.3f frequency %5.3f Leg %d Walk phase %5.3f toe [%6.2f, %6.2f, %6.2f]\n",
-                   elapsed, frequency, leg, phase, toe_position[0], toe_position[1], toe_position[2]);
+            // printf("elapsed %5.3f frequency %5.3f Leg %d Walk phase %5.3f toe [%6.2f, %6.2f, %6.2f]\n",
+            //        elapsed, frequency, leg, phase, toe_position[0], toe_position[1], toe_position[2]);
             int err = set_toe_postion(ctx, leg, &toe_position);
             if(err == -1)
             {
@@ -323,8 +347,10 @@ void walk(modbus_t *ctx, float period)
             }
         }
     }
+    printf("Walk cycle complete.\n");
 
 lowgainexit:
+    printf("Setting low gain.\n");
     for(int leg=0; leg<NUM_WORKING_LEGS; leg++)
     {
         int err = set_servo_gains(ctx, leg, &ExitLowGains);
