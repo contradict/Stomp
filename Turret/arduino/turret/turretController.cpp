@@ -98,7 +98,7 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (getOrientation() == ORN_UPRIGHT && m_pHammerController->ReadyToFire())
+                else if (getOrientation() == ORN_UPRIGHT && m_pHammerController->ReadyToSwing())
                 {
                     setState(ENominal);
                 }
@@ -115,11 +115,11 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (m_pHammerController->ReadyToFire() && hammerManualThrowRetract())
+                else if (m_pHammerController->ReadyToSwing() && hammerManualThrowAndRetract())
                 {
                     setState(EHammerTriggerThrowRetract);
                 }
-                else if (hammerManualRetract())
+                else if (hammerManualRetractOnly())
                 {
                     setState(EHammerTriggerRetract);
                 }
@@ -146,7 +146,7 @@ void TurretController::Update()
                 {
                     setState(EUnknown);
                 }
-                else if (m_pHammerController->ReadyToFire())
+                else if (m_pHammerController->ReadyToSwing())
                 {
                     if (getOrientation() == ORN_UPRIGHT)
                     {
@@ -324,7 +324,7 @@ void TurretController::setState(controllerState p_state)
         case EHammerTriggerThrowRetract:
         {
             Telem.LogMessage("HammerTrigger");
-            m_pHammerController->Fire();
+            m_pHammerController->TriggerSwing();
         }
         break;
 
@@ -336,7 +336,7 @@ void TurretController::setState(controllerState p_state)
 
         case ESelfRightTrigger:
         {
-            m_pHammerController->FireSelfRight();
+            m_pHammerController->TriggerSelfRightSwing();
         }
         break;
     }

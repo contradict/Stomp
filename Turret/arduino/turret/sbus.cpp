@@ -121,12 +121,12 @@ bool isSelfRightEnabled()
     return s_radioConnected && (bitfield & AUTO_SELF_RIGHT_BIT);
 }
 
-bool hammerManualThrowRetract()
+bool hammerManualThrowAndRetract()
 {
     return isWeaponEnabled() && (bitfield & HAMMER_FIRE_BIT);
 }
 
-bool hammerManualRetract()
+bool hammerManualRetractOnly()
 {
     return isWeaponEnabled() && (bitfield & HAMMER_RETRACT_BIT);
 }

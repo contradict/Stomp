@@ -109,6 +109,18 @@ void FlameThrowerController::Update()
 
 }
 
+void Enable()
+{
+}
+
+void FlameStart()
+{
+}
+
+void FlameStop()
+{
+}
+
 void FlameThrowerController::Safe()
 {
     setState(ESafe);

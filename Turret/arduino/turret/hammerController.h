@@ -43,10 +43,10 @@ public:
     void Update();
     void Safe();
     
-    bool ReadyToFire();
+    bool ReadyToSwing();
 
-    void Fire();
-    void FireSelfRight();
+    void TriggerSwing();
+    void TriggerSelfRightSwing();
     void Retract();
 
     int32_t GetHammerSpeed();

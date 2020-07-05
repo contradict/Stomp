@@ -32,9 +32,11 @@ public:
 
     void Init();
     void Update();
-    void Safe();
 
-    void Fire();
+    void Safe();
+    void Enable();
+    void FlameStart();
+    void FlameStop();
 
     void SetParams();
     void RestoreParams();

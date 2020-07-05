@@ -207,18 +207,18 @@ void HammerController::Safe()
     setState(ESafe);
 }
 
-bool HammerController::ReadyToFire()
+bool HammerController::ReadyToSwing()
 {
     return m_state == EReady;
 }
 
 //
-//  IMPORTANT: Fire, FireSelfRight and Retract setup a secondary state
+//  IMPORTANT: TriggerSwing, TriggerSelfRightSwing and Retract setup a secondary state
 //  machine that is driven using timmer interrupts.  The normal
 //  update loop is too variable and often not responsive enought.
 //
 
-void HammerController::Fire()
+void HammerController::TriggerSwing()
 {
     Telem.LogMessage("FIRE");
     setState(EThrow);
@@ -230,7 +230,7 @@ void HammerController::Fire()
 //  us back over to right side up!
 //
 
-void HammerController::FireSelfRight()
+void HammerController::TriggerSelfRightSwing()
 {
     setState(EThrowSelfRight);
     setState(EFullCycleInterruptMode);

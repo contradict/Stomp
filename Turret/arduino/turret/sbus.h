@@ -45,8 +45,8 @@ bool isAutoAimEnabled();
 bool isAutoFireEnabled();
 bool isSelfRightEnabled();
 
-bool hammerManualThrowRetract();
-bool hammerManualRetract();
+bool hammerManualThrowAndRetract();
+bool hammerManualRetractOnly();
 
 uint16_t getRange();
 uint16_t getHammerIntensity();
