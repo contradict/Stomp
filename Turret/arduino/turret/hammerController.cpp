@@ -200,6 +200,8 @@ void HammerController::Update()
     //  Now that the state is stable, take action based on stable state
 
     updateSpeed();
+
+    Telem.LogMessage(String("Hammer angle = ") + s_hammerAngleCurrent);
 }
 
 void HammerController::Safe()
@@ -458,7 +460,7 @@ static const uint32_t k_subStateMachineUpdateFrequency = 50000;    //  50kHz or 
 static const uint16_t k_telmSamplesMax = 500;
 static const int32_t k_angleReadSwitchToPressureCount = 10;        //  10 Angle Reads for each pressure read
 
-static const int16_t k_minValidHammerAngleDifferential = 102;
+static const int16_t k_minValidHammerAngleDifferential = 120;
 static const int16_t k_maxValidHammerAngleDifferential = 920;
 static const int16_t k_minExpectedHammerAngleDifferential = 350;
 static const int16_t k_maxExpectedHammerAngleDifferential = 920;
@@ -545,9 +547,9 @@ static uint32_t s_swingTimeStart = 0;
 #define UPDATE_VALVE_STATE_RV_OPEN { s_valveState |= 1 << RV_VALVE_BIT; }
 #define UPDATE_VALVE_STATE_RV_CLOSED { s_valveState &= 1 << ~(RV_VALVE_BIT); }
 
-#define SELECT_THROW_PRESSURE_READ { s_sensorReadState = EReadThrowPressure; ADMUX = (0x01 << 6) | (HAMMER_THROW_PRESSURE_AI & 0x07); }
-#define SELECT_RETRACT_PRESSURE_READ { s_sensorReadState = EReadRetractPressure; ADMUX = (0x01 << 6) | (HAMMER_RETRACT_PRESSURE_AI & 0x07); }
-#define SELECT_HAMMER_ANGLE_READ { s_sensorReadState = EReadHammerAngle; ADMUX = (0x01 << 6) | (HAMMER_ANGLE_AI & 0x07); }
+#define SELECT_THROW_PRESSURE_READ { s_sensorReadState = EReadThrowPressure; ADMUX = (0x01 << 6) | ((HAMMER_THROW_PRESSURE_AI - 54) & 0x07); }
+#define SELECT_RETRACT_PRESSURE_READ { s_sensorReadState = EReadRetractPressure; ADMUX = (0x01 << 6) | ((HAMMER_RETRACT_PRESSURE_AI - 54) & 0x07); }
+#define SELECT_HAMMER_ANGLE_READ { s_sensorReadState = EReadHammerAngle; ADMUX = (0x01 << 6) | ((HAMMER_ANGLE_AI - 54) & 0x07); }
 
 //
 //  IMPORTANT: These MACROs are optomized for running from ISR (not for general use)
@@ -715,12 +717,13 @@ void startSensorReadStateMachine()
 
     //  Enable ADC, ADC interruupts and set the prescaler to 64, not the default 128
 
-    ADCSRA = ADEN | ADIE | ADPS2 | ADPS1;
+    ADCSRA = (0x01 << ADEN) | (0x01 << ADIE) | (0x01 << ADPS2) | (0x01 << ADPS1) | (0x01 << ADPS0);
+    ADCSRB = 0x00;
 
     //  Start sesnor reads
 
     SELECT_THROW_PRESSURE_READ;
-    ADCSRA |= ADSC;
+    ADCSRA |= 0x01 << ADSC;
 }
 
 void swingComplete()
@@ -741,7 +744,7 @@ ISR(ADC_vect)
     //  Get ADC results
 
     int16_t differential = ADCL | (ADCH << 8);
-
+    
     //  Need to keep track of which analog pin we are reading
 
     switch (s_sensorReadState)
@@ -796,7 +799,8 @@ ISR(ADC_vect)
 
             SELECT_HAMMER_ANGLE_READ;
         }
-
+        break;
+        
         case EReadHammerAngle:
         {
             // calculate Hammer Angle
@@ -832,7 +836,7 @@ ISR(ADC_vect)
 
     //  Start next sesnor reads
 
-    ADCSRA |= ADSC;
+    ADCSRA |= 0x01 << ADSC;
 }
 
 //  Interrupt Service Routine to collect telemetry, at defined frequency, durring a hammer throw and retract
