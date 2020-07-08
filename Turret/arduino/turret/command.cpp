@@ -1,6 +1,6 @@
 #include "command.h"
 #include "DMASerial.h"
-#include "telem.h"
+#include "telemetryController.h"
 #include "targeting.h"
 #include "autofire.h"
 #include "imu.h"
@@ -60,7 +60,6 @@ struct AutoAimInner {
     int32_t steer_i;
     int32_t steer_d;
     int32_t steer_max;
-    uint32_t telemetry_interval;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_AAIM, AutoAimInner> AutoAimCommand;
 
@@ -138,12 +137,10 @@ void handleCommands(void)
         {
             case CMD_ID_TRATE:
                 trate_cmd = (TelemetryRateCommand *)command_buffer;
-                setTelemetryParams(trate_cmd->inner.small_telem_period,
+                Telem.SetParams(trate_cmd->inner.small_telem_period,
                                     trate_cmd->inner.leddar_telem_period,
-                                    trate_cmd->inner.drive_telem_period,
                                     trate_cmd->inner.enabled_messages);
-                debug_print(String("enabled_telemetry=")+
-                            String(trate_cmd->inner.enabled_messages, 16));
+                Telem.LogMessage(String("enabled_telemetry=") + String(trate_cmd->inner.enabled_messages, 16));
                 valid_command++;
                 break;
             case CMD_ID_TRKFLT:
@@ -182,8 +179,7 @@ void handleCommands(void)
                     aaim_cmd->inner.steer_p,
                     aaim_cmd->inner.steer_i,
                     aaim_cmd->inner.steer_d,
-                    aaim_cmd->inner.steer_max,
-                    aaim_cmd->inner.telemetry_interval);
+                    aaim_cmd->inner.steer_max);
                 break;
             case CMD_ID_IMUP:
                 imup_cmd = (IMUParameterCommand *)command_buffer;
@@ -209,6 +205,6 @@ void handleCommands(void)
         }
         command_length = 0;
         command_ready = false;
-        sendCommandAcknowledge(last_command, valid_command, invalid_command);
+        Telem.SendCommandAcknowledge(last_command, valid_command, invalid_command);
     }
 }

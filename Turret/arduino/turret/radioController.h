@@ -6,7 +6,7 @@
 //
 //  ====================================================================
 
-class SelfRightController
+class RadioController
 {
 
     //  ====================================================================
@@ -16,11 +16,6 @@ class SelfRightController
     //  ====================================================================
 
 public:
-
-    struct Params
-    {
-        int32_t tmp;
-    };
 
     //  ====================================================================
     //
@@ -33,8 +28,18 @@ public:
     void Init();
     void Update();
 
-    void SetParams();
-    void RestoreParams();
+    bool IsNominal();
+
+    bool IsWeaponEnabled();
+    bool IsManualTurretEnabled();
+    bool IsAutoAimEnabled();
+    bool IsAutoFireEnabled();
+    bool IsSelfRightEnabled();
+    bool IsFlameOnEnabled();
+    bool IsFlamePulseEnabled();
+
+    bool IsHammerSwingRequested();
+    bool IsHammerRetractRequested();
 
     void SendTelem();
 
@@ -45,9 +50,6 @@ private:
         EInit,
         ESafe,
         EDisabled,
-
-        EUnknownOrientation,
-        EGoodOrientation,
 
         EInvalid = -1
     };
@@ -60,7 +62,9 @@ private:
 
     void setState(controllerState p_state);
 
-    void saveParams();
+    void init();
+
+    void sendTelem();
 
     //  ====================================================================
     //
@@ -69,8 +73,6 @@ private:
     //  ====================================================================
     
 private:
-
-    const uint32_t k_safeStateMinDt = 500000;
 
     //  ====================================================================
     //
@@ -81,6 +83,6 @@ private:
     controllerState m_state;
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
-
-    Params m_params;
 };
+
+extern RadioController Radio;

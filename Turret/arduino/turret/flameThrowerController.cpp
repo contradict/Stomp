@@ -6,11 +6,12 @@
 #include "pins.h"
 
 #include "sbus.h"
-#include "telem.h"
+#include "telemetryController.h"
 #include "autoaim.h"
 #include "DMASerial.h"
 
 #include "turretController.h"
+#include "radioController.h"
 #include "flameThrowerController.h"
 
 //  ====================================================================
@@ -51,7 +52,7 @@ void FlameThrowerController::Init()
 
 void FlameThrowerController::Update()
 {
-    m_lastUpdateTime= micros();
+    m_lastUpdateTime = micros();
 
     //  Pass update to our owned objects
 
@@ -73,23 +74,55 @@ void FlameThrowerController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && Radio.IsNominal())
                 {
-                    if (isWeaponEnabled())
-                    {
-                        setState(EReadyToFire);
-                    }
-                    else
-                    {
-                        setState(EDisabled);
-                    }
+                    setState(EDisabled);
                 }
             }
             break;
 
             case EDisabled:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
+                {
+                    setState(ESafe);
+                }
+                else if (Radio.IsFlameOnEnabled() || Radio.IsFlamePulseEnabled())
+                {
+                    setState(EReadyToFire);
+                }
+            }
+            break;
+
+            case EReadyToFire:
+            {
+                if (!Radio.IsNominal())
+                {
+                    setState(ESafe);
+                }
+                else if (Radio.IsFlameOnEnabled())
+                {
+                    setState(EManualFlameOn);
+                }
+            }
+            break;
+
+            case EManualFlameOn:
+            {
+                if (!Radio.IsNominal())
+                {
+                    setState(ESafe);
+                }
+                else if (!Radio.IsFlameOnEnabled())
+                {
+                    setState(EDisabled);
+                }
+            }
+            break;
+
+            case EPulseFlameOn:
+            {
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -109,16 +142,25 @@ void FlameThrowerController::Update()
 
 }
 
-void Enable()
+void FlameThrowerController::Enable()
 {
 }
 
-void FlameStart()
+void FlameThrowerController::FlamePulseStart()
 {
+    setState(EPulseFlameOn);
 }
 
-void FlameStop()
+void FlameThrowerController::FlamePulseStop()
 {
+    if (Radio.IsFlamePulseEnabled())
+    {
+        setState(EReadyToFire);
+    }
+    else
+    {
+        setState(EDisabled);
+    }
 }
 
 void FlameThrowerController::Safe()
@@ -134,11 +176,6 @@ void FlameThrowerController::SetParams()
 void FlameThrowerController::RestoreParams()
 {
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct FlameThrowerController::Params));
-}
-
-void FlameThrowerController::SendTelem()
-{
-    // sendSwingTelemetry(;
 }
 
 //  ====================================================================
@@ -173,17 +210,45 @@ void FlameThrowerController::setState(controllerState p_state)
     {
         case EInit:
         {
+            init();
         }
         break;
 
         case ESafe:
         {
+            digitalWrite(PROPANE_DO, LOW);
+            digitalWrite(IGNITER_DO, LOW);
+        }
+        break;
+
+        case EDisabled:
+        {
+            digitalWrite(PROPANE_DO, LOW);
+            digitalWrite(IGNITER_DO, LOW);
+        }
+        break;
+
+        case EReadyToFire:
+        {
+            digitalWrite(IGNITER_DO, HIGH);
+        }
+        break;
+
+        case EPulseFlameOn:
+        {
+            digitalWrite(PROPANE_DO, HIGH);
+        }
+        break;
+
+        case EManualFlameOn:
+        {
+            digitalWrite(PROPANE_DO, HIGH);
         }
         break;
     }
 }
 
-void FlameThrowerController::initAllControllers()
+void FlameThrowerController::init()
 {
 }
 

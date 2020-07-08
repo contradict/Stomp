@@ -6,23 +6,13 @@
 #include "pins.h"
 
 #include "sbus.h"
-#include "telem.h"
+#include "telemetryController.h"
 #include "autoaim.h"
 #include "DMASerial.h"
 
 #include "turretController.h"
+#include "radioController.h"
 #include "turretRotationController.h"
-
-//  ====================================================================
-//
-//  External references
-//
-//  ====================================================================
-
-//  Serial out pins defined in turret.ino-- check there to 
-//  verify proper connectivity to motor controller
-
-extern HardwareSerial& TurretRotationMotorSerial;
 
 //  ====================================================================
 //
@@ -37,6 +27,8 @@ static const int16_t k_invalidTurretAngleRead = -1;
 //  File static variables
 //
 //  ====================================================================
+
+HardwareSerial& TurretRotationMotorSerial = Serial1;   // RX pin 19, TX pin 18
 
 static struct TurretRotationController::Params EEMEM s_savedParams = 
 {
@@ -55,10 +47,8 @@ static struct TurretRotationController::Params EEMEM s_savedParams =
 //
 //  ====================================================================
 
-void TurretRotationController::Init(TurretController* p_pTurret)
+void TurretRotationController::Init()
 {
-    m_pTurret = p_pTurret;
-
     m_state = EInvalid;
     m_lastUpdateTime = micros();
     setState(EInit);
@@ -93,7 +83,7 @@ void TurretRotationController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && Radio.IsNominal())
                 {
                     if (isManualTurretEnabled())
                     {
@@ -109,7 +99,7 @@ void TurretRotationController::Update()
 
             case EDisabled:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -122,7 +112,7 @@ void TurretRotationController::Update()
 
             case EManualControl:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -130,7 +120,7 @@ void TurretRotationController::Update()
                 {
                     setState(EDisabled);
                 }
-                else if (isAutoAimEnabled() && abs(desiredSBusSpeed) < m_params.ManualControlOverideSpeed)
+                else if (isAutoAimEnabled() && Turret.IsNominal() && abs(desiredSBusSpeed) < m_params.ManualControlOverideSpeed)
                 {
                     setState(EAutoAim);
                 }
@@ -139,7 +129,7 @@ void TurretRotationController::Update()
 
             case EAutoAim:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -147,7 +137,7 @@ void TurretRotationController::Update()
                 {
                     setState(EDisabled);
                 }
-                else if (!isAutoAimEnabled() || !m_pTurret->Nominal())
+                else if (!isAutoAimEnabled() || !Turret.IsNominal())
                 {
                     setState(EManualControl);
                 }
@@ -164,11 +154,11 @@ void TurretRotationController::Update()
 
             case EAutoAimWithManualAssist:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
-                else if (!isAutoAimEnabled() || !m_pTurret->Nominal())
+                else if (!isAutoAimEnabled() || !Turret.IsNominal())
                 {
                     setState(EManualControl);
                 }
@@ -213,9 +203,9 @@ int16_t TurretRotationController::GetTurretAngle()
     return m_turretAngleCurrent;
 }
 
-void TurretRotationController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval)
+void TurretRotationController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain)
 {
-    m_pAutoAim->SetParams(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain, p_telemetry_interval);  
+    m_pAutoAim->SetParams(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain);  
 }
 
 void TurretRotationController::SetParams(uint32_t p_manualControlOverideSpeed)
@@ -233,7 +223,7 @@ void TurretRotationController::RestoreParams()
 void TurretRotationController::SendTelem()
 {
     m_pAutoAim->SendTelem();
-    sendTurretRotationTelemetry(m_state, m_turretSpeedCurrent);
+    Telem.SendTurretRotationTelemetry(m_state, m_turretSpeedCurrent);
 }
 
 //  ====================================================================
@@ -334,7 +324,7 @@ void TurretRotationController::setState(controllerState p_state)
             m_turretAngleCurrent = k_invalidTurretAngleRead;
 
             m_pAutoAim = new AutoAim();
-            initAllControllers();
+            init();
         }
         break;
 
@@ -346,7 +336,7 @@ void TurretRotationController::setState(controllerState p_state)
     }
 }
 
-void TurretRotationController::initAllControllers()
+void TurretRotationController::init()
 {
     m_pAutoAim->Init();
     initRoboTeq();

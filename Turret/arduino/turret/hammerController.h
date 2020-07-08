@@ -29,7 +29,7 @@ public:
     {
         int16_t selfRightIntensity;
         int16_t telemetryFrequency;
-    };
+    } __attribute__((packed));
 
     //  ====================================================================
     //
@@ -47,7 +47,7 @@ public:
 
     void TriggerSwing();
     void TriggerSelfRightSwing();
-    void Retract();
+    void TriggerRetract();
 
     int32_t GetHammerSpeed();
     int16_t GetHammerAngle();
@@ -55,8 +55,6 @@ public:
     void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval);
     void SetParams(uint32_t p_selfRightIntensity, uint32_t p_telemetryFrequency);
     void RestoreParams();
-
-    void SendTelem();
 
 private:
 
@@ -90,9 +88,8 @@ private:
     void updatePressure();
     
     void setState(controllerState p_state);
-    void initAllControllers();
+    void init();
 
-    void resetTelem();
     void saveParams();
 
     //  ====================================================================
@@ -121,9 +118,6 @@ private:
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
-    bool m_retractOnlyPhase;
-
-    uint32_t m_throwStartTime;
     uint8_t m_throwPressureAngle;
 
     AutoFire* m_pAutoFire;

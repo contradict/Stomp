@@ -40,14 +40,14 @@ public:
  
 public:
 
-    void Init(TurretController* p_pTurret);
+    void Init();
     void Update();
     void Safe();
     
     int32_t GetTurretSpeed();
     int16_t GetTurretAngle();
 
-    void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t telemetry_interval);
+    void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain);
     void SetParams(uint32_t p_manualControlOverideSpeed);
     void RestoreParams();
 
@@ -79,7 +79,7 @@ private:
     void setState(controllerState p_state);
     void setSpeed(int32_t p_speed);
 
-    void initAllControllers();
+    void init();
     void initRoboTeq();
 
     void saveParams();
@@ -110,7 +110,6 @@ private:
     int32_t m_turretSpeedCurrent;
     int16_t m_turretAngleCurrent;
 
-    TurretController* m_pTurret;
     AutoAim* m_pAutoAim;
 
     Params m_params;

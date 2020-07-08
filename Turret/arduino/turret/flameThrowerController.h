@@ -35,13 +35,12 @@ public:
 
     void Safe();
     void Enable();
-    void FlameStart();
-    void FlameStop();
+
+    void FlamePulseStart();
+    void FlamePulseStop();
 
     void SetParams();
     void RestoreParams();
-
-    void SendTelem();
 
 private:
 
@@ -49,10 +48,12 @@ private:
     {
         EInit,
         ESafe,
+        
         EDisabled,
-
         EReadyToFire,
-        EFire,
+
+        EPulseFlameOn,
+        EManualFlameOn,
  
         EInvalid = -1
     };
@@ -65,7 +66,7 @@ private:
 
     void setState(controllerState p_state);
 
-    void initAllControllers();
+    void init();
 
     void sendTelem();
     void saveParams();

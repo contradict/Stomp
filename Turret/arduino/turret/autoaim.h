@@ -26,7 +26,6 @@ public:
         int32_t integralConstant;
         int32_t derivativeConstant;
         int32_t speedMax;
-        uint32_t autoaimTelemInterval;
     } __attribute__((packed));
 
     //  ====================================================================
@@ -42,7 +41,7 @@ public:
 
     int32_t GetDesiredTurretSpeed();
 
-    void SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_steer_max, uint32_t p_telemetry_interval);
+    void SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_speedMax);
     void RestoreParams();
     
     void SendTelem();

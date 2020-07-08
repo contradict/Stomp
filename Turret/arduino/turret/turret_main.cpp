@@ -1,8 +1,6 @@
 #include "Arduino.h"
-#include "turret_main.h"
 #include "sbus.h"
 #include "leddar_io.h"
-#include "telem.h"
 #include "pins.h"
 #include "utils.h"
 #include "targeting.h"
@@ -12,8 +10,11 @@
 #include "autofire.h"
 #include "autoaim.h"
 
+#include "radioController.h"
 #include "telemetryController.h"
 #include "turretController.h"
+
+#include "turret_main.h"
 
 //  ====================================================================
 //
@@ -36,7 +37,6 @@ uint32_t g_loop_count;
 //  Controller Objects 
 
 Track g_trackedObject;
-TelemetryController Telem;
 
 //  ====================================================================
 //
@@ -82,9 +82,7 @@ extern uint16_t sbus_overrun;
 //
 //  ====================================================================
 
-static void sendTelemetry(void);
 static void updateTurretRotation(void);
-static void updateWeapons(void);
 static void updateTracking(void);
 static void updateWatchDogTimer(void);
 static void updateRadio(void);
@@ -102,17 +100,13 @@ static void updateLoopStats(void);
 //  Main initialization point
 //
 
-void turretSetup() 
+void turretInit()
 {
     //  Make sure we come up safly and enable watch dog to 
     //  ensure if we don't have communications, we reset.
 
     // BB MJS: safeState();
     wdt_enable(WDTO_4S);
-
-    //  Before anyone starts using Telem, make sure it is initialized
-
-    Telem.Init();
 
     //  Initialize all of the various subsystems
     //  to initial state
@@ -121,20 +115,13 @@ void turretSetup()
     initLeddarWrapper();
     initIMU();
 
-    //  Init global objects
-
-    Turret.Init();
-
     //  Restore any information stored in EEMEM
 
     restoreObjectSegmentationParameters();
     // restoreAutoFireParameters();
-    restoreTelemetryParameters();
+
+
     g_trackedObject.restoreTrackingFilterParams();
-
-    Turret.RestoreParams();
-
-    // Turret init
 
     reset_loop_stats();
     g_start_time = micros();
@@ -144,9 +131,9 @@ void turretSetup()
 //  Main update loop
 //
 
-void turretLoop() 
+void turretUpdate() 
 {
-    //  First, update raido connection state to see if everything is good
+    //  First, update radio connection state to see if everything is good
     //  If everything is good, will also update information about controller 
     //  state, such as the requested hammer instnsity, drive speed, etc.
 
@@ -157,32 +144,14 @@ void turretLoop()
     //  the sensors their update tick
     
     updateWatchDogTimer();
-    Telem.Update();
     updateIMU();
 
     //  Update Tracking and auto fire using Lidar
 
     updateTracking();
-
-    //  Update Weapons
-    //  Take care of hammer and flame thrower state
-    //  This includes manually firing the hammer or flame throwers
-
-    updateWeapons();
-
-    //  Calculate and apply turret rotation.  Accounts for systems adjustments
-    //  such as auto aim as well as requested adjustmens from the radio controller
-
-    Turret.Update();
-
-    //  Send out telemetry to PC and process commands from PC
-
-    sendTelemetry();
     handleCommands();
 
     // Finally update our loop stats
-
-
     updateLoopStats();
 }
 
@@ -206,11 +175,13 @@ static void updateWatchDogTimer()
     //  As long as we have valid radio connection,
     //  prevent watch dog timer from expiring
 
-    if (isRadioConnected())
+    if (Radio.IsNominal())
     {
         wdt_reset();
     }
 }
+
+// BB MJS Move Update Tracking and SendLeddarTelem to autoaim.cpp
 
 static void updateTracking()
 {
@@ -247,113 +218,39 @@ static void updateTracking()
     Object objects[8];
     uint8_t num_objects = segmentObjects(*minDetections, now, objects);
     int8_t best_object = trackObject(now, objects, num_objects, g_trackedObject);
+}
 
-    //  Get the state of autoFire
-
-    // BB MJS: Get AutoFire working
-
-    /*
-    s_autoFire = updateAutoFire(g_trackedObject, s_hammerDistance, s_hammerIntensity);
-
-    if((s_autoFire==AF_HIT) && (s_currentRCBitfield & AUTO_FIRE_ENABLE_BIT)) 
-    {
-        fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, true);
-    }
-    */
-
+void turretSendLeddarTelem()
+{
+/*
     //  Send out tracking / auto aim telemetry
-  
-    if (isTimeToSendLeddarTelem(now))
-    {
-        sendLeddarTelem(*minDetections, raw_detection_count);
-        sendObjectsTelemetry(num_objects, objects);
 
-        if(num_objects > 0)
-        {
-            sendTrackingTelemetry(
-                    objects[best_object].xcoord(), objects[best_object].ycoord(),
-                    objects[best_object].angle(), objects[best_object].radius(),
-                    g_trackedObject.x/16, g_trackedObject.vx/16,
-                    g_trackedObject.y/16, g_trackedObject.vy/16);
-        }
-        else
-        {
-            sendTrackingTelemetry(
-                    0, 0, 0, 0,
-                    g_trackedObject.x/16, g_trackedObject.vx/16,
-                    g_trackedObject.y/16, g_trackedObject.vy/16);
-        }
+    Telem.SendLeddarTelem(*minDetections, raw_detection_count);
+    Telem.SendObjectsMeasuredTelemetry(num_objects, objects);
+    Telem.SendObjectsCalculatedTelemetry(num_objects, objects);
+
+
+    if(num_objects > 0)
+    {
+        Telem.SendTrackingTelemetry(
+                objects[best_object].xcoord(), objects[best_object].ycoord(),
+                objects[best_object].angle(), objects[best_object].radius(),
+                g_trackedObject.x/16, g_trackedObject.vx/16,
+                g_trackedObject.y/16, g_trackedObject.vy/16);
     }
+    else
+    {
+        Telem.SendTrackingTelemetry(
+                0, 0, 0, 0,
+                g_trackedObject.x/16, g_trackedObject.vx/16,
+                g_trackedObject.y/16, g_trackedObject.vy/16);
+    }
+*/
 }
 
-static void updateWeapons()
+void turretSendTelem()
 {
-    // BB MJS: Move this to Turret Controller
-
-    /*
-    // React to RC state changes (change since last time this call was made)
-    int16_t diff = getRcBitfieldChanges();
-    
-    if( !(s_currentRCBitfield & FLAME_PULSE_BIT) && !(s_currentRCBitfield & FLAME_CTRL_BIT) ){
-        flameSafe();
-    }
-    if( (diff & FLAME_PULSE_BIT) && (s_currentRCBitfield & FLAME_PULSE_BIT) ){
-        flameEnable();
-    }
-    // Flame on -> off
-    if( (diff & FLAME_CTRL_BIT) && !(s_currentRCBitfield & FLAME_CTRL_BIT) ){
-        flameEnd();
-    }
-    // Flame off -> on
-    if( (diff & FLAME_CTRL_BIT) && (s_currentRCBitfield & FLAME_CTRL_BIT) ){
-        flameEnable();
-        flameStart();
-    }
-    // Manual hammer fire
-    if( (diff & HAMMER_FIRE_BIT) && (s_currentRCBitfield & HAMMER_FIRE_BIT)){
-        if (s_currentRCBitfield & DANGER_CTRL_BIT){
-          noAngleFire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT);
-        } else {
-          fire(s_hammerIntensity, s_currentRCBitfield & FLAME_PULSE_BIT, false);
-        }
-    }
-
-    */
-    //  BB MJS: Hammer control is going to be different this year.  There is no motor drive, just to Big
-    //  cylindars for hard hit and gentral retract
-
-    /*
-    if( (diff & HAMMER_RETRACT_BIT) && (s_currentRCBitfield & HAMMER_RETRACT_BIT)){
-      if (s_currentRCBitfield & DANGER_CTRL_BIT){
-        gentleRetract(HAMMER_RETRACT_BIT);
-      } else {
-        retract();
-      }
-    }
-    if( (s_currentRCBitfield & GENTLE_HAM_F_BIT)) {
-        gentleFire(GENTLE_HAM_F_BIT);
-    }
-    if( (s_currentRCBitfield & GENTLE_HAM_R_BIT)) {
-        gentleRetract(GENTLE_HAM_R_BIT);
-    }
-    */
-}
-
-static void sendTelemetry()
-{
-    // send telemetry
-    uint32_t now = micros();
- 
-    if (!isTimeToSendTelemetry(now)) 
-    {
-        return;
-    }
-
-    Turret.SendTelem();
-
-    sendSensorTelem(0, Turret.GetHammerAngle());
-
-    sendSystemTelem(g_loop_speed_min, g_loop_speed_avg/g_loop_count,
+    Telem.SendSystemTelem(g_loop_speed_min, g_loop_speed_avg/g_loop_count,
                     g_loop_speed_max, g_loop_count,
                     leddar_overrun,
                     leddar_crc_error,
@@ -366,9 +263,7 @@ static void sendTelemetry()
     reset_loop_stats();
     int16_t hammer_angle = 0; // BB MJS -> HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
 
-    sendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetTurretSpeed());
-
-    telemetryIMU();
+    Telem.SendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetTurretSpeed());
 }
 
 static void reset_loop_stats(void) 

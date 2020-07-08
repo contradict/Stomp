@@ -24,7 +24,7 @@
 // We currently use 2 and 3 for these high-pri PWM inputs and leave the
 // rest for other purposes
 
-// BB MJS: Not used any more.  Controls for turret all come from the same raido now
+// BB MJS: Not used any more.  Controls for turret all come from the same radio now
 // #define DRIVE_DISTANCE_PIN 2       // Drive radio ch6
 // #define TARGETING_ENABLE_PIN 3     // Drive radio ch5
 
@@ -41,22 +41,10 @@
 #define RETRACT_PRESSURE_VALVE_DO 8
 #define RETRACT_VENT_VALVE_DO 9
 
-//  BB MJS: Old Pneumatics control
-
-#define ENABLE_VALVE_DO 10
-#define VENT_VALVE_DO 11
-#define RETRACT_VALVE_DO A7
-#define THROW_VALVE_DO 4
-
 //  Flame thrower
 
 #define IGNITER_DO 5
 #define PROPANE_DO A6
-
-// These are handled as pin change interrupts on the PINB bank
-
-#define LEFT_RC_PIN 12             // Drive radio ch1
-#define RIGHT_RC_PIN 13            // Drive radio ch2
 
 // ----------------- GLOBALS ----------------
 

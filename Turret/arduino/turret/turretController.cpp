@@ -7,16 +7,16 @@
 
 #include "sbus.h"
 #include "imu.h"
-#include "telem.h"
 #include "autoaim.h"
 #include "DMASerial.h"
 
-#include "turretController.h"
+#include "turret_main.h"
 #include "turretRotationController.h"
 #include "hammerController.h"
 #include "flameThrowerController.h"
-#include "selfRightController.h"
 #include "telemetryController.h"
+#include "radioController.h"
+#include "turretController.h"
 
 //  ====================================================================
 //
@@ -51,6 +51,9 @@ static struct TurretController::Params EEMEM s_savedParams =
 
 void TurretController::Init()
 {
+    //  BB MJS: init the old turret_main
+    turretInit();
+
     m_state = EInvalid;
     m_lastUpdateTime = micros();
     setState(EInit);
@@ -58,6 +61,9 @@ void TurretController::Init()
 
 void TurretController::Update()
 {
+    //  BB MJS: update the old turret_main
+    turretUpdate();
+
     m_lastUpdateTime = micros();
 
     //  Pass update to our owned objects
@@ -65,7 +71,6 @@ void TurretController::Update()
     m_pTurretRotationController->Update();
     m_pHammerController->Update();
     m_pFlameThrowerController->Update();
-    m_pSelfRightController->Update();
 
     //  Update our state
 
@@ -85,7 +90,7 @@ void TurretController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && Radio.IsNominal())
                 {
                     setState(EUnknown);
                 }
@@ -94,7 +99,7 @@ void TurretController::Update()
 
             case EUnknown:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -111,7 +116,7 @@ void TurretController::Update()
 
             case ENominal:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -138,7 +143,7 @@ void TurretController::Update()
 
             case EHammerActive:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -189,7 +194,7 @@ void TurretController::Update()
     }
 }
 
-bool TurretController::Nominal()
+bool TurretController::IsNominal()
 {
     return m_state == ENominal;
 }
@@ -224,9 +229,19 @@ int32_t TurretController::GetDesiredManualTurretSpeed()
     return getDesiredManualTurretSpeed();
 }
 
-void TurretController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain, uint32_t p_telemetry_interval)
+void TurretController::FlamePulseStart()
 {
-    m_pTurretRotationController->SetAutoAimParameters(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain, p_telemetry_interval);
+    m_pFlameThrowerController->FlamePulseStart();
+}
+
+void TurretController::FlamePulseStop()
+{
+    m_pFlameThrowerController->FlamePulseStop();
+}
+
+void TurretController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain)
+{
+    m_pTurretRotationController->SetAutoAimParameters(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain);
 }
 
 void TurretController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
@@ -245,19 +260,25 @@ void TurretController::RestoreParams()
     m_pTurretRotationController->RestoreParams();
     m_pHammerController->RestoreParams();
     m_pFlameThrowerController->RestoreParams();
-    m_pSelfRightController->RestoreParams();
 
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct TurretController::Params));
 }
 
 void TurretController::SendTelem()
 {
-    m_pTurretRotationController->SendTelem();
-    m_pHammerController->SendTelem();
-    m_pFlameThrowerController->SendTelem();
-    m_pSelfRightController->SendTelem();
+    turretSendTelem();      //  BB MSJ: This is the remaining stuff in turret_main.cpp 
+    telemetryIMU();         //  BB MJS: Convert to controller and call SendTelem();
 
-    sendTurretTelemetry(m_state);
+    m_pTurretRotationController->SendTelem();
+
+    Telem.SendSensorTelem(0, m_pHammerController->GetHammerAngle());    // BB MJS: Adjust for sending pressure
+    Telem.SendTurretTelemetry(m_state);
+
+}
+
+void TurretController::SendLeddarTelem()
+{
+    turretSendLeddarTelem();
 }
 
 //  ====================================================================
@@ -266,12 +287,18 @@ void TurretController::SendTelem()
 //
 //  ====================================================================
 
+void TurretController::init()
+{
+    m_pTurretRotationController = new TurretRotationController();
+    m_pHammerController = new HammerController();
+    m_pFlameThrowerController = new FlameThrowerController();
+}
+
 void TurretController::initAllControllers()
 {
-    m_pTurretRotationController->Init(this);
+    m_pTurretRotationController->Init();
     m_pHammerController->Init();
     m_pFlameThrowerController->Init();
-    m_pSelfRightController->Init();
 }
 
 void TurretController::setState(controllerState p_state)
@@ -301,12 +328,8 @@ void TurretController::setState(controllerState p_state)
     {
         case EInit:
         {
-            m_pTurretRotationController = new TurretRotationController();
-            m_pHammerController = new HammerController();
-            m_pFlameThrowerController = new FlameThrowerController();
-            m_pSelfRightController = new SelfRightController();
-
-            initAllControllers();            
+            init();         
+            initAllControllers();
         }
         break;
 
@@ -330,7 +353,7 @@ void TurretController::setState(controllerState p_state)
 
         case EHammerTriggerRetract:
         {
-            m_pHammerController->Retract();
+            m_pHammerController->TriggerRetract();
         }
         break;
 

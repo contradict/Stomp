@@ -14,6 +14,11 @@
         "iterator": "cpp",
         "string_view": "cpp",
         "unordered_map": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "atomic": "cpp",
+        "functional": "cpp",
+        "locale": "cpp",
+        "optional": "cpp",
+        "algorithm": "cpp"
     }
 }

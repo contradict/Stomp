@@ -5,7 +5,7 @@
 // MAX_DETECTIONS should be <255
 #define MAX_DETECTIONS 50
 
-extern HardwareSerial& LeddarSerial;
+HardwareSerial& LeddarSerial = Serial2;  // RX pin 17, TX pin 16
 
 // Table of CRC values for highorder byte
 static const uint8_t CRC_HI[] =

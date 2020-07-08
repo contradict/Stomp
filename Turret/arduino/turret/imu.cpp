@@ -1,7 +1,7 @@
 #include "I2C.h"
 #include "MPU6050.h"
 #include "imu.h"
-#include "telem.h"
+#include "telemetryController.h"
 
 static void saveIMUParameters(void);
 static void restoreIMUParameters(void);
@@ -50,7 +50,7 @@ void initIMU(void) {
     I2c.timeOut(2);
     //I2c.scan(telemetry_stream);
     IMU.initialize();
-    debug_print(String("IMU.getDeviceID() = ") + IMU.getDeviceID());
+    Telem.LogMessage(String("IMU.getDeviceID() = ") + IMU.getDeviceID());
     IMU.setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
     IMU.setFullScaleAccelRange(MPU6050_ACCEL_FS_16);
     IMU.setDLPFMode(MPU6050_DLPF_BW_20);
@@ -134,9 +134,10 @@ void updateIMU(void) {
     }
 }
 
-void telemetryIMU(void) {
-    sendIMUTelem(acceleration, angular_rate, temperature);
-    sendORNTelem(stationary, best_orientation, sum_angular_rate, total_norm, cross_norm);
+void telemetryIMU(void) 
+{
+    Telem.SendIMUTelem(acceleration, angular_rate, temperature);
+    Telem.SendORNTelem(stationary, best_orientation, sum_angular_rate, total_norm, cross_norm);
 }
 
 

@@ -1,17 +1,13 @@
 //
-//  Flame Thrower Controller
+//  Radio Controller
 //
 
 #include "Arduino.h"
+
 #include "pins.h"
-
 #include "sbus.h"
-#include "telem.h"
-#include "autoaim.h"
-#include "DMASerial.h"
 
-#include "turretController.h"
-#include "selfRightController.h"
+#include "radioController.h"
 
 //  ====================================================================
 //
@@ -25,11 +21,6 @@
 //
 //  ====================================================================
 
-static struct SelfRightController::Params EEMEM s_savedParams = 
-{
-    .tmp = 0,
-};
-
 //  ====================================================================
 //
 //  Constructors
@@ -42,16 +33,19 @@ static struct SelfRightController::Params EEMEM s_savedParams =
 //
 //  ====================================================================
 
-void SelfRightController::Init()
+void RadioController::Init()
 {
     m_state = EInvalid;
     m_lastUpdateTime = micros();
+
     setState(EInit);
 }
 
-void SelfRightController::Update()
+void RadioController::Update()
 {
     m_lastUpdateTime = micros();
+
+    //  Pass update to our owned objects
 
     //  Update our state
 
@@ -69,28 +63,6 @@ void SelfRightController::Update()
 
             case ESafe:
             {
-                //  Stay in safe mode for a minimum of k_safeStateMinDt
-
-                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
-                {
-                    if (isSelfRightEnabled())
-                    {
-                        setState(EUnknownOrientation);
-                    }
-                    else
-                    {
-                        setState(EDisabled);
-                    }
-                }
-            }
-            break;
-
-            case EDisabled:
-            {
-                if (!isRadioConnected())
-                {
-                    setState(ESafe);
-                }
             }
             break;
         }
@@ -107,19 +79,49 @@ void SelfRightController::Update()
 
 }
 
-void SelfRightController::SetParams()
+bool RadioController::IsNominal()
 {
-    saveParams();
+    return isRadioConnected();
 }
 
-void SelfRightController::RestoreParams()
+bool RadioController::IsWeaponEnabled()
 {
-    eeprom_read_block(&m_params, &s_savedParams, sizeof(struct SelfRightController::Params));
 }
 
-void SelfRightController::SendTelem()
+bool RadioController::IsManualTurretEnabled()
 {
-    // sendSwingTelemetry(;
+}
+
+bool RadioController::IsAutoAimEnabled()
+{
+}
+
+bool RadioController::IsAutoFireEnabled()
+{
+}
+
+bool RadioController::IsSelfRightEnabled()
+{
+}
+
+bool RadioController::IsFlameOnEnabled()
+{
+}
+
+bool RadioController::IsFlamePulseEnabled()
+{
+}
+
+bool RadioController::IsHammerSwingRequested()
+{
+}
+
+bool RadioController::IsHammerRetractRequested()
+{
+}
+
+void RadioController::SendTelem()
+{
 }
 
 //  ====================================================================
@@ -128,7 +130,7 @@ void SelfRightController::SendTelem()
 //
 //  ====================================================================
 
-void SelfRightController::setState(controllerState p_state)
+void RadioController::setState(controllerState p_state)
 {
     if (m_state == p_state)
     {
@@ -154,6 +156,7 @@ void SelfRightController::setState(controllerState p_state)
     {
         case EInit:
         {
+            init();
         }
         break;
 
@@ -164,8 +167,6 @@ void SelfRightController::setState(controllerState p_state)
     }
 }
 
-
-void SelfRightController::saveParams() 
+void RadioController::init()
 {
-    eeprom_write_block(&m_params, &s_savedParams, sizeof(struct SelfRightController::Params));
 }

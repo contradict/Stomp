@@ -27,7 +27,7 @@
 #define FROM_FP_32x14_TO_INT(num) ((int32_t)num / 16384L)
 #define FROM_FP_32x14_TO_FLOAT(num) ((float)(num) / 16384L)
 
-//  1 signed bit, 7 bit integer, 21 bit fractional
+//  1 signed bit, 11 bit integer, 20 bit fractional
 
 #define FP_32x20 int32_t
 #define TO_FP_32x20(num) ((int32_t)((num) * 1048576L))

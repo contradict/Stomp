@@ -11,7 +11,7 @@
 //
 //  Due to the strict and short timing requirements, the valve control
 //  and hammer angular velocity calculations are handled in an 
-//  interrupt drive state machine, implemented at the end of this file
+//  interrupt driven state machine, implemented at the end of this file
 //  after the class method implementation
 //
 
@@ -22,13 +22,15 @@
 #include "Wire.h"
 
 #include "sbus.h"
-#include "telem.h"
 #include "autoaim.h"
+#include "autofire.h"
 #include "DMASerial.h"
 
 #include "turretController.h"
-#include "hammerController.h"
 #include "telemetryController.h"
+#include "radioController.h"
+
+#include "hammerController.h"
 
 
 //  ====================================================================
@@ -58,7 +60,6 @@ static struct HammerController::Params EEMEM s_savedParams =
     .selfRightIntensity = 75,
     .telemetryFrequency = 100,
 };
-
     
 static uint16_t s_telemetryFrequency;
 volatile static bool s_swingComplete;
@@ -131,7 +132,7 @@ void HammerController::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && Radio.IsNominal())
                 {
                     if (isWeaponEnabled())
                     {
@@ -147,7 +148,7 @@ void HammerController::Update()
 
             case EDisabled:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -160,7 +161,7 @@ void HammerController::Update()
 
             case EReady:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -243,7 +244,7 @@ void HammerController::TriggerSelfRightSwing()
 //  try to just fully retract the hammer
 //
 
-void HammerController::Retract()
+void HammerController::TriggerRetract()
 {
     setState(ERetract);
     setState(ERetractOnlyInterruptMode);
@@ -277,21 +278,6 @@ void HammerController::RestoreParams()
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct HammerController::Params));
 }
 
-void HammerController::SendTelem()
-{
-    /*
-    bool sendSwingTelem(
-        datapoints_collected,
-        angle_data, 
-        pressure_data, 
-        data_collect_timestep,
-        throw_close_timestep, 
-        vent_open_timestep, 
-        throw_close_angle,
-        start_angle);
-        */
-}
-
 //  ====================================================================
 //
 //  Private methods
@@ -322,6 +308,11 @@ void HammerController::setState(controllerState p_state)
         {
         }
         break;
+
+        case EFullCycleInterruptMode:
+        {
+            Turret.FlamePulseStop();
+        }
     }
 
     m_state = p_state;
@@ -334,45 +325,30 @@ void HammerController::setState(controllerState p_state)
         case EInit:
         {
             m_pAutoFire = new AutoFire();
-            initAllControllers();
-        }
-        break;
-
-        case ESafe:
-        {
+            init();
         }
         break;
 
         case EThrow:
         {
-            resetTelem();
-
             int32_t requestedIntensity = getHammerIntensity();
-
-            m_throwStartTime = m_stateStartTime;
             m_throwPressureAngle = k_throwIntensityToAngle[requestedIntensity];
         }
         break;
         
         case EThrowSelfRight:
         {
-            resetTelem();
-
-            m_throwStartTime = m_stateStartTime;
             m_throwPressureAngle = m_params.selfRightIntensity;
-        }
-        break;
-
-        case ERetract:
-        {
-            resetTelem();
-
-            m_retractOnlyPhase = true;
         }
         break;
 
         case EFullCycleInterruptMode:
         {
+            if (Radio.IsFlamePulseEnabled())
+            {
+                Turret.FlamePulseStart();
+            }
+
             //  Write information into shared variables
 
             s_hammerThrowAngle = m_throwPressureAngle;
@@ -396,13 +372,13 @@ void HammerController::setState(controllerState p_state)
         case ESwingComplete:
         {
             swingComplete();
-            //sendSwingTelem();
+            //Telem.SendSwingTelem();
         }
         break;
     }
 }
 
-void HammerController::initAllControllers()
+void HammerController::init()
 {
     m_pAutoFire->Init();
 
@@ -419,11 +395,6 @@ void HammerController::initAllControllers()
 
     digitalWrite(RETRACT_VENT_VALVE_DO, LOW); 
     pinMode(RETRACT_VENT_VALVE_DO, OUTPUT);
-}
-
-void HammerController::resetTelem()
-{
-    m_retractOnlyPhase = false;
 }
 
 void HammerController::saveParams() 
@@ -481,17 +452,25 @@ static const int16_t k_maxExpectedRetractPressureDifferential = 920;
 //
 //  ====================================================================
 
-struct swingTelm
-{
-    int16_t angle;
-    int16_t throwPressure;
-    int16_t retractPressure;
-    int8_t state;
-    int8_t valveState;
-};
+//  Telemetry info
 
-static swingTelm s_swingTelmSamples[k_telmSamplesMax];
-static uint16_t s_swingTelemSamplesCount = 0;
+volatile static uint32_t s_swingStartTime;
+volatile static uint32_t s_swingStopTime;
+volatile static uint32_t s_retractStartTime;
+volatile static uint32_t s_retractStopTime;
+
+volatile static uint16_t s_swingStartAngle;
+volatile static uint16_t s_swingStopAngle;
+volatile static uint16_t s_retractStartAngle;
+volatile static uint16_t s_retractStopAngle;
+
+volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
+volatile static uint8_t s_swingThrowPressureSamples[k_telmSamplesMax];
+volatile static uint8_t s_swingRetractPressureSamples[k_telmSamplesMax];
+
+volatile static uint16_t s_swingTelemSamplesCount = 0;
+
+//  State machine states
 
 enum hammerSubState
 {
@@ -517,8 +496,6 @@ static uint32_t s_hammerSubStateDt = 0;
 static sensorReadState s_sensorReadState;
 static int32_t s_sensorAngleReadCount = 0;
 
-static uint8_t s_valveState = 0x00;
-
 static uint32_t s_swingTimeStart = 0;
 
 //  ====================================================================
@@ -526,26 +503,6 @@ static uint32_t s_swingTimeStart = 0;
 //  Macros
 //
 //  ====================================================================
-
-//  Keep track of the state of each valve for telemerty reporting.
-//  
-//  0 in bit position means valve is CLOSED
-//  1 in bit position means valve is OPEN
-//
-
-#define TP_VALVE_BIT 0
-#define TV_VALVE_BIT 1
-#define RP_VALVE_BIT 2
-#define RV_VALVE_BIT 3
-
-#define UPDATE_VALVE_STATE_TP_OPEN { s_valveState |= 1 << TP_VALVE_BIT; }
-#define UPDATE_VALVE_STATE_TP_CLOSED { s_valveState &= ~(1 << TP_VALVE_BIT); }
-#define UPDATE_VALVE_STATE_TV_OPEN { s_valveState |= 1 << TV_VALVE_BIT; }
-#define UPDATE_VALVE_STATE_TV_CLOSED { s_valveState &= 1 << ~(TV_VALVE_BIT); }
-#define UPDATE_VALVE_STATE_RP_OPEN { s_valveState |= 1 << RP_VALVE_BIT; }
-#define UPDATE_VALVE_STATE_RP_CLOSED { s_valveState &= ~(1 << RP_VALVE_BIT); }
-#define UPDATE_VALVE_STATE_RV_OPEN { s_valveState |= 1 << RV_VALVE_BIT; }
-#define UPDATE_VALVE_STATE_RV_CLOSED { s_valveState &= 1 << ~(RV_VALVE_BIT); }
 
 #define SELECT_THROW_PRESSURE_READ { s_sensorReadState = EReadThrowPressure; ADMUX = (0x01 << 6) | ((HAMMER_THROW_PRESSURE_AI - 54) & 0x07); }
 #define SELECT_RETRACT_PRESSURE_READ { s_sensorReadState = EReadRetractPressure; ADMUX = (0x01 << 6) | ((HAMMER_RETRACT_PRESSURE_AI - 54) & 0x07); }
@@ -569,17 +526,17 @@ static uint32_t s_swingTimeStart = 0;
 //  Retract Vent        NO      9       H:6     OC2B
 //
 
-#define OPEN_THROW_PRESSURE { PORTH |= 1 << PORTH3; UPDATE_VALVE_STATE_TP_OPEN }
-#define CLOSE_THROW_PRESSURE { PORTH &= ~(1 << PORTH3); UPDATE_VALVE_STATE_TP_CLOSED }
+#define OPEN_THROW_PRESSURE { PORTH |= 1 << PORTH3; }
+#define CLOSE_THROW_PRESSURE { PORTH &= ~(1 << PORTH3); }
 
-#define OPEN_THROW_VENT { PORTH &= ~(1 << PORTH4); UPDATE_VALVE_STATE_TV_OPEN }
-#define CLOSE_THROW_VENT { PORTH |= 1 << PORTH4; UPDATE_VALVE_STATE_TV_CLOSED }
+#define OPEN_THROW_VENT { PORTH &= ~(1 << PORTH4); }
+#define CLOSE_THROW_VENT { PORTH |= 1 << PORTH4; }
 
-#define OPEN_RETRACT_PRESSURE { PORTH |= 1 << PORTH5; UPDATE_VALVE_STATE_RP_OPEN }
-#define CLOSE_RETRACT_PRESSURE { PORTH &= ~(1 << PORTH5); UPDATE_VALVE_STATE_RP_CLOSED} 
+#define OPEN_RETRACT_PRESSURE { PORTH |= 1 << PORTH5; }
+#define CLOSE_RETRACT_PRESSURE { PORTH &= ~(1 << PORTH5); } 
 
-#define OPEN_RETRACT_VENT { PORTH &= ~(1 << PORTH6); UPDATE_VALVE_STATE_RV_OPEN }
-#define CLOSE_RETRACT_VENT { PORTH |= 1 << PORTH6; UPDATE_VALVE_STATE_RV_CLOSED }
+#define OPEN_RETRACT_VENT { PORTH &= ~(1 << PORTH6); }
+#define CLOSE_RETRACT_VENT { PORTH |= 1 << PORTH6; }
 
 //  ====================================================================
 //
@@ -663,9 +620,9 @@ void startFullCycleStateMachine()
 {
     s_swingComplete = false;
     s_swingTelemSamplesCount = 0;
-    s_valveState = 1 << TP_VALVE_BIT | 1 << RP_VALVE_BIT;
 
-    s_swingTimeStart = micros();;
+    s_swingTimeStart = micros();
+    s_swingStartAngle = s_hammerAngleCurrent;
 
     //  Enter start state
 
@@ -674,12 +631,10 @@ void startFullCycleStateMachine()
 
     //  close throw vent
     digitalWrite(THROW_VENT_VALVE_DO, HIGH); 
-    UPDATE_VALVE_STATE_TV_CLOSED;
 
     //  close retract vent
     digitalWrite(RETRACT_VENT_VALVE_DO, HIGH); 
-    UPDATE_VALVE_STATE_RV_CLOSED;
-
+ 
     clearPWMForDigitalWrites();
     startTimers();
 }
@@ -688,9 +643,9 @@ void startRetractOnlyStateMachine()
 {
     s_swingComplete = false;
     s_swingTelemSamplesCount = 0;
-    s_valveState = 1 << TP_VALVE_BIT | 1 << RP_VALVE_BIT;
 
-    s_swingTimeStart = micros();
+    s_retractStartTime = micros();
+    s_retractStartAngle = s_hammerAngleCurrent;
 
     //  Enter start state
 
@@ -699,11 +654,9 @@ void startRetractOnlyStateMachine()
 
     //  open throw vent
     digitalWrite(THROW_VENT_VALVE_DO, LOW); 
-    UPDATE_VALVE_STATE_TV_OPEN;
     
     //  close retract vent
     digitalWrite(RETRACT_VENT_VALVE_DO, HIGH); 
-    UPDATE_VALVE_STATE_RV_CLOSED;
     
     clearPWMForDigitalWrites();
     startTimers();
@@ -729,6 +682,17 @@ void startSensorReadStateMachine()
 void swingComplete()
 {
     stopTimers();
+
+    Telem.SendSwingTelem(
+        s_swingTelemSamplesCount, 
+        s_swingAngleSamples,
+        s_swingThrowPressureSamples,
+        s_swingRetractPressureSamples,
+        s_telemetryFrequency,
+        s_swingStartTime, s_swingStartAngle,
+        s_swingStopTime, s_swingStopAngle,
+        s_retractStartTime, s_retractStartAngle,
+        s_retractStopTime, s_retractStopAngle);
 }
 
 //  ====================================================================
@@ -845,11 +809,10 @@ ISR(TIMER4_COMPA_vect)
 {
     if (s_hammerSubState != ERetractComplete)
     {
-        s_swingTelmSamples[s_swingTelemSamplesCount].angle = s_hammerAngleCurrent;
-        s_swingTelmSamples[s_swingTelemSamplesCount].throwPressure = s_hammerThrowPressureCurrent;
-        s_swingTelmSamples[s_swingTelemSamplesCount].retractPressure = s_hammerRetractPressureCurrent;
-        s_swingTelmSamples[s_swingTelemSamplesCount].state = s_hammerSubState;
-        s_swingTelmSamples[s_swingTelemSamplesCount].valveState = s_valveState;
+        s_swingAngleSamples[s_swingTelemSamplesCount] = s_hammerAngleCurrent;
+        s_swingThrowPressureSamples[s_swingTelemSamplesCount] = s_hammerThrowPressureCurrent;
+        s_swingRetractPressureSamples[s_swingTelemSamplesCount] = s_hammerRetractPressureCurrent;
+
         s_swingTelemSamplesCount++;
     }
 }
@@ -880,7 +843,11 @@ ISR(TIMER5_COMPA_vect)
         {
             if (s_hammerAngleCurrent > s_hammerThrowAngle || s_hammerSubStateDt > k_maxThrowPressureDt)
             {
+                s_swingStopTime = now;
+                s_swingStopAngle = s_hammerAngleCurrent;
+
                 //  Go to EThrowExpand state
+
                 desiredState = EThrowExpand;
                 CLOSE_THROW_PRESSURE;
             }
@@ -891,7 +858,11 @@ ISR(TIMER5_COMPA_vect)
         {
             if (s_hammerAngleCurrent >= k_maxThrowAngle || s_hammerSubStateDt > k_maxThrowDt)
             {
+                s_retractStartTime = now;
+                s_retractStartAngle = s_hammerAngleCurrent;
+
                 // Go to ERetractSetup state
+
                 desiredState = ERetractSetup;
                 OPEN_THROW_VENT;
             }
@@ -913,7 +884,11 @@ ISR(TIMER5_COMPA_vect)
         {
             if ((s_hammerAngleCurrent >= 0 && s_hammerAngleCurrent <= k_minRetractAngle) || s_hammerSubStateDt > k_maxRetractDt)
             {
+                s_retractStopTime = now;
+                s_retractStopAngle = s_hammerAngleCurrent;
+
                 //  Go to ERetractComplete state
+
                 desiredState = ERetractComplete;
 
                 CLOSE_RETRACT_PRESSURE;

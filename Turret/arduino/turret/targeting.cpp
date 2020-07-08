@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "imu.h"
-#include "telem.h"
+#include "telemetryController.h"
 #include "utils.h"
 
 static void saveObjectSegmentationParameters();

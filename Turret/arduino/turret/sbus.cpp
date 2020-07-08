@@ -1,12 +1,10 @@
 #include <Arduino.h>
 #include <util/atomic.h>
 
-#include "sbus.h"
 #include "pins.h"
 #include "wiring_private.h"
-#include "telem.h"
-
 #include "telemetryController.h"
+#include "sbus.h"
 
 static uint16_t computeRCBitfield();
 static bool parseSbus();

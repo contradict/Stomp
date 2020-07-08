@@ -13,13 +13,16 @@
 
 #include <Arduino.h>
 
-#include "turretController.h"
 #include "autoaim.h"
 #include "autofire.h"
 #include "imu.h"
 #include "sbus.h"
-#include "telem.h"
+#include "telemetryController.h"
 #include "fixedpoint.h"
+
+#include "radioController.h"
+#include "turretController.h"
+
 
 //  ====================================================================
 //
@@ -39,7 +42,6 @@ static struct AutoAim::Params EEMEM s_savedParams =
     .integralConstant = 7500,
     .derivativeConstant = 5,
     .speedMax = 1000,
-    .autoaimTelemInterval = 50000,
 };
 
 //  ====================================================================
@@ -81,7 +83,7 @@ void AutoAim::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && Radio.IsNominal())
                 {
                     if (isAutoAimEnabled())
                     {
@@ -97,7 +99,7 @@ void AutoAim::Update()
 
             case EDisabled:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -110,7 +112,7 @@ void AutoAim::Update()
 
             case ENoTarget:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -127,7 +129,7 @@ void AutoAim::Update()
 
             case ETrackingTarget:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -157,14 +159,13 @@ int32_t AutoAim::GetDesiredTurretSpeed()
     return m_desiredTurretSpeed;
 }
 
-void AutoAim::SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_steer_max, uint32_t p_telemetry_interval)
+void AutoAim::SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_speedMax)
 {
     m_params.proportionalConstant = p_proportionalConstant;
     m_params.integralConstant = p_integralConstant;
     m_params.derivativeConstant = p_derivativeConstant;
 
-    m_params.speedMax = p_steer_max;
-    m_params.autoaimTelemInterval = p_telemetry_interval;
+    m_params.speedMax = p_speedMax;
 
     saveParams();
 }
@@ -178,11 +179,11 @@ void AutoAim::SendTelem()
 {
     if (m_pTarget != nullptr)
     {
-        sendAutoAimTelemetry(m_state, m_desiredTurretSpeed, m_error, m_errorIntegral, m_errorDerivative);
+        Telem.SendAutoAimTelemetry(m_state, m_desiredTurretSpeed, m_error, m_errorIntegral, m_errorDerivative);
     }
     else
     {
-        sendAutoAimTelemetry(m_state, m_desiredTurretSpeed, 0, 0, 0);
+        Telem.SendAutoAimTelemetry(m_state, m_desiredTurretSpeed, 0, 0, 0);
     }
 }
 

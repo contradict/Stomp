@@ -1,5 +1,8 @@
 #pragma once
 
+#include "leddar_io.h"
+#include "object.h"
+
 //  ====================================================================
 //
 //  Class decleration
@@ -10,22 +13,11 @@ class TelemetryController
 {
     //  ====================================================================
     //
-    //  Public API
+    //  Public Enums
     //
     //  ====================================================================
- 
-public:
 
-    void Init();
-    void Update();
-
-    size_t Write(const uint8_t *buffer, size_t size);
-    bool Enqueue(const unsigned char *buffer, size_t size);
-
-    void LogError(const String& p_message);
-    void LogMessage(const String& p_message);
-    
-private:
+public: 
 
     enum TelemetryPacketId 
     {
@@ -52,6 +44,92 @@ private:
         TLM_ID_OBJM=21,
         TLM_ID_OBJC=22,
     };
+    
+    //  ====================================================================
+    //
+    //  Internal structure decleration
+    //
+    //  ====================================================================
+
+public:
+
+    struct Params 
+    {
+        uint32_t telemetryInterval;
+        uint32_t leddarTelemetryInterval;
+        uint32_t enabledTelemetry;
+    } __attribute__((packed));
+
+    //  ====================================================================
+    //
+    //  Public API
+    //
+    //  ====================================================================
+ 
+public:
+
+    void Init();
+    void Update();
+
+    void LogError(const String& p_message);
+    void LogMessage(const String& p_message);
+
+    //  All the supported send telemetry commands
+
+    bool SendSystemTelem(uint32_t p_loopSpeedMin, uint32_t p_loopSpeedAvg, 
+        uint32_t p_loopSpeedMax, uint32_t p_loopCount,
+        uint16_t p_leddarOverrun, uint16_t p_leddarCRCError,
+        uint16_t p_sbusOverrun, uint8_t p_lastCommand,
+        uint16_t p_commandOverrun, uint16_t p_invalidCommand,
+        uint16_t p_validCommand);
+
+    bool SendSensorTelem(int16_t p_pressure, uint16_t p_angle);
+    bool SendSbusTelem(uint16_t p_cmdBitfield, int16_t p_hammerIntensity, int16_t p_hammerDistance, int16_t p_turretSpeed);
+    bool SendLeddarTelem(const Detection (&p_detections)[LEDDAR_SEGMENTS], unsigned int count);
+
+    bool SendSwingTelem(
+        uint16_t p_datapointsCollected,
+        volatile uint16_t* p_angleData,
+        volatile uint8_t* p_throwPressureData,
+        volatile uint8_t* p_retractPressureData,
+        uint16_t p_dataCollectFrequency,
+        uint32_t p_swingStartTime,
+        uint16_t p_swingStartAngle,
+        uint32_t p_swingStopTime,
+        uint16_t p_swingStopAngle,
+        uint32_t p_retractStartTime,
+        uint16_t p_retractStartAngle,
+        uint32_t p_retractStopTime,
+        uint16_t p_retractStopAngle);
+
+    bool SendIMUTelem(int16_t (&p_a)[3], int16_t (&p_g)[3], int16_t p_t);
+    bool SendORNTelem(bool p_stationary, uint8_t p_orientation, int32_t p_sumAngularRate, int16_t p_totalNorm, int16_t p_crossNorm);
+
+    bool SendTrackingTelemetry(int16_t p_detectionX,
+        int16_t p_detectionY,
+        int32_t p_detectionAngle,
+        int32_t p_detectionRadius,
+        int32_t p_filteredX,
+        int32_t p_filteredVx,
+        int32_t p_filteredY,
+        int32_t p_filteredVy);
+
+    bool SendAutoFireTelemetry(int32_t p_state, int32_t p_swing, int32_t p_x, int32_t p_y);
+    bool SendAutoAimTelemetry(int32_t p_state, int32_t p_targetAngularVelocity, int32_t p_error, int32_t p_errorIntegral,  int32_t p_errorDerivitive);
+    bool SendTurretTelemetry(int16_t p_state);
+    bool SendTurretRotationTelemetry(int16_t p_state, int16_t p_currentSpeed) ;
+
+    bool SendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Object (&p_objects)[8]);
+    bool SendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Object (&p_objects)[8]);
+
+    bool SendCommandAcknowledge(uint8_t p_command, uint16_t p_valid, uint16_t p_invalid) ;
+
+    //  deal with persistant parameters
+
+    void SetParams(int32_t p_telemetryInterval, int32_t p_leddarTelemetryInterval, int32_t p_enabledTelemetry);
+    void RestoreParams();
+    
+private:
 
     enum controllerState 
     {
@@ -70,13 +148,21 @@ private:
     //
     //  ====================================================================
 
+    void sendTelem();
+
+    size_t write(const uint8_t *buffer, size_t size);
+    bool enqueue(const unsigned char *buffer, size_t size);
+
     void xbeeSendMessage(const String&p_string);
     void usbSendMessage(const String& p_string);
 
     void setState(controllerState p_state);
 
+    void init();
     void initXBee();
     void initUSB();
+
+    void saveParams();
 
     //  ====================================================================
     //
@@ -98,6 +184,11 @@ private:
     uint32_t m_stateStartTime;
 
     bool m_invalidStateLog;
+
+    uint32_t m_lastTelemTime;
+    uint32_t m_lastLeddarTelemTime;
+
+    Params m_params;
 };
 
 extern TelemetryController Telem;

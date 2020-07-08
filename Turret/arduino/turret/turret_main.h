@@ -1,7 +1,10 @@
 #ifndef TURRET_MAIN_H
 #define TURRET_MAIN_H
 
-void turretSetup();
-void turretLoop();
+void turretInit();
+void turretUpdate();
+
+void turretSendTelem();
+void turretSendLeddarTelem();
 
 #endif // TURRET_MAIN_H

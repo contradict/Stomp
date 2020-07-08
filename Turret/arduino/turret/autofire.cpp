@@ -1,7 +1,3 @@
-#include <Arduino.h>
-#include "autofire.h"
-#include "imu.h"
-#include "telem.h"
 /*
 struct AutoFireParameters {
     int32_t xtol, ytol;
@@ -95,8 +91,10 @@ void restoreAutoFireParameters(void) {
 #include "autofire.h"
 #include "imu.h"
 #include "sbus.h"
-#include "telem.h"
+#include "telemetryController.h"
 #include "fixedpoint.h"
+#include "radioController.h"
+
 #include "autofire.h"
 
 //  ====================================================================
@@ -158,7 +156,7 @@ void AutoFire::Update()
             {
                 //  Stay in safe mode for a minimum of k_safeStateMinDt
 
-                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && isRadioConnected())
+                if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && Radio.IsNominal())
                 {
                     if (isAutoFireEnabled())
                     {
@@ -174,7 +172,7 @@ void AutoFire::Update()
 
             case EDisabled:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -187,7 +185,7 @@ void AutoFire::Update()
 
             case ENoTarget:
             {
-                if (!isRadioConnected())
+                if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
