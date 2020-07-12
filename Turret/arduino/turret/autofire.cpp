@@ -114,7 +114,6 @@ static struct AutoFire::Params EEMEM s_savedParams =
     .xtol = 200,   // currently unused, front of box is depth
     .ytol = 200,
     .max_omegaZ = 1787,   // rad/s * 2048 = 50 deg/sec
-    .autofire_telem_interval = 100000,
 };
 
 //  ====================================================================
@@ -195,6 +194,9 @@ void AutoFire::Update()
                 }
             }
             break;
+
+            default:
+            break;
         }
 
         //  No more state changes, move on
@@ -209,12 +211,11 @@ void AutoFire::Update()
 
 }
 
-void AutoFire::SetParams(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
+void AutoFire::SetParams(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz)
 {
     m_params.xtol = p_xtol;
     m_params.ytol = p_ytol;
     m_params.max_omegaZ = p_max_omegaz;
-    m_params.autofire_telem_interval = telemetry_interval;
 
     saveParams();
 }
@@ -245,6 +246,8 @@ void AutoFire::setState(autoFireState p_state)
 
     switch (m_state)
     {
+        default:
+        break;
     }
 
     m_state = p_state;
@@ -258,6 +261,9 @@ void AutoFire::setState(autoFireState p_state)
         case EInit:
         {
         }
+        break;
+
+        default:
         break;
     }
 }

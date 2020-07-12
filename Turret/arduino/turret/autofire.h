@@ -9,11 +9,6 @@ enum AutoFireState {
     AF_HIT
 };
 
-enum AutoFireState updateAutoFire(const Track &tracked_object,
-                           int16_t depth, int16_t hammer_intensity);
-
-bool omegaZLockout(int16_t *omegaZ);
-
 //  ====================================================================
 //
 //  Class decleration
@@ -35,7 +30,6 @@ public:
     {
         int32_t xtol, ytol;
         int32_t max_omegaZ;   // rad/s * 2048 = 50 deg/sec
-        uint32_t autofire_telem_interval;
     } __attribute__((packed));
 
     //  ====================================================================
@@ -49,7 +43,7 @@ public:
     void Init();
     void Update();
 
-   void SetParams(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t p_telemetry_interval);
+   void SetParams(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz);
     void RestoreParams();
 
     void SendTelem();

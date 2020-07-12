@@ -19,7 +19,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 #include "pins.h"
-#include "Wire.h"
+//#include "Wire.h"
 
 #include "sbus.h"
 #include "autoaim.h"
@@ -57,8 +57,8 @@ static const int16_t k_invalidHammerRetractPressureRead = -1;
 
 static struct HammerController::Params EEMEM s_savedParams = 
 {
-    .selfRightIntensity = 75,
-    .telemetryFrequency = 100,
+    .selfRightIntensity = 30,
+    .swingTelemetryFrequency = 100
 };
     
 static uint16_t s_telemetryFrequency;
@@ -188,6 +188,9 @@ void HammerController::Update()
                 setState(EReady);
             }
             break;
+
+            default:
+            break;
         }
 
         //  No more state changes, move on
@@ -260,15 +263,10 @@ int16_t HammerController::GetHammerAngle()
     return s_hammerAngleCurrent;
 }
 
-void HammerController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
-{
-    m_pAutoFire->SetParams(p_xtol, p_ytol, p_max_omegaz, telemetry_interval);
-}
-
-void HammerController::SetParams(uint32_t p_selfRightIntensity, uint32_t p_telemetryFrequency)
+void HammerController::SetParams(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency)
 {
     m_params.selfRightIntensity = p_selfRightIntensity;
-    m_params.telemetryFrequency = p_telemetryFrequency;
+    m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
 
     saveParams();
 }
@@ -276,6 +274,11 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity, uint32_t p_telem
 void HammerController::RestoreParams()
 {
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct HammerController::Params));
+}
+
+void HammerController::SendTelem()
+{
+    Telem.SendSensorTelem(s_hammerAngleCurrent, s_hammerThrowPressureCurrent, s_hammerRetractPressureCurrent);  
 }
 
 //  ====================================================================
@@ -313,6 +316,9 @@ void HammerController::setState(controllerState p_state)
         {
             Turret.FlamePulseStop();
         }
+
+        default:
+        break;
     }
 
     m_state = p_state;
@@ -324,7 +330,6 @@ void HammerController::setState(controllerState p_state)
     {
         case EInit:
         {
-            m_pAutoFire = new AutoFire();
             init();
         }
         break;
@@ -352,7 +357,7 @@ void HammerController::setState(controllerState p_state)
             //  Write information into shared variables
 
             s_hammerThrowAngle = m_throwPressureAngle;
-            s_telemetryFrequency = m_params.telemetryFrequency;
+            s_telemetryFrequency = m_params.swingTelemetryFrequency;
 
             startFullCycleStateMachine();
         }
@@ -363,7 +368,7 @@ void HammerController::setState(controllerState p_state)
             //  Write information into shared variables
             //  No need for s_throwPressureAngle becasue we are only retracting
 
-            s_telemetryFrequency = m_params.telemetryFrequency;
+            s_telemetryFrequency = m_params.swingTelemetryFrequency;
 
             startRetractOnlyStateMachine();
         }
@@ -372,8 +377,10 @@ void HammerController::setState(controllerState p_state)
         case ESwingComplete:
         {
             swingComplete();
-            //Telem.SendSwingTelem();
         }
+        break;
+
+        default:
         break;
     }
 }
@@ -417,18 +424,18 @@ void HammerController::saveParams()
 static const uint8_t k_valveCloseDt = 10;                          //  10 microseconds
 static const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
 
-static const uint16_t k_maxThrowAngle = 210;                       //  210 degrees
+static const int16_t k_maxThrowAngle = 210;                       //  210 degrees
 static const uint32_t k_maxThrowPressureDt = 750000;               //  0.75 second
 static const uint32_t k_maxThrowDt = 1000000;                      //  1.00 second
 
-static const uint16_t k_minRetractAngle = 5;                       //    5 degrees
+static const int16_t k_minRetractAngle = 5;                       //    5 degrees
 static const uint32_t k_maxRetractDt = 1000000;                    //  1.0 seconds
 
 static const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
 static const uint32_t k_subStateMachineUpdateFrequency = 50000;    //  50kHz or update every 20 microseconds
                                                                    //  at 100kHz, serail communication to Robotek stoped working
 
-static const uint16_t k_telmSamplesMax = 500;
+static const uint16_t k_telmSamplesMax = 256;
 static const int32_t k_angleReadSwitchToPressureCount = 10;        //  10 Angle Reads for each pressure read
 
 static const int16_t k_minValidHammerAngleDifferential = 120;
@@ -897,6 +904,9 @@ ISR(TIMER5_COMPA_vect)
                 s_swingComplete = true;
             }
         }
+        break;
+
+        default:
         break;
     }
 

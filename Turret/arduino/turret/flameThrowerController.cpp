@@ -26,11 +26,6 @@
 //
 //  ====================================================================
 
-static struct FlameThrowerController::Params EEMEM s_savedParams = 
-{
-    .tmp = 0,
-};
-
 //  ====================================================================
 //
 //  Constructors
@@ -53,8 +48,6 @@ void FlameThrowerController::Init()
 void FlameThrowerController::Update()
 {
     m_lastUpdateTime = micros();
-
-    //  Pass update to our owned objects
 
     //  Update our state
 
@@ -128,6 +121,9 @@ void FlameThrowerController::Update()
                 }
             }
             break;
+
+            default:
+            break;
         }
 
         //  No more state changes, move on
@@ -173,11 +169,6 @@ void FlameThrowerController::SetParams()
     saveParams();
 }
 
-void FlameThrowerController::RestoreParams()
-{
-    eeprom_read_block(&m_params, &s_savedParams, sizeof(struct FlameThrowerController::Params));
-}
-
 //  ====================================================================
 //
 //  Private methods
@@ -198,6 +189,9 @@ void FlameThrowerController::setState(controllerState p_state)
         case EInit:
         {
         }
+        break;
+
+        default:
         break;
     }
 
@@ -245,14 +239,12 @@ void FlameThrowerController::setState(controllerState p_state)
             digitalWrite(PROPANE_DO, HIGH);
         }
         break;
+
+        default:
+        break;
     }
 }
 
 void FlameThrowerController::init()
 {
-}
-
-void FlameThrowerController::saveParams() 
-{
-    eeprom_write_block(&m_params, &s_savedParams, sizeof(struct FlameThrowerController::Params));
 }

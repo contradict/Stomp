@@ -83,7 +83,7 @@ public:
         uint16_t p_commandOverrun, uint16_t p_invalidCommand,
         uint16_t p_validCommand);
 
-    bool SendSensorTelem(int16_t p_pressure, uint16_t p_angle);
+    bool SendSensorTelem(uint16_t p_angle, uint16_t p_throwPressure, uint16_t p_retractPressure);
     bool SendSbusTelem(uint16_t p_cmdBitfield, int16_t p_hammerIntensity, int16_t p_hammerDistance, int16_t p_turretSpeed);
     bool SendLeddarTelem(const Detection (&p_detections)[LEDDAR_SEGMENTS], unsigned int count);
 
@@ -153,8 +153,8 @@ private:
     size_t write(const uint8_t *buffer, size_t size);
     bool enqueue(const unsigned char *buffer, size_t size);
 
-    void xbeeSendMessage(const String&p_string);
-    void usbSendMessage(const String& p_string);
+    bool xbeeSendMessage(const String&p_string);
+    bool usbSendMessage(const String& p_string);
 
     void setState(controllerState p_state);
 

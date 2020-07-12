@@ -72,9 +72,15 @@ TELEMETRY CHOMP AAIM LITTLE_ENDIAN "Auto Aim telemetry"
 TELEMETRY CHOMP TUR LITTLE_ENDIAN "Turret telemetry"
    APPEND_ID_ITEM PKTID 8 UINT 8 "Packet ID which must be 8"
    APPEND_ITEM TUR_STATE 16 UINT "Turret State"
-       STATE INIT 	0 GREEN
-       STATE SAFE 	1 GREEN
-       STATE ACTIVE 	2 RED
+        STATE INIT 	                0 GREEN
+        STATE SAFE 	                1 GREEN
+        STATE NOMINAL 	            2 YELLOW
+        STATE TRIGGER_THROW         3 RED
+        STATE TRIGGER_RETRACT       4 RED
+        STATE HAMMER_ACTIVE         5 RED
+        STATE NEEDS_SELF_RIGHT      6 YELLOW
+        STATE TRIGGER_SELF_RIGHT    7 RED
+        STATE UNKNOWN               8 YELLOW
 
 #
 #  TROT - Turret Rotation (Packet ID 9)
@@ -83,12 +89,12 @@ TELEMETRY CHOMP TUR LITTLE_ENDIAN "Turret telemetry"
 TELEMETRY CHOMP TROT LITTLE_ENDIAN "Turret Rotation telemetry"
    APPEND_ID_ITEM PKTID 8 UINT 9 "Packet ID which must be 9"
    APPEND_ITEM TROT_STATE 16 UINT "Turret Rotation State"
-       STATE INIT 		0 GREEN
-       STATE SAFE 		1 GREEN
-       STATE DISABLED 		2 GREEN
-       STATE MANUAL	 	3 YELLOW
-       STATE AUTO_AIM 		4 RED
-       STATE AUTO_ASSIST 	5 YELLOW
+       STATE INIT 		    0 GREEN
+       STATE SAFE 		    1 GREEN
+       STATE DISABLED 	    2 GREEN
+       STATE MANUAL	 	    3 YELLOW
+       STATE AUTO_AIM 	    4 RED
+       STATE AUTO_ASSIST    5 YELLOW
    APPEND_ITEM CUR_SPEED 16 INT "Current turret speed"
 
 #
@@ -97,10 +103,12 @@ TELEMETRY CHOMP TROT LITTLE_ENDIAN "Turret Rotation telemetry"
 
 TELEMETRY CHOMP SNS LITTLE_ENDIAN "Sensor"
     APPEND_ID_ITEM PKTID 8 UINT 10 "Packet ID which must be 10"
-    APPEND_ITEM PRESSURE 16 INT "Pressure"
-        UNITS "Pounds per Square Inch" "PSI"
     APPEND_ITEM ANGLE 16 UINT "Angle"
         UNITS "Degrees" "deg"
+    APPEND_ITEM THROW_PRESSURE 16 INT "Throw Pressure"
+        UNITS "Pounds per Square Inch" "PSI"
+    APPEND_ITEM RETRACT_PRESSURE 16 INT "Retract Pressure"
+        UNITS "Pounds per Square Inch" "PSI"
 
 #
 #  SYS - System (Packet ID 11)
@@ -145,10 +153,10 @@ TELEMETRY CHOMP SBS LITTLE_ENDIAN "S.Bus"
     APPEND_ITEM PAD0 1 UINT "PAD"
     APPEND_ITEM MANUAL_TURRET_MODE 1 UINT "Manual Turret Mode"
     APPEND_ITEM AUTO_AIM_MODE 1 UINT "Auto Aim Mode"
-    APPEND_ITEM MANUAL_SELF_RIGHT_RIGHT 1 UINT "Manual self right right"
-    APPEND_ITEM MANUAL_SELF_RIGHT_LEFT 1 UINT "Manual self right left"
+    APPEND_ITEM PAD1 1 UINT "PAD"
+    APPEND_ITEM PAD2 1 UINT "PAD"
     APPEND_ITEM DANGER 1 UINT "DANGER_CTRL"
-    APPEND_ITEM PAD1 1 UINT
+    APPEND_ITEM PAD3 1 UINT
     APPEND_ITEM HMRI 16 INT "Hammer Intensity"
         UNITS "degrees" "deg"
     APPEND_ITEM HMRD 16 INT "Hammer Distance"
@@ -171,20 +179,28 @@ TELEMETRY CHOMP DBGM LITTLE_ENDIAN "Debug Message"
 
 TELEMETRY CHOMP SWING LITTLE_ENDIAN "Swing Data"
     APPEND_ID_ITEM PKTID 8 UINT 14 "Packet ID which must be 14"
-    APPEND_ITEM TIMESTEP 16 UINT "Data sampling period"
-        UNITS "microseconds" "us"
-    APPEND_ITEM THROW_CLOSE 16 UINT "Sample index of close"
-        UNITS "samples" "u"
-    APPEND_ITEM VO 16 UINT "Sample index of vent open"
-        UNITS "samples" "u"
-    APPEND_ITEM TC 16 UINT "Throw close angle"
-        UNITS "Degrees" "deg"
-    APPEND_ITEM ST 16 UINT "Start angle"
-        UNITS "Degrees" "deg"
     APPEND_ITEM PT 16 UINT "Number of points collected"
-    APPEND_ARRAY_ITEM ANG 16 UINT 4096 "Angle data"
+    APPEND_ITEM TIMESTEP 16 UINT "Data sampling frequency"
+        UNITS "microseconds" "us"
+    APPEND_ITEM SWING_START_TIME 32 UINT "Swing Start Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM SWING_STOP_TIME 32 UINT "Swing Stop Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM RETRACT_START_TIME 32 UINT "Retract Start Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM RETRACT_STOP_TIME 32 UINT "Retract Stop Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM SWING_START_ANGLE 16 UINT "Swing Start Angle"
+        UNITS "degrees" "deg"
+    APPEND_ITEM SWING_STOP_ANGLE 16 UINT "Swing Stop Angle"
+        UNITS "degrees" "deg"
+    APPEND_ITEM RETRACT_START_ANGLE 16 UINT "Retract Start Angle"
+        UNITS "degrees" "deg"
+    APPEND_ITEM RETRACT_STOP_ANGLE 16 UINT "Retract Stop Angle"
+        UNITS "degrees" "deg"
+    APPEND_ARRAY_ITEM HAMMER_ANGLES 16 UINT 2048 "Hammer Angle data"
         UNITS "Degrees" "deg"
-    APPEND_ARRAY_ITEM PRE 16 INT 4096 "Pressure data"
+    APPEND_ARRAY_ITEM THROW_PRESSURES 8 INT 2048 "Throw Pressure data"
         UNITS "Pounds per Square Inch" "PSI"
 
 #
@@ -228,9 +244,8 @@ TELEMETRY CHOMP ORN LITTLE_ENDIAN "Orientation Status"
     APPEND_ITEM STA 1 UINT "Stationary"
     APPEND_ITEM ORN 4 UINT "Orientation"
         STATE UPRIGHT 0 GREEN
-        STATE LEFT 1 YELLOW
-        STATE RIGHT 2 YELLOW
-        STATE UNKNOWN 3 RED
+        STATE NOT_UPRIGHT 1 RED
+        STATE UNKNOWN 3 YELLOW
     APPEND_ITEM PAD 3 UINT
     APPEND_ITEM SAR 32 INT "Sum of angular rates"
         UNITS "degrees/second" "deg/s"
@@ -287,11 +302,9 @@ TELEMETRY CHOMP OBJC LITTLE_ENDIAN "Object calculated telemetry"
 
 COMMAND CHOMP TCNTRL LITTLE_ENDIAN "Telementry Control"
     APPEND_ID_PARAMETER CMDID 8 UINT 10 10 10 "Command ID which must be 10"
-    APPEND_PARAMETER SPERIOD 32 UINT 10000 30000000 100000 "Interval between small telemetry transmissions"
+    APPEND_PARAMETER SPERIOD 32 UINT 5000 30000000 100000 "Interval between telemetry transmissions"
         UNITS "microseconds" "us"
     APPEND_PARAMETER LPERIOD 32 UINT 10000 30000000 100000 "Interval between LEDDAR telemetry transmissions"
-        UNITS "microseconds" "us"
-    APPEND_PARAMETER DPERIOD 32 UINT 5000 30000000 500000 "Interval between Turret telemetry transmissions"
         UNITS "microseconds" "us"
     # BYTE 0
     APPEND_PARAMETER EN_AAIM 1 UINT 0 1 1 "Eanable Auto Aim Telemetry"
@@ -331,12 +344,12 @@ COMMAND CHOMP TRKFLT LITTLE_ENDIAN "Tracking Filter Settings"
     APPEND_ID_PARAMETER CMDID 8 UINT 11 11 11 "Command ID which must be 11"
     APPEND_PARAMETER ALPHA 16 INT 0 32767 9000 "Filter position update coefficient (scale 32767)"
     APPEND_PARAMETER BETA 16 INT 0 32767 8192 "Filter velocity update coefficient (scale 4096)"
+    APPEND_PARAMETER MNUP 8 INT 0 127 3 "Minimum updates for valid filter"
     APPEND_PARAMETER TRKLST 32 UINT 0 10000000 250000 "Track lost timeout"
         UNITS "microseconds" "us"
-    APPEND_PARAMETER MNUP 32 INT 0 127 3 "Minimum updates for valid filter"
-    APPEND_PARAMETER MXOT 32 INT 0 100000000 1000000 "Maximum distance from track"
+    APPEND_PARAMETER MXOT 16 INT 0 32767 32767 "Maximum distance from track"
         UNITS "milimeter" "mm"
-    APPEND_PARAMETER MXST 32 INT 0 100000000 36000000 "Maximum initial object distance"
+    APPEND_PARAMETER MXST 16 INT 0 32767 32767 "Maximum initial object distance"
         UNITS "milimeter" "mm"
 
 #
@@ -361,15 +374,13 @@ COMMAND CHOMP OBJSEG LITTLE_ENDIAN "Object Segmentation Parameters"
 
 COMMAND CHOMP AF LITTLE_ENDIAN "Auto Fire Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 13 13 13 "Command ID which must be 13"
-    APPEND_PARAMETER XTOL 32 INT 0 32767 200 "X tolerance for hit"
+    APPEND_PARAMETER XTOL 16 INT 0 32767 200 "X tolerance for hit"
         UNITS "milimeter" "mm"
-    APPEND_PARAMETER YTOL 32 INT 0 32767 200 "Y tolerance for hit"
+    APPEND_PARAMETER YTOL 16 INT 0 32767 200 "Y tolerance for hit"
         UNITS "milimeter" "mm"
-    APPEND_PARAMETER MAXRT 32 INT 0 32767 50 "Max angular rate"
+    APPEND_PARAMETER MAXRT 16 INT 0 32767 50 "Max angular rate"
         UNITS "degrees/sec" "deg/sec"
         POLY_WRITE_CONVERSION 0.0 35.7
-    APPEND_PARAMETER TLMRT 32 UINT 0 10000000 100000 "Telemetry interval"
-        UNITS "microseconds" "us"
 
 #
 #  AAIM - Auto Aim Parameters (Packet ID 14)
@@ -381,7 +392,6 @@ COMMAND CHOMP AAIM LITTLE_ENDIAN "Auto Aim Parameters"
     APPEND_PARAMETER STEERI 32 INT 0 32767 7500 "Turret Rotation integral coefficient"
     APPEND_PARAMETER STEERD 32 INT 0 32767 5 "Turret Rotation derivative coefficient"
     APPEND_PARAMETER STEERMAX 32 INT 0 1000 1000 "Steering maximum command"
-    APPEND_PARAMETER TINT 32 INT 0 1000000 50000 "Auto Aim telemetry interval"
 
 #
 #  IMUP - IMU Parameters (Packet ID 15)
@@ -430,3 +440,27 @@ COMMAND CHOMP LDDR LITTLE_ENDIAN "LEDDAR Parameters"
     APPEND_PARAMETER MINDD 16 INT 0 100 20 "Detections closer than this are ignored"
     APPEND_PARAMETER MAXDD 16 INT 0 1000 600 "Detections farther than this are ignored"
 
+#
+#  HMR - Hammer Parameters (Packet ID 18)
+#
+
+COMMAND CHOMP HMR LITTLE_ENDIAN "HAMMER Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 18 18 18 "Command ID which must be 18"
+    APPEND_PARAMETER HMR_SR 16 INT 0 32767 30 "Self Right Hammer Intensity"
+    APPEND_PARAMETER STEERI 16 INT 0 32767 100 "Swing Telemetry Data Collection Frequency"
+
+#
+#  TRT - Turret Parameters (Packet ID 19)
+#
+
+COMMAND CHOMP TRT LITTLE_ENDIAN "Turret Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 19 19 19 "Command ID which must be 19"
+    APPEND_PARAMETER WDTT 32 INT 5000 10000000 4000000 "Watch Dog Timer Timeout"
+
+#
+#  TROT - Turret Rotation Parameters (Packet ID 20)
+#
+
+COMMAND CHOMP TROT LITTLE_ENDIAN "Turret Rotation Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 20 20 20 "Command ID which must be 20"
+    APPEND_PARAMETER HMR_SR 32 INT 16 10000000 250 "Manual control overrides autoaim speed"

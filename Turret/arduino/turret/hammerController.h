@@ -28,7 +28,7 @@ public:
     struct Params
     {
         int16_t selfRightIntensity;
-        int16_t telemetryFrequency;
+        int16_t swingTelemetryFrequency;
     } __attribute__((packed));
 
     //  ====================================================================
@@ -52,9 +52,10 @@ public:
     int32_t GetHammerSpeed();
     int16_t GetHammerAngle();
 
-    void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval);
-    void SetParams(uint32_t p_selfRightIntensity, uint32_t p_telemetryFrequency);
+    void SetParams(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency);
     void RestoreParams();
+
+    void SendTelem();
 
 private:
 

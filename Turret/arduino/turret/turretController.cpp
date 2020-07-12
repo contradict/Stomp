@@ -13,6 +13,7 @@
 #include "turret_main.h"
 #include "turretRotationController.h"
 #include "hammerController.h"
+#include "autofire.h"
 #include "flameThrowerController.h"
 #include "telemetryController.h"
 #include "radioController.h"
@@ -71,6 +72,7 @@ void TurretController::Update()
     m_pTurretRotationController->Update();
     m_pHammerController->Update();
     m_pFlameThrowerController->Update();
+    m_pAutoFireController->Update();
 
     //  Update our state
 
@@ -183,6 +185,9 @@ void TurretController::Update()
                 }
             }
             break;
+
+            default:
+            break;
         }
 
         //  No more state changes, move on
@@ -206,22 +211,22 @@ Track* TurretController::GetCurrentTarget()
 
 int32_t TurretController::GetTurretSpeed()
 {
-    m_pTurretRotationController->GetTurretSpeed();
+    return m_pTurretRotationController->GetTurretSpeed();
 }
 
 int16_t TurretController::GetTurretAngle()
 {
-    m_pTurretRotationController->GetTurretAngle();
+    return m_pTurretRotationController->GetTurretAngle();
 }
 
 int32_t TurretController::GetHammerSpeed()
 {
-    m_pHammerController->GetHammerSpeed();
+    return m_pHammerController->GetHammerSpeed();
 }
 
 int16_t TurretController::GetHammerAngle()
 {
-    m_pHammerController->GetHammerAngle();
+    return m_pHammerController->GetHammerAngle();
 }
 
 int32_t TurretController::GetDesiredManualTurretSpeed()
@@ -244,9 +249,19 @@ void TurretController::SetAutoAimParameters(int32_t p_proportionalConstant, int3
     m_pTurretRotationController->SetAutoAimParameters(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain);
 }
 
-void TurretController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval)
+void TurretController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz)
 {
-    m_pHammerController->SetAutoFireParameters(p_xtol, p_ytol, p_max_omegaz, telemetry_interval);
+    m_pAutoFireController->SetParams(p_xtol, p_ytol, p_max_omegaz);
+}
+
+void TurretController::SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed)
+{
+    m_pTurretRotationController->SetParams(p_manualControlOverideSpeed);
+}
+
+void TurretController::SetHammerParameters(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency)
+{
+    m_pHammerController->SetParams(p_selfRightIntensity, p_swingTelemetryFrequency);
 }
 
 void TurretController::SetParams(uint32_t p_watchDogTimerTriggerDt)
@@ -259,7 +274,7 @@ void TurretController::RestoreParams()
 {
     m_pTurretRotationController->RestoreParams();
     m_pHammerController->RestoreParams();
-    m_pFlameThrowerController->RestoreParams();
+    m_pAutoFireController->RestoreParams();
 
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct TurretController::Params));
 }
@@ -270,8 +285,9 @@ void TurretController::SendTelem()
     telemetryIMU();         //  BB MJS: Convert to controller and call SendTelem();
 
     m_pTurretRotationController->SendTelem();
+    m_pHammerController->SendTelem();
+    m_pAutoFireController->SendTelem();
 
-    Telem.SendSensorTelem(0, m_pHammerController->GetHammerAngle());    // BB MJS: Adjust for sending pressure
     Telem.SendTurretTelemetry(m_state);
 
 }
@@ -292,6 +308,7 @@ void TurretController::init()
     m_pTurretRotationController = new TurretRotationController();
     m_pHammerController = new HammerController();
     m_pFlameThrowerController = new FlameThrowerController();
+    m_pAutoFireController = new AutoFire();
 }
 
 void TurretController::initAllControllers()
@@ -299,6 +316,7 @@ void TurretController::initAllControllers()
     m_pTurretRotationController->Init();
     m_pHammerController->Init();
     m_pFlameThrowerController->Init();
+    m_pAutoFireController->Init();
 }
 
 void TurretController::setState(controllerState p_state)
@@ -316,6 +334,9 @@ void TurretController::setState(controllerState p_state)
         {
             //  No action on leaving ESafe at this time
         }
+        break;
+
+        default:
         break;
     }
 
@@ -361,6 +382,9 @@ void TurretController::setState(controllerState p_state)
         {
             m_pHammerController->TriggerSelfRightSwing();
         }
+        break;
+
+        default:
         break;
     }
 }

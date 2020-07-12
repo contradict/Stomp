@@ -14,7 +14,7 @@
 //  BB MJS: TODO
 //
 //  Provide methods for level of logging (errors, logs or both)
-//  Ensure all telemetry is still working to XBee
+//  Ensure all telemetry is still working to XBeezt
 //  Get LogMessage and ErrorMessage to work over XBee
 //
 
@@ -141,6 +141,9 @@ void TelemetryController::Update()
                 }
             }
             break;
+
+            default:
+            break;
         }
 
         //  No more state changes, move on
@@ -244,21 +247,23 @@ bool TelemetryController::SendSystemTelem(
 
 struct SensorTelemetryInner 
 {
-    uint16_t pressure;
     uint16_t angle;
+    uint16_t throwPressure;
+    uint16_t retractPressure;
 }
  __attribute__((packed));
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_SNS, SensorTelemetryInner> SensorTelemetry;
 
-bool TelemetryController::SendSensorTelem(int16_t p_pressure, uint16_t p_angle)
+bool TelemetryController::SendSensorTelem(uint16_t p_angle, uint16_t p_throwPressure, uint16_t p_retractPressure)
 {
     CHECK_ENABLED(TLM_ID_SNS);
 
     SensorTelemetry tlm;
 
-    tlm.inner.pressure = p_pressure;
     tlm.inner.angle = p_angle;
+    tlm.inner.throwPressure = p_throwPressure;
+    tlm.inner.retractPressure = p_retractPressure;
 
     return write((unsigned char *)&tlm, sizeof(tlm));
 }
@@ -326,10 +331,10 @@ bool TelemetryController::SendLeddarTelem(const Detection (&p_detections)[LEDDAR
 //  Swing Telemetry Packet
 //
 
-struct SwingTelemInner 
+struct SwingTelemetryInner 
 {
-    uint16_t samplePeriod;
     uint16_t dataPointCount;
+    uint16_t sampleFrequency;
 
     uint32_t swingStartTime;
     uint32_t swingStopTime;
@@ -342,14 +347,14 @@ struct SwingTelemInner
     uint16_t retractStopAngle;
 } __attribute__((packed));
 
-typedef TelemetryPacket<TelemetryController::TLM_ID_SWG, SwingTelemInner> SwingTelemetry;
+typedef TelemetryPacket<TelemetryController::TLM_ID_SWG, SwingTelemetryInner> SwingTelemetry;
 
 bool TelemetryController::SendSwingTelem(
                     uint16_t p_datapointsCollected,
                     volatile uint16_t* p_angleData,
                     volatile uint8_t* p_throwPressureData,
                     volatile uint8_t* p_retractPressureData,
-                    uint16_t p_dataCollectFrequency,
+                    uint16_t p_sampleFrequency,
                     uint32_t p_swingStartTime,
                     uint16_t p_swingStartAngle,
                     uint32_t p_swingStopTime,
@@ -363,7 +368,7 @@ bool TelemetryController::SendSwingTelem(
 
     SwingTelemetry tlm;
 
-    tlm.inner.samplePeriod = p_dataCollectFrequency;
+    tlm.inner.sampleFrequency = p_sampleFrequency;
     tlm.inner.dataPointCount = p_datapointsCollected;
 
     tlm.inner.swingStartTime = p_swingStartTime;
@@ -393,14 +398,14 @@ bool TelemetryController::SendSwingTelem(
 //  IMU Telemetry Packet
 //
 
-struct IMUTelemInner 
+struct IMUTelemetryInner 
 {
     int16_t a[3];
     int16_t g[3];
     int16_t t;
 } __attribute__((packed));
 
-typedef TelemetryPacket<TelemetryController::TLM_ID_IMU, IMUTelemInner> IMUTelemetry;
+typedef TelemetryPacket<TelemetryController::TLM_ID_IMU, IMUTelemetryInner> IMUTelemetry;
 
 bool TelemetryController::SendIMUTelem(int16_t (&p_a)[3], int16_t (&p_g)[3], int16_t p_t)
 {
@@ -423,7 +428,7 @@ bool TelemetryController::SendIMUTelem(int16_t (&p_a)[3], int16_t (&p_g)[3], int
 //  Orientation Telemetry Packet
 //
 
-struct ORNTelemInner 
+struct ORNTelemetryInner 
 {
     uint8_t padding:3;
     uint8_t orientation:4;
@@ -433,7 +438,7 @@ struct ORNTelemInner
     int16_t crossNorm;
 } __attribute__((packed));
 
-typedef TelemetryPacket<TelemetryController::TLM_ID_ORN, ORNTelemInner> ORNTelemetry;
+typedef TelemetryPacket<TelemetryController::TLM_ID_ORN, ORNTelemetryInner> ORNTelemetry;
 
 bool TelemetryController::SendORNTelem(bool p_stationary, uint8_t p_orientation, int32_t p_sumAngularRate, int16_t p_totalNorm, int16_t p_crossNorm)
 {
@@ -530,8 +535,8 @@ struct AutoAimTelemetryInner
     int32_t state;
     int32_t targetAngularVelocity;
     int32_t error;
-    int32_t errorDerivitive;
     int32_t errorIntegral;
+    int32_t errorDerivitive;
 } __attribute__((packed));
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_AAIM, AutoAimTelemetryInner> AAIMTelemetry;
@@ -760,17 +765,20 @@ bool TelemetryController::enqueue(const unsigned char *buffer, size_t size)
     return s_outputChannel.enqueue(buffer, size, NULL, NULL);
 }
 
-void TelemetryController::usbSendMessage(const String& p_string)
+bool TelemetryController::usbSendMessage(const String& p_string)
 {
     s_outputChannel.println(p_string);
+    return true;
 }
 
-void TelemetryController::xbeeSendMessage(const String& p_string)
+bool TelemetryController::xbeeSendMessage(const String& p_string)
 {
+    CHECK_ENABLED(TLM_ID_DBGM);
+
     const char *c_str = p_string.c_str();
-    // BB MJS: CHECK_ENABLED(TLM_ID_DBGM);
 
     unsigned char pkt[1+k_maxDebugMessageLength+2]={0};
+
     pkt[0] = TLM_ID_DBGM;
     size_t copied = 0;
     size_t pos=1;
@@ -783,7 +791,7 @@ void TelemetryController::xbeeSendMessage(const String& p_string)
     *((uint16_t *)(pkt+pos)) = TLM_TERMINATOR;
     size_t sendlen = 1+copied+sizeof(TLM_TERMINATOR);
     
-    // s_outputChannel.write(pkt, sendlen);
+    return (s_outputChannel.write(pkt, sendlen) == sendlen);
 }
 
 void TelemetryController::setState(controllerState p_state)
@@ -800,6 +808,9 @@ void TelemetryController::setState(controllerState p_state)
         case EInit:
         {
         }
+        break;
+
+        default:
         break;
     }
 
@@ -836,6 +847,9 @@ void TelemetryController::setState(controllerState p_state)
                 LogError("There was a call to Telem.Log before Serial Channel was ready");
             }
         }
+        break;
+
+        default:
         break;
     }
 }

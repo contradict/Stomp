@@ -15,6 +15,9 @@ enum Commands {
     CMD_ID_AAIM = 14,
     CMD_ID_IMUP = 15,
     CMD_ID_LDDR = 17,
+    CMD_ID_HMR = 18,
+    CMD_ID_TRT = 19,
+    CMD_ID_TROT = 20
 };
 
 extern Track g_trackedObject;
@@ -30,13 +33,21 @@ template <uint8_t command_id, typename command_inner> struct CommandPacket{
 
 
 struct TelemetryRateInner {
-    uint32_t small_telem_period;
+    uint32_t telem_period;
     uint32_t leddar_telem_period;
-    uint32_t drive_telem_period;
     uint32_t enabled_messages;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_TRATE, TelemetryRateInner> TelemetryRateCommand;
 
+struct TrackingFilterInner {
+    int16_t alpha;
+    int16_t beta;
+    int8_t min_num_updates;
+    uint32_t track_lost_dt;
+    int16_t max_off_track;
+    int16_t max_start_distance;
+} __attribute__((packed));
+typedef CommandPacket<CMD_ID_TRKFLT, TrackingFilterInner> TrackingFilterCommand;
 
 struct ObjectSegmentationInner {
     int16_t min_object_size;
@@ -45,7 +56,6 @@ struct ObjectSegmentationInner {
     uint8_t closest_only:1;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_OBJSEG, ObjectSegmentationInner> ObjectSegmentationCommand;
-
 
 struct AutoFireInner {
     int16_t xtol;
@@ -62,16 +72,6 @@ struct AutoAimInner {
     int32_t steer_max;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_AAIM, AutoAimInner> AutoAimCommand;
-
-struct TrackingFilterInner {
-    int16_t alpha;
-    int16_t beta;
-    int8_t min_num_updates;
-    uint32_t track_lost_dt;
-    int16_t max_off_track;
-    int16_t max_start_distance;
-} __attribute__((packed));
-typedef CommandPacket<CMD_ID_TRKFLT, TrackingFilterInner> TrackingFilterCommand;
 
 struct IMUParameterInner {
     int8_t dlpf;
@@ -91,6 +91,22 @@ struct LeddarCommandInner {
     uint16_t max_detection_distance;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_LDDR, LeddarCommandInner> LeddarCommand;
+
+struct HammerCommandInner {
+    int16_t selfRightIntensity;
+    int16_t swingTelemetryFrequency;
+} __attribute__((packed));
+typedef CommandPacket<CMD_ID_HMR, HammerCommandInner> HammerCommand;
+
+struct TurretCommandInner {
+    int32_t watchDogTimerTriggerDt;
+} __attribute__((packed));
+typedef CommandPacket<CMD_ID_TRT, TurretCommandInner> TurretCommand;
+
+struct TurretRotationCommandInner {
+    int32_t manualControlOverideSpeed;
+} __attribute__((packed));
+typedef CommandPacket<CMD_ID_TROT, TurretRotationCommandInner> TurretRotationCommand;
 
 static uint8_t command_buffer[MAXIMUM_COMMAND_LENGTH];
 static size_t command_length=0;
@@ -129,6 +145,9 @@ void handleCommands(void)
     AutoAimCommand *aaim_cmd;
     IMUParameterCommand *imup_cmd;
     LeddarCommand *leddar_cmd;
+    HammerCommand *hammer_cmd;
+    TurretCommand *turretCmd;
+    TurretRotationCommand *turretRotationCmd;
 
     if(command_ready) 
     {
@@ -137,12 +156,13 @@ void handleCommands(void)
         {
             case CMD_ID_TRATE:
                 trate_cmd = (TelemetryRateCommand *)command_buffer;
-                Telem.SetParams(trate_cmd->inner.small_telem_period,
-                                    trate_cmd->inner.leddar_telem_period,
-                                    trate_cmd->inner.enabled_messages);
+                Telem.SetParams(trate_cmd->inner.telem_period,
+                    trate_cmd->inner.leddar_telem_period,
+                    trate_cmd->inner.enabled_messages);
                 Telem.LogMessage(String("enabled_telemetry=") + String(trate_cmd->inner.enabled_messages, 16));
                 valid_command++;
                 break;
+
             case CMD_ID_TRKFLT:
                 trkflt_cmd = (TrackingFilterCommand *)command_buffer;
                 g_trackedObject.setTrackingFilterParams(trkflt_cmd->inner.alpha,
@@ -153,6 +173,7 @@ void handleCommands(void)
                                         trkflt_cmd->inner.max_start_distance);
                 valid_command++;
                 break;
+
             case CMD_ID_OBJSEG:
                 objseg_cmd = (ObjectSegmentationCommand *)command_buffer;
                 setObjectSegmentationParams(
@@ -162,17 +183,15 @@ void handleCommands(void)
                                         objseg_cmd->inner.closest_only);
                 valid_command++;
                 break;
+
             case CMD_ID_AF:
                 af_cmd = (AutoFireCommand *)command_buffer;
-                // BB MJS
-                /*
-                setAutoFireParams(af_cmd->inner.xtol,
+                Turret.SetAutoFireParameters(af_cmd->inner.xtol,
                                 af_cmd->inner.ytol,
-                                af_cmd->inner.max_omegaZ,
-                                af_cmd->inner.telemetry_interval);
-                */
+                                af_cmd->inner.max_omegaZ);
                 valid_command++;
                 break;
+
             case CMD_ID_AAIM:
                 aaim_cmd = (AutoAimCommand *)command_buffer;
                 Turret.SetAutoAimParameters(
@@ -181,6 +200,7 @@ void handleCommands(void)
                     aaim_cmd->inner.steer_d,
                     aaim_cmd->inner.steer_max);
                 break;
+
             case CMD_ID_IMUP:
                 imup_cmd = (IMUParameterCommand *)command_buffer;
                 setIMUParameters(
@@ -194,15 +214,34 @@ void handleCommands(void)
                     imup_cmd->inner.z_threshold);
                 valid_command++;
                 break;
+
             case CMD_ID_LDDR:
                 leddar_cmd = (LeddarCommand *)command_buffer;
                 setLeddarParameters(leddar_cmd->inner.min_detection_distance,
                                     leddar_cmd->inner.max_detection_distance);
                 break;
+
+            case CMD_ID_HMR:
+                hammer_cmd = (HammerCommand *)command_buffer;
+                Turret.SetHammerParameters(hammer_cmd->inner.selfRightIntensity,
+                                    hammer_cmd->inner.swingTelemetryFrequency);
+                break;
+
+            case CMD_ID_TRT:
+                turretCmd = (TurretCommand *)command_buffer;
+                Turret.SetParams(turretCmd->inner.watchDogTimerTriggerDt);
+                break;
+
+            case CMD_ID_TROT:
+                turretRotationCmd = (TurretRotationCommand *)command_buffer;
+                Turret.SetTurretRotationParameters(turretRotationCmd->inner.manualControlOverideSpeed);
+                break;
+
             default:
                 invalid_command++;
                 break;
         }
+
         command_length = 0;
         command_ready = false;
         Telem.SendCommandAcknowledge(last_command, valid_command, invalid_command);

@@ -11,6 +11,7 @@
 class TurretRotationController;
 class HammerController;
 class FlameThrowerController;
+class AutoFire;
 
 //  ====================================================================
 //
@@ -61,7 +62,10 @@ public:
     void FlamePulseStop();
 
     void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain);
-    void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz, uint32_t telemetry_interval);
+    void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz);
+    void SetHammerParameters(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency);
+    void SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed);
+
 
     void SetParams(uint32_t p_watchDogTimerTriggerDt);
     void RestoreParams();
@@ -124,6 +128,7 @@ private:
     TurretRotationController *m_pTurretRotationController;
     HammerController *m_pHammerController;
     FlameThrowerController *m_pFlameThrowerController;
+    AutoFire *m_pAutoFireController;
 
     controllerState m_state;
     uint32_t m_lastUpdateTime;

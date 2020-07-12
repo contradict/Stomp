@@ -65,6 +65,9 @@ void RadioController::Update()
             {
             }
             break;
+
+            default:
+            break;
         }
 
         //  No more state changes, move on
@@ -86,38 +89,51 @@ bool RadioController::IsNominal()
 
 bool RadioController::IsWeaponEnabled()
 {
+    return isWeaponEnabled();
 }
 
 bool RadioController::IsManualTurretEnabled()
 {
+    return isManualTurretEnabled();
 }
 
 bool RadioController::IsAutoAimEnabled()
 {
+    return isAutoAimEnabled();
 }
 
 bool RadioController::IsAutoFireEnabled()
 {
+    return isAutoFireEnabled();
 }
 
 bool RadioController::IsSelfRightEnabled()
 {
+    return isSelfRightEnabled();
 }
 
 bool RadioController::IsFlameOnEnabled()
 {
+    // BB MJS: return isFlameOnEnabled();
+
+    return false;
 }
 
 bool RadioController::IsFlamePulseEnabled()
 {
+    // BB MJS: return isFlamePulseEnabled();
+
+    return false;
 }
 
 bool RadioController::IsHammerSwingRequested()
 {
+    return IsHammerSwingRequested();
 }
 
 bool RadioController::IsHammerRetractRequested()
 {
+    return IsHammerRetractRequested();
 }
 
 void RadioController::SendTelem()
@@ -145,6 +161,9 @@ void RadioController::setState(controllerState p_state)
         {
         }
         break;
+
+        default:
+        break;
     }
 
     m_state = p_state;
@@ -163,6 +182,9 @@ void RadioController::setState(controllerState p_state)
         case ESafe:
         {
         }
+        break;
+
+        default:
         break;
     }
 }

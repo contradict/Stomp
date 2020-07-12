@@ -4,8 +4,8 @@
 
 struct TrackingFilterParameters {
     int16_t alpha, beta;  // position, velocity filter
-    uint32_t track_lost_dt; // timeout for no observations
     uint32_t min_num_updates; // minimum number before trusted
+    uint32_t track_lost_dt; // timeout for no observations
     int32_t max_off_track; // squared distance in mm
     int32_t max_start_distance; // squared distance in mm
 } __attribute__((packed));
@@ -14,8 +14,8 @@ struct TrackingFilterParameters {
 struct TrackingFilterParameters EEMEM saved_tracking_params = {
     .alpha = 9000,
     .beta = 8192,
-    .track_lost_dt = 250000,
     .min_num_updates = 3,
+    .track_lost_dt = 250000,
     .max_off_track = 1000L*1000L,
     .max_start_distance = 6000L*6000L
 };

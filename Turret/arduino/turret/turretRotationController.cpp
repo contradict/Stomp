@@ -64,7 +64,6 @@ void TurretRotationController::Update()
 
     //  Update our state
 
-    int32_t desiredAutoAimSpeed = m_pAutoAim->GetDesiredTurretSpeed();
     int32_t desiredSBusSpeed = Turret.GetDesiredManualTurretSpeed();
 
     while(true)
@@ -171,6 +170,9 @@ void TurretRotationController::Update()
                     setState(EManualControl);
                 }
             }
+            break;
+
+            default:
             break;
         }
 
@@ -309,6 +311,9 @@ void TurretRotationController::setState(controllerState p_state)
         {
         }
         break;
+
+        default:
+        break;
     }
 
     m_state = p_state;
@@ -332,6 +337,9 @@ void TurretRotationController::setState(controllerState p_state)
         {
             setSpeed(0);
         }
+        break;
+
+        default:
         break;
     }
 }

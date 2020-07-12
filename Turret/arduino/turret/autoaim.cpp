@@ -139,6 +139,9 @@ void AutoAim::Update()
                 }
             }
             break;
+
+            default:
+            break;
         }
 
         //  No more state changes, move on
@@ -257,6 +260,9 @@ void AutoAim::setState(autoAimState p_state)
             m_pTarget = nullptr;
         }
         break;
+
+        default:
+        break;
     }
 
     m_state = p_state;
@@ -280,6 +286,9 @@ void AutoAim::setState(autoAimState p_state)
             m_errorDerivative = 0;
             m_errorIntegral = 0;
         }
+        break;
+
+        default:
         break;
     }
 }

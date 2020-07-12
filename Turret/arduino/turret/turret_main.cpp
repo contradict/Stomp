@@ -64,8 +64,6 @@ static uint16_t s_currentRCBitfield;
 static uint32_t s_last_request_time = micros();
 static uint32_t s_last_sensor_time = micros();
 
-static enum AutoFireState s_autoFire = AF_NO_TARGET;
-
 //  ====================================================================
 //
 //  External references
@@ -82,7 +80,6 @@ extern uint16_t sbus_overrun;
 //
 //  ====================================================================
 
-static void updateTurretRotation(void);
 static void updateTracking(void);
 static void updateWatchDogTimer(void);
 static void updateRadio(void);
@@ -118,7 +115,6 @@ void turretInit()
     //  Restore any information stored in EEMEM
 
     restoreObjectSegmentationParameters();
-    // restoreAutoFireParameters();
 
 
     g_trackedObject.restoreTrackingFilterParams();
