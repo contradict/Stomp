@@ -14,15 +14,15 @@
 //  BB MJS: TODO
 //
 //  Provide methods for level of logging (errors, logs or both)
-//  Ensure all telemetry is still working to XBeezt
+//  Ensure all telemetry is still working to XBee
 //  Get LogMessage and ErrorMessage to work over XBee
 //
 
 //  Need to esnure that we can get the telemetry over XBee, reguardless of
 //  the serial port selection logic.  Define FORCE_XBEE to true or false
 
-#define FORCE_XBEE false
-#define FORCE_USB true
+#define FORCE_XBEE true
+#define FORCE_USB false
 
 #define CHECK_ENABLED(TLM_ID) if(!(m_params.enabledTelemetry & (0x1L << (TLM_ID)))) return false;
 const uint16_t TLM_TERMINATOR=0x6666;
@@ -34,28 +34,22 @@ const uint16_t TLM_TERMINATOR=0x6666;
 //
 //  ====================================================================
 
-//  These is the specific telemetry enabled by default, it is overwritten by Cosmos and
-//  stored in EEMEM so these defaults are no longer used, until EEMEM is "reflashed"
-
-static uint32_t s_defaultEnabledTelemetry = (
-    (0x1L << (TelemetryController::TLM_ID_SYS))   |
-    (0x1L << (TelemetryController::TLM_ID_SBS))   |
-    (0x1L << (TelemetryController::TLM_ID_SNS))   |
-    (0x1L << (TelemetryController::TLM_ID_TUR))   | 
-    (0x1L << (TelemetryController::TLM_ID_LIDAR)) |
-    (0x1L << (TelemetryController::TLM_ID_TROT))  |
-    (0x1L << (TelemetryController::TLM_ID_AAIM))  |
-    (0x1L << (TelemetryController::TLM_ID_ACK))
-);
-
 static struct TelemetryController::Params EEMEM s_savedParams = 
 {
     .telemetryInterval = 100000L,
     .leddarTelemetryInterval = 100000L,
-    .enabledTelemetry = s_defaultEnabledTelemetry
+    .enabledTelemetry = 
+        (0x1L << (TelemetryController::TLM_ID_SYS))   |
+        (0x1L << (TelemetryController::TLM_ID_SBS))   |
+        (0x1L << (TelemetryController::TLM_ID_SNS))   |
+        (0x1L << (TelemetryController::TLM_ID_TUR))   | 
+        (0x1L << (TelemetryController::TLM_ID_LIDAR)) |
+        (0x1L << (TelemetryController::TLM_ID_TROT))  |
+        (0x1L << (TelemetryController::TLM_ID_AAIM))  |
+        (0x1L << (TelemetryController::TLM_ID_ACK))
 };
 
-static DMASerial& s_outputChannel = DSerial;
+static DMASerial& s_TelemetrySerial = DSerial;
 
 //  ====================================================================
 //
@@ -65,7 +59,7 @@ static DMASerial& s_outputChannel = DSerial;
 
 ISR(PCINT2_vect)
 {
-   s_outputChannel.cts_interrupt();
+   s_TelemetrySerial.cts_interrupt();
 }
 
 //  ====================================================================
@@ -131,7 +125,7 @@ void TelemetryController::Update()
                 {
                     setState(EUSBChannel);                  
                 }
-                else if (FORCE_XBEE || digitalRead(XBEE_CTS))
+                else if (FORCE_XBEE || digitalRead(XBEE_CTS_DI))
                 {
                     setState(EXBeeChannel);
                 }
@@ -750,7 +744,7 @@ size_t TelemetryController::write(const uint8_t *buffer, size_t size)
         return 0;
     }
 
-    return s_outputChannel.write(buffer, size);
+    return s_TelemetrySerial.write(buffer, size);
 }
 
 bool TelemetryController::enqueue(const unsigned char *buffer, size_t size)
@@ -762,12 +756,12 @@ bool TelemetryController::enqueue(const unsigned char *buffer, size_t size)
         return false;
     }
 
-    return s_outputChannel.enqueue(buffer, size, NULL, NULL);
+    return s_TelemetrySerial.enqueue(buffer, size, NULL, NULL);
 }
 
 bool TelemetryController::usbSendMessage(const String& p_string)
 {
-    s_outputChannel.println(p_string);
+    s_TelemetrySerial.println(p_string);
     return true;
 }
 
@@ -791,7 +785,7 @@ bool TelemetryController::xbeeSendMessage(const String& p_string)
     *((uint16_t *)(pkt+pos)) = TLM_TERMINATOR;
     size_t sendlen = 1+copied+sizeof(TLM_TERMINATOR);
     
-    return (s_outputChannel.write(pkt, sendlen) == sendlen);
+    return (s_TelemetrySerial.write(pkt, sendlen) == sendlen);
 }
 
 void TelemetryController::setState(controllerState p_state)
@@ -861,12 +855,12 @@ void TelemetryController::init()
 
     m_invalidStateLog = false;
             
-    pinMode(XBEE_CTS, INPUT);
+    pinMode(XBEE_CTS_DI, INPUT);
 }
 
 void TelemetryController::initUSB()
 {
-    s_outputChannel.begin(57600);
+    s_TelemetrySerial.begin(57600);
 }
 
 void TelemetryController::initXBee()
@@ -877,13 +871,13 @@ void TelemetryController::initXBee()
     // Xbee SN 13A200 40B9D1B1 is set to Router AT, and DH/DL programmed to the SN of the Coordinator AT
     // They're talking on PAN ID 2001 (A Space Odyssey)
 
-    s_outputChannel.begin(57600);
-    *digitalPinToPCMSK(XBEE_CTS) |= bit (digitalPinToPCMSKbit(XBEE_CTS));
+    s_TelemetrySerial.begin(57600);
+    *digitalPinToPCMSK(XBEE_CTS_DI) |= bit (digitalPinToPCMSKbit(XBEE_CTS_DI));
 
-    PCIFR  |= bit (digitalPinToPCICRbit(XBEE_CTS));
-    PCICR  |= bit (digitalPinToPCICRbit(XBEE_CTS));
+    PCIFR  |= bit (digitalPinToPCICRbit(XBEE_CTS_DI));
+    PCICR  |= bit (digitalPinToPCICRbit(XBEE_CTS_DI));
 
-    s_outputChannel.set_cts_pin(XBEE_CTS);
+    s_TelemetrySerial.set_cts_pin(XBEE_CTS_DI);
 }
 
 void TelemetryController::saveParams() 

@@ -6,7 +6,7 @@
 static void saveIMUParameters(void);
 static void restoreIMUParameters(void);
 
-MPU6050 IMU;
+static MPU6050 s_IMUSerial;
 static int16_t acceleration[3], angular_rate[3];
 static int16_t temperature;
 uint32_t last_imu_process;
@@ -49,11 +49,11 @@ void initIMU(void) {
     I2c.setSpeed(false);
     I2c.timeOut(2);
     //I2c.scan(telemetry_stream);
-    IMU.initialize();
-    Telem.LogMessage(String("IMU.getDeviceID() = ") + IMU.getDeviceID());
-    IMU.setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
-    IMU.setFullScaleAccelRange(MPU6050_ACCEL_FS_16);
-    IMU.setDLPFMode(MPU6050_DLPF_BW_20);
+    s_IMUSerial.initialize();
+    Telem.LogMessage(String("IMU.getDeviceID() = ") + s_IMUSerial.getDeviceID());
+    s_IMUSerial.setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
+    s_IMUSerial.setFullScaleAccelRange(MPU6050_ACCEL_FS_16);
+    s_IMUSerial.setDLPFMode(MPU6050_DLPF_BW_20);
     last_imu_process = micros();
 }
 
@@ -65,7 +65,7 @@ static bool  maybeReadIMU(void)
     bool possibly_stationary = false;
     if(now-last_imu_process > params.imu_period) {
         last_imu_process = now;
-        uint8_t imu_err = IMU.getMotion6(
+        uint8_t imu_err = s_IMUSerial.getMotion6(
             &acceleration[0], &acceleration[1], &acceleration[2],
             &angular_rate[0], &angular_rate[1], &angular_rate[2]);
         if(imu_err != 0) {
@@ -75,7 +75,7 @@ static bool  maybeReadIMU(void)
             return false;
         }
         imu_read_valid = true;
-        temperature = IMU.getTemperature();
+        temperature = s_IMUSerial.getTemperature();
         sum_angular_rate = (abs(angular_rate[0]) +
                             abs(angular_rate[1]) +
                             abs(angular_rate[2]));
@@ -158,7 +158,7 @@ void setIMUParameters(
     int16_t upright_cross, int16_t min_valid_cross, int16_t max_valid_cross,
     int16_t max_total_norm, int16_t x_threshold, int16_t z_threshold)
 {
-    IMU.setDLPFMode(dlpf);
+    s_IMUSerial.setDLPFMode(dlpf);
     params.dlpf_mode = dlpf;
     params.imu_period = imu_period;
     params.stationary_threshold = stationary_threshold;

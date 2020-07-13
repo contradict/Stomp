@@ -164,11 +164,6 @@ void FlameThrowerController::Safe()
     setState(ESafe);
 }
 
-void FlameThrowerController::SetParams()
-{
-    saveParams();
-}
-
 //  ====================================================================
 //
 //  Private methods
@@ -224,6 +219,7 @@ void FlameThrowerController::setState(controllerState p_state)
 
         case EReadyToFire:
         {
+            digitalWrite(PROPANE_DO, LOW);
             digitalWrite(IGNITER_DO, HIGH);
         }
         break;
@@ -247,4 +243,8 @@ void FlameThrowerController::setState(controllerState p_state)
 
 void FlameThrowerController::init()
 {
+    //  Ensure everything is off
+    
+    digitalWrite(PROPANE_DO, LOW);
+    digitalWrite(IGNITER_DO, LOW);
 }

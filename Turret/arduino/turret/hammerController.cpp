@@ -204,8 +204,6 @@ void HammerController::Update()
     //  Now that the state is stable, take action based on stable state
 
     updateSpeed();
-
-    Telem.LogMessage(String("Hammer angle = ") + s_hammerAngleCurrent);
 }
 
 void HammerController::Safe()
@@ -503,8 +501,6 @@ static uint32_t s_hammerSubStateDt = 0;
 static sensorReadState s_sensorReadState;
 static int32_t s_sensorAngleReadCount = 0;
 
-static uint32_t s_swingTimeStart = 0;
-
 //  ====================================================================
 //
 //  Macros
@@ -628,13 +624,13 @@ void startFullCycleStateMachine()
     s_swingComplete = false;
     s_swingTelemSamplesCount = 0;
 
-    s_swingTimeStart = micros();
+    s_swingStartTime = micros();
     s_swingStartAngle = s_hammerAngleCurrent;
 
     //  Enter start state
 
     s_hammerSubState = EThrowSetup;
-    s_hammerSubStateStart = s_swingTimeStart;
+    s_hammerSubStateStart = s_swingStartTime;
 
     //  close throw vent
     digitalWrite(THROW_VENT_VALVE_DO, HIGH); 
@@ -657,7 +653,7 @@ void startRetractOnlyStateMachine()
     //  Enter start state
 
     s_hammerSubState = ERetractSetup;
-    s_hammerSubStateStart = s_swingTimeStart;
+    s_hammerSubStateStart = s_swingStartTime;
 
     //  open throw vent
     digitalWrite(THROW_VENT_VALVE_DO, LOW); 

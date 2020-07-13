@@ -34,9 +34,6 @@ public:
     void FlamePulseStart();
     void FlamePulseStop();
 
-    void SetParams();
-    void RestoreParams();
-
 private:
 
     enum controllerState 

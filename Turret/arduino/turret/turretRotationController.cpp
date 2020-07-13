@@ -28,7 +28,7 @@ static const int16_t k_invalidTurretAngleRead = -1;
 //
 //  ====================================================================
 
-HardwareSerial& TurretRotationMotorSerial = Serial1;   // RX pin 19, TX pin 18
+static HardwareSerial& s_TurretRotationMotorSerial = Serial1;   // RX pin 19, TX pin 18
 
 static struct TurretRotationController::Params EEMEM s_savedParams = 
 {
@@ -292,8 +292,8 @@ void TurretRotationController::setSpeed(int32_t p_speed)
     //  send "@nn!G mm" over software serial. mm is a command 
     //  value, -1000 to 1000. nn is node number in RoboCAN network.
     
-    TurretRotationMotorSerial.print("@01!G ");
-    TurretRotationMotorSerial.println(m_turretSpeedCurrent);
+    s_TurretRotationMotorSerial.print("@01!G ");
+    s_TurretRotationMotorSerial.println(m_turretSpeedCurrent);
 }
 
 void TurretRotationController::setState(controllerState p_state)
@@ -352,22 +352,22 @@ void TurretRotationController::init()
 
 void TurretRotationController::initRoboTeq()
 {
-    TurretRotationMotorSerial.begin(115200);
+    s_TurretRotationMotorSerial.begin(115200);
 
     // set serial priority first
-    TurretRotationMotorSerial.println("@00^CPRI 1 0");
+    s_TurretRotationMotorSerial.println("@00^CPRI 1 0");
     delay(5);
 
     // set RC priority second
-    TurretRotationMotorSerial.println("@00^CPRI 2 1");
+    s_TurretRotationMotorSerial.println("@00^CPRI 2 1");
     delay(5);
 
     // turn off command echo
-    TurretRotationMotorSerial.println("@00^ECHOF 1");
+    s_TurretRotationMotorSerial.println("@00^ECHOF 1");
     delay(5);
 
     // set RS232 watchdog to 100 ms
-    TurretRotationMotorSerial.println("@00^RWD 100");
+    s_TurretRotationMotorSerial.println("@00^RWD 100");
 }
 
 void TurretRotationController::saveParams() 

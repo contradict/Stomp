@@ -5,7 +5,7 @@
 // MAX_DETECTIONS should be <255
 #define MAX_DETECTIONS 50
 
-HardwareSerial& LeddarSerial = Serial2;  // RX pin 17, TX pin 16
+static HardwareSerial& s_LeddarSerial = Serial2;  // RX pin 17, TX pin 16
 
 // Table of CRC values for highorder byte
 static const uint8_t CRC_HI[] =
@@ -77,7 +77,7 @@ void initLeddarWrapper(){
   for(size_t i=0; i<LEDDAR_SEGMENTS; i++) {
     MinimumDetections[i].Segment = i;
   }
-  LeddarSerial.begin(115200);
+  s_LeddarSerial.begin(115200);
 }
 
 uint16_t CRC16(uint8_t *aBuffer, uint8_t aLength)
@@ -105,12 +105,12 @@ uint16_t leddar_crc_error = 0;
 
 void requestDetections(){
   uint8_t data[64] = {0};
-  uint16_t count = LeddarSerial.available();
+  uint16_t count = s_LeddarSerial.available();
   //clear serial buffer
   while (count>0)
   {
-    LeddarSerial.readBytes(data, min(64, count));
-    count = LeddarSerial.available();
+    s_LeddarSerial.readBytes(data, min(64, count));
+    count = s_LeddarSerial.available();
   }
   len = 0;
 
@@ -118,14 +118,14 @@ void requestDetections(){
   data[0] = LEDDAR_SLAVE_ID;
   data[1] = REQUEST_DETECTIONS_CMD;
   *((uint16_t *)(data+2)) = CRC16(data, 2);
-  LeddarSerial.write(data, 4);
+  s_LeddarSerial.write(data, 4);
 }
 
 bool bufferDetections(){
-  uint16_t count = LeddarSerial.available();
+  uint16_t count = s_LeddarSerial.available();
   if (count > 0){
     if(len+count<MAX_LEDDAR_BUFFER) {
-      LeddarSerial.readBytes(receivedData+len, count);
+      s_LeddarSerial.readBytes(receivedData+len, count);
       len += count;
     } else {
       len = 0;
