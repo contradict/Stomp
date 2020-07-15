@@ -324,8 +324,8 @@ void walk(modbus_t *ctx, float period)
         {
             float toe_position[3];
             compute_leg_position(leg, phase, &toe_position);
-            // printf("elapsed %5.3f frequency %5.3f Leg %d Walk phase %5.3f toe [%6.2f, %6.2f, %6.2f]\n",
-            //        elapsed, frequency, leg, phase, toe_position[0], toe_position[1], toe_position[2]);
+            printf("elapsed %5.3f frequency %5.3f Leg %d Walk phase %5.3f toe [%6.2f, %6.2f, %6.2f]\n",
+                   elapsed, frequency, leg, phase, toe_position[0], toe_position[1], toe_position[2]);
             int err = set_toe_postion(ctx, leg, &toe_position);
             if(err == -1)
             {
