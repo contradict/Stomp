@@ -285,6 +285,7 @@ void walk(modbus_t *ctx, float period)
 
     bool acc=false, con=false, dec=false;
     printf("Starting walk cycle.\n");
+    float phase = 0;
     for(start_time(&tau); (elapsed = elapsed_time(&tau)) < (WalkDuration + 3*period); slept=sleep_period(&tau, period))
     {
         float frequency;
@@ -317,7 +318,7 @@ void walk(modbus_t *ctx, float period)
         }
 
         float dummy;
-        float phase = modff(phase + frequency * slept, &dummy);
+        phase = MAX(modff(phase + frequency * slept, &dummy), 0.0f);
 
         for(int leg=0; leg<NUM_WORKING_LEGS; leg++)
         {
