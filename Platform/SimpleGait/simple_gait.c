@@ -219,19 +219,6 @@ void walk(modbus_t *ctx, float period)
 
     printf("Ping all legs.\n");
 
-    for(int leg=0; leg<NUM_WORKING_LEGS; leg++)
-    {
-        int err = set_initial_position(ctx, leg);
-        if(err == -1)
-        {
-            printf("Failed to set initial position for leg %d(0x%02x): %s.\n",
-                   leg, LegAddress[leg], modbus_strerror(errno));
-            return;
-        }
-    }
-
-    printf("Set inital command.\n");
-
     struct RealTimer tau;
     float elapsed;
     for(start_time(&tau); (elapsed = elapsed_time(&tau)) < GainRampTime * 1.1; sleep_period(&tau, 4*period))
