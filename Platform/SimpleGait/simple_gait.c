@@ -263,15 +263,15 @@ void walk(modbus_t *ctx, float period)
             for(int axis=0;axis<3;axis++)
             {
                 ramp_position[axis] = ramp_phase * initial_toe_positions[leg][axis] + (1.0 - ramp_phase) * startup_toe_positions[leg][axis];
-                // printf("ramp toe [%6.2f, %6.2f, %6.2f]\n", ramp_position[0],ramp_position[1], ramp_position[2]);
-                int err = set_toe_postion(ctx, leg, &ramp_position);
-                if(err == -1)
-                {
-                    printf("Failed to ramp initial position for leg %d(0x%02x): %s\n",
-                           leg, LegAddress[leg], modbus_strerror(errno));
-                    goto lowgainexit;
-                }
             }
+			printf("ramp toe [%6.2f, %6.2f, %6.2f]\n", ramp_position[0],ramp_position[1], ramp_position[2]);
+			int err = set_toe_postion(ctx, leg, &ramp_position);
+			if(err == -1)
+			{
+				printf("Failed to ramp initial position for leg %d(0x%02x): %s\n",
+					   leg, LegAddress[leg], modbus_strerror(errno));
+				goto lowgainexit;
+			}
         }
     }
 
