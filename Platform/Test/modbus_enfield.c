@@ -185,7 +185,6 @@ int parse_register(char *arg)
 void read_serialnumber(modbus_t *ctx, int joint)
 {
     uint16_t serial_number[2];
-    uint16_t value[6];
 
     uint16_t base = joint_base[joint];
     printf("base: 0x%x\n", base);
@@ -208,7 +207,8 @@ int main(int argc, char **argv)
     char *offset;
     bool read_serial = false;
     int joint = -1;
-    int16_t read_register=-1, write_register=-1, write_value;
+    int16_t read_register=-1, write_register=-1;
+    uint16_t write_value;
     char read_type, write_type;
     char *wreg_ptr, *saveptr;
 
@@ -282,10 +282,38 @@ int main(int argc, char **argv)
     }
 
     uint16_t base;
-
-    uint8_t bit_value;
-    uint16_t value;
     int err;
+
+    if(write_register >= 0)
+    {
+        if(joint<0)
+        {
+            printf("Must specify joint (-j)\n");
+            exit(1);
+        }
+        base = joint_base[joint];
+        printf("base: 0x%x\n", base);
+        uint8_t write_bit;
+        switch(read_type)
+        {
+            case 'C':
+                write_bit = write_value;
+                err = modbus_write_bits(ctx, base + write_register, 1, &write_bit);
+                if(err == -1)
+                {
+                    printf("Unable to write joint %d, register 0x%x: %s\n", joint, write_register, modbus_strerror(errno));
+                }
+                break;
+            case 'H':
+                err = modbus_write_registers(ctx, base + write_register, 1, &write_value);
+                if(err == -1)
+                {
+                    printf("Unable to write joint %d, register 0x%x: %s\n", joint, write_register, modbus_strerror(errno));
+                }
+                break;
+        }
+    }
+
     if(read_register >= 0)
     {
         if(joint<0)
@@ -295,6 +323,8 @@ int main(int argc, char **argv)
         }
         base = joint_base[joint];
         printf("base: 0x%x\n", base);
+        uint16_t value;
+        uint8_t bit_value;
         switch(read_type)
         {
             case 'C':
@@ -327,5 +357,3 @@ int main(int argc, char **argv)
     modbus_close(ctx);
     return 0;
 }
-
-
