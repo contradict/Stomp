@@ -148,7 +148,7 @@ int Kinematics_WriteToePosition(void *ctx, uint16_t v)
         }
         for(int j=0;j<JOINT_COUNT;j++)
             cylinder_command[j] = cylinder_scaled_value[j] * 4095;
-        Enfield_SetCommand(cylinder_command);
+        Enfield_SetCommandNow(cylinder_command);
     }
     return 0;
 }
