@@ -192,7 +192,19 @@ int parse_register(char *arg)
     }
 }
 
-void read_serialnumber(modbus_t *ctx, int joint)
+void ensure_ctx(modbus_t **ctx, char *devname, uint32_t baud, uint32_t response_timeout, uint8_t address)
+{
+    if(*ctx == NULL)
+    {
+        if(create_modbus_interface(devname, baud, response_timeout, ctx))
+        {
+            exit(1);
+        }
+        modbus_set_slave(*ctx, address);
+    }
+}
+
+void read_one_serialnumber(modbus_t *ctx, int joint)
 {
     uint16_t serial_number[2];
 
@@ -206,6 +218,18 @@ void read_serialnumber(modbus_t *ctx, int joint)
         printf("  Serial Number: %d\n", *(uint32_t *)serial_number);
 }
 
+void read_serialnumber(modbus_t *ctx, int joint)
+{
+    if(joint > 0)
+        read_serialnumber(ctx, joint);
+    else
+        for(int j=0; j<3; j++)
+        {
+            read_serialnumber(ctx, j);
+            usleep(500000);
+        }
+}
+
 int checkjoint(int joint)
 {
     if(joint<0)
@@ -214,6 +238,101 @@ int checkjoint(int joint)
         exit(1);
     }
     return joint_base[joint];
+}
+
+void write_register(modbus_t *ctx, int joint, int write_register, char typ, uint16_t write_value)
+{
+    uint16_t base;
+    int err;
+
+    uint8_t write_bit;
+    switch(typ)
+    {
+        case 'C':
+            base = checkjoint(joint);
+            write_bit = write_value;
+            err = modbus_write_bits(ctx, base + write_register, 1, &write_bit);
+            if(err == -1)
+            {
+                printf("Unable to write joint %d, register 0x%x: %s\n", joint, write_register, modbus_strerror(errno));
+            }
+            break;
+        case 'H':
+            base = checkjoint(joint);
+            err = modbus_write_registers(ctx, base + write_register, 1, &write_value);
+            if(err == -1)
+            {
+                printf("Unable to write joint %d, register 0x%x: %s\n", joint, write_register, modbus_strerror(errno));
+            }
+            else
+            {
+                printf("Wrote joint %d, register 0x%x = 0x%x\n", joint, write_register, write_value);
+            }
+            break;
+        case 'T':
+        case 'J':
+            printf("Writing register 0x%x = 0x%x\n", write_register, write_value);
+            err = modbus_write_registers(ctx, write_register, 1, &write_value);
+            if(err == -1)
+            {
+                printf("Unable to write register 0x%x = 0x%x: %s\n", write_register, write_value, modbus_strerror(errno));
+            }
+            else
+            {
+                printf("Wrote register 0x%x = 0x%x\n", write_register, write_value);
+            }
+            break;
+    }
+}
+
+void read_register(modbus_t *ctx, int joint, int read_register, char typ)
+{
+    uint16_t base;
+    int err;
+    uint16_t value;
+    uint8_t bit_value;
+    switch(typ)
+    {
+        case 'C':
+            base = checkjoint(joint);
+            err = modbus_read_bits(ctx, base + read_register, 1, &bit_value);
+            if(err == -1)
+            {
+                printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+            }
+            else
+            {
+                printf("Joint %d, register 0x%x = 0x%x\n",
+                        joint, read_register, bit_value);
+            }
+            break;
+        case 'H':
+            base = checkjoint(joint);
+            err = modbus_read_registers(ctx, base + read_register, 1, &value);
+            if(err == -1)
+            {
+                printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+            }
+            else
+            {
+                printf("Joint %d, register 0x%x = 0x%x\n",
+                        joint, read_register, value);
+            }
+            break;
+        case 'J':
+        case 'T':
+            err = modbus_read_registers(ctx, read_register, 1, &value);
+            if(err == -1)
+            {
+                printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+            }
+            else
+            {
+                printf("Joint %d, register 0x%x = 0x%x\n",
+                        joint, read_register, value);
+            }
+            break;
+    }
 }
 
 int main(int argc, char **argv)
@@ -225,12 +344,13 @@ int main(int argc, char **argv)
 
     int opt;
     char *offset;
-    bool read_serial = false;
     int joint = -1;
-    int16_t read_register=-1, write_register=-1;
-    uint16_t write_value;
-    char read_type, write_type;
+    int16_t reg = -1;
+    uint16_t value;
+    char typ;
     char *wreg_ptr, *saveptr;
+
+    modbus_t *ctx = NULL;
 
     while((opt = getopt(argc, argv, "p:b:a:r:j:sR:W:")) != -1)
     {
@@ -253,6 +373,8 @@ int main(int argc, char **argv)
                     addr = atoi(optarg);
                 }
                 printf("address: 0x%x\n", addr);
+                if(ctx != NULL)
+                    modbus_set_slave(ctx, 0xff & addr);
                 break;
             case 'r':
                 response_timeout = 1000*atoi(optarg);
@@ -261,21 +383,24 @@ int main(int argc, char **argv)
                 joint = parse_joint(optarg);
                 break;
             case 's':
-                read_serial = true;
+                ensure_ctx(&ctx, devname, baud, response_timeout, addr & 0xff);
+                read_serialnumber(ctx, joint);
                 break;
             case 'R':
-                read_register = parse_register(optarg);
-                read_type = optarg[0];
+                reg = parse_register(optarg);
+                typ = optarg[0];
+                ensure_ctx(&ctx, devname, baud, response_timeout, addr & 0xff);
+                read_register(ctx, joint, reg, typ);
                 break;
             case 'W':
                 wreg_ptr = strtok_r(optarg, ":", &saveptr);
-                write_register = parse_register(wreg_ptr);
-                write_type = optarg[0];
+                reg = parse_register(wreg_ptr);
+                typ = optarg[0];
                 wreg_ptr = strtok_r(NULL, ":", &saveptr);
                 offset = strchr(wreg_ptr, 'x');
                 if(offset)
                 {
-                    if(sscanf(offset + 1, "%hx", &write_value) != 1)
+                    if(sscanf(offset + 1, "%hx", &value) != 1)
                     {
                         printf("Unable to parse hex value %s\n", offset);
                         exit(1);
@@ -283,126 +408,12 @@ int main(int argc, char **argv)
                 }
                 else
                 {
-                    write_value = atoi(wreg_ptr);
+                    value = atoi(wreg_ptr);
                 }
+                ensure_ctx(&ctx, devname, baud, response_timeout, addr & 0xff);
+                write_register(ctx, joint, reg, typ, value);
                 break;
         }
-    }
-
-    uint8_t address = 0xFF & addr;
-
-    modbus_t *ctx;
-
-    if(create_modbus_interface(devname, baud, response_timeout, &ctx))
-    {
-        exit(1);
-    }
-
-    modbus_set_slave(ctx, address);
-
-    if(read_serial)
-    {
-        if(joint > 0)
-            read_serialnumber(ctx, joint);
-        else
-            for(int j=0; j<3; j++)
-            {
-                read_serialnumber(ctx, j);
-                usleep(500000);
-            }
-    }
-
-    uint16_t base;
-    int err;
-
-    if(write_register >= 0)
-    {
-        uint8_t write_bit;
-        switch(write_type)
-        {
-            case 'C':
-                base = checkjoint(joint);
-                write_bit = write_value;
-                err = modbus_write_bits(ctx, base + write_register, 1, &write_bit);
-                if(err == -1)
-                {
-                    printf("Unable to write joint %d, register 0x%x: %s\n", joint, write_register, modbus_strerror(errno));
-                }
-                break;
-            case 'H':
-                base = checkjoint(joint);
-                err = modbus_write_registers(ctx, base + write_register, 1, &write_value);
-                if(err == -1)
-                {
-                    printf("Unable to write joint %d, register 0x%x: %s\n", joint, write_register, modbus_strerror(errno));
-                }
-                else
-                {
-                    printf("Wrote joint %d, register 0x%x = 0x%x\n", joint, write_register, write_value);
-                }
-                break;
-            case 'T':
-            case 'J':
-                printf("Writing register 0x%x = 0x%x\n", write_register, write_value);
-                err = modbus_write_registers(ctx, write_register, 1, &write_value);
-                if(err == -1)
-                {
-                    printf("Unable to write register 0x%x = 0x%x: %s\n", write_register, write_value, modbus_strerror(errno));
-                }
-                else
-                {
-                    printf("Wrote register 0x%x = 0x%x\n", write_register, write_value);
-                }
-                break;
-         }
-    }
-
-    if(read_register >= 0)
-    {
-        uint16_t value;
-        uint8_t bit_value;
-        switch(read_type)
-        {
-            case 'C':
-                base = checkjoint(joint);
-                err = modbus_read_bits(ctx, base + read_register, 1, &bit_value);
-                if(err == -1)
-                {
-                    printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
-                }
-                else
-                {
-                    printf("Joint %d, register 0x%x = 0x%x\n",
-                            joint, read_register, bit_value);
-                }
-                break;
-            case 'H':
-                base = checkjoint(joint);
-                err = modbus_read_registers(ctx, base + read_register, 1, &value);
-                if(err == -1)
-                {
-                    printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
-                }
-                else
-                {
-                    printf("Joint %d, register 0x%x = 0x%x\n",
-                            joint, read_register, value);
-                }
-                break;
-            case 'J':
-            case 'T':
-                err = modbus_read_registers(ctx, read_register, 1, &value);
-                if(err == -1)
-                {
-                    printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
-                }
-                else
-                {
-                    printf("Joint %d, register 0x%x = 0x%x\n",
-                            joint, read_register, value);
-                }
-                break;
-         }
     }
 
     modbus_close(ctx);
