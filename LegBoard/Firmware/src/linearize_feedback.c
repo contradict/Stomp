@@ -14,7 +14,7 @@
 // theta = (V - Vmin) / (Vmax - Vmin) * (Thetamax - Thetamin) + Thetamin
 // theta = V * (Thetamax - Thetamin) / (Vmax - Vmin) + (Thetamin - (Vmin * (Thetamax - Thetamin) / (Vmax - Vmin)))
 #define THETA_SCALE(Vmin, Vmax, Thetamin, Thetamax) (((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
-#define THETA_OFFSET(Vmin, Vmax, Thetamin, Thetamax)  ((Thetamin) - Vmin * ((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
+#define THETA_OFFSET(Vmin, Vmax, Thetamin, Thetamax)  ((Thetamin) - (Vmin) * ((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
 
 // length = sqrt(l1**2 + l2**2 - l1 * l2 * cos(theta + phi))
 #define SHAPE_OFFSET(l1, l2) (l1*l1 + l2*l2)
@@ -45,7 +45,7 @@ static const float ADC_VREF = 3.3f;
 static const float ADC_MAX_CODE = (float)((1<<12) - 1);
 static const float JOINT_DIVIDER = 2.0f / 3.0f;
 static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
-static const float MAX_ENFIELD_SCALE = 9.99f / __MAX_DAC_OUTPUT; // Limit Enfield voltage, it wraps above 10.0
+static const float MAX_ENFIELD_SCALE = 10.0f / __MAX_DAC_OUTPUT;
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 static const float JOINT_ANGLE_SCALE = 1000.0f;
 static const float VOLTAGE_SCALE = 1000.0f;
