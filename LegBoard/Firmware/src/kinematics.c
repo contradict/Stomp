@@ -13,7 +13,8 @@ static const float JOINT_ANGLE_SCALE = 1000.0f;
 static const float LENGTH_SCALE = 1000.0f;
 
 struct Link {
-    complex float pivot;
+    complex float link_pivot;
+    complex float cylinder_pivot;
     float l1, l2;
 };
 
@@ -24,17 +25,17 @@ struct GeometryConstants {
 static struct GeometryConstants geometry_constants __attribute__ ((section (".storage.linearize"))) = {
     .links = {
         { //CURL
-            .pivot = 4.287 - 0.44I,
+            .cylinder_pivot = 4.287 - 0.44I,
             .l1 = 2.5,
             .l2 = 8.0,
         },
         { //SWING
-            .pivot = 3.603 + 2.572I,
+            .cylinder_pivot = 3.603 + 2.572I,
             .l1 = 3.90,
             .l2 = 0.0,
         },
         { //LIFT
-            .pivot = 4.287 + 2.06I,
+            .link_pivot = 4.287 + 2.06I,
             .l1 = 4.4,
             .l2 = 6.3,
         }
@@ -48,15 +49,16 @@ void Kinematics_CylinderEdgeLengths(const float joint_angle[JOINT_COUNT],
                                    float cylinder_edge_length[JOINT_COUNT])
 {
     cylinder_edge_length[JOINT_LIFT] = cabsf(
-            geometry_constants.links[JOINT_LIFT].pivot -
+            geometry_constants.links[JOINT_LIFT].link_pivot -
+            geometry_constants.links[JOINT_LIFT].cylinder_pivot -
             geometry_constants.links[JOINT_LIFT].l1 * cexpf(I * joint_angle[JOINT_LIFT]));
     cylinder_edge_length[JOINT_CURL] = cabsf(
-            geometry_constants.links[JOINT_LIFT].pivot -
-            geometry_constants.links[JOINT_CURL].pivot +
+            geometry_constants.links[JOINT_LIFT].link_pivot -
+            geometry_constants.links[JOINT_CURL].cylinder_pivot +
             geometry_constants.links[JOINT_CURL].l1 * cexpf(I * (joint_angle[JOINT_CURL] + joint_angle[JOINT_LIFT])) +
             geometry_constants.links[JOINT_LIFT].l2 * cexpf(I * joint_angle[JOINT_LIFT]));
     cylinder_edge_length[JOINT_SWING] = cabsf(
-            geometry_constants.links[JOINT_SWING].pivot -
+            - geometry_constants.links[JOINT_SWING].cylinder_pivot -
             geometry_constants.links[JOINT_SWING].l1 * cexpf(I * joint_angle[JOINT_SWING]));
 }
 
@@ -65,13 +67,13 @@ void Kinematics_JointAngles(const float toe[3], float joint_angle[JOINT_COUNT])
     complex float T = hypotf(toe[0], toe[1]) + I * toe[2];
 
     joint_angle[JOINT_CURL] = -acosf(
-        (powf(cabsf(T - geometry_constants.links[JOINT_LIFT].pivot), 2.0f) - 
+        (powf(cabsf(T - geometry_constants.links[JOINT_LIFT].link_pivot), 2.0f) -
          (powf(geometry_constants.links[JOINT_LIFT].l2, 2.0f) + 
           powf(geometry_constants.links[JOINT_CURL].l2, 2.0f))) / 
         (2.0f * geometry_constants.links[JOINT_LIFT].l2 * geometry_constants.links[JOINT_CURL].l2));
 
     joint_angle[JOINT_LIFT] = asinf(
-        cimagf((T - geometry_constants.links[JOINT_LIFT].pivot) /
+        cimagf((T - geometry_constants.links[JOINT_LIFT].link_pivot) /
                (geometry_constants.links[JOINT_LIFT].l2 +
                 geometry_constants.links[JOINT_CURL].l2 * cexpf(I * joint_angle[JOINT_CURL]))));
 
@@ -81,7 +83,7 @@ void Kinematics_JointAngles(const float toe[3], float joint_angle[JOINT_COUNT])
 void Kinematics_ToePosition(const float joint_angle[JOINT_COUNT],
                             float position[3])
 {
-    complex float T = geometry_constants.links[JOINT_LIFT].pivot +
+    complex float T = geometry_constants.links[JOINT_LIFT].link_pivot +
         geometry_constants.links[JOINT_LIFT].l2 * cexpf(I * joint_angle[JOINT_LIFT]) +
         geometry_constants.links[JOINT_CURL].l2 * cexpf(I * (joint_angle[JOINT_LIFT] + joint_angle[JOINT_CURL]));
     float r = crealf(T);
