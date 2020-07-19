@@ -175,6 +175,7 @@ void sensor_init(modbus_t *mctx, void *sctx)
     sc->param_max = NUM_SENSOR_PARAMS;
     sc->minmax_mode = false;
     sc->stoponerror = false;
+    sc->joint = 0;
     sc->input.input_pos = 0;
     sc->input.input_string[0] = 0;
     sc->input.input_search = false;
@@ -274,7 +275,7 @@ void sensor_display(modbus_t *mctx, void *sctx)
             printw(sensor_param_formats[1], sc->max_v[j]);
         }
     }
-    move(4 + 4*sc->joint + 2, 2 + 13*sc->param);
+    move(4 + 4*sc->joint + 2, 2 + 12*sc->param);
 }
 
 void set_sensor_param(modbus_t *mctx, struct SensorContext *sc, float value)
