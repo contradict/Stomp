@@ -37,7 +37,7 @@ const float GainRampTime=1.0f;     // seconds
 const float ProportionalGains[3] = {15.0f, 12.0f, 12.0f}; 
 const float ExitLowGains[3] = {5.0f, 5.0f, 5.0f};
 const float InitialPositionRampTime=2.0f; // seconds
-const int NUM_WORKING_LEGS = 2;
+const int NUM_WORKING_LEGS = 1;
 
 enum LegIdentity {
     FrontLeft=0,
@@ -55,21 +55,21 @@ static const float SimpleGaitPhase[NUM_LEGS] = {0.0f, 0.5, 0.0f, 0.5, 0.0f, 0.5}
 #define SimpleStepPoints 4
 // static const float StepShape[SimpleStepPoints][3] = {
 // /*                     X     Y     Z */
-// /* Forward down  */ {10.1,  4.0, -7.3},
-// /* Backward down */ {10.1, -4.0, -7.3},
-// /* Backward up   */ {10.1, -4.0, -4.7},
-// /* Forward up    */ {10.1,  4.0, -4.7},
+// /* Forward down  */ {21.0,  8.0, -23},
+// /* Backward down */ {21.0, -8.0, -23},
+// /* Backward up   */ {21.0, -8.0, -17},
+// /* Forward up    */ {21.0,  8.0, -17},
 // };
 // static const float StepShape[3][SimpleStepPoints] = {
 // // Forward down Backward down Backward up Forward up
-// /* X */ {10.1,       10.1,        10.1,      10.1},
-// /* Y */ { 4.0,       -4.0,        -4.0,       4.0},
-// /* Z */ {-7.3,       -7.3,        -4.7,      -4.7},
+// /* X */ { 21.0,       21.0,        21.0,      21.0},
+// /* Y */ {  8.0,       -8.0,        -8.0,       8.0},
+// /* Z */ {-23.0,      -23.0,       -17.0,     -17.0},
 // };
-static const float StepShapeX[SimpleStepPoints] =         {10.1f, 10.1f, 10.1f, 10.1f};
-static const float StepShapeY[SimpleStepPoints] =         { 4.0f, -4.0f, -4.0f,  4.0f};
-static const float StepShapeZ[SimpleStepPoints] =         {-7.3f, -7.3f, -4.7f, -4.7f};
-static const float StepShapePhase[SimpleStepPoints + 1] = { 0.0f,  0.6f,  0.7f,  0.9f, 1.0f};
+static const float StepShapeX[SimpleStepPoints] =         { 21.0f,  21.0f,  21.0f,  21.0f};
+static const float StepShapeY[SimpleStepPoints] =         {  8.0f,  -8.0f,  -8.0f,   8.0f};
+static const float StepShapeZ[SimpleStepPoints] =         {-23.0f, -23.0f, -17.0f, -17.0f};
+static const float StepShapePhase[SimpleStepPoints + 1] = {  0.0f,   0.6f,   0.7f,   0.9f, 1.0f};
 
 
 int find_interpolation_index(const float *nodes, size_t length, float x)
@@ -92,12 +92,12 @@ void interpolate_value(const float *nodes, const float *values, ssize_t length, 
     *y = (x - nodes[index]) * (values[next_value] - values[index]) / (nodes[next_node] - nodes[index]) + values[index];
 }
 
-int set_joint_angles(modbus_t *ctx, enum LegIdentity leg, float (*toe_position)[3])
+int set_joint_angles(modbus_t *ctx, enum LegIdentity leg, float (*joint_angles)[3])
 {
     uint16_t position_values[3];
     for(int i=0;i<3;i++)
     {
-        position_values[i] = roundf(1000.0f * (*toe_position)[i]);
+        position_values[i] = roundf(1000.0f * (*joint_angles)[i]);
     }
     modbus_set_slave(ctx, LegAddress[leg]);
     return modbus_write_registers(ctx, ToeXPosition, 3, position_values);
@@ -149,7 +149,7 @@ int get_toe_feedback(modbus_t *ctx, enum LegIdentity leg, float (*toe_position)[
     err = modbus_read_registers(ctx, ToeXPosition, 3, toe_value);
     if(err != -1)
         for(int i=0;i<3;i++)
-            (*toe_position)[i] = ((int16_t *)toe_value)[i] / 1000.0f;
+            (*toe_position)[i] = ((int16_t *)toe_value)[i] / 100.0f;
     if(err != -1)
         err = modbus_read_registers(ctx, CURL_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[4]));
     if(err != -1)
@@ -170,7 +170,7 @@ int set_toe_postion(modbus_t *ctx, enum LegIdentity leg, float (*toe_position)[3
 
     for(int axis=0; axis < 3; axis++)
     {
-        ((int16_t *)toe_values)[axis] = roundf((*toe_position)[axis] * 1000.0f);
+        ((int16_t *)toe_values)[axis] = roundf((*toe_position)[axis] * 100.0f);
     }
     modbus_set_slave(ctx, LegAddress[leg]);
     return modbus_write_registers(ctx, ToeXPosition, 3, toe_values);
