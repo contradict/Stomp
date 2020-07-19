@@ -267,7 +267,7 @@ int Linearize_ReadLength(void *ctx, uint16_t *v)
 {
     GETJOINT(joint);
     *v = roundf((cylinder_edge_length[joint] -
-                 calibration_constants_stored.cylinder_length_min[joint]) * JOINT_ANGLE_SCALE);
+                 calibration_constants_stored.cylinder_length_min[joint]) * CYLINDER_LENGTH_SCALE);
     return 0;
 }
 
