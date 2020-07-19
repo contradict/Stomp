@@ -505,11 +505,11 @@ int showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval 
     {
         if(dt)
         {
-            snprintf(ec->error, 256, "%s(%ld): %s", msg, dt->tv_usec, modbus_strerror(err));
+            snprintf(ec->error, 256, "%s(%ld): %s", msg, dt->tv_usec, modbus_strerror(modbus_err));
         }
         else
         {
-            snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(err));
+            snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(modbus_err));
         }
         ec->iserror = true;
     }
