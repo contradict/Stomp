@@ -319,6 +319,19 @@ void read_register(modbus_t *ctx, int joint, int read_register, char typ)
                         joint, read_register, value);
             }
             break;
+        case 'I':
+            base = checkjoint(joint);
+            err = modbus_read_input_registers(ctx, base + read_register, 1, &value);
+            if(err == -1)
+            {
+                printf("Unable to read joint %d, input register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+            }
+            else
+            {
+                printf("Joint %d, input register 0x%x = 0x%x\n",
+                        joint, read_register, value);
+            }
+            break;
         case 'J':
         case 'T':
             err = modbus_read_registers(ctx, read_register, 1, &value);
