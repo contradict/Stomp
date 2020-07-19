@@ -60,12 +60,12 @@ struct SensorContext {
     struct ErrorContext error[3];
 };
 
-#define LENGTH_SCALE 1e4f
+#define LENGTH_SCALE 1e2f
 const char *sensor_param_names[NUM_SENSOR_PARAMS] = {
        " Vmin",    " Vmax",   " Tmin",     " Tmax",
        " lmin",    " lmax"};
 const char *sensor_param_formats[NUM_SENSOR_PARAMS] = {
-    "%6.3f", "%6.3f", "%6.1f", "%6.1f", "%6.3f", "%6.3f"};
+    "%6.3f", "%6.3f", "%6.1f", "%6.1f", "%6.2f", "%6.2f"};
 uint16_t sensor_param_register[NUM_SENSOR_PARAMS] = {
     HSensorVmin, HSensorVmax, HSensorThetamin, HSensorThetamax,
     HCylinderLengthMin, HCylinderLengthMax};
@@ -244,7 +244,7 @@ void sensor_display(modbus_t *mctx, void *sctx)
         error_display(4 + 4 * j + 0, 2 + 15, &sc->error[j]);
         move(4 + 4 * j + 1, 2);
         clrtoeol();
-        snprintf(display, sizeof(display), " s: %5.3fV a: %06.1fd f: %06.3fV l: %06.3fin b: %04x r: %04x",
+        snprintf(display, sizeof(display), " s: %5.3fV a: %06.1fd f: %06.3fV l: %06.2fcm b: %04x r: %04x",
                  sc->sensor_data[j][0] / 1000.0f, sc->sensor_data[j][1] / 1000.0f * 180.0f / M_PI,
                  sc->sensor_data[j][2] / 1000.0f, sc->sensor_data[j][3] / LENGTH_SCALE,
                  sc->sensor_data[j][4], sc->sensor_data[j][5]);
