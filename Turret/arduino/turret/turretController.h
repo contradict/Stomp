@@ -11,6 +11,7 @@
 class TurretRotationController;
 class HammerController;
 class FlameThrowerController;
+class IMUController;
 class AutoFire;
 
 //  ====================================================================
@@ -50,7 +51,7 @@ public:
     
     Track* GetCurrentTarget();
 
-    int32_t GetTurretSpeed();
+    int16_t GetTurretRotationSpeed();
     int16_t GetTurretAngle();
     
     int32_t GetHammerSpeed();
@@ -65,7 +66,9 @@ public:
     void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz);
     void SetHammerParameters(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency);
     void SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed);
-
+    void SetIMUParameters(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
+        int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,
+        int16_t p_maxTotalNorm, int16_t p_xThreshold, int16_t p_zThreshold);
 
     void SetParams(uint32_t p_watchDogTimerTriggerDt);
     void RestoreParams();
@@ -128,6 +131,7 @@ private:
     TurretRotationController *m_pTurretRotationController;
     HammerController *m_pHammerController;
     FlameThrowerController *m_pFlameThrowerController;
+    IMUController *m_pIMUController;
     AutoFire *m_pAutoFireController;
 
     controllerState m_state;

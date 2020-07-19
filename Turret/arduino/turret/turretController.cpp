@@ -6,7 +6,6 @@
 #include "pins.h"
 
 #include "sbus.h"
-#include "imu.h"
 #include "autoaim.h"
 #include "DMASerial.h"
 
@@ -17,6 +16,7 @@
 #include "flameThrowerController.h"
 #include "telemetryController.h"
 #include "radioController.h"
+#include "imuController.h"
 #include "turretController.h"
 
 //  ====================================================================
@@ -72,6 +72,7 @@ void TurretController::Update()
     m_pTurretRotationController->Update();
     m_pHammerController->Update();
     m_pFlameThrowerController->Update();
+    m_pIMUController->Update();
     m_pAutoFireController->Update();
 
     //  Update our state
@@ -105,11 +106,11 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (getOrientation() == ORN_UPRIGHT && m_pHammerController->ReadyToSwing())
+                else if (m_pIMUController->IsUpright() && m_pHammerController->ReadyToSwing())
                 {
                     setState(ENominal);
                 }
-                else if (getOrientation() == ORN_NOT_UPRIGHT)
+                else if (!m_pIMUController->IsUpright())
                 {
                     setState(ENeedsSelfRight);
                 }
@@ -155,7 +156,7 @@ void TurretController::Update()
                 }
                 else if (m_pHammerController->ReadyToSwing())
                 {
-                    if (getOrientation() == ORN_UPRIGHT)
+                    if (m_pIMUController->IsUpright())
                     {
                         setState(ENominal);
                     }
@@ -175,7 +176,7 @@ void TurretController::Update()
 
             case ENeedsSelfRight:
             {
-                if (getOrientation() == ORN_UPRIGHT)
+                if (m_pIMUController->IsUpright())
                 {
                     setState(EUnknown);
                 }
@@ -209,9 +210,9 @@ Track* TurretController::GetCurrentTarget()
     return &g_trackedObject;
 }
 
-int32_t TurretController::GetTurretSpeed()
+int16_t TurretController::GetTurretRotationSpeed()
 {
-    return m_pTurretRotationController->GetTurretSpeed();
+    return m_pIMUController->GetOmegaZ();
 }
 
 int16_t TurretController::GetTurretAngle()
@@ -264,6 +265,15 @@ void TurretController::SetHammerParameters(uint32_t p_selfRightIntensity, uint32
     m_pHammerController->SetParams(p_selfRightIntensity, p_swingTelemetryFrequency);
 }
 
+void TurretController::SetIMUParameters(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
+    int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,
+    int16_t p_maxTotalNorm, int16_t p_xThreshold, int16_t p_zThreshold)
+{
+    m_pIMUController->SetParams(p_dlpf, p_imuPeriod, p_stationaryThreshold, 
+        p_uprightCross, p_minValidCross, p_maxValidCross,
+        p_maxTotalNorm, p_xThreshold, p_zThreshold);
+}
+
 void TurretController::SetParams(uint32_t p_watchDogTimerTriggerDt)
 {
     m_params.WatchDogTimerTriggerDt = p_watchDogTimerTriggerDt;
@@ -274,6 +284,7 @@ void TurretController::RestoreParams()
 {
     m_pTurretRotationController->RestoreParams();
     m_pHammerController->RestoreParams();
+    m_pIMUController->RestoreParams();
     m_pAutoFireController->RestoreParams();
 
     eeprom_read_block(&m_params, &s_savedParams, sizeof(struct TurretController::Params));
@@ -282,10 +293,10 @@ void TurretController::RestoreParams()
 void TurretController::SendTelem()
 {
     turretSendTelem();      //  BB MSJ: This is the remaining stuff in turret_main.cpp 
-    telemetryIMU();         //  BB MJS: Convert to controller and call SendTelem();
 
     m_pTurretRotationController->SendTelem();
     m_pHammerController->SendTelem();
+    m_pIMUController->SendTelem();
     m_pAutoFireController->SendTelem();
 
     Telem.SendTurretTelemetry(m_state);
@@ -308,6 +319,7 @@ void TurretController::init()
     m_pTurretRotationController = new TurretRotationController();
     m_pHammerController = new HammerController();
     m_pFlameThrowerController = new FlameThrowerController();
+    m_pIMUController = new IMUController();
     m_pAutoFireController = new AutoFire();
 }
 
@@ -316,6 +328,7 @@ void TurretController::initAllControllers()
     m_pTurretRotationController->Init();
     m_pHammerController->Init();
     m_pFlameThrowerController->Init();
+    m_pIMUController->Init();
     m_pAutoFireController->Init();
 }
 

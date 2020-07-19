@@ -6,7 +6,6 @@
 #include "targeting.h"
 #include <avr/wdt.h>
 #include "command.h"
-#include "imu.h"
 #include "autofire.h"
 #include "autoaim.h"
 
@@ -110,7 +109,6 @@ void turretInit()
 
     initSBus();
     initLeddarWrapper();
-    initIMU();
 
     //  Restore any information stored in EEMEM
 
@@ -140,7 +138,6 @@ void turretUpdate()
     //  the sensors their update tick
     
     updateWatchDogTimer();
-    updateIMU();
 
     //  Update Tracking and auto fire using Lidar
 
@@ -211,7 +208,7 @@ static void updateTracking()
     const Detection (*minDetections)[LEDDAR_SEGMENTS] = NULL;
     getMinimumDetections(&minDetections);
 
-    Object objects[8];
+    Target objects[8];
     uint8_t num_objects = segmentObjects(*minDetections, now, objects);
     int8_t best_object = trackObject(now, objects, num_objects, g_trackedObject);
 }
@@ -219,17 +216,18 @@ static void updateTracking()
 void turretSendLeddarTelem()
 {
 /*
+    //  BB MJS: This used to be part of the previous function, fix this all up
+
     //  Send out tracking / auto aim telemetry
 
     Telem.SendLeddarTelem(*minDetections, raw_detection_count);
     Telem.SendObjectsMeasuredTelemetry(num_objects, objects);
     Telem.SendObjectsCalculatedTelemetry(num_objects, objects);
 
-
     if(num_objects > 0)
     {
         Telem.SendTrackingTelemetry(
-                objects[best_object].xcoord(), objects[best_object].ycoord(),
+                objects[best_object].GetXCoord(), objects[best_object].GetYCoord(),
                 objects[best_object].angle(), objects[best_object].radius(),
                 g_trackedObject.x/16, g_trackedObject.vx/16,
                 g_trackedObject.y/16, g_trackedObject.vy/16);
@@ -259,7 +257,7 @@ void turretSendTelem()
     reset_loop_stats();
     int16_t hammer_angle = 0; // BB MJS -> HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
 
-    Telem.SendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetTurretSpeed());
+    Telem.SendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetTurretRotationSpeed());
 }
 
 static void reset_loop_stats(void) 

@@ -3,7 +3,6 @@
 #include "telemetryController.h"
 #include "targeting.h"
 #include "autofire.h"
-#include "imu.h"
 #include "turretController.h"
 
 #define MAXIMUM_COMMAND_LENGTH 64
@@ -203,7 +202,7 @@ void handleCommands(void)
 
             case CMD_ID_IMUP:
                 imup_cmd = (IMUParameterCommand *)command_buffer;
-                setIMUParameters(
+                Turret.SetIMUParameters(
                     imup_cmd->inner.dlpf, imup_cmd->inner.imu_period,
                     imup_cmd->inner.stationary_threshold,
                     imup_cmd->inner.upright_cross,

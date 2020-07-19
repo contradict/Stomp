@@ -13,5 +13,29 @@ Files that had there contents become a contoller object
 New File                                Old File
 ------------------------------          ------------------------------
 turretController.cpp                    chomp_main.cpp
-RadioController.cpp                     sbus.cpp
-TelemetryController.cpp                 telem.cpp & xbee.cpp
+radioController.cpp                     sbus.cpp
+telemetryController.cpp                 telem.cpp & xbee.cpp
+imuController.cpp                       imu.cpp
+leddarController.cpp                    leddar_io.cpp
+targetTrackingController.cpp            targeting.cpp
+target.cpp                              object.cpp
+
+
+Component Hierarchy
+
+Global Objects                Sub Objects
+--------------                -----------
+
+TurretController -------------+--- TurretRotationController ----------- AutoAimController
+                              |
+                              +--- HammerController
+                              |
+                              +--- FlameThrowerController
+                              |
+                              +--- IMUController
+                              |
+                              +--- AutoFireController
+
+RadioController
+
+TelemetryController

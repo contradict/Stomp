@@ -606,7 +606,7 @@ struct ObjectsCalcuatedInner
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_OBJC, ObjectsCalcuatedInner> ObjectsCalculatedTelemetry;
 
-bool TelemetryController::SendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Object (&p_objects)[8])
+bool TelemetryController::SendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJC);
     
@@ -618,10 +618,10 @@ bool TelemetryController::SendObjectsCalculatedTelemetry(uint8_t p_numObjects, c
 
     for(; i < p_numObjects; i++)
     {
-        tlm.inner.objectRadius[i] = p_objects[i].radius();
-        tlm.inner.objectAngle[i] = p_objects[i].angle();
-        tlm.inner.objectX[i] = p_objects[i].xcoord();
-        tlm.inner.objectY[i] = p_objects[i].ycoord();
+        tlm.inner.objectRadius[i] = p_objects[i].GetRadius();
+        tlm.inner.objectAngle[i] = p_objects[i].GetAngle();
+        tlm.inner.objectX[i] = p_objects[i].GetXCoord();
+        tlm.inner.objectY[i] = p_objects[i].GetYCoord();
     }
 
     for(; i < 8; i++)
@@ -645,7 +645,7 @@ struct ObjectsMeasuredInner
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_OBJM, ObjectsMeasuredInner> ObjectsMeasuredTelemetry;
 
-bool TelemetryController::SendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Object (&p_objects)[8])
+bool TelemetryController::SendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJM);
 

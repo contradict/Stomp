@@ -19,6 +19,16 @@
         "functional": "cpp",
         "locale": "cpp",
         "optional": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "__locale": "cpp",
+        "bitset": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "memory_resource": "cpp",
+        "istream": "cpp",
+        "new": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp",
+        "utility": "cpp"
     }
 }

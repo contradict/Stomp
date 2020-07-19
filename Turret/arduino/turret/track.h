@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "object.h"
+#include "Target.h"
 
 struct Track
 {
@@ -21,8 +21,8 @@ struct Track
     Track();
     void project(int32_t dt, int32_t dtheta, int32_t *px, int32_t *py) const;
     int32_t predict(uint32_t now, int16_t omegaZ);
-    void update(const Object& best_match);
-    int32_t distanceSq(const Object& obj) const;
+    void update(const Target& best_match);
+    int32_t DistanceSq(const Target& obj) const;
     bool recent_update(uint32_t now) const;
     bool valid(uint32_t now) const;
     int16_t updateOmegaZ(int32_t dt, int16_t omegaZ);

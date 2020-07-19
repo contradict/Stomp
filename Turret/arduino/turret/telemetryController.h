@@ -1,7 +1,7 @@
 #pragma once
 
 #include "leddar_io.h"
-#include "object.h"
+#include "target.h"
 
 //  ====================================================================
 //
@@ -119,8 +119,8 @@ public:
     bool SendTurretTelemetry(int16_t p_state);
     bool SendTurretRotationTelemetry(int16_t p_state, int16_t p_currentSpeed) ;
 
-    bool SendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Object (&p_objects)[8]);
-    bool SendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Object (&p_objects)[8]);
+    bool SendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8]);
+    bool SendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8]);
 
     bool SendCommandAcknowledge(uint8_t p_command, uint16_t p_valid, uint16_t p_invalid) ;
 

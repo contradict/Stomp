@@ -4,17 +4,19 @@
 #include "pins.h"
 #include <stdlib.h>
 #include <math.h>
-#include "imu.h"
+#include "imuController.h"
 #include "telemetryController.h"
+#include "target.h"
+#include "turretController.h"
 #include "utils.h"
 
 static void saveObjectSegmentationParameters();
 
-static int8_t selectObject(const Object (&objects)[8], uint8_t num_objects,
+static int8_t selectObject(const Target (&objects)[8], uint8_t num_objects,
                            const struct Track &tracked_object,
                            int32_t *selected_distance);
 
-static int8_t selectClosestObject(const Object (&objects)[8], uint8_t num_objects,
+static int8_t selectClosestObject(const Target (&objects)[8], uint8_t num_objects,
                            const struct Track &tracked_object,
                            int32_t *selected_distance);
 
@@ -34,12 +36,10 @@ struct ObjectSegmentationParameters EEMEM saved_object_params = {
     .closest_only = 1          // Only inspect closest object
 };
 
-int8_t trackObject(uint32_t now, struct Object (&objects)[8], uint8_t num_objects,
+int8_t trackObject(uint32_t now, Target (&objects)[8], uint8_t num_objects,
                     struct Track& tracked_object) {
 
-    int16_t omegaZ = 0;
-    getOmegaZ(&omegaZ);
-
+    int16_t omegaZ = Turret.GetTurretRotationSpeed();
 
     int8_t best_object = -1;
     if(num_objects>0) {
@@ -68,7 +68,7 @@ int8_t trackObject(uint32_t now, struct Object (&objects)[8], uint8_t num_object
 
 uint8_t segmentObjects(const Detection (&min_detections)[LEDDAR_SEGMENTS],
                               uint32_t now,
-                              Object (&objects)[8]) {
+                              Target (&objects)[8]) {
     // call all objects in frame by detecting edges
     int16_t last_seg_distance = min_detections[0].Distance;
     int16_t right_edge = 0;
@@ -90,7 +90,7 @@ uint8_t segmentObjects(const Detection (&min_detections)[LEDDAR_SEGMENTS],
                 objects[num_objects].LeftEdge = left_edge;
                 objects[num_objects].RightEdge = right_edge;
                 objects[num_objects].Time = now;
-                int16_t size = objects[num_objects].size();
+                int16_t size = objects[num_objects].GetSize();
                 if(size>object_params.min_object_size &&
                    size<object_params.max_object_size) {
                     num_objects++;
@@ -106,7 +106,7 @@ uint8_t segmentObjects(const Detection (&min_detections)[LEDDAR_SEGMENTS],
     return num_objects;
 }
 
-static int8_t selectObject(const Object (&objects)[8], uint8_t num_objects,
+static int8_t selectObject(const Target (&objects)[8], uint8_t num_objects,
                            const struct Track &tracked_object,
                            int32_t *selected_distance)
 {
@@ -115,10 +115,10 @@ static int8_t selectObject(const Object (&objects)[8], uint8_t num_objects,
     uint32_t now = objects[best_match].Time;
     if(tracked_object.recent_update(now)) {
         // have a track, find the closest detection
-        best_distance = tracked_object.distanceSq(objects[best_match]);
+        best_distance = tracked_object.DistanceSq(objects[best_match]);
         for (uint8_t i = 1; i < num_objects; i++) {
             int32_t distance;
-            distance = tracked_object.distanceSq(objects[i]);
+            distance = tracked_object.DistanceSq(objects[i]);
             if (distance < best_distance) {
                 best_distance = distance;
                 best_match = i;
@@ -126,11 +126,11 @@ static int8_t selectObject(const Object (&objects)[8], uint8_t num_objects,
         }
     } else {
         // no track, pick the nearest object
-        best_distance = objects[best_match].radius();
+        best_distance = objects[best_match].GetRadius();
         best_distance *= best_distance;
         for (uint8_t i = 1; i < num_objects; i++) {
             int32_t distance;
-            distance = objects[i].radius();
+            distance = objects[i].GetRadius();
             distance *= distance;
             if (distance < best_distance) {
                 best_distance = distance;
@@ -142,18 +142,18 @@ static int8_t selectObject(const Object (&objects)[8], uint8_t num_objects,
     return best_match;
 }
 
-static int8_t selectClosestObject(const Object (&objects)[8], uint8_t num_objects,
+static int8_t selectClosestObject(const Target (&objects)[8], uint8_t num_objects,
                            const struct Track &tracked_object,
                            int32_t *selected_distance)
 {
     int8_t best_match = 0;
     int32_t best_distance;
-    best_distance = objects[best_match].radius();
+    best_distance = objects[best_match].GetRadius();
     best_distance *= best_distance;
     for (uint8_t i = 1; i < num_objects; i++)
     {
         int32_t distance;
-        distance = objects[i].radius();
+        distance = objects[i].GetRadius();
         distance *= distance;
         if (distance < best_distance)
         {
@@ -164,7 +164,7 @@ static int8_t selectClosestObject(const Object (&objects)[8], uint8_t num_object
     uint32_t now = objects[best_match].Time;
     if(tracked_object.recent_update(now))
     {
-        *selected_distance = tracked_object.distanceSq(objects[best_match]);
+        *selected_distance = tracked_object.DistanceSq(objects[best_match]);
     }
     else
     {

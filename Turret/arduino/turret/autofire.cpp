@@ -89,7 +89,6 @@ void restoreAutoFireParameters(void) {
 
 #include "turretController.h"
 #include "autofire.h"
-#include "imu.h"
 #include "sbus.h"
 #include "telemetryController.h"
 #include "fixedpoint.h"

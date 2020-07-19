@@ -41,9 +41,9 @@ bool Track::recent_update(uint32_t now) const {
 
 
 // distance squared in mm
-int32_t Track::distanceSq(const Object &detection) const {
-    int32_t dx = (x/16-detection.xcoord());
-    int32_t dy = (y/16-detection.ycoord());
+int32_t Track::DistanceSq(const Target &detection) const {
+    int32_t dx = (x/16-detection.GetXCoord());
+    int32_t dy = (y/16-detection.GetYCoord());
     return dx*dx + dy*dy;
 }
 
@@ -89,9 +89,9 @@ int32_t Track::predict(uint32_t now, int16_t omegaZ) {
     return dt;
 }
 
-void Track::update(const Object& best_match) {
-    int32_t mx = best_match.xcoord();
-    int32_t my = best_match.ycoord();
+void Track::update(const Target& best_match) {
+    int32_t mx = best_match.GetXCoord();
+    int32_t my = best_match.GetYCoord();
     if(!recent_update(best_match.Time)) {
         x = mx*16;
         y = my*16;

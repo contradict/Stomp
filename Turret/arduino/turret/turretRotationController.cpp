@@ -195,9 +195,9 @@ void TurretRotationController::Safe()
     setState(ESafe);
 }
 
-int32_t TurretRotationController::GetTurretSpeed() 
+int32_t TurretRotationController::GetMotorSpeed() 
 { 
-    return m_turretSpeedCurrent; 
+    return m_motorSpeedCurrent; 
 }
 
 int16_t TurretRotationController::GetTurretAngle()
@@ -225,7 +225,7 @@ void TurretRotationController::RestoreParams()
 void TurretRotationController::SendTelem()
 {
     m_pAutoAim->SendTelem();
-    Telem.SendTurretRotationTelemetry(m_state, m_turretSpeedCurrent);
+    Telem.SendTurretRotationTelemetry(m_state, m_motorSpeedCurrent);
 }
 
 //  ====================================================================
@@ -268,7 +268,7 @@ void TurretRotationController::updateSpeed()
 
         default:
         {
-            if (m_turretSpeedCurrent != 0)
+            if (m_motorSpeedCurrent != 0)
             {
                 setSpeed(0);
             }
@@ -286,14 +286,14 @@ void TurretRotationController::updateAngle()
 
 void TurretRotationController::setSpeed(int32_t p_speed)
 {
-    m_turretSpeedCurrent = p_speed;
-    m_turretSpeedCurrent = constrain(p_speed, k_minSpeed, k_maxSpeed);
+    m_motorSpeedCurrent = p_speed;
+    m_motorSpeedCurrent = constrain(p_speed, k_minSpeed, k_maxSpeed);
 
     //  send "@nn!G mm" over software serial. mm is a command 
     //  value, -1000 to 1000. nn is node number in RoboCAN network.
     
     s_TurretRotationMotorSerial.print("@01!G ");
-    s_TurretRotationMotorSerial.println(m_turretSpeedCurrent);
+    s_TurretRotationMotorSerial.println(m_motorSpeedCurrent);
 }
 
 void TurretRotationController::setState(controllerState p_state)
@@ -325,7 +325,7 @@ void TurretRotationController::setState(controllerState p_state)
     {
         case EInit:
         {
-            m_turretSpeedCurrent = 0;
+            m_motorSpeedCurrent = 0;
             m_turretAngleCurrent = k_invalidTurretAngleRead;
 
             m_pAutoAim = new AutoAim();
