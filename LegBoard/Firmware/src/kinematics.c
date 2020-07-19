@@ -36,6 +36,7 @@ static struct GeometryConstants geometry_constants __attribute__ ((section (".st
         },
         { //LIFT
             .link_pivot = 0.041 + 0.0I,
+            .cylinder_pivot = -0.068 - 0.052I,
             .l1 = 0.11176,
             .l2 = 0.16002,
         }
