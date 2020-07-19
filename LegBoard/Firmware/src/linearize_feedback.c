@@ -49,7 +49,7 @@ static const float MAX_ENFIELD_SCALE = 10.0f / __MAX_DAC_OUTPUT;
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 static const float JOINT_ANGLE_SCALE = 1000.0f;
 static const float VOLTAGE_SCALE = 1000.0f;
-static const float CYLINDER_LENGTH_SCALE = 1000.0f;
+static const float CYLINDER_LENGTH_SCALE = 10000.0f;
 
 extern SPI_HandleTypeDef DAC_SPIHandle;
 extern ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
@@ -116,15 +116,15 @@ static struct SensorCalibrationStorage calibration_constants_stored __attribute_
     },
 
     .cylinder_length_min = {
-        5.8f, // CURL
-        1.080f, // SWING
-        1.07f, // LIFT
+        0.14732f, // CURL
+        0.027432f, // SWING
+        0.027178f, // LIFT
     },
 
     .cylinder_length_max = {
-        6.8f, // CURL
-        4.065f, // SWING
-        3.05f, // LIFT
+        0.17272f, // CURL
+        0.0653288f, // SWING
+        0.07747f, // LIFT
     }
 };
 

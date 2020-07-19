@@ -9,8 +9,8 @@
 
 // See Kinematics.md
 
-static const float JOINT_ANGLE_SCALE = 1000.0f;
-static const float LENGTH_SCALE = 1000.0f;
+static const float JOINT_ANGLE_SCALE = 1e3f;
+static const float LENGTH_SCALE = 1e4f;
 
 struct Link {
     complex float link_pivot;
@@ -25,19 +25,19 @@ struct GeometryConstants {
 static struct GeometryConstants geometry_constants __attribute__ ((section (".storage.linearize"))) = {
     .links = {
         { //CURL
-            .cylinder_pivot = 4.287 - 0.44I,
-            .l1 = 2.5,
-            .l2 = 8.0,
+            .cylinder_pivot = 0.041 - 0.064I,
+            .l1 = 0.0635,
+            .l2 = 0.2032,
         },
         { //SWING
-            .cylinder_pivot = 3.603 + 2.572I,
-            .l1 = 3.90,
+            .cylinder_pivot = -0.092 - 0.065I,
+            .l1 = 0.09906,
             .l2 = 0.0,
         },
         { //LIFT
-            .link_pivot = 4.287 + 2.06I,
-            .l1 = 4.4,
-            .l2 = 6.3,
+            .link_pivot = 0.041 + 0.0I,
+            .l1 = 0.11176,
+            .l2 = 0.16002,
         }
     }
 };

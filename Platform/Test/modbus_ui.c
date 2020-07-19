@@ -60,6 +60,7 @@ struct SensorContext {
     struct ErrorContext error[3];
 };
 
+#define LENGTH_SCALE 1e4f
 const char *sensor_param_names[NUM_SENSOR_PARAMS] = {
        " Vmin",    " Vmax",   " Tmin",     " Tmax",
        " lmin",    " lmax"};
@@ -70,7 +71,7 @@ uint16_t sensor_param_register[NUM_SENSOR_PARAMS] = {
     HCylinderLengthMin, HCylinderLengthMax};
 const float sensor_param_scale[NUM_SENSOR_PARAMS] = {
     1000.0f, 1000.0f, 1000.0f / 180.0f * M_PI, 1000.0f / 180.0f * M_PI,
-    1000.0f, 1000.0f};
+    LENGTH_SCALE, LENGTH_SCALE};
 const int16_t sensor_param_min[NUM_SENSOR_PARAMS] = {
     0, 0, -M_PI*1000, -M_PI*1000, 0, 0};
 const int16_t sensor_param_max[NUM_SENSOR_PARAMS] = {
@@ -245,7 +246,7 @@ void sensor_display(modbus_t *mctx, void *sctx)
         clrtoeol();
         snprintf(display, sizeof(display), " s: %5.3fV a: %06.1fd f: %06.3fV l: %06.3fin b: %04x r: %04x",
                  sc->sensor_data[j][0] / 1000.0f, sc->sensor_data[j][1] / 1000.0f * 180.0f / M_PI,
-                 sc->sensor_data[j][2] / 1000.0f, sc->sensor_data[j][3] / 1000.0f,
+                 sc->sensor_data[j][2] / 1000.0f, sc->sensor_data[j][3] / LENGTH_SCALE,
                  sc->sensor_data[j][4], sc->sensor_data[j][5]);
         addstr(display);
         move(4 + 4 * j + 2, 2);
@@ -910,8 +911,8 @@ void position_init(modbus_t *mctx, void *pctx)
     {
         for(int i=0;i<3;i++)
         {
-            pc->position_display[i] = ((int16_t *)pos)[i] / 1000.0f;
-            pc->position_command[i] = ((int16_t *)pos)[i] / 1000.0f;
+            pc->position_display[i] = ((int16_t *)pos)[i] / LENGTH_SCALE;
+            pc->position_command[i] = ((int16_t *)pos)[i] / LENGTH_SCALE;
         }
     }
     clear();
@@ -928,7 +929,7 @@ void position_display(modbus_t *mctx, void *pctx)
     if(err != -1)
     {
         for(int i=0;i<3;i++)
-            pc->position_display[i] = ((int16_t *)pos)[i] / 1000.0f;
+            pc->position_display[i] = ((int16_t *)pos)[i] / LENGTH_SCALE;
     }
  
     move(5, 2);
@@ -950,7 +951,7 @@ void position_go(modbus_t *mctx, struct PositionContext *pc)
     uint16_t pos[3];
     int err;
     for(int c=0;c<3;c++)
-        ((int16_t *)pos)[c] = 1000.0f * pc->position_command[c];
+        ((int16_t *)pos)[c] = LENGTH_SCALE * pc->position_command[c];
     err = modbus_write_registers(mctx, ToeXPosition, 3, pos);
     showerror(&pc->error, "Go position failed", err, NULL);
 }
