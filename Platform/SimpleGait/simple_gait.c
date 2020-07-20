@@ -53,21 +53,8 @@ static const uint8_t LegAddress[NUM_LEGS] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60}
 static const float SimpleGaitPhase[NUM_LEGS] = {0.0f, 0.5, 0.0f, 0.5, 0.0f, 0.5};
 
 #define SimpleStepPoints 4
-// static const float StepShape[SimpleStepPoints][3] = {
-// /*                     X     Y     Z */
-// /* Forward down  */ {21.0,  8.0, -23},
-// /* Backward down */ {21.0, -8.0, -23},
-// /* Backward up   */ {21.0, -8.0, -17},
-// /* Forward up    */ {21.0,  8.0, -17},
-// };
-// static const float StepShape[3][SimpleStepPoints] = {
-// // Forward down Backward down Backward up Forward up
-// /* X */ { 21.0,       21.0,        21.0,      21.0},
-// /* Y */ {  8.0,       -8.0,        -8.0,       8.0},
-// /* Z */ {-23.0,      -23.0,       -17.0,     -17.0},
-// };
-static const float StepShapeX[SimpleStepPoints] =         { 21.0f,  21.0f,  21.0f,  21.0f};
-static const float StepShapeY[SimpleStepPoints] =         {  8.0f,  -8.0f,  -8.0f,   8.0f};
+static const float StepShapeX[SimpleStepPoints] =         { 19.0f,  19.0f,  19.0f,  19.0f};
+static const float StepShapeY[SimpleStepPoints] =         {  7.5f,  -7.5f,  -7.5f,   7.5f};
 static const float StepShapeZ[SimpleStepPoints] =         {-23.0f, -23.0f, -17.0f, -17.0f};
 static const float StepShapePhase[SimpleStepPoints + 1] = {  0.0f,   0.6f,   0.7f,   0.9f, 1.0f};
 
