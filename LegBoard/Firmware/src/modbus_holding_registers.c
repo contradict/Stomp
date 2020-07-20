@@ -42,19 +42,19 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .write = Kinematics_WriteToePosition,
     },
     {
-        .address = JointAngleSwing,
+        .address = JointAngleCurl,
         .context = (void *)0,
         .read = Kinematics_ReadJointAngle,
         .write = Kinematics_WriteJointAngle,
     },
     {
-        .address = JointAngleLift,
+        .address = JointAngleSwing,
         .context = (void *)1,
         .read = Kinematics_ReadJointAngle,
         .write = Kinematics_WriteJointAngle,
     },
     {
-        .address = JointAngleCurl,
+        .address = JointAngleLift,
         .context = (void *)2,
         .read = Kinematics_ReadJointAngle,
         .write = Kinematics_WriteJointAngle,
