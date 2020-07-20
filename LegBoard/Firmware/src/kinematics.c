@@ -155,15 +155,13 @@ int Kinematics_WriteToePosition(void *ctx, uint16_t v)
 
 int Kinematics_ReadJointAngle(void *ctx, uint16_t *v)
 {
-    int coordinate = (int)ctx;
+    int joint = (int)ctx;
     float joint_angle[JOINT_COUNT];
-    int16_t pos;
 
-    if((coordinate < 0) || (coordinate > 2))
+    if((joint < 0) || (joint > 2))
         return ILLEGAL_DATA_ADDRESS;
     Linearize_GetJointAngles(joint_angle);
-    pos = roundf(JOINT_ANGLE_SCALE * joint_angle[coordinate]);
-    *v = *((uint16_t *)&pos);
+    *(int16_t *)v = roundf(joint_angle[joint] * JOINT_ANGLE_SCALE);
     return 0;
 }
 
