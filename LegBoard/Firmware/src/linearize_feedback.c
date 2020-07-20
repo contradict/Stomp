@@ -123,7 +123,7 @@ static struct SensorCalibrationStorage calibration_constants_stored __attribute_
 
     .cylinder_length_max = {
         0.17272f, // CURL
-        0.0653288f, // SWING
+        0.103251f, // SWING
         0.07747f, // LIFT
     }
 };

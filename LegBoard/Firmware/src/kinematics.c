@@ -25,18 +25,18 @@ struct GeometryConstants {
 static struct GeometryConstants geometry_constants __attribute__ ((section (".storage.linearize"))) = {
     .links = {
         { //CURL
-            .cylinder_pivot = 0.041 - 0.064I,
+            .cylinder_pivot = 0.04064 - 0.06350I,
             .l1 = 0.0635,
             .l2 = 0.2032,
         },
         { //SWING
-            .cylinder_pivot = -0.092 - 0.065I,
+            .cylinder_pivot = -0.09152 - 0.06534I,
             .l1 = 0.09906,
             .l2 = 0.0,
         },
         { //LIFT
-            .link_pivot = 0.041 + 0.0I,
-            .cylinder_pivot = -0.068 - 0.052I,
+            .link_pivot = 0.04064 + 0.0I,
+            .cylinder_pivot = -0.06826 - 0.05232I,
             .l1 = 0.11176,
             .l2 = 0.16002,
         }
