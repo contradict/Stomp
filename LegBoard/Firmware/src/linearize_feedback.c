@@ -372,7 +372,7 @@ static void Linearize_Thread(const void* args)
             DAC_IO_LDAC(false);
             compute_joint_angles(channel_values, sensor_voltage, joint_angle);
             Kinematics_CylinderEdgeLengths(joint_angle, cylinder_edge_length);
-            Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_values);
+            Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_values, MAX_ENFIELD_SCALE);
             Linearize_ComputeFeedback(cylinder_scaled_values, feedback_voltage, feedback_code);
             compute_led_brightness(sensor_voltage);
             sendjoint = 0;
@@ -395,17 +395,18 @@ void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
 }
 
 void Linearize_ScaleCylinders(const float cylinder_edge_length[JOINT_COUNT],
-                              float scaled_values[JOINT_COUNT])
+                              float scaled_values[JOINT_COUNT],
+                              float scalemax)
 {
     float scale, offset;
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
         scale =  FEEDBACK_SCALE(calibration_constants_stored.cylinder_length_min[joint],
                                 calibration_constants_stored.cylinder_length_max[joint],
-                                0.0, MAX_ENFIELD_SCALE);
+                                0.0f, scalemax);
         offset = FEEDBACK_OFFSET(calibration_constants_stored.cylinder_length_min[joint],
                                  calibration_constants_stored.cylinder_length_max[joint],
-                                 0.0, MAX_ENFIELD_SCALE);
+                                 0.0f, scalemax);
         scaled_values[joint] = scale*cylinder_edge_length[joint] + offset;
     }
 }
