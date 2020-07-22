@@ -54,7 +54,7 @@ static const float SimpleGaitPhase[NUM_LEGS] = {0.0f, 0.5, 0.0f, 0.5, 0.0f, 0.5}
 
 #define SimpleStepPoints 4
 static const float StepShapeX[SimpleStepPoints] =         { 19.0f,  19.0f,  19.0f,  19.0f};
-static const float StepShapeY[SimpleStepPoints] =         {  7.5f,  -7.5f,  -7.5f,   7.5f};
+static const float StepShapeY[SimpleStepPoints] =         {  7.0f,  -7.0f,  -7.0f,   7.0f};
 static const float StepShapeZ[SimpleStepPoints] =         {-23.0f, -23.0f, -17.0f, -17.0f};
 static const float StepShapePhase[SimpleStepPoints + 1] = {  0.0f,   0.6f,   0.7f,   0.9f, 1.0f};
 
