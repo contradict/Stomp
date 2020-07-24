@@ -60,6 +60,7 @@ static const float StepShapeY[SimpleStepPoints] =         {  7.0f,  -7.0f,  -7.0
 static const float StepShapeZ[SimpleStepPoints] =         {-23.0f, -23.0f, -17.0f, -17.0f};
 static const float StepShapePhase[SimpleStepPoints + 1] = {  0.0f,   0.6f,   0.7f,   0.9f, 1.0f};
 
+static const float StepYSign[NUM_LEGS] = {-1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f};
 
 int find_interpolation_index(const float *nodes, size_t length, float x)
 {
@@ -184,6 +185,7 @@ int compute_leg_position(enum LegIdentity leg, float phase, float (*toe_position
     interpolate_value(StepShapePhase, StepShapeX, SimpleStepPoints, index, leg_phase, &((*toe_position)[0]));
     interpolate_value(StepShapePhase, StepShapeY, SimpleStepPoints, index, leg_phase, &((*toe_position)[1]));
     interpolate_value(StepShapePhase, StepShapeZ, SimpleStepPoints, index, leg_phase, &((*toe_position)[2]));
+    (*toe_position)[1] *= StepYSign[leg];
     return 0;
 }
 
