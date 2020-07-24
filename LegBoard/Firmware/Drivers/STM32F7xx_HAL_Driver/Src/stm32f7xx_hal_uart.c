@@ -2248,9 +2248,10 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
           /* Abort the UART DMA Rx channel */
           if (huart->hdmarx != NULL)
           {
-              /* This is a normal RX, don't call the error callback */
-            huart->hdmarx->XferAbortCallback = NULL;
-
+            /* Set the UART DMA Abort callback :
+             * will lead to call HAL_UART_ErrorCallback() at end
+             * of DMA abort procedure */
+            huart->hdmarx->XferAbortCallback = UART_DMAAbortOnError;
             /* Abort DMA RX */
             if (HAL_DMA_Abort_IT(huart->hdmarx) != HAL_OK)
             {
