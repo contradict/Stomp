@@ -30,7 +30,7 @@ include $(TEMPLATEROOT)/Makefile.common
 
 # Linearization documentation
 
-Kinematics.pdf: Kinematics.md LiftCurlGeometry.jpg
+Kinematics.pdf: Kinematics.md LiftCurlGeometryCplx.jpg SwingGeometryCplx.jpg LegDrawing.png
 	pandoc Kinematics.md -o $@
 
 src/kinematics.o: src/kinematics.c inc/kinematics.h inc/linearize_feedback.h inc/kinematics.h inc/modbus.h inc/enfield.h

@@ -120,7 +120,7 @@ void MODBUS_UART_Init()
     modbus_uart.Init.StopBits = UART_STOPBITS_1;
     //modbus_uart.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_DMADISABLEONERROR_INIT;
     HAL_RS485Ex_Init(&modbus_uart, UART_DE_POLARITY_HIGH, 8, 8);
-    LL_USART_SetRxTimeout(MODBUS_UART_Instance, 20);
+    LL_USART_SetRxTimeout(modbus_uart.Instance, 20);
 }
 
 uint16_t MODBUS_crc(uint8_t* buffer, uint16_t count)
@@ -589,7 +589,7 @@ void MODBUS_Thread(const void *args)
     HAL_UART_Receive_DMA(&modbus_uart, st->rxBuffer, MAXPACKET);
     SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
     LL_USART_EnableIT_RTO(modbus_uart.Instance);
-    LL_USART_EnableRxTimeout(MODBUS_UART_Instance);
+    LL_USART_EnableRxTimeout(modbus_uart.Instance);
     while(1)
     {
         // waitfor something to happen
@@ -645,7 +645,7 @@ void MODBUS_Thread(const void *args)
             }
             SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
             LL_USART_EnableIT_RTO(modbus_uart.Instance);
-            LL_USART_EnableRxTimeout(MODBUS_UART_Instance);
+            LL_USART_EnableRxTimeout(modbus_uart.Instance);
         }
     }
 }

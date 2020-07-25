@@ -60,17 +60,18 @@ struct SensorContext {
     struct ErrorContext error[3];
 };
 
+#define LENGTH_SCALE 1e2f
 const char *sensor_param_names[NUM_SENSOR_PARAMS] = {
        " Vmin",    " Vmax",   " Tmin",     " Tmax",
        " lmin",    " lmax"};
 const char *sensor_param_formats[NUM_SENSOR_PARAMS] = {
-    "%6.3f", "%6.3f", "%6.1f", "%6.1f", "%6.3f", "%6.3f"};
+    "%6.3f", "%6.3f", "%6.1f", "%6.1f", "%6.2f", "%6.2f"};
 uint16_t sensor_param_register[NUM_SENSOR_PARAMS] = {
     HSensorVmin, HSensorVmax, HSensorThetamin, HSensorThetamax,
     HCylinderLengthMin, HCylinderLengthMax};
 const float sensor_param_scale[NUM_SENSOR_PARAMS] = {
     1000.0f, 1000.0f, 1000.0f / 180.0f * M_PI, 1000.0f / 180.0f * M_PI,
-    1000.0f, 1000.0f};
+    LENGTH_SCALE, LENGTH_SCALE};
 const int16_t sensor_param_min[NUM_SENSOR_PARAMS] = {
     0, 0, -M_PI*1000, -M_PI*1000, 0, 0};
 const int16_t sensor_param_max[NUM_SENSOR_PARAMS] = {
@@ -144,7 +145,7 @@ static char *joint_name[3] = {"Curl ", "Swing", "Lift "};
 
 static void input_display(int y, int x, struct InputContext *ic);
 static enum InputAction input_handle_key(struct InputContext *ic, int ch, float *v);
-static void showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt);
+static int showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt);
 void error_display(int y, int x, struct ErrorContext *ec);
 
 void sensor_init_joint(modbus_t *mctx, struct SensorContext *sc, int j)
@@ -174,6 +175,7 @@ void sensor_init(modbus_t *mctx, void *sctx)
     sc->param_max = NUM_SENSOR_PARAMS;
     sc->minmax_mode = false;
     sc->stoponerror = false;
+    sc->joint = 0;
     sc->input.input_pos = 0;
     sc->input.input_string[0] = 0;
     sc->input.input_search = false;
@@ -210,8 +212,8 @@ void sensor_display(modbus_t *mctx, void *sctx)
                 memcpy(sc->sensor_data[j], data, sizeof(data));
                 if(sc->minmax_mode)
                 {
-                    sc->min_v[j] = MIN(sc->min_v[j], sc->current_v[j]);
-                    sc->max_v[j] = MAX(sc->max_v[j], sc->current_v[j]);
+                    sc->min_v[j] = MIN(sc->min_v[j], sc->current_v[j] / sensor_param_scale[0]);
+                    sc->max_v[j] = MAX(sc->max_v[j], sc->current_v[j] / sensor_param_scale[1]);
                 }
             }
             else
@@ -243,9 +245,9 @@ void sensor_display(modbus_t *mctx, void *sctx)
         error_display(4 + 4 * j + 0, 2 + 15, &sc->error[j]);
         move(4 + 4 * j + 1, 2);
         clrtoeol();
-        snprintf(display, sizeof(display), " s: %5.3fV a: %06.1fd f: %06.3fV l: %06.3fin b: %04x r: %04x",
+        snprintf(display, sizeof(display), " s: %5.3fV a: %06.1fd f: %06.3fV l: %06.2fcm b: %04x r: %04x",
                  sc->sensor_data[j][0] / 1000.0f, sc->sensor_data[j][1] / 1000.0f * 180.0f / M_PI,
-                 sc->sensor_data[j][2] / 1000.0f, sc->sensor_data[j][3] / 1000.0f,
+                 sc->sensor_data[j][2] / 1000.0f, sc->sensor_data[j][3] / LENGTH_SCALE,
                  sc->sensor_data[j][4], sc->sensor_data[j][5]);
         addstr(display);
         move(4 + 4 * j + 2, 2);
@@ -268,12 +270,12 @@ void sensor_display(modbus_t *mctx, void *sctx)
         clrtoeol();
         if(sc->minmax_mode)
         {
-            printw(sensor_param_formats[0], sc->min_v[j] / sensor_param_scale[0]);
+            printw(sensor_param_formats[0], sc->min_v[j]);
             move(4 + 4 * j + 3, 12 + 6 + 2);
-            printw(sensor_param_formats[1], sc->max_v[j] / sensor_param_scale[1]);
+            printw(sensor_param_formats[1], sc->max_v[j]);
         }
     }
-    move(4 + 4*sc->joint + 2, 2 + 13*sc->param);
+    move(4 + 4*sc->joint + 2, 2 + 12*sc->param);
 }
 
 void set_sensor_param(modbus_t *mctx, struct SensorContext *sc, float value)
@@ -372,8 +374,10 @@ void sensor_handle_key(modbus_t *mctx, void *sctx, int ch)
             sc->minmax_mode ^= true;
             if(sc->minmax_mode)
             {
-                memcpy(sc->min_v, sc->current_v, sizeof(sc->min_v));
-                memcpy(sc->max_v, sc->current_v, sizeof(sc->max_v));
+                for(int j=0;j<JOINT_COUNT;j++)
+                {
+                    sc->min_v[j] = sc->max_v[j] = sc->current_v[j] / sensor_param_scale[0];
+                }
             }
             break;
         case 'C':
@@ -494,20 +498,22 @@ enum InputAction input_handle_key(struct InputContext *ic, int ch, float *v)
     return ret;
 }
 
-void showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt)
+int showerror(struct ErrorContext *ec, const char *msg, int err, struct timeval *dt)
 {
+    int modbus_err = errno;
     if(err == -1 && !ec->iserror)
     {
         if(dt)
         {
-            snprintf(ec->error, 256, "%s(%ld): %s", msg, dt->tv_usec, modbus_strerror(errno));
+            snprintf(ec->error, 256, "%s(%ld): %s", msg, dt->tv_usec, modbus_strerror(modbus_err));
         }
         else
         {
-            snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(errno));
+            snprintf(ec->error, 256, "%s: %s", msg, modbus_strerror(modbus_err));
         }
         ec->iserror = true;
     }
+    return modbus_err;
 }
 
 void servo_init(modbus_t *mctx, void *sctx)
@@ -900,14 +906,14 @@ void position_init(modbus_t *mctx, void *pctx)
     pc->input.input_search = false;
     pc->input.input_fields = coordinate_names;
     pc->input.field_count = 3;
-    err = modbus_read_registers(mctx, 0x40, 3, pos);
+    err = modbus_read_registers(mctx, ToeXPosition, 3, pos);
     showerror(&pc->error, "Read initial position failed", err, NULL);
     if(err != -1)
     {
         for(int i=0;i<3;i++)
         {
-            pc->position_display[i] = pos[i] / 1000.0f;
-            pc->position_command[i] = pos[i] / 1000.0f;
+            pc->position_display[i] = ((int16_t *)pos)[i] / LENGTH_SCALE;
+            pc->position_command[i] = ((int16_t *)pos)[i] / LENGTH_SCALE;
         }
     }
     clear();
@@ -919,12 +925,12 @@ void position_display(modbus_t *mctx, void *pctx)
     int err;
     uint16_t pos[3];
 
-    err = modbus_read_registers(mctx, 0x40, 3, pos);
+    err = modbus_read_registers(mctx, ToeXPosition, 3, pos);
     showerror(&pc->error, "Read position failed", err, NULL);
     if(err != -1)
     {
         for(int i=0;i<3;i++)
-            pc->position_display[i] = pos[i] / 1000.0f;
+            pc->position_display[i] = ((int16_t *)pos)[i] / LENGTH_SCALE;
     }
  
     move(5, 2);
@@ -946,8 +952,8 @@ void position_go(modbus_t *mctx, struct PositionContext *pc)
     uint16_t pos[3];
     int err;
     for(int c=0;c<3;c++)
-        pos[c] = 1000.0f * pc->position_command[c];
-    err = modbus_write_registers(mctx, 0x40, 3, pos);
+        ((int16_t *)pos)[c] = LENGTH_SCALE * pc->position_command[c];
+    err = modbus_write_registers(mctx, ToeXPosition, 3, pos);
     showerror(&pc->error, "Go position failed", err, NULL);
 }
 

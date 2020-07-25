@@ -224,6 +224,21 @@ void Enfield_SetCommand(uint16_t command[JOINT_COUNT])
     }
 }
 
+void Enfield_SetCommandNow(uint16_t command[JOINT_COUNT])
+{
+    struct EnfieldRequest *req;
+    for(int j=0;j<JOINT_COUNT;j++)
+    {
+        req = Enfield_AllocRequest(j);
+        req->w = SetDigitalCommand;
+        req->write = true;
+        req->value = CLIP(command[j], 0, 4095);
+        req->responseQ = NULL;
+        req->response = NULL;
+        Enfield_Request(req);
+    }
+}
+
 static void Curl_UART_Init()
 {
     enfield_uart[JOINT_CURL].Instance = CURL_UART_Instance;
@@ -364,15 +379,21 @@ void Enfield_Thread(const void *arg)
                 LED_BlinkOne(st->joint, 2, 255, 20);
                 if(st->req->write)
                 {
-                    st->resp->value = st->req->value;
-                    st->resp->err = Enfield_Write(st, st->req->w, &st->resp->value);
+                    err = Enfield_Write(st, st->req->w, &st->req->value);
+                    if(st->resp)
+                    {
+                        st->resp->err = err;
+                        st->resp->value = st->req->value;
+                    }
                 }
-                else
+                else if(st->resp)
                 {
-                    st->resp->err = Enfield_Get(st, st->req->r, &st->resp->value);
+                    err = st->resp->err = Enfield_Get(st, st->req->r, &st->resp->value);
                 }
-                osMailPut(st->req->responseQ, st->resp);
+                if(st->resp && st->req->responseQ) osMailPut(st->req->responseQ, st->resp);
                 osMailFree(st->commandQ, st->req);
+                if(err != 0)
+                    st->loopstate = StPing;
                 st->state = StWaitRequest;
                 break;
             case StUpdate:
@@ -518,7 +539,6 @@ static int Enfield_Transfer(struct EnfieldContext *enf,  uint8_t r, uint16_t *v)
     // don't wait for unacked commands
     if((r == SetZeroGains) || (r == SetSaveConfiguration))
     {
-        osDelay(500);
         return Enfield_WaitTransmit(enf);
     }
     err = Enfield_ReceiveResponse(enf);
@@ -536,6 +556,11 @@ static int Enfield_Transfer(struct EnfieldContext *enf,  uint8_t r, uint16_t *v)
         return err;
     }
     err =  Enfield_WaitReceive(enf, v);
+    if(err == ENFIELD_CRCFAIL)
+    {
+        uint8_t dummy;
+        while(HAL_TIMEOUT != HAL_UART_Receive(enf->uart, &dummy, 1, 0));
+    }
     return err;
 }
 

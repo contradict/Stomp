@@ -14,7 +14,7 @@
 // theta = (V - Vmin) / (Vmax - Vmin) * (Thetamax - Thetamin) + Thetamin
 // theta = V * (Thetamax - Thetamin) / (Vmax - Vmin) + (Thetamin - (Vmin * (Thetamax - Thetamin) / (Vmax - Vmin)))
 #define THETA_SCALE(Vmin, Vmax, Thetamin, Thetamax) (((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
-#define THETA_OFFSET(Vmin, Vmax, Thetamin, Thetamax)  ((Thetamin) - Vmin * ((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
+#define THETA_OFFSET(Vmin, Vmax, Thetamin, Thetamax)  ((Thetamin) - (Vmin) * ((Thetamax) - (Thetamin)) / ((Vmax) - (Vmin)))
 
 // length = sqrt(l1**2 + l2**2 - l1 * l2 * cos(theta + phi))
 #define SHAPE_OFFSET(l1, l2) (l1*l1 + l2*l2)
@@ -45,11 +45,11 @@ static const float ADC_VREF = 3.3f;
 static const float ADC_MAX_CODE = (float)((1<<12) - 1);
 static const float JOINT_DIVIDER = 2.0f / 3.0f;
 static const float MAX_DAC_OUTPUT = __MAX_DAC_OUTPUT;
-static const float MAX_ENFIELD_SCALE = 9.99f / __MAX_DAC_OUTPUT; // Limit Enfield voltage, it wraps above 10.0
+static const float MAX_ENFIELD_SCALE = 10.0f / __MAX_DAC_OUTPUT;
 static const float DAC_MAX_CODE =  (float)((1<<12)-1);
 static const float JOINT_ANGLE_SCALE = 1000.0f;
 static const float VOLTAGE_SCALE = 1000.0f;
-static const float CYLINDER_LENGTH_SCALE = 1000.0f;
+static const float CYLINDER_LENGTH_SCALE = 10000.0f;
 
 extern SPI_HandleTypeDef DAC_SPIHandle;
 extern ADC_HandleTypeDef feedback_adcs[JOINT_COUNT];
@@ -116,15 +116,15 @@ static struct SensorCalibrationStorage calibration_constants_stored __attribute_
     },
 
     .cylinder_length_min = {
-        5.8f, // CURL
-        1.080f, // SWING
-        1.07f, // LIFT
+        0.14732f, // CURL
+        0.027432f, // SWING
+        0.027178f, // LIFT
     },
 
     .cylinder_length_max = {
-        6.8f, // CURL
-        4.065f, // SWING
-        3.05f, // LIFT
+        0.17272f, // CURL
+        0.103251f, // SWING
+        0.07747f, // LIFT
     }
 };
 
@@ -266,8 +266,7 @@ int Linearize_ReadAngle(void *ctx, uint16_t *v)
 int Linearize_ReadLength(void *ctx, uint16_t *v)
 {
     GETJOINT(joint);
-    *v = roundf((cylinder_edge_length[joint] -
-                 calibration_constants_stored.cylinder_length_min[joint]) * JOINT_ANGLE_SCALE);
+    *v = roundf(cylinder_edge_length[joint] * CYLINDER_LENGTH_SCALE);
     return 0;
 }
 
@@ -373,7 +372,7 @@ static void Linearize_Thread(const void* args)
             DAC_IO_LDAC(false);
             compute_joint_angles(channel_values, sensor_voltage, joint_angle);
             Kinematics_CylinderEdgeLengths(joint_angle, cylinder_edge_length);
-            Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_values);
+            Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_values, MAX_ENFIELD_SCALE);
             Linearize_ComputeFeedback(cylinder_scaled_values, feedback_voltage, feedback_code);
             compute_led_brightness(sensor_voltage);
             sendjoint = 0;
@@ -396,17 +395,18 @@ void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
 }
 
 void Linearize_ScaleCylinders(const float cylinder_edge_length[JOINT_COUNT],
-                              float scaled_values[JOINT_COUNT])
+                              float scaled_values[JOINT_COUNT],
+                              float scalemax)
 {
     float scale, offset;
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
         scale =  FEEDBACK_SCALE(calibration_constants_stored.cylinder_length_min[joint],
                                 calibration_constants_stored.cylinder_length_max[joint],
-                                0.0, MAX_ENFIELD_SCALE);
+                                0.0f, scalemax);
         offset = FEEDBACK_OFFSET(calibration_constants_stored.cylinder_length_min[joint],
                                  calibration_constants_stored.cylinder_length_max[joint],
-                                 0.0, MAX_ENFIELD_SCALE);
+                                 0.0f, scalemax);
         scaled_values[joint] = scale*cylinder_edge_length[joint] + offset;
     }
 }
