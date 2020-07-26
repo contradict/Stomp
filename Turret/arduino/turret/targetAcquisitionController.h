@@ -1,13 +1,13 @@
 #pragma once
-#include <stdint.h>
-#include "track.h"
 
-enum AutoFireState {
-    AF_NO_TARGET = 0,
-    AF_OMEGAZ_LOCKOUT,
-    AF_NO_HIT,
-    AF_HIT
-};
+#include "target.h"
+#include "leddar_io.h"
+
+//  ====================================================================
+//
+//  Forward declerations
+//
+//  ====================================================================
 
 //  ====================================================================
 //
@@ -15,7 +15,7 @@ enum AutoFireState {
 //
 //  ====================================================================
 
-class AutoFire
+class TargetAcquisitionController
 {
 
     //  ====================================================================
@@ -26,11 +26,13 @@ class AutoFire
 
 public:
 
-    struct Params 
+    struct Params
     {
-        int32_t xtol, ytol;
-        int32_t max_omegaZ;   // rad/s * 2048 = 50 deg/sec
-    } __attribute__((packed));
+        int32_t objectSizeMin;      // object sizes are in mm
+        int32_t objectSizeMax;      // mm of circumferential size
+        int32_t edgeCallThreshold;  // cm for edge in leddar returns
+        bool closestOnly;           // Only inspect closest object
+    };
 
     //  ====================================================================
     //
@@ -42,22 +44,23 @@ public:
 
     void Init();
     void Update();
+    
+    Target* GetBestTarget();
 
-   void SetParams(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz);
+    void SetParams(int32_t p_objectSizeMin, int32_t p_objectSizeMax, int32_t p_edgeCallThreshold, bool closestOnly);
     void RestoreParams();
 
     void SendTelem();
+    void SendLeddarTelem();
+    
+private:
 
-private: 
-
-    enum autoFireState 
+    enum controllerState 
     {
-        EInit = 0,
-        ESafe,
-        EDisabled,
-        ENoTarget,
-        ETrackingTarget,
-
+        EInit,
+        ENoTargets,
+        ETargetAcquired,
+  
         EInvalid = -1
     };
 
@@ -67,7 +70,15 @@ private:
     //
     //  ====================================================================
 
-    void setState(autoFireState p_state);
+    void updateBestTarget();
+
+    void segmentTargets();
+    void selectTarget();
+    void selectClosestTarget();
+
+    void setState(controllerState p_state);
+
+    void init();
 
     void saveParams();
 
@@ -77,7 +88,7 @@ private:
     //
     //  ====================================================================
     
-    const uint32_t k_safeStateMinDt = 500000;
+    static const int32_t k_leddarRequestMaxDt = 100000L;
 
 private:
 
@@ -86,12 +97,20 @@ private:
     //  Private members
     //
     //  ====================================================================
-
-    autoFireState m_state;
+    
+    controllerState m_state;
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
+    uint32_t m_lastLeddarUpdateTime;
 
-    uint32_t m_lastAutoFireTelem = 0;
+    Target* m_pBestTarget;
 
+    uint32_t m_rawDetectionCount;
+    Detection (*m_minDetections)[LEDDAR_SEGMENTS];
+
+    Target m_possibleTargets[8];
+    uint32_t m_possibleTargetsCount;
+
+    // LeddarController* m_pLeddarController;
     Params m_params;
 };

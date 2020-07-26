@@ -3,6 +3,7 @@
 #include "turretController.h"
 #include "radioController.h"
 #include "telemetryController.h"
+#include "targetTrackingController.h"
 
 //  The global TurretController Instance
 //  
@@ -12,8 +13,14 @@
 //  There is an extern decleration in turretController.h so everyone can have
 //  the definition they need to access this golobl TurretController instance.
 
-
 TurretController Turret;
+
+//  The global TargetTrackingController Instance
+//
+//  There is an extern decleration in targetTrackingController.h so everyone can have
+//  the definition they need to access this golobl RadioController instance.
+
+TargetTrackingController TargetTracking;
 
 //  The global RadioController Instance
 //
@@ -37,23 +44,28 @@ volatile bool g_enabled = false;
 
 void setup()
 {
-    //  Initilize the three global objects
+    //  Initilize the four global objects
+    //  Order is important
 
-    Radio.Init();
-    Turret.Init();
     Telem.Init();
+    Radio.Init();
+    TargetTracking.Init();
+    Turret.Init();
 
     //  Restore persistant memory parameters
 
-    Turret.RestoreParams();
     Telem.RestoreParams();
+    TargetTracking.RestoreParams();
+    Turret.RestoreParams();
 }
 
 void loop()
 {
-    //  Update the three global objects
+    //  Update the four global objects
+    //  Order is important
 
     Radio.Update();
+    TargetTracking.Update();
     Turret.Update();
     Telem.Update();
 }

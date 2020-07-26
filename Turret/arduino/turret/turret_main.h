@@ -5,6 +5,5 @@ void turretInit();
 void turretUpdate();
 
 void turretSendTelem();
-void turretSendLeddarTelem();
 
 #endif // TURRET_MAIN_H

@@ -6,7 +6,7 @@
 //
 //  ====================================================================
 
-class AutoFire;
+class AutoFireController;
 
 //  ====================================================================
 //
@@ -120,8 +120,6 @@ private:
     uint32_t m_stateStartTime;
 
     uint8_t m_throwPressureAngle;
-
-    AutoFire* m_pAutoFire;
-
+    
     Params m_params;
 };

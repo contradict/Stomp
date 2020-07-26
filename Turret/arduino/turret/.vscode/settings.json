@@ -29,6 +29,12 @@
         "new": "cpp",
         "ostream": "cpp",
         "sstream": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "__config": "cpp",
+        "__debug": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "mutex": "cpp",
+        "tuple": "cpp"
     }
 }

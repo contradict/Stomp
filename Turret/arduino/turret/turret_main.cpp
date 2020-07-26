@@ -3,11 +3,9 @@
 #include "leddar_io.h"
 #include "pins.h"
 #include "utils.h"
-#include "targeting.h"
 #include <avr/wdt.h>
 #include "command.h"
-#include "autofire.h"
-#include "autoaim.h"
+#include "autoAimController.h"
 
 #include "radioController.h"
 #include "telemetryController.h"
@@ -33,10 +31,6 @@ uint32_t g_loop_speed_avg;
 uint32_t g_loop_speed_max; 
 uint32_t g_loop_count;
 
-//  Controller Objects 
-
-Track g_trackedObject;
-
 //  ====================================================================
 //
 //  Global constants
@@ -44,7 +38,6 @@ Track g_trackedObject;
 //  ====================================================================
 
 const uint32_t k_sensor_period=5000L;
-const uint32_t k_leddar_max_request_period=100000L;
 
 //  ====================================================================
 //
@@ -79,7 +72,6 @@ extern uint16_t sbus_overrun;
 //
 //  ====================================================================
 
-static void updateTracking(void);
 static void updateWatchDogTimer(void);
 static void updateRadio(void);
 
@@ -110,13 +102,6 @@ void turretInit()
     initSBus();
     initLeddarWrapper();
 
-    //  Restore any information stored in EEMEM
-
-    restoreObjectSegmentationParameters();
-
-
-    g_trackedObject.restoreTrackingFilterParams();
-
     reset_loop_stats();
     g_start_time = micros();
 }
@@ -139,9 +124,6 @@ void turretUpdate()
     
     updateWatchDogTimer();
 
-    //  Update Tracking and auto fire using Lidar
-
-    updateTracking();
     handleCommands();
 
     // Finally update our loop stats
@@ -172,74 +154,6 @@ static void updateWatchDogTimer()
     {
         wdt_reset();
     }
-}
-
-// BB MJS Move Update Tracking and SendLeddarTelem to autoaim.cpp
-
-static void updateTracking()
-{
-    // If there has been no data from the LEDDAR for a while, ask again
-
-    if (micros() - s_last_request_time > k_leddar_max_request_period)
-    {
-        s_last_request_time = micros();
-        requestDetections();
-    }
-
-    //  Check if data is available from the LEDDAR
-    //  If not, just bail 
-
-    if (!bufferDetections())
-    {
-        return;
-    }
-
-    uint32_t now = micros();
-
-    // extract detections from LEDDAR packet
-    uint8_t raw_detection_count = parseDetections();
-
-    // request new detections
-    s_last_request_time = micros();
-    requestDetections();
-
-    calculateMinimumDetections(raw_detection_count);
-
-    const Detection (*minDetections)[LEDDAR_SEGMENTS] = NULL;
-    getMinimumDetections(&minDetections);
-
-    Target objects[8];
-    uint8_t num_objects = segmentObjects(*minDetections, now, objects);
-    int8_t best_object = trackObject(now, objects, num_objects, g_trackedObject);
-}
-
-void turretSendLeddarTelem()
-{
-/*
-    //  BB MJS: This used to be part of the previous function, fix this all up
-
-    //  Send out tracking / auto aim telemetry
-
-    Telem.SendLeddarTelem(*minDetections, raw_detection_count);
-    Telem.SendObjectsMeasuredTelemetry(num_objects, objects);
-    Telem.SendObjectsCalculatedTelemetry(num_objects, objects);
-
-    if(num_objects > 0)
-    {
-        Telem.SendTrackingTelemetry(
-                objects[best_object].GetXCoord(), objects[best_object].GetYCoord(),
-                objects[best_object].angle(), objects[best_object].radius(),
-                g_trackedObject.x/16, g_trackedObject.vx/16,
-                g_trackedObject.y/16, g_trackedObject.vy/16);
-    }
-    else
-    {
-        Telem.SendTrackingTelemetry(
-                0, 0, 0, 0,
-                g_trackedObject.x/16, g_trackedObject.vx/16,
-                g_trackedObject.y/16, g_trackedObject.vy/16);
-    }
-*/
 }
 
 void turretSendTelem()

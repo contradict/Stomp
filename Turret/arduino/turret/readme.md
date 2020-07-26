@@ -17,16 +17,17 @@ radioController.cpp                     sbus.cpp
 telemetryController.cpp                 telem.cpp & xbee.cpp
 imuController.cpp                       imu.cpp
 leddarController.cpp                    leddar_io.cpp
-targetTrackingController.cpp            targeting.cpp
 target.cpp                              object.cpp
+targetTrackingController.cpp            track.cpp
+targetAcquisitionController.cpp         targeting.cpp
+autoFireController.cpp                  autofire.cpp
 
+Controller Hierarchy
 
-Component Hierarchy
+Global Objects                Sub Objects (instantiated in global object init())
+--------------                --------------------------------------------------
 
-Global Objects                Sub Objects
---------------                -----------
-
-TurretController -------------+--- TurretRotationController ----------- AutoAimController
+TurretController -------------+--- TurretRotationController --------+--- AutoAimController
                               |
                               +--- HammerController
                               |
@@ -35,6 +36,8 @@ TurretController -------------+--- TurretRotationController ----------- AutoAimC
                               +--- IMUController
                               |
                               +--- AutoFireController
+
+TargetTrackingController -----+--- TargetAcquisitionController ------+--- LeddarController
 
 RadioController
 

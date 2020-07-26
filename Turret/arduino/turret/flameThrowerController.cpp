@@ -7,7 +7,7 @@
 
 #include "sbus.h"
 #include "telemetryController.h"
-#include "autoaim.h"
+#include "autoAimController.h"
 #include "DMASerial.h"
 
 #include "turretController.h"

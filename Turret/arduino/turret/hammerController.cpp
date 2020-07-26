@@ -19,11 +19,8 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 #include "pins.h"
-//#include "Wire.h"
 
 #include "sbus.h"
-#include "autoaim.h"
-#include "autofire.h"
 #include "DMASerial.h"
 
 #include "turretController.h"
@@ -111,8 +108,6 @@ void HammerController::Update()
     m_lastUpdateTime = micros();
 
     //  Pass update to our owned objects
-
-    m_pAutoFire->Update();
 
     //  Update our state
 
@@ -385,8 +380,6 @@ void HammerController::setState(controllerState p_state)
 
 void HammerController::init()
 {
-    m_pAutoFire->Init();
-
     startSensorReadStateMachine();
 
     digitalWrite(THROW_PRESSURE_VALVE_DO, LOW); 

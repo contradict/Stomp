@@ -7,7 +7,7 @@
 
 #include "sbus.h"
 #include "telemetryController.h"
-#include "autoaim.h"
+#include "autoAimController.h"
 #include "DMASerial.h"
 
 #include "turretController.h"
@@ -64,7 +64,7 @@ void TurretRotationController::Update()
 
     //  Update our state
 
-    int32_t desiredSBusSpeed = Turret.GetDesiredManualTurretSpeed();
+    int32_t desiredSBusSpeed = Radio.GetDesiredManualTurretSpeed();
 
     while(true)
     {
@@ -243,13 +243,13 @@ void TurretRotationController::updateSpeed()
             //  In manual control, just take the request from the radio and 
             //  make that our speed
 
-            setSpeed(Turret.GetDesiredManualTurretSpeed());
+            setSpeed(Radio.GetDesiredManualTurretSpeed());
         }
         break;
 
         case EAutoAim:
         {
-            //  In AutoAim, just take the request from targeting and
+            //  In AutoAimController, just take the request from targeting and
             //  make that our speed
 
             setSpeed(m_pAutoAim->GetDesiredTurretSpeed());
@@ -262,7 +262,7 @@ void TurretRotationController::updateSpeed()
             //  do minimal adjustments.  So, keep auto aim and just add on
             //  the radio requested speed
 
-            setSpeed(Turret.GetDesiredManualTurretSpeed() + m_pAutoAim->GetDesiredTurretSpeed());
+            setSpeed(Radio.GetDesiredManualTurretSpeed() + m_pAutoAim->GetDesiredTurretSpeed());
         }
         break;
 
@@ -328,7 +328,7 @@ void TurretRotationController::setState(controllerState p_state)
             m_motorSpeedCurrent = 0;
             m_turretAngleCurrent = k_invalidTurretAngleRead;
 
-            m_pAutoAim = new AutoAim();
+            m_pAutoAim = new AutoAimController();
             init();
         }
         break;

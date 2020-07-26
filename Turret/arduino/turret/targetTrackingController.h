@@ -1,6 +1,6 @@
 #pragma once
 
-#include "autoAimController.h"
+#include "target.h"
 
 //  ====================================================================
 //
@@ -8,7 +8,7 @@
 //
 //  ====================================================================
 
-class TurretController;
+class TargetAcquisitionController;
 
 //  ====================================================================
 //
@@ -16,7 +16,7 @@ class TurretController;
 //
 //  ====================================================================
 
-class TurretRotationController
+class TargetTrackingController
 {
 
     //  ====================================================================
@@ -29,7 +29,12 @@ public:
 
     struct Params
     {
-        int32_t ManualControlOverideSpeed;
+        int16_t alpha;
+        int16_t beta;                       // position, velocity filter
+        uint32_t trackLostDt;               // timeout for no observations
+        uint32_t minNumUpdates;             // minimum number before trusted
+        int32_t maxOffTrackDistanceSq;      // squared distance in mm
+        int32_t maxStartDistanceSq;         // squared distance in mm
     };
 
     //  ====================================================================
@@ -42,28 +47,39 @@ public:
 
     void Init();
     void Update();
-    void Safe();
     
-    int32_t GetMotorSpeed();
-    int16_t GetTurretAngle();
+    bool IsTrackingValidTarget();
+    bool WillHitTrackedTarget();
 
-    void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain);
-    void SetParams(uint32_t p_manualControlOverideSpeed);
+    int32_t GetTargetErrorAngle();
+    int32_t GetDistanceSqToTarget(const Target &p_target);
+
+    void SetObjectSegmentationParams(int32_t p_objectSizeMin, 
+        int32_t p_objectSizeMax, 
+        int32_t p_edgeCallThreshold, 
+        bool p_closestOnly);
+
+    void SetParams(int16_t p_alpha, 
+        int16_t p_beta,
+        int8_t p_minNumUpdates,
+        uint32_t p_trackLostDt,
+        int16_t p_maxOffTrackDistance,
+        int16_t p_maxStartDistance);
+                             
     void RestoreParams();
 
     void SendTelem();
+    void SendLeddarTelem();
     
 private:
 
     enum controllerState 
     {
         EInit,
-        ESafe,
-        EDisabled,
-        EManualControl,
-        EAutoAim,
-        EAutoAimWithManualAssist,
-
+        ENoTarget,
+        ETargetAcquired,
+        ETargetTracked,
+  
         EInvalid = -1
     };
 
@@ -73,14 +89,18 @@ private:
     //
     //  ====================================================================
 
-    void updateSpeed();
-    void updateAngle();
+    void predictedTrackedTargetLocation();
+    void updateTracking();
+
+    void project(int32_t dt, int32_t dtheta, int32_t *p_px, int32_t *p_py);
+
+    int32_t getAngle();
+    int32_t getVTheta(); 
 
     void setState(controllerState p_state);
-    void setSpeed(int32_t p_speed);
 
     void init();
-    void initRoboTeq();
+    void initAllControllers();
 
     void saveParams();
 
@@ -92,11 +112,6 @@ private:
     
 private:
 
-    const int32_t k_maxSpeed = 1000;
-    const int32_t k_minSpeed = -1000;
-
-    const uint32_t k_safeStateMinDt = 500000;
-
     //  ====================================================================
     //
     //  Private members
@@ -106,11 +121,21 @@ private:
     controllerState m_state;
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
+    uint32_t m_latestDt;
 
-    int32_t m_motorSpeedCurrent;
-    int16_t m_turretAngleCurrent;
+    TargetAcquisitionController *m_pTargetAcquisitionController;
+    Target *m_pTrackedTarget;
 
-    AutoAimController* m_pAutoAim;
+    int32_t m_x;
+    int32_t m_vx;
+    int32_t m_y;
+    int32_t m_vy;
+    int32_t m_rx;
+    int32_t m_ry;
+    uint32_t m_numUpdates;
+    int32_t m_lastOmgaZ;
 
     Params m_params;
 };
+
+extern TargetTrackingController TargetTracking;

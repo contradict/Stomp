@@ -1,7 +1,5 @@
 #pragma once
 
-#include "track.h"
-
 //  ====================================================================
 //
 //  Forward declerations
@@ -9,10 +7,11 @@
 //  ====================================================================
 
 class TurretRotationController;
+class TargetTrackingController;
 class HammerController;
 class FlameThrowerController;
 class IMUController;
-class AutoFire;
+class AutoFireController;
 
 //  ====================================================================
 //
@@ -48,8 +47,6 @@ public:
     void Update();
 
     bool IsNominal();
-    
-    Track* GetCurrentTarget();
 
     int16_t GetTurretRotationSpeed();
     int16_t GetTurretAngle();
@@ -57,10 +54,12 @@ public:
     int32_t GetHammerSpeed();
     int16_t GetHammerAngle();
 
-    int32_t GetDesiredManualTurretSpeed();
+    int32_t GetEstimatedSwingDuration();
 
     void FlamePulseStart();
     void FlamePulseStop();
+
+    //  Turret methods that pass along parameter setting to the controllers that the turret owns
 
     void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain);
     void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz);
@@ -74,7 +73,6 @@ public:
     void RestoreParams();
 
     void SendTelem();
-    void SendLeddarTelem();
 
 private:
 
@@ -128,15 +126,18 @@ private:
     //
     //  ====================================================================
     
-    TurretRotationController *m_pTurretRotationController;
-    HammerController *m_pHammerController;
-    FlameThrowerController *m_pFlameThrowerController;
-    IMUController *m_pIMUController;
-    AutoFire *m_pAutoFireController;
 
     controllerState m_state;
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
+
+    //  All of the controllers owned by the Turret
+
+    TurretRotationController *m_pTurretRotationController;
+    HammerController *m_pHammerController;
+    FlameThrowerController *m_pFlameThrowerController;
+    IMUController *m_pIMUController;
+    AutoFireController *m_pAutoFireController;
 
     Params m_params;
 

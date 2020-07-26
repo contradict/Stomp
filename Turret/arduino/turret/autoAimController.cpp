@@ -13,14 +13,14 @@
 
 #include <Arduino.h>
 
-#include "autoaim.h"
-#include "autofire.h"
 #include "sbus.h"
 #include "telemetryController.h"
+#include "targetTrackingController.h"
 #include "fixedpoint.h"
 
 #include "radioController.h"
 #include "turretController.h"
+#include "AutoAimController.h"
 
 
 //  ====================================================================
@@ -35,7 +35,7 @@
 //
 //  ====================================================================
 
-static struct AutoAim::Params EEMEM s_savedParams = 
+static struct AutoAimController::Params EEMEM s_savedParams = 
 {
     .proportionalConstant = 2500,
     .integralConstant = 7500,
@@ -55,14 +55,14 @@ static struct AutoAim::Params EEMEM s_savedParams =
 //
 //  ====================================================================
 
-void AutoAim::Init()
+void AutoAimController::Init()
 {
     m_state = EInvalid;
     m_lastUpdateTime = micros();
     setState(EInit);
 }
 
-void AutoAim::Update() 
+void AutoAimController::Update() 
 {
     m_lastUpdateTime = micros();
 
@@ -119,7 +119,7 @@ void AutoAim::Update()
                 {
                     setState(EDisabled);
                 }
-                else if (Turret.GetCurrentTarget()->valid(m_lastUpdateTime))
+                else if (TargetTracking.IsTrackingValidTarget())
                 {
                     setState(ETrackingTarget);
                 }
@@ -132,7 +132,7 @@ void AutoAim::Update()
                 {
                     setState(ESafe);
                 }
-                else if (!Turret.GetCurrentTarget()->valid(m_lastUpdateTime))
+                else if (!TargetTracking.IsTrackingValidTarget())
                 {
                     setState(ENoTarget);
                 }
@@ -156,12 +156,12 @@ void AutoAim::Update()
     updateDesiredTurretSpeed();
 }
 
-int32_t AutoAim::GetDesiredTurretSpeed()
+int32_t AutoAimController::GetDesiredTurretSpeed()
 {
     return m_desiredTurretSpeed;
 }
 
-void AutoAim::SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_speedMax)
+void AutoAimController::SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_speedMax)
 {
     m_params.proportionalConstant = p_proportionalConstant;
     m_params.integralConstant = p_integralConstant;
@@ -172,14 +172,14 @@ void AutoAim::SetParams(int32_t p_proportionalConstant, int32_t p_integralConsta
     saveParams();
 }
 
-void AutoAim::RestoreParams()
+void AutoAimController::RestoreParams()
 {
-    eeprom_read_block(&m_params, &s_savedParams, sizeof(struct AutoAim::Params));
+    eeprom_read_block(&m_params, &s_savedParams, sizeof(struct AutoAimController::Params));
 }
 
-void AutoAim::SendTelem()
+void AutoAimController::SendTelem()
 {
-    if (m_pTarget != nullptr)
+    if (TargetTracking.IsTrackingValidTarget())
     {
         Telem.SendAutoAimTelemetry(m_state, m_desiredTurretSpeed, m_error, m_errorIntegral, m_errorDerivative);
     }
@@ -195,7 +195,7 @@ void AutoAim::SendTelem()
 //
 //  ====================================================================
 
-void AutoAim::updateDesiredTurretSpeed()
+void AutoAimController::updateDesiredTurretSpeed()
 {
     if (m_state != ETrackingTarget)
     {
@@ -219,7 +219,7 @@ void AutoAim::updateDesiredTurretSpeed()
     //  We should not be in ETrackingTarget, without a valid target,
     //  but, lets just be sure
 
-    if (!m_pTarget->valid(m_updateTime))
+    if (!TargetTracking.IsTrackingValidTarget())
     {
         return;
     }    
@@ -228,7 +228,7 @@ void AutoAim::updateDesiredTurretSpeed()
 
     FP_32x20 prevError = m_error;
 
-    m_error = TO_FP_32x20_FROM_FP_32x11(m_pTarget->angle());
+    m_error = TO_FP_32x20_FROM_FP_32x11(TargetTracking.GetTargetErrorAngle());
     m_errorDerivative = FP_32x20_POST_DIV((m_error - prevError) / dt);
     m_errorIntegral = m_errorIntegral + FP_32x20_POST_MUL(m_error * dt);
 
@@ -243,7 +243,7 @@ void AutoAim::updateDesiredTurretSpeed()
     m_desiredTurretSpeed = constrain(m_desiredTurretSpeed, -m_params.speedMax, m_params.speedMax);
 }
 
-void AutoAim::setState(autoAimState p_state)
+void AutoAimController::setState(autoAimState p_state)
 {
     if (m_state == p_state)
     {
@@ -254,12 +254,6 @@ void AutoAim::setState(autoAimState p_state)
 
     switch (m_state)
     {
-        case ETrackingTarget:
-        {
-            m_pTarget = nullptr;
-        }
-        break;
-
         default:
         break;
     }
@@ -273,15 +267,13 @@ void AutoAim::setState(autoAimState p_state)
     {
         case EInit:
         {
-            m_pTarget = nullptr;
         }
         break;
 
         case ETrackingTarget:
         {
-            m_pTarget = Turret.GetCurrentTarget();
+            m_error = TargetTracking.GetTargetErrorAngle();
 
-            m_error = m_pTarget->angle();
             m_errorDerivative = 0;
             m_errorIntegral = 0;
         }
@@ -292,7 +284,11 @@ void AutoAim::setState(autoAimState p_state)
     }
 }
 
-void AutoAim::saveParams() 
+void AutoAimController::init()
 {
-    eeprom_write_block(&m_params, &s_savedParams, sizeof(struct AutoAim::Params));
+}
+
+void AutoAimController::saveParams() 
+{
+    eeprom_write_block(&m_params, &s_savedParams, sizeof(struct AutoAimController::Params));
 }

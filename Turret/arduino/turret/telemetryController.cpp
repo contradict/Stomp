@@ -9,6 +9,7 @@
 #include "leddar_io.h"
 
 #include "turretController.h"
+#include "targetTrackingController.h"
 #include "telemetryController.h"
 
 //  BB MJS: TODO
@@ -493,7 +494,7 @@ bool TelemetryController::SendTrackingTelemetry(int16_t p_detectionX,
 }
 
 //
-//  AutoFire Telemetry Packet
+//  AutoFireController Telemetry Packet
 //
 
 struct AutoFireTelemetryInner 
@@ -521,7 +522,7 @@ bool TelemetryController::SendAutoFireTelemetry(int32_t p_state, int32_t p_swing
 }
 
 //
-//  AutoAim Telemetry Packet
+//  AutoAimController Telemetry Packet
 //
 
 struct AutoAimTelemetryInner 
@@ -595,6 +596,13 @@ bool TelemetryController::SendTurretRotationTelemetry(int16_t p_state, int16_t p
     return write((unsigned char *)&tlm, sizeof(tlm));
 }
 
+bool TelemetryController::SendObjectsTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
+{
+    sendObjectsCalculatedTelemetry(p_numObjects, p_objects);
+    sendObjectsMeasuredTelemetry(p_numObjects, p_objects);
+
+}
+
 struct ObjectsCalcuatedInner 
 {
    uint8_t numObjects;
@@ -606,7 +614,7 @@ struct ObjectsCalcuatedInner
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_OBJC, ObjectsCalcuatedInner> ObjectsCalculatedTelemetry;
 
-bool TelemetryController::SendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
+bool TelemetryController::sendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJC);
     
@@ -645,7 +653,7 @@ struct ObjectsMeasuredInner
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_OBJM, ObjectsMeasuredInner> ObjectsMeasuredTelemetry;
 
-bool TelemetryController::SendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
+bool TelemetryController::sendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJM);
 
@@ -723,14 +731,17 @@ void TelemetryController::sendTelem()
 
     if (m_lastUpdateTime - m_lastLeddarTelemTime > m_params.leddarTelemetryInterval)
     {
-        Turret.SendLeddarTelem();
+        TargetTracking.SendLeddarTelem();
+
         m_lastLeddarTelemTime = m_lastUpdateTime;
 
     }
 
     if (m_lastUpdateTime - m_lastTelemTime > m_params.telemetryInterval)
     {
+        TargetTracking.SendTelem();
         Turret.SendTelem();
+
         m_lastTelemTime = m_lastUpdateTime;
     }
 }

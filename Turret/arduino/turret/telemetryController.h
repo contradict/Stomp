@@ -119,8 +119,7 @@ public:
     bool SendTurretTelemetry(int16_t p_state);
     bool SendTurretRotationTelemetry(int16_t p_state, int16_t p_currentSpeed) ;
 
-    bool SendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8]);
-    bool SendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8]);
+    bool SendObjectsTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8]);
 
     bool SendCommandAcknowledge(uint8_t p_command, uint16_t p_valid, uint16_t p_invalid) ;
 
@@ -149,6 +148,9 @@ private:
     //  ====================================================================
 
     void sendTelem();
+    bool sendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8]);
+    bool sendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8]);
+
 
     size_t write(const uint8_t *buffer, size_t size);
     bool enqueue(const unsigned char *buffer, size_t size);

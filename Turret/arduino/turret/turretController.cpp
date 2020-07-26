@@ -6,13 +6,15 @@
 #include "pins.h"
 
 #include "sbus.h"
-#include "autoaim.h"
+#include "autoAimController.h"
 #include "DMASerial.h"
 
 #include "turret_main.h"
+#include "targetAcquisitionController.h"
+#include "targetTrackingController.h"
 #include "turretRotationController.h"
 #include "hammerController.h"
-#include "autofire.h"
+#include "autoFireController.h"
 #include "flameThrowerController.h"
 #include "telemetryController.h"
 #include "radioController.h"
@@ -24,8 +26,6 @@
 //  External references
 //
 //  ====================================================================
-
-extern Track g_trackedObject;
 
 //  ====================================================================
 //
@@ -123,11 +123,11 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (m_pHammerController->ReadyToSwing() && hammerManualThrowAndRetract())
+                else if (m_pHammerController->ReadyToSwing() && (Radio.IsHammerSwingRequested() || m_pAutoFireController->ShouldSwingAtTarget()))
                 {
                     setState(EHammerTriggerThrowRetract);
                 }
-                else if (hammerManualRetractOnly())
+                else if (Radio.IsHammerRetractRequested())
                 {
                     setState(EHammerTriggerRetract);
                 }
@@ -205,11 +205,6 @@ bool TurretController::IsNominal()
     return m_state == ENominal;
 }
 
-Track* TurretController::GetCurrentTarget()
-{
-    return &g_trackedObject;
-}
-
 int16_t TurretController::GetTurretRotationSpeed()
 {
     return m_pIMUController->GetOmegaZ();
@@ -230,11 +225,6 @@ int16_t TurretController::GetHammerAngle()
     return m_pHammerController->GetHammerAngle();
 }
 
-int32_t TurretController::GetDesiredManualTurretSpeed()
-{
-    return getDesiredManualTurretSpeed();
-}
-
 void TurretController::FlamePulseStart()
 {
     m_pFlameThrowerController->FlamePulseStart();
@@ -245,14 +235,14 @@ void TurretController::FlamePulseStop()
     m_pFlameThrowerController->FlamePulseStop();
 }
 
-void TurretController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain)
+void TurretController::SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steerMax, int32_t p_gyroGain)
 {
-    m_pTurretRotationController->SetAutoAimParameters(p_proportionalConstant, p_derivativeConstant, p_steer_max, p_gyro_gain);
+    m_pTurretRotationController->SetAutoAimParameters(p_proportionalConstant, p_derivativeConstant, p_steerMax, p_gyroGain);
 }
 
-void TurretController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz)
+void TurretController::SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_maxOmegaZ)
 {
-    m_pAutoFireController->SetParams(p_xtol, p_ytol, p_max_omegaz);
+    m_pAutoFireController->SetParams(p_xtol, p_ytol, p_maxOmegaZ);
 }
 
 void TurretController::SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed)
@@ -282,6 +272,8 @@ void TurretController::SetParams(uint32_t p_watchDogTimerTriggerDt)
 
 void TurretController::RestoreParams()
 {
+    //  Restore all the EEPROM parameters for controllers turret onws
+
     m_pTurretRotationController->RestoreParams();
     m_pHammerController->RestoreParams();
     m_pIMUController->RestoreParams();
@@ -300,12 +292,6 @@ void TurretController::SendTelem()
     m_pAutoFireController->SendTelem();
 
     Telem.SendTurretTelemetry(m_state);
-
-}
-
-void TurretController::SendLeddarTelem()
-{
-    turretSendLeddarTelem();
 }
 
 //  ====================================================================
@@ -313,24 +299,6 @@ void TurretController::SendLeddarTelem()
 //  Private methods
 //
 //  ====================================================================
-
-void TurretController::init()
-{
-    m_pTurretRotationController = new TurretRotationController();
-    m_pHammerController = new HammerController();
-    m_pFlameThrowerController = new FlameThrowerController();
-    m_pIMUController = new IMUController();
-    m_pAutoFireController = new AutoFire();
-}
-
-void TurretController::initAllControllers()
-{
-    m_pTurretRotationController->Init();
-    m_pHammerController->Init();
-    m_pFlameThrowerController->Init();
-    m_pIMUController->Init();
-    m_pAutoFireController->Init();
-}
 
 void TurretController::setState(controllerState p_state)
 {
@@ -400,6 +368,24 @@ void TurretController::setState(controllerState p_state)
         default:
         break;
     }
+}
+
+void TurretController::init()
+{
+    m_pTurretRotationController = new TurretRotationController();
+    m_pHammerController = new HammerController();
+    m_pFlameThrowerController = new FlameThrowerController();
+    m_pIMUController = new IMUController();
+    m_pAutoFireController = new AutoFireController();
+}
+
+void TurretController::initAllControllers()
+{
+    m_pTurretRotationController->Init();
+    m_pHammerController->Init();
+    m_pFlameThrowerController->Init();
+    m_pIMUController->Init();
+    m_pAutoFireController->Init();
 }
 
 void TurretController::saveParams() 

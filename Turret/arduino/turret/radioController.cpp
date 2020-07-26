@@ -114,26 +114,31 @@ bool RadioController::IsSelfRightEnabled()
 
 bool RadioController::IsFlameOnEnabled()
 {
-    // BB MJS: return isFlameOnEnabled();
+    // BB MJS: Implement
 
     return false;
 }
 
 bool RadioController::IsFlamePulseEnabled()
 {
-    // BB MJS: return isFlamePulseEnabled();
+    // BB MJS: Implement
 
     return false;
 }
 
 bool RadioController::IsHammerSwingRequested()
 {
-    return IsHammerSwingRequested();
+    return hammerManualThrowAndRetract();
 }
 
 bool RadioController::IsHammerRetractRequested()
 {
-    return IsHammerRetractRequested();
+    return hammerManualRetractOnly();
+}
+
+int32_t RadioController::GetDesiredManualTurretSpeed()
+{
+    return getDesiredManualTurretSpeed();
 }
 
 void RadioController::SendTelem()

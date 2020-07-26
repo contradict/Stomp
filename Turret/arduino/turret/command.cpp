@@ -1,8 +1,7 @@
 #include "command.h"
 #include "DMASerial.h"
 #include "telemetryController.h"
-#include "targeting.h"
-#include "autofire.h"
+#include "targetTrackingController.h"
 #include "turretController.h"
 
 #define MAXIMUM_COMMAND_LENGTH 64
@@ -18,8 +17,6 @@ enum Commands {
     CMD_ID_TRT = 19,
     CMD_ID_TROT = 20
 };
-
-extern Track g_trackedObject;
 
 const uint16_t CMD_TERMINATOR=0x6666;
 
@@ -164,7 +161,7 @@ void handleCommands(void)
 
             case CMD_ID_TRKFLT:
                 trkflt_cmd = (TrackingFilterCommand *)command_buffer;
-                g_trackedObject.setTrackingFilterParams(trkflt_cmd->inner.alpha,
+                TargetTracking.SetParams(trkflt_cmd->inner.alpha,
                                         trkflt_cmd->inner.beta,
                                         trkflt_cmd->inner.min_num_updates,
                                         trkflt_cmd->inner.track_lost_dt,
@@ -175,7 +172,7 @@ void handleCommands(void)
 
             case CMD_ID_OBJSEG:
                 objseg_cmd = (ObjectSegmentationCommand *)command_buffer;
-                setObjectSegmentationParams(
+                TargetTracking.SetObjectSegmentationParams(
                                         objseg_cmd->inner.min_object_size,
                                         objseg_cmd->inner.max_object_size,
                                         objseg_cmd->inner.edge_call_threshold,

@@ -1,12 +1,14 @@
 #pragma once
 
+#include "fixedpoint.h"
+
 //  ====================================================================
 //
 //  Class decleration
 //
 //  ====================================================================
 
-class RadioController
+class AutoAimController
 {
 
     //  ====================================================================
@@ -16,6 +18,14 @@ class RadioController
     //  ====================================================================
 
 public:
+
+    struct Params 
+    {
+        int32_t proportionalConstant;
+        int32_t integralConstant;
+        int32_t derivativeConstant;
+        int32_t speedMax;
+    } __attribute__((packed));
 
     //  ====================================================================
     //
@@ -28,30 +38,22 @@ public:
     void Init();
     void Update();
 
-    bool IsNominal();
+    int32_t GetDesiredTurretSpeed();
 
-    bool IsWeaponEnabled();
-    bool IsManualTurretEnabled();
-    bool IsAutoAimEnabled();
-    bool IsAutoFireEnabled();
-    bool IsSelfRightEnabled();
-    bool IsFlameOnEnabled();
-    bool IsFlamePulseEnabled();
-
-    bool IsHammerSwingRequested();
-    bool IsHammerRetractRequested();
-
-    int32_t GetDesiredManualTurretSpeed();
-
+    void SetParams(int32_t p_proportionalConstant, int32_t p_integralConstant, int32_t p_derivativeConstant, int32_t p_speedMax);
+    void RestoreParams();
+    
     void SendTelem();
 
-private:
+private: 
 
-    enum controllerState 
+    enum autoAimState 
     {
-        EInit,
+        EInit = 0,
         ESafe,
         EDisabled,
+        ENoTarget,
+        ETrackingTarget,
 
         EInvalid = -1
     };
@@ -62,11 +64,13 @@ private:
     //
     //  ====================================================================
 
-    void setState(controllerState p_state);
+    void updateDesiredTurretSpeed();
+
+    void setState(autoAimState p_state);
 
     void init();
-
-    void sendTelem();
+    
+    void saveParams();
 
     //  ====================================================================
     //
@@ -74,6 +78,8 @@ private:
     //
     //  ====================================================================
     
+    const uint32_t k_safeStateMinDt = 500000;
+
 private:
 
     //  ====================================================================
@@ -81,10 +87,19 @@ private:
     //  Private members
     //
     //  ====================================================================
-    
-    controllerState m_state;
+
+    autoAimState m_state;
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
-};
 
-extern RadioController Radio;
+    FP_32x20 m_error;
+    FP_32x20 m_errorIntegral;
+    FP_32x20 m_errorDerivative;
+
+    uint32_t m_updateTime;
+
+    int32_t m_desiredTurretSpeed = 0;
+    uint32_t m_lastAutoaimTelem = 0;
+
+    Params m_params;
+};
