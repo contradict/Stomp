@@ -422,6 +422,7 @@ void TargetTrackingController::setState(controllerState p_state)
         case EInit:
         {
             init();
+            initAllControllers();
         }
         break;
 

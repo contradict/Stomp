@@ -6,14 +6,14 @@
 
 # Russel's Linux
 
-ARDUINO_DIR   = ${HOME}/src/Arduino/build/linux/work
-ARDMK_DIR     = ${HOME}/src/Arduino-Makefile
-MONITOR_PORT  = /dev/ttyACM0
+#ARDUINO_DIR   = ${HOME}/src/Arduino/build/linux/work
+#ARDMK_DIR     = ${HOME}/src/Arduino-Makefile
+#MONITOR_PORT  = /dev/ttyACM0
 
 # Matt's OSX
 
-# ARDUINO_DIR   = /Applications/Arduino.app/Contents/Java
-# ARDMK_DIR     = ${HOME}/MachineCorps/Projects/Arduino-Makefile
+ARDUINO_DIR   = /Applications/Arduino.app/Contents/Java
+ARDMK_DIR     = ${HOME}/MachineCorps/Projects/Arduino-Makefile
 
 BOARD_TAG     = mega
 BOARD_SUB     = atmega2560
