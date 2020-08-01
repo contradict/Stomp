@@ -1,4 +1,11 @@
-Leg Control Process
+# Notes concerning design of Hull remote control software
+
+## Leg Control Process
+
+This process is responsible for communication with the leg microcontrollers and
+computing the leg positions.
+
+```
   thread 1 (real-time scheduler, 100Hz)
     Odd loops
       parameters = read parameter queue
@@ -16,23 +23,13 @@ Leg Control Process
     Receive commands from topic, queue to real-time command queue
     Receive responses from response queue, send to response topic
     Receive data from telemetry queue, send to telemetry topic
+```
 
+### Leg position generation, interpolated gait
 
-Control radio process
-  forever
-    Read packet from radio
-    parse to axes and switches
-    send to control topic
+This is the `compute leg position` subroutine mentioned above.
 
-Telemetry COSMOS interface
-  Poll loop with serial port, topic file descriptors:
-      forward received packets to command topic
-      Forward response topic to radio
-      forward telemetry topic to radio
-
-IMU Data?
-
-Leg position generation, interpolated gait
+```
     Inputs: forward velocity V, curvature \kappa, interval \delta t
     State: phase
     Constants: Step shape, robot half-width W
@@ -52,3 +49,31 @@ Leg position generation, interpolated gait
                 X[l], Y[l], Z[l] = step_shape(\phi + \leg_offset[l])
                 Y[l] *= \alpha[l]
     return X, Y, Z
+```
+
+## Control radio process
+
+Read from S.BUS serial port and produce messages for the rest of the system.
+
+```
+  forever
+    Read packet from radio
+    parse to axes and switches
+    send to control topic
+```
+
+## Telemetry COSMOS interface
+
+Translate internal LCM messages to COSMOS, bidirectional.
+
+```
+  Poll loop with serial port, topic file descriptors:
+      forward received packets to command topic
+      Forward response topic to radio
+      forward telemetry topic to radio
+```
+
+## Others
+
+ * IMU Data?
+ * Pressure sensors
