@@ -1,0 +1,14 @@
+package stomp;
+
+struct telemetry_leg {
+    const int8_t CURL=0, SWING=1, LIFT=2;
+    const int8_t LEGS=6;
+    int16_t base_end_pressure[18];
+    int16_t rod_end_pressure[18];
+    int16_t toe_position_measured_X[6];
+    int16_t toe_position_measured_Y[6];
+    int16_t toe_position_measured_Z[6];
+    int16_t toe_position_commanded_X[6];
+    int16_t toe_position_commanded_Y[6];
+    int16_t toe_position_commanded_Z[6];
+}

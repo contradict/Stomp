@@ -20,6 +20,8 @@ BASE_FLAGS = [
     "-I", "/usr/local/include/modbus",
     "-I", DIR_OF_THIS_SCRIPT + "/../LegBoard/Firmware/inc/export",
     "-I", DIR_OF_THIS_SCRIPT + "/Common",
+    "-I", DIR_OF_THIS_SCRIPT + "/SimpleGait",
+    "-I", DIR_OF_THIS_SCRIPT + "/HullControl/inc",
 ]
 if "ROS_DISTRO" in os.environ:
     ros_base = "/opt/ros/%(ROS_DISTRO)s" % os.environ
