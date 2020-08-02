@@ -36,3 +36,8 @@ pid_t create_leg_thread(struct leg_thread_state *leg_thread, const char * progna
         run_leg_thread(leg_thread);
     return pid;
 }
+
+void terminate_leg_thread(struct leg_thread_state *leg_thread)
+{
+    leg_thread->shouldrun = false;
+}

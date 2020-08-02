@@ -20,6 +20,7 @@ LDFLAGS=-lm $(LCM_LDFLAGS)
 
 src/leg_control/%.o: CFLAGS+= -I ../Common $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS)
 
+leg_control: CFLAGS+= -I ../Common $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS)
 leg_control: LDFLAGS+= $(MODBUS_LDFLAGS) $(RINGBUF_STATICLIB)
 
 all: leg_control sbus_radio
@@ -29,7 +30,7 @@ clean:
 	rm -r inc/lcm src/lcm
 	rm leg_control sbus_radio
 
-leg_control: $(leg_control_objs) ../Common/modbus_device.o src/lcm/messages.a $(RINGBUF_STATICLIB)
+leg_control: ../Common/modbus_device.o src/lcm/messages.a $(RINGBUF_STATICLIB) $(leg_control_objs)
 	gcc $^ -o $@ $(LDFLAGS)
 
 sbus_radio: src/sbus_radio/main.o src/lcm/messages.a
