@@ -64,7 +64,10 @@ void AutoAimController::Init()
 
 void AutoAimController::Update() 
 {
+    uint32_t previousUpdateTime = m_lastUpdateTime;
+
     m_lastUpdateTime = micros();
+    m_latestDt = m_lastUpdateTime - previousUpdateTime;
 
     while(true)
     {
@@ -211,10 +214,8 @@ void AutoAimController::updateDesiredTurretSpeed()
     //  to use in a multiply to then just remove the scale.
     //
 
-    uint32_t lastUpate = m_updateTime;
-    m_updateTime = micros();
 
-    FP_32x20 dt = (TO_FP_32x20(1) / 1000000) * (m_updateTime - lastUpate);
+    FP_32x20 dt = (TO_FP_32x20(1) / 1000000) * m_latestDt;
 
     //  We should not be in ETrackingTarget, without a valid target,
     //  but, lets just be sure
@@ -286,6 +287,8 @@ void AutoAimController::setState(autoAimState p_state)
 
 void AutoAimController::init()
 {
+    m_lastUpdateTime = 0;
+    m_latestDt = 0;
 }
 
 void AutoAimController::saveParams() 

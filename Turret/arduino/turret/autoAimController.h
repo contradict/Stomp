@@ -90,13 +90,14 @@ private:
 
     autoAimState m_state;
     uint32_t m_lastUpdateTime;
+    uint32_t m_latestDt;
+
     uint32_t m_stateStartTime;
 
     FP_32x20 m_error;
     FP_32x20 m_errorIntegral;
     FP_32x20 m_errorDerivative;
 
-    uint32_t m_updateTime;
 
     int32_t m_desiredTurretSpeed = 0;
     uint32_t m_lastAutoaimTelem = 0;

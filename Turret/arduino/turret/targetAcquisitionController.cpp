@@ -141,9 +141,9 @@ void TargetAcquisitionController::updateBestTarget()
 {
     //  We may need to issue another Request for Detections if it has been to loong
 
-    if (m_lastUpdateTime - m_lastLeddarUpdateTime > k_leddarRequestMaxDt)
+    if (m_lastUpdateTime - m_lastRequestDetectionsTime > k_leddarRequestMaxDt)
     {
-        m_lastLeddarUpdateTime = m_lastUpdateTime;
+        m_lastRequestDetectionsTime = m_lastUpdateTime;
         requestDetections();
     }
 
@@ -157,7 +157,7 @@ void TargetAcquisitionController::updateBestTarget()
 
     m_rawDetectionCount = parseDetections();
 
-    m_lastLeddarUpdateTime = m_lastUpdateTime;
+    m_lastRequestDetectionsTime = m_lastUpdateTime;
     requestDetections();
     calculateMinimumDetections(m_rawDetectionCount);
 
@@ -318,7 +318,7 @@ void TargetAcquisitionController::init()
 {
     m_pBestTarget = NULL;
     
-    m_lastLeddarUpdateTime = 0;
+    m_lastRequestDetectionsTime = 0;
     m_rawDetectionCount = 0;
     m_possibleTargetsCount = 0;
 }
