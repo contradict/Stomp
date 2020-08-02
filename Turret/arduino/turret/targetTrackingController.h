@@ -130,8 +130,8 @@ private:
     int32_t m_vx;
     int32_t m_y;
     int32_t m_vy;
-    int32_t m_rx;
-    int32_t m_ry;
+    int32_t m_residualX;
+    int32_t m_residualY;
     uint32_t m_numUpdates;
     int32_t m_lastOmgaZ;
 

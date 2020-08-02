@@ -273,7 +273,7 @@ void AutoAimController::setState(autoAimState p_state)
 
         case ETrackingTarget:
         {
-            m_error = TargetTracking.GetTargetErrorAngle();
+            m_error = TO_FP_32x20_FROM_FP_32x11(TargetTracking.GetTargetErrorAngle());
 
             m_errorDerivative = 0;
             m_errorIntegral = 0;

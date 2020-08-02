@@ -87,9 +87,9 @@ void TargetTrackingController::Update()
             case ETargetAcquired:
             {
                 if (pBestTarget == NULL || 
-                    pBestTarget != m_pTrackedTarget ||
+                    pBestTarget != m_pTrackedTarget) /* BB MJS: ||
                     m_latestDt > m_params.trackLostDt || 
-                    GetDistanceSqToTarget(*m_pTrackedTarget) > m_params.maxOffTrackDistanceSq)
+                    GetDistanceSqToTarget(*m_pTrackedTarget) > m_params.maxOffTrackDistanceSq)*/
                 {
                     setState(ENoTarget);
                 }
@@ -98,13 +98,14 @@ void TargetTrackingController::Update()
                     setState(ETargetTracked);
                 }
             }
-
+            break;
+            
             case ETargetTracked:
             {
                 if (pBestTarget == NULL || 
-                    pBestTarget != m_pTrackedTarget ||
+                    pBestTarget != m_pTrackedTarget) /* BB MJS: ||
                     m_latestDt > m_params.trackLostDt || 
-                    GetDistanceSqToTarget(*m_pTrackedTarget) > m_params.maxOffTrackDistanceSq)
+                    GetDistanceSqToTarget(*m_pTrackedTarget) > m_params.maxOffTrackDistanceSq)*/
                 {
                     setState(ENoTarget);
                 }
@@ -257,8 +258,8 @@ void TargetTrackingController::SendTelem()
         Telem.SendTrackingTelemetry(
                 m_pTrackedTarget->GetXCoord(), m_pTrackedTarget->GetYCoord(),
                 m_pTrackedTarget->GetAngle(), m_pTrackedTarget->GetRadius(),
-                m_x/16, m_vx/16,
-                m_y/16, m_vy/16);
+                m_x / 16, m_vx / 16,
+                m_y / 16, m_vy / 16);
     }
     else
     {
@@ -283,7 +284,7 @@ void TargetTrackingController::SendLeddarTelem()
 
 void TargetTrackingController::predictedTrackedTargetLocation() 
 {
-    if (!IsTrackingValidTarget())
+    if (m_pTrackedTarget == NULL)
     {
         return;
     }
@@ -298,44 +299,69 @@ void TargetTrackingController::predictedTrackedTargetLocation()
 
     m_lastOmgaZ = converted;
 
-    int32_t dtheta = ((average_omegaZ / 16) * (m_latestDt / 1000)) / 1000;
+    int32_t dtheta = ((average_omegaZ / 16) * (((int32_t) m_latestDt) / 1000)) / 1000;
 
     project(m_latestDt, dtheta, &m_x, &m_y);
+
+    Telem.LogMessage(String("dt: ") + String(m_latestDt) + String(" ") +
+                String("average_omegaZ: ") + String(average_omegaZ) + String(" ") +
+                String("dtheta: ") + String(dtheta) + String(" ") +
+                String("m_x: ") + String(m_x) + String(" ") +
+                String("m_y: ") + String(m_y) + String(" ") +
+                String("error: ") + String(GetTargetErrorAngle()));
 }
 
 void TargetTrackingController::updateTracking()
 {
+    if (m_pTrackedTarget != NULL)
+    {
+        m_numUpdates++;
+    }
+
     if (!IsTrackingValidTarget())
     {
         return;
     }
 
-    int32_t mx = m_pTrackedTarget->GetXCoord();
-    int32_t my = m_pTrackedTarget->GetYCoord();
+    //  Alpha Beta Filter https://en.wikipedia.org/wiki/Alpha_beta_filter
+    //  to get new position and velocity
+
+    int32_t measuredX = m_pTrackedTarget->GetXCoord() * 16;
+    int32_t measuredY = m_pTrackedTarget->GetYCoord() * 16;
  
     // residual:
     // rx = mr*cos(ma) - x
     // rx = mr*(2048 - ma*ma/2048/2)/2048 - x
     // ry = mr*sin(ma) - y
 
-    m_rx = (mx * 16) - m_x;
-    m_rx = constrain(m_rx, -65535L, 65535L);
+    m_residualX = measuredX - m_x;
+    m_residualX = constrain(m_residualX, -65535L, 65535L);
 
-    m_ry = (my * 16) - m_y;
-    m_ry = constrain(m_ry, -65535L, 65535L);
+    m_residualY = measuredY - m_y;
+    m_residualY = constrain(m_residualY, -65535L, 65535L);
 
     // correct:
 
-    m_x += m_params.alpha * m_rx / 32767;
-    m_y += m_params.alpha * m_ry / 32767;
+    m_x += m_params.alpha * m_residualX / 32767;
+    m_y += m_params.alpha * m_residualY / 32767;
 
-    m_vx += m_params.beta * m_rx / 4096;
+    m_vx += m_params.beta * m_residualX / 4096;
     m_vx = constrain(m_vx, -10000L * 16, 10000L * 16);
 
-    m_vy += m_params.beta * m_ry / 4096;
+    m_vy += m_params.beta * m_residualY / 4096;
     m_vy = constrain(m_vy, -10000L * 16, 10000L * 16);
 
-    m_numUpdates++;
+    Telem.LogMessage(String("measuredX: ") + String(measuredX) + String(" ") +
+                String("measuredY: ") + String(measuredY) + String(" ") +
+                String("m_residualX: ") + String(m_residualX) + String(" ") +
+                String("m_residualY: ") + String(m_residualY) + String(" ") +
+                String("m_x: ") + String(m_x) + String(" ") +
+                String("m_y: ") + String(m_y) + String(" ") +
+                String("m_vx: ") + String(m_vx) + String(" ") +
+                String("m_vy: ") + String(m_vy) + String(" ") +
+                String("alpha: ") + String(m_params.alpha) + String(" ") +
+                String("beta: ") + String(m_params.beta) + String(" ") +
+                String("error: ") + String(GetTargetErrorAngle()));
 }
 
 void TargetTrackingController::project(int32_t dt, int32_t dtheta, int32_t *px, int32_t *py) 
@@ -451,8 +477,8 @@ void TargetTrackingController::init()
     m_vx = 0;
     m_y = 0;
     m_vy = 0;
-    m_rx = 0;
-    m_ry = 0;
+    m_residualX = 0;
+    m_residualY = 0;
     m_numUpdates = 0;
     m_lastOmgaZ = 0;
 }
