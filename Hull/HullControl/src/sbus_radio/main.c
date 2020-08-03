@@ -77,12 +77,13 @@ int main(int argc, char **argv)
     while(true)
     {
         //Read from serial port, put data in radio_message
-        int n = read(serial_port, &read_buffer, sizeof(read_buffer));
-        if (n == 0)
-        {
+        int num_bytes  = read(serial_port, &read_buffer, sizeof(read_buffer));
+        if (num_bytes == 0) {
             printf("No bytes in 2 seconds\n");
+        } else if (num_bytes > 0) {
+            printf("Read %i bytes\n", num_bytes);
         } else {
-            printf("Read %i bytes\n", n);
+            printf("Error %i from read: %s\n", errno, strerror(errno));
         }
 
          stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &radio_message);
