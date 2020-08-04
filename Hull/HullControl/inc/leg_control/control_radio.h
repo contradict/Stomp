@@ -1,9 +1,18 @@
 #pragma once
 #include <sys/types.h>
-#include "leg_control/queue.h"
+#include <stdbool.h>
 
-struct control_radio_thread_state {
+#include <lcm/lcm.h>
+
+#include "leg_control/queue.h"
+#include "lcm/stomp_control_radio.h"
+
+struct control_radio_state {
+    lcm_t *lcm;
     struct queue parameter_queue;
+    ringbuf_worker_t *ringbuf_worker;
+    stomp_control_radio_subscription_t *radio_subscription;
 };
 
-pid_t create_control_radio_thread(struct control_radio_thread_state *control_radio_thread_state);
+int control_radio_init(struct control_radio_state *state);
+int control_radio_shutdown(struct control_radio_state *state);

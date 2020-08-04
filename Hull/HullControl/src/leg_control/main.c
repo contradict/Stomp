@@ -4,6 +4,8 @@
 #include <string.h>
 #include <sys/wait.h>
 
+#include <lcm/lcm.h>
+
 #include "lcm/stomp_control_radio.h"
 #include "lcm/stomp_modbus.h"
 #include "lcm/stomp_telemetry_leg.h"
@@ -40,6 +42,15 @@ int main(int argc, char **argv)
         }
     }
 
+    lcm_t *lcm = lcm_create(NULL);
+    if(!lcm)
+    {
+        printf("Failed to initialize LCM.\n");
+        return 1;
+    }
+
+    leg_thread.lcm = lcm;
+
     create_queue(1,  3*sizeof(stomp_control_radio), &leg_thread.parameter_queue);
     create_queue(1,  10*sizeof(stomp_modbus), &leg_thread.command_queue);
     create_queue(1,  10*sizeof(stomp_modbus), &leg_thread.response_queue);
@@ -48,15 +59,27 @@ int main(int argc, char **argv)
     if(leg_thread_pid<0)
         exit(leg_thread_pid);
 
-    struct control_radio_thread_state control_radio_thread;
-    pid_t control_radio_thread_pid = create_control_radio_thread(&control_radio_thread);
-    if(control_radio_thread_pid < 0)
+    struct control_radio_state radio_state;
+    radio_state.lcm = lcm;
+    radio_state.parameter_queue.buffer = leg_thread.parameter_queue.buffer;
+    radio_state.parameter_queue.ringbuf = leg_thread.parameter_queue.ringbuf;
+    int err= control_radio_init(&radio_state);
+    if(err)
     {
         int lt_status;
         terminate_leg_thread(&leg_thread);
         waitpid(leg_thread_pid, &lt_status, 0);
-        exit(control_radio_thread_pid);
+        exit(err);
     }
 
+    while(true)
+        lcm_handle(lcm);
+
+    control_radio_shutdown(&radio_state);
+    int status;
+    terminate_leg_thread(&leg_thread);
+    waitpid(leg_thread_pid, &status, 0);
+
+    lcm_destroy(lcm);
     return 0;
 }

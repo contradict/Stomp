@@ -2,7 +2,6 @@
 
 #include "leg_control/queue.h"
 
-
 void create_queue(int nproducers, size_t bufsize, struct queue *q)
 {
     size_t ringbuf_obj_size;
