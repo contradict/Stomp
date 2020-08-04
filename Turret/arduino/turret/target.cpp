@@ -1,3 +1,6 @@
+#include "Arduino.h"
+#include "telemetryController.h"
+
 #include "target.h"
 
 // size in mm
@@ -30,8 +33,19 @@ int16_t Target::GetAngle() const
 // x coordinate in mm
 int16_t Target::GetXCoord() const 
 {
-    int32_t ma = GetAngle();
-    return (GetRadius()*(2048L-((ma*ma)/4096L)))/2048L;
+    int32_t angle = GetAngle();
+    int32_t radius = GetRadius();
+
+    int16_t xCoord = (int16_t)((radius * (2048L - ((angle * angle) / 4096L))) / 2048L);
+
+    /*
+    float degrees = ((float)angle / 2048.0f) * (180.0f/PI);
+    Telem.LogMessage(String("xCoord = ") + String(xCoord) + 
+        String(" angle = ") + String(degrees) + 
+        String(" radius = ") + String(radius));
+    */
+       
+    return xCoord;
 }
 
 // y coordinate in mm

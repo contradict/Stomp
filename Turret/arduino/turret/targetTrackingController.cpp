@@ -303,12 +303,14 @@ void TargetTrackingController::predictedTrackedTargetLocation()
 
     project(m_latestDt, dtheta, &m_x, &m_y);
 
+    /*
     Telem.LogMessage(String("dt: ") + String(m_latestDt) + String(" ") +
                 String("average_omegaZ: ") + String(average_omegaZ) + String(" ") +
                 String("dtheta: ") + String(dtheta) + String(" ") +
                 String("m_x: ") + String(m_x) + String(" ") +
                 String("m_y: ") + String(m_y) + String(" ") +
                 String("error: ") + String(GetTargetErrorAngle()));
+    */
 }
 
 void TargetTrackingController::updateTracking()
@@ -326,8 +328,8 @@ void TargetTrackingController::updateTracking()
     //  Alpha Beta Filter https://en.wikipedia.org/wiki/Alpha_beta_filter
     //  to get new position and velocity
 
-    int32_t measuredX = m_pTrackedTarget->GetXCoord() * 16;
-    int32_t measuredY = m_pTrackedTarget->GetYCoord() * 16;
+    int32_t measuredX = (int32_t)(m_pTrackedTarget->GetXCoord()) * 16;
+    int32_t measuredY = (int32_t)(m_pTrackedTarget->GetYCoord()) * 16;
  
     // residual:
     // rx = mr*cos(ma) - x
@@ -351,6 +353,7 @@ void TargetTrackingController::updateTracking()
     m_vy += m_params.beta * m_residualY / 4096;
     m_vy = constrain(m_vy, -10000L * 16, 10000L * 16);
 
+    /*
     Telem.LogMessage(String("measuredX: ") + String(measuredX) + String(" ") +
                 String("measuredY: ") + String(measuredY) + String(" ") +
                 String("m_residualX: ") + String(m_residualX) + String(" ") +
@@ -360,8 +363,8 @@ void TargetTrackingController::updateTracking()
                 String("m_vx: ") + String(m_vx) + String(" ") +
                 String("m_vy: ") + String(m_vy) + String(" ") +
                 String("alpha: ") + String(m_params.alpha) + String(" ") +
-                String("beta: ") + String(m_params.beta) + String(" ") +
-                String("error: ") + String(GetTargetErrorAngle()));
+                String("beta: ") + String(m_params.beta) + String(" "));
+    */
 }
 
 void TargetTrackingController::project(int32_t dt, int32_t dtheta, int32_t *px, int32_t *py) 
