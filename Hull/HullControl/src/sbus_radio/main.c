@@ -59,8 +59,9 @@ int main(int argc, char **argv)
     tty.c_oflag &= ~OPOST; //prevent special interpretation of output bytes
     tty.c_oflag &= ~ONLCR; //prevent nl converstion to cr
 
-    tty.c_cc[VTIME] = 20;
-    tty.c_cc[VMIN] = 0;
+    //fix all these magic numbers soon
+    tty.c_cc[VTIME] = 20;  //wait up to 2 seconds
+    tty.c_cc[VMIN] = 25;  //return if 25 bytes arrive
 
     cfsetispeed(&tty, 100000);
     cfsetospeed(&tty, 100000);
@@ -79,7 +80,7 @@ int main(int argc, char **argv)
         //Read from serial port, put data in radio_message
         int num_bytes  = read(serial_port, &read_buffer, sizeof(read_buffer));
         if (num_bytes == 0) {
-            printf("No bytes in 2 seconds\n");
+            printf("No packet in 2 seconds\n");
         } else if (num_bytes > 0) {
             printf("Read %i bytes\n", num_bytes);
         } else {
