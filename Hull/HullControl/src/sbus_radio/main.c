@@ -3,8 +3,13 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <termios.h>
 #include <unistd.h>
+#include <stropts.h>
+
+#define termios asmtermios
+#include <asm/termios.h>
+#undef termios
+#include <termios.h>
 
 #include <lcm/lcm.h>
 
@@ -13,6 +18,8 @@
 
 int main(int argc, char **argv)
 {
+    uint32_t custom_baud = 100000;
+
     lcm_t *lcm = lcm_create(NULL);
     if(!lcm)
     {
@@ -26,7 +33,7 @@ int main(int argc, char **argv)
     printf("Trying to open UART10\n");
 
     int serial_port;
-    serial_port = open("/dev/ttyS1", O_RDWR | O_NOCTTY | O_NDELAY);
+    serial_port = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
     if (serial_port < 0)
     {
         printf("Error %i from open: %s\n", errno, strerror(errno));
@@ -41,9 +48,9 @@ int main(int argc, char **argv)
         printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
     }
 
-    tty.c_cflag &= ~PARENB; //N
+    tty.c_cflag |= PARENB;  //E
     tty.c_cflag |= CS8;     //8
-    tty.c_cflag &= ~CSTOPB; //1
+    tty.c_cflag |= CSTOPB;  //2
     tty.c_cflag &= ~CRTSCTS; //disable hardware flow control
     tty.c_cflag |= CREAD | CLOCAL; //Turn on READ $ ignore ctrl lines
 
@@ -63,13 +70,22 @@ int main(int argc, char **argv)
     tty.c_cc[VTIME] = 20;  //wait up to 2 seconds
     tty.c_cc[VMIN] = 25;  //return if 25 bytes arrive
 
-    cfsetispeed(&tty, 100000);
-    cfsetospeed(&tty, 100000);
-
     //try to set the configuration of the serial port
     if (tcsetattr(serial_port, TCSANOW, &tty) != 0)
     {
         printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+    }
+
+    //set custom baud ratei
+    struct termios2 tty2;
+    ioctl(serial_port, TCGETS2, &tty2);
+    tty2.c_cflag &= ~CBAUD;
+    tty2.c_cflag |= BOTHER;
+    tty2.c_ispeed = custom_baud;
+    tty2.c_ospeed = custom_baud;
+    if (ioctl(serial_port, TCSETS2, &tty2) < 0)
+    {
+        printf("Error %i from ioctl: %s\n", errno, strerror(errno));
     }
 
     //read loop
