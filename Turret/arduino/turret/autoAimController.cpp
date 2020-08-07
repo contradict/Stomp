@@ -38,8 +38,8 @@
 static struct AutoAimController::Params EEMEM s_savedParams = 
 {
     .proportionalConstant = 2500,
-    .integralConstant = 7500,
-    .derivativeConstant = 5,
+    .integralConstant = 30,
+    .derivativeConstant = 1,
     .speedMax = 1000,
 };
 
@@ -226,6 +226,10 @@ void AutoAimController::updateDesiredTurretSpeed()
     }    
 
     //  Using traditiona PID control to eliminate error (angle beteen forward and target)
+    //  
+    //  WARNING: proportionalConstant, derivativeConstant and integralConstant are tweakable
+    //  from Cosmos and if set to high, can easily make this fixed point math overflow and
+    //  the FP macros do NOT deal with overflow
 
     FP_32x20 prevError = m_error;
 

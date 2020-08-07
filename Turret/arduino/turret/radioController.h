@@ -43,6 +43,9 @@ public:
 
     int32_t GetDesiredManualTurretSpeed();
 
+    int32_t GetHammerIntensity();
+    int32_t GetHammerStrikeDistance();
+
     void SendTelem();
 
 private:

@@ -225,6 +225,16 @@ int16_t TurretController::GetHammerAngle()
     return m_pHammerController->GetHammerAngle();
 }
 
+
+int32_t TurretController::GetEstimatedSwingDuration()
+{
+    //  Given the 1 - 9 hammer throw intensities, return the 
+    //  swing time in mircoseconds
+
+    int32_t throwIntensity = Radio.GetHammerIntensity();
+    return k_throwIntensityToSwingTime[throwIntensity];
+}
+
 void TurretController::FlamePulseStart()
 {
     m_pFlameThrowerController->FlamePulseStart();

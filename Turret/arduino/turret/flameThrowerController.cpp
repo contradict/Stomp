@@ -40,8 +40,9 @@
 
 void FlameThrowerController::Init()
 {
-    m_state = EInvalid;
+    m_state = EInvalid;    
     m_lastUpdateTime = micros();
+
     setState(EInit);
 }
 

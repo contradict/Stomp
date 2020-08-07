@@ -107,6 +107,30 @@ void AutoFireController::Update()
             }
             break;
 
+            case ERotationLockout:
+            {
+                if (!Radio.IsNominal())
+                {
+                    setState(ESafe);
+                }
+                else if (!Radio.IsAutoFireEnabled())
+                {
+                    setState(EDisabled);
+                }
+                else if (Turret.GetTurretRotationSpeed() < m_params.maxOmegaZ)
+                {
+                    if (TargetTracking.IsTrackingValidTarget())
+                    {
+                        setState(ETrackingTarget);
+                    }
+                    else
+                    {
+                        setState(ENoTarget);
+                    }
+                }
+            }
+            break;
+
             case ENoTarget:
             {
                 if (!Radio.IsNominal())
@@ -116,6 +140,10 @@ void AutoFireController::Update()
                 else if (!Radio.IsAutoFireEnabled())
                 {
                     setState(EDisabled);
+                }
+                else if (Turret.GetTurretRotationSpeed() > m_params.maxOmegaZ)
+                {
+                    setState(ERotationLockout);
                 }
                 else if (TargetTracking.IsTrackingValidTarget())
                 {
@@ -134,11 +162,15 @@ void AutoFireController::Update()
                 {
                     setState(EDisabled);
                 }
+                else if (Turret.GetTurretRotationSpeed() > m_params.maxOmegaZ)
+                {
+                    setState(ERotationLockout);
+                }
                 else if (!TargetTracking.IsTrackingValidTarget())
                 {
                     setState(ENoTarget);
                 }
-                else if (TargetTracking.WillHitTrackedTarget())
+                else if (TargetTracking.WillHitTrackedTarget(Radio.GetHammerStrikeDistance(), m_params.ytol))
                 {
                     setState(ESwingAtTarget);
                 }
@@ -155,11 +187,15 @@ void AutoFireController::Update()
                 {
                     setState(EDisabled);
                 }
+                else if (Turret.GetTurretRotationSpeed() > m_params.maxOmegaZ)
+                {
+                    setState(ERotationLockout);
+                }
                 else if (!TargetTracking.IsTrackingValidTarget())
                 {
                     setState(ENoTarget);
                 }
-                else if (!TargetTracking.WillHitTrackedTarget())
+                else if (!TargetTracking.WillHitTrackedTarget(Radio.GetHammerStrikeDistance(), m_params.ytol))
                 {
                     setState(ETrackingTarget);
                 }
@@ -203,6 +239,18 @@ void AutoFireController::RestoreParams()
 
 void AutoFireController::SendTelem()
 {
+    int16_t targetX = 0;
+    int16_t targetY = 0;
+
+    Target* pTarget = TargetTracking.GetCurrentTarget();
+
+    if (pTarget != NULL)
+    {
+        targetX = pTarget->GetXCoord() / 16;
+        targetY= pTarget->GetYCoord() / 16;
+    }
+    
+    Telem.SendAutoFireTelemetry(m_state, Turret.GetEstimatedSwingDuration(), targetX, targetY);
 }
 
 //  ====================================================================

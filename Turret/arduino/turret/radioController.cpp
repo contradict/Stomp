@@ -141,6 +141,16 @@ int32_t RadioController::GetDesiredManualTurretSpeed()
     return getDesiredManualTurretSpeed();
 }
 
+int32_t RadioController::GetHammerIntensity()
+{
+    return getHammerIntensity();
+}
+
+int32_t RadioController::GetHammerStrikeDistance()
+{
+    return getRange();
+}
+
 void RadioController::SendTelem()
 {
 }

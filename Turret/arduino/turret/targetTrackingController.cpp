@@ -130,71 +130,37 @@ void TargetTrackingController::Update()
     updateTracking();
 }
 
+Target* TargetTrackingController::GetCurrentTarget()
+{
+    return m_pTrackedTarget;
+}
+
 bool TargetTrackingController::IsTrackingValidTarget()
 {
     return m_pTrackedTarget != NULL && m_state == ETargetTracked;
 }
 
-bool TargetTrackingController::WillHitTrackedTarget()
+bool TargetTrackingController::WillHitTrackedTarget(int32_t p_xTolerance, int32_t p_yTolerance)
 {
     if (!IsTrackingValidTarget())
     {
         return false;
     }
 
-    //  BB MJS: Implement
+    int32_t projectedX = m_x;
+    int32_t projectedY = m_y;
+    int32_t omegaZ = Turret.GetTurretRotationSpeed();
 
-    /*
-        int32_t omegaZ=0;
-    uint32_t now = micros();
-    bool hit = false;
-    bool lockout = omegaZLockout(&omegaZ);
-    bool valid = tracked_object.valid(now);
-    int32_t swing = 0;
-    int32_t x=0, y=0;
-    if(valid && !lockout) {
-        swing=swingDuration(hammer_intensity)*1000;
-        if(auto_hold)
-        {
-            swing += getAutoholdStartDelay();
-        }
-        x=tracked_object.x;
-        y=tracked_object.y;
-        int32_t dt=swing/nsteps;
-        for(int s=0;s<nsteps;s++) {
-            tracked_object.project(dt, dt*omegaZ/1000000, &x, &y);
-        }
-        hit = (x>0) && (x/16<depth) && abs(y/16)<params.ytol;
-    }
-    enum AutofireState st;
-    if(lockout) st =     AF_OMEGAZ_LOCKOUT;
-    else if(!valid) st = AF_NO_TARGET;
-    else if(!hit) st =   AF_NO_HIT;
-    else st =            AF_HIT;
-    if(now - last_autofire_telem > params.autofire_telem_interval) {
-        sendAutofireTelemetry(st, swing, x/16, y/16);
-    }
-    return st;
-    */
+    int32_t swingDt = Turret.GetEstimatedSwingDuration();
+    int32_t projectDt = swingDt / k_willHitProjectSteps;
 
-    /*
-    Target* pTarget = TargetAcquisition.GetCurrentTarget();
-
-    int32_t swingDuration = Turret.GetEstimatedSwingDuration();
-
-    int32_t x = pTarget->x;
-    int32_t y = pTarget->y;
-    int32_t dt = swingDuration / nsteps;
-
-    for(int s=0; s<nsteps; s++) 
+    for (int step = 0; step < k_willHitProjectSteps; step++) 
     {
-        tracked_object.project(dt, dt*omegaZ/1000000, &x, &y);
+        int32_t dTheta = (projectDt * omegaZ) / 1000000;
+        project(projectDt, dTheta, &projectedX, &projectedY);
     }
 
-    return (x > 0) && (x / 16 < depth) && abs(y / 16) < m_params.ytol;
-    */
-
-    return true;
+    return projectedX > 0 && (projectedX / 16) < p_xTolerance && abs(projectedY / 16) < p_yTolerance;
 }
 
 int32_t TargetTrackingController::GetTargetErrorAngle(void)
@@ -367,8 +333,12 @@ void TargetTrackingController::updateTracking()
     */
 }
 
+
 void TargetTrackingController::project(int32_t dt, int32_t dtheta, int32_t *px, int32_t *py) 
 {
+    //  BB MJS: Need to figure this out and document
+    //  Also is DT in millisecond or micro seconds?
+
     // predict:
     // r = sqrt(x**2+y**2)
     // theta = atan2(y, x)

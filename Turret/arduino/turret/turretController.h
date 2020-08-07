@@ -119,6 +119,10 @@ private:
 
     const uint32_t k_safeStateMinDt = 500000;
     const uint32_t k_selfRightTriggerDt = 3000000;
+
+    const uint8_t k_throwIntensityToSwingTime[9] = { 1000000, 900000, 800000, 700000, 600000, 500000, 400000, 300000, 200000 };
+
+    
     
     //  ====================================================================
     //

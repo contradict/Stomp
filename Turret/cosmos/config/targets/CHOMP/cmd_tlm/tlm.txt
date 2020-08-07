@@ -27,10 +27,13 @@ TELEMETRY CHOMP TRK LITTLE_ENDIAN "Tracking"
 TELEMETRY CHOMP AUTOF LITTLE_ENDIAN "Autofire"
     APPEND_ID_ITEM PKTID 8 UINT 5 "Packet ID which must be 5"
     APPEND_ITEM STATE 8 INT "State"
-        STATE NO_TARGET  0
-        STATE WZ_LOCKOUT 1
-        STATE NO_HIT     2
-        STATE HIT        3
+        STATE INIT              0
+        STATE SAFE              1
+        STATE DISABLED          2
+        STATE ROTATION_LOCKOUT  3
+        STATE NO_TARGET         4
+        STATE TRACKING_TARGET   5
+        STATE SWING_AT_TARGET   6
     APPEND_ITEM SWING 32 INT "Swing"
     APPEND_ITEM PREDX 16 INT "x"
     APPEND_ITEM PREDY 16 INT "y"
@@ -58,11 +61,11 @@ TELEMETRY CHOMP AAIM LITTLE_ENDIAN "Auto Aim telemetry"
        STATE NO_TARGET 	3 YELLOW
        STATE TRACKING 	4 RED
    APPEND_ITEM WANT_SPEED 32 INT "Desired turret speed"
-   APPEND_ITEM ERROR 32 INT "Aim Error"
+   APPEND_ITEM ERR 32 INT "Aim Error"
        POLY_READ_CONVERSION 0.0 0.00005464151
-   APPEND_ITEM ERROR 32 INT "Aim Error Integral"
+   APPEND_ITEM ERR_I 32 INT "Aim Error Integral"
        POLY_READ_CONVERSION 0.0 0.00000095367
-   APPEND_ITEM ERROR 32 INT "Aim Error Derivitive"
+   APPEND_ITEM ERR_D 32 INT "Aim Error Derivitive"
        POLY_READ_CONVERSION 0.0 0.00000095367
 
 #
@@ -388,10 +391,10 @@ COMMAND CHOMP AF LITTLE_ENDIAN "Auto Fire Parameters"
 
 COMMAND CHOMP AAIM LITTLE_ENDIAN "Auto Aim Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 14 14 14 "Command ID which must be 14"
-    APPEND_PARAMETER STEERP 32 INT 0 32767 2500 "Turret Rotation proportional coefficient"
-    APPEND_PARAMETER STEERI 32 INT 0 32767 7500 "Turret Rotation integral coefficient"
-    APPEND_PARAMETER STEERD 32 INT 0 32767 5 "Turret Rotation derivative coefficient"
-    APPEND_PARAMETER STEERMAX 32 INT 0 1000 1000 "Steering maximum command"
+    APPEND_PARAMETER AAIMP 32 INT 0 32767 2500 "Turret Rotation proportional coefficient"
+    APPEND_PARAMETER AAIMI 32 INT 0 32767 30 "Turret Rotation integral coefficient"
+    APPEND_PARAMETER AAIMD 32 INT 0 32767 1 "Turret Rotation derivative coefficient"
+    APPEND_PARAMETER SPEEDMAX 32 INT 0 1000 1000 "Steering maximum command"
 
 #
 #  IMUP - IMU Parameters (Packet ID 15)

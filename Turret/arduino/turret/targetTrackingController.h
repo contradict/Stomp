@@ -48,8 +48,10 @@ public:
     void Init();
     void Update();
     
+    Target* GetCurrentTarget();
+
     bool IsTrackingValidTarget();
-    bool WillHitTrackedTarget();
+    bool WillHitTrackedTarget(int32_t p_xTolerance, int32_t p_yTolerance);
 
     int32_t GetTargetErrorAngle();
     int32_t GetDistanceSqToTarget(const Target &p_target);
@@ -112,12 +114,16 @@ private:
     
 private:
 
+    const int32_t k_willHitProjectSteps = 3;
+
     //  ====================================================================
     //
     //  Private members
     //
     //  ====================================================================
-    
+
+private:
+
     controllerState m_state;
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;

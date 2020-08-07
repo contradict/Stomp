@@ -50,6 +50,7 @@ private:
         EInit = 0,
         ESafe,
         EDisabled,
+        ERotationLockout,
         ENoTarget,
         ETrackingTarget,
         ESwingAtTarget,
