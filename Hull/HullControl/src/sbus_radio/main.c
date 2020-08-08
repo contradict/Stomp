@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <time.h>
 #include <stropts.h>
 
 #define termios asmtermios
@@ -18,7 +19,12 @@
 
 int main(int argc, char **argv)
 {
-    uint32_t custom_baud = 100000;
+    const unsigned int sbus_baud = 100000;
+    const int sbus_pkt_length = 25; //complete sbus packet size
+    const int pkt_timeout_usecs = 2000; //number of usecs
+    struct timeval pkt_timeout;
+    pkt_timeout.tv_sec = 0;
+    pkt_timeout.tv_usec = pkt_timeout_usecs;
 
     lcm_t *lcm = lcm_create(NULL);
     if(!lcm)
@@ -26,7 +32,6 @@ int main(int argc, char **argv)
         printf("Failed to initialize LCM.\n");
         return 1;
     }
-
     stomp_control_radio radio_message;
 
     //open and configure the serial port
@@ -66,9 +71,8 @@ int main(int argc, char **argv)
     tty.c_oflag &= ~OPOST; //prevent special interpretation of output bytes
     tty.c_oflag &= ~ONLCR; //prevent nl converstion to cr
 
-    //fix all these magic numbers soon
-    tty.c_cc[VTIME] = 20;  //wait up to 2 seconds
-    tty.c_cc[VMIN] = 25;  //return if 25 bytes arrive
+    tty.c_cc[VTIME] = 0;  //non-blocking reads
+    tty.c_cc[VMIN] = 0;
 
     //try to set the configuration of the serial port
     if (tcsetattr(serial_port, TCSANOW, &tty) != 0)
@@ -81,29 +85,64 @@ int main(int argc, char **argv)
     ioctl(serial_port, TCGETS2, &tty2);
     tty2.c_cflag &= ~CBAUD;
     tty2.c_cflag |= BOTHER;
-    tty2.c_ispeed = custom_baud;
-    tty2.c_ospeed = custom_baud;
+    tty2.c_ispeed = sbus_baud;
+    tty2.c_ospeed = sbus_baud;
     if (ioctl(serial_port, TCSETS2, &tty2) < 0)
     {
         printf("Error %i from ioctl: %s\n", errno, strerror(errno));
     }
 
-    //read loop
-    char read_buffer [256];
-    memset(&read_buffer, '\0', sizeof(read_buffer));
-    while(true)
+    char read_buff [256];
+    char sbus_pkt [256];
+    fd_set rfds;  //file descriptor set you need to send to select
+    int pkt_length;
+    int num_bytes;
+    int sret;
+    while(true) //main loop, read sbus, then send data as lcm message
     {
-        //Read from serial port, put data in radio_message
-        int num_bytes  = read(serial_port, &read_buffer, sizeof(read_buffer));
-        if (num_bytes == 0) {
-            printf("No packet in 2 seconds\n");
-        } else if (num_bytes > 0) {
-            printf("Read %i bytes\n", num_bytes);
+        pkt_length = 0;
+        memset(&read_buff, '\0', sizeof(read_buff));
+        memset(&sbus_pkt, '\0', sizeof(sbus_pkt));
+        while(true) //packet read loop
+        { 
+            FD_ZERO(&rfds);
+            FD_SET(serial_port, &rfds);
+            sret = select(serial_port + 1, &rfds, NULL, NULL, &pkt_timeout);
+            if (sret  == 0) {
+                break;   //timeout occurred, hopefully end of packet
+            } else if (sret > 0)
+            {
+                num_bytes  = read(serial_port, &read_buff, sizeof(read_buff));
+                if (num_bytes > 0)
+                {
+                    int i;
+                    for (i = 0; i < num_bytes; i++)
+                    {
+                        sbus_pkt[pkt_length] = read_buff[i];
+                        pkt_length++;
+                    }
+                } else {
+                    printf("Error %i from read: %s\n", errno, strerror(errno));
+                }
+            } else {
+                printf("Error %i from select %s\n", errno, strerror(errno));
+            }
+
+        }
+        
+        if (pkt_length == sbus_pkt_length) {
+            printf("Complete SBUS packet received\n");
+        } else if (pkt_length < sbus_pkt_length) {
+            printf("Incomplete packet, %i bytes received\n", pkt_length);
+            continue;
         } else {
-            printf("Error %i from read: %s\n", errno, strerror(errno));
+            printf("Timeout missed?, %i bytes received\n", pkt_length);
+            continue;
         }
 
-         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &radio_message);
+        printf("First byte: %i, Last byte: %i, Second byte: %i\n", sbus_pkt[0], sbus_pkt[pkt_length - 1], sbus_pkt[1]);
+                
+        stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &radio_message);
     }
 
     lcm_destroy(lcm);
