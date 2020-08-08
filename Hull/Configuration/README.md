@@ -12,7 +12,7 @@ Comes from TI with account `debian:tempwd`, hostname beaglebone.
     sudo apt update && sudo apt upgrade
     sudo apt install gdb stow cmake \
         liblcm-dev liblcm-bin libglib2.0-dev \
-        libtool-bin
+        libtool-bin libbsd-dev
 
 ## Upgrade scripts
 
