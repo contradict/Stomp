@@ -35,10 +35,10 @@ clean:
 	$(MAKE) -C tomlc99 clean
 	$(MAKE) -C ringbuf/src clean
 
-leg_control: $(leg_control_objs) ../Common/modbus_device.o src/lcm/messages.a $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB)
+leg_control: $(leg_control_objs) ../Common/modbus_device.o src/lcm/messages.a $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB) | $(message_hdrs)
 	gcc $^ -o $@ $(LDFLAGS)
 
-sbus_radio: src/sbus_radio/main.o src/lcm/messages.a
+sbus_radio: src/sbus_radio/main.o src/lcm/messages.a | $(message_hdrs)
 	gcc $^ -o $@ $(LDFLAGS)
 
 src/lcm/messages.a: $(message_objs)
