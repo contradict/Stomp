@@ -25,58 +25,101 @@ VERTICAL
 
     VERTICAL
       HORIZONTAL
-        FORMATVALUE CHOMP SYS SYSTEM_TIME "%10d ms" CONVERTED 13
-        LABEL "Uptime"
-        SPACER 0 0 EXPANDING MINIMUM
+        VERTICAL
+          LABEL "System Status"
+          HORIZONTAL
+            FORMATVALUE CHOMP SYS SYSTEM_TIME "%10d ms" CONVERTED 13
+            LABEL "Uptime"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          LABEL "Sensor Status"
+          HORIZONTAL
+            VALUE CHOMP ORN ORN CONVERTED 13
+            LABEL "Orientation"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SNS ANGLE CONVERTED 13
+            LABEL "Hammer Angle"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SNS THROW_PRESSURE CONVERTED 13
+            LABEL "Throw Side Pressure"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SNS RETRACT_PRESSURE CONVERTED 13
+            LABEL "Retract Side Pressure"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+        END
+    
+        VERTICAL
+          LABEL "Radio Status"
+          HORIZONTAL
+            VALUE CHOMP SBS WEAPONS_ENABLE RAW 1
+            LABEL "Weapons Enable"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SBS FLAME_PULSE RAW 1
+            LABEL "Flame Pulse"
+              SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SBS AUTO_AIM_MODE RAW 1
+            LABEL "Auto Aim Enabled"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SBS MANUAL_TURRET_MODE RAW 1
+            LABEL "Manual Turret Enabled"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SBS AUTO_HAMMER RAW 1
+            LABEL "Auto Fire Enabled"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE CHOMP SBS HMRI CONVERTED 3
+            RANGEBAR CHOMP SBS HMRI 3 65 CONVERTED 200
+            LABEL "Hit Intensity"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+        END
       END
-      HORIZONTAL
-        VALUE CHOMP SBS WEAPONS_ENABLE RAW 1
-        LABEL "Weapons Enable"
-        SPACER 0 0 EXPANDING MINIMUM
-      END
-      HORIZONTAL
-        VALUE CHOMP SBS FLAME_PULSE RAW 1
-        LABEL "Flame Pulse"
-        SPACER 0 0 EXPANDING MINIMUM
-      END
-      HORIZONTAL
-        VALUE CHOMP SBS AUTO_AIM_MODE RAW 1
-        LABEL "Auto Aim Mode"
-        SPACER 0 0 EXPANDING MINIMUM
-      END
-      HORIZONTAL
-        VALUE CHOMP SBS MANUAL_TURRET_MODE RAW 1
-        LABEL "Manual Turret  Mode"
-        SPACER 0 0 EXPANDING MINIMUM
-      END
-      HORIZONTAL
-        VALUE CHOMP SBS AUTO_HAMMER RAW 1
-        LABEL "Auto Hammer"
-        SPACER 0 0 EXPANDING MINIMUM
-      END
-      HORIZONTAL
-        VALUE CHOMP SBS HMRI CONVERTED 3
-        RANGEBAR CHOMP SBS HMRI 3 65 CONVERTED 200
-        LABEL "Hit Intensity"
-        SPACER 0 0 EXPANDING MINIMUM
-      END
-      HORIZONTAL
-        VALUE CHOMP TUR TUR_STATE CONVERTED 10
-        LABEL "Turret State"
-        SPACER 0 0 EXPANDING MINIMUM
-        VALUE CHOMP TROT TROT_STATE CONVERTED 10
-        LABEL "Turret Rotation State"
-        SPACER 0 0 EXPANDING MINIMUM
-        VALUE CHOMP AAIM AIM_STATE CONVERTED 10
-        LABEL "Auto Aim State"
-        SPACER 0 0 EXPANDING MINIMUM
-      END
+
       VERTICAL
-        LINEGRAPH CHOMP AUTOF AUTOF_STATE 200 402 159 RAW 0 3 1
+        LABEL "Turret Status"
         HORIZONTAL
-          SPACER 0 0 EXPANDING MINIMUM
-          VALUE CHOMP AUTOF AUTOF_STATE CONVERTED 9
-          SPACER 0 0 EXPANDING MINIMUM
+          VERTICAL
+            VERTICAL
+              LINEGRAPH CHOMP TUR TUR_STATE 200 402 159 RAW 0 9 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE CHOMP TUR TUR_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
+            END
+            VERTICAL
+              LINEGRAPH CHOMP AUTOF AUTOF_STATE 200 402 159 RAW 0 7 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE CHOMP AUTOF AUTOF_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
+            END
+          END
+          VERTICAL
+            LINEGRAPH CHOMP TROT TROT_STATE 200 402 159 RAW 0 6 1
+            HORIZONTAL
+              SPACER 0 0 EXPANDING MINIMUM
+              VALUE CHOMP TROT TROT_STATE CONVERTED 16
+              SPACER 0 0 EXPANDING MINIMUM
+            END
+          END
         END
       END
     END
