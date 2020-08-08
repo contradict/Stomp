@@ -34,6 +34,7 @@ struct joint_gains {
 
 struct step {
     char *name;
+    float length;
     int npoints;
     float *phase, *X, *Y, *Z;
 };
@@ -144,6 +145,7 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         toml_table_t *step = toml_table_at(step_descriptions, s);
         toml_raw_t tomlr = toml_raw_in(step, "name");
         toml_rtos(tomlr, &steps[s].name);
+        get_float(step, "length", &steps[s].length);
         toml_array_t *points = toml_array_in(step, "points");
         steps[s].npoints = toml_array_nelem(points);
         steps[s].phase = calloc(steps[s].npoints, sizeof(float));
@@ -331,7 +333,7 @@ void interpolate_value(const float *nodes, const float *values, ssize_t length, 
     *y = (x - nodes[index]) * (values[next_value] - values[index]) / (nodes[next_node] - nodes[index]) + values[index];
 }
 
-int compute_leg_position(struct leg_thread_state* state, int leg_index, float phase, float (*toe_position)[3])
+int compute_leg_position(struct leg_thread_state* state, int leg_index, float phase, float scale, float (*toe_position)[3])
 {
     struct gait *gait = (state->gaits+state->current_gait);
     struct step *step = (state->steps+gait->step_index);
@@ -344,7 +346,7 @@ int compute_leg_position(struct leg_thread_state* state, int leg_index, float ph
     interpolate_value(step->phase, step->Y, step->npoints, index, leg_phase, &((*toe_position)[1]));
     interpolate_value(step->phase, step->Z, step->npoints, index, leg_phase, &((*toe_position)[2]));
     // TODO Make this correct for angles other than 0, 180.
-    (*toe_position)[1] = copysignf((*toe_position)[1], cosf(state->legs[leg_index].orientation[2] * deg2rad));
+    (*toe_position)[1] = copysignf((*toe_position)[1], cosf(state->legs[leg_index].orientation[2] * deg2rad)) * scale;
     return 0;
 }
 
@@ -380,7 +382,7 @@ int retrieve_leg_positions(struct leg_thread_state* state)
         int err = get_toe_feedback(state->ctx, state->legs[leg].address, &(state->startup_toe_positions[leg]), &discard_pressures);
         if(err!=0)
             return err;
-        compute_leg_position(state, leg, 0.0f, &(state->initial_toe_positions[leg]));
+        compute_leg_position(state, leg, 0.0f, 0.0f, &(state->initial_toe_positions[leg]));
     }
     return 0;
 }
@@ -418,6 +420,20 @@ int ramp_position_step(struct leg_thread_state* state, float elapsed)
 
 int compute_walk_parameters(struct leg_thread_state *state, struct leg_control_parameters *p, float *frequency, float *leg_scale)
 {
+    float left_scale, right_scale;
+    if(p->angular_velocity > 0)
+    {
+        right_scale = copysignf(p->forward_velocity, 1.0);
+        left_scale = p->angular_velocity * state->turning_width / p->forward_velocity;
+    }
+    else
+    {
+        right_scale = -p->angular_velocity * state->turning_width / p->forward_velocity;
+        left_scale = copysignf(p->forward_velocity, 1.0);
+    }
+    leg_scale[0] = leg_scale[1] = leg_scale[2] = right_scale;
+    leg_scale[3] = leg_scale[4] = leg_scale[5] = left_scale;
+    *frequency = (fabs(p->angular_velocity) * state->turning_width + fabs(p->forward_velocity)) / state->steps[state->gaits[state->current_gait].step_index].length;
     return 0;
 }
 
@@ -435,7 +451,7 @@ int walk_step(struct leg_thread_state* state, struct leg_control_parameters *p, 
     for(int leg=0; leg<state->nlegs; leg++)
     {
         float toe_position[3];
-        compute_leg_position(state, leg, state->walk_phase, &toe_position);
+        compute_leg_position(state, leg, state->walk_phase, leg_scale[leg], &toe_position);
         int err = set_toe_postion(state->ctx, state->legs[leg].address, &toe_position);
         if(err != 0)
             return err;
