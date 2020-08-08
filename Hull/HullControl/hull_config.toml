@@ -32,7 +32,7 @@ origin=[0, 0, 0]
 # Roll, pitch, yaw
 orientation=[0, 0, 180]
 
-[robot.legs.description]]
+[[robot.legs.description]]
 name="LeftCenter"
 index=1
 address=0x20
@@ -87,11 +87,13 @@ name="Trapezoid"
 # Y - along robot side
 # Z - vertical
 points=[
-    { "phase": 0.0, "X": 19.0, "Y":  7.0, "Z": -23.0 },
-    { "phase": 0.6, "X": 19.0, "Y": -7.0, "Z": -23.0 },
-    { "phase": 0.7, "X": 19.0, "Y": -7.0, "Z": -17.0 },
-    { "phase": 0.9, "X": 19.0, "Y":  7.0, "Z": -17.0 },
+    { "phase"=0.0, "X"=19.0, "Y"= 7.0, "Z"=-23.0 },
+    { "phase"=0.6, "X"=19.0, "Y"=-7.0, "Z"=-23.0 },
+    { "phase"=0.7, "X"=19.0, "Y"=-7.0, "Z"=-17.0 },
+    { "phase"=0.9, "X"=19.0, "Y"= 7.0, "Z"=-17.0 },
 ]
+
+length=0.014
 
 [[robot.gait]]
 name="Tripod"
