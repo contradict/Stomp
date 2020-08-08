@@ -16,6 +16,18 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
         struct leg_control_parameters *params = (struct leg_control_parameters *)(state->parameter_queue.buffer + offset);
         params->forward_velocity = (msg->axis[0] - 1500.0f) / 500.0f;
         params->angular_velocity = (msg->axis[1] - 1500.0f) / 500.0f;
+        switch(msg->toggle[0])
+        {
+            case STOMP_CONTROL_RADIO_ON:
+                params->mode = command_walk;
+                break;
+            case STOMP_CONTROL_RADIO_CENTER:
+                params->mode = command_stop;
+                break;
+            case STOMP_CONTROL_RADIO_OFF:
+                params->mode = command_init;
+                break;
+        }
         ringbuf_produce(state->parameter_queue.ringbuf, state->ringbuf_worker);
     }
 }
