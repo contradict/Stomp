@@ -177,7 +177,12 @@ void TargetAcquisitionController::updateBestTarget()
         {
             selectTarget();
         }
-    }        
+    }
+    else
+    {
+        m_pBestTarget = NULL;
+    }
+     
 }
 
 void TargetAcquisitionController::segmentTargets()

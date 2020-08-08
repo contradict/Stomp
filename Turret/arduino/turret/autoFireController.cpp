@@ -246,6 +246,8 @@ void AutoFireController::SendTelem()
 
     if (pTarget != NULL)
     {
+        // BB MJS: This is incorrect, it should be the predicted x,y used in TargetTracking.WillHitTrackedTarget
+
         targetX = pTarget->GetXCoord() / 16;
         targetY= pTarget->GetYCoord() / 16;
     }

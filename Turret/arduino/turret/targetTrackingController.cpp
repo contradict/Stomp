@@ -49,11 +49,12 @@ void TargetTrackingController::Update()
     m_lastUpdateTime = micros();
     m_latestDt = m_lastUpdateTime - previousUpdateTime;
 
-    //  Pass update to our owned objects
-
     //  Need to "predict" before passing along the Update to Acquisition Controller
 
     predictedTrackedTargetLocation();
+
+    //  Pass update to our owned objects
+
     m_pTargetAcquisitionController->Update();
 
     //  Grab the target that the Target Acquisition Controller believes is the best
@@ -288,6 +289,13 @@ void TargetTrackingController::updateTracking()
 
     if (!IsTrackingValidTarget())
     {
+        m_residualX = 0;
+        m_residualY = 0;
+        m_x = 0;
+        m_y = 0;
+        m_vx = 0;
+        m_vy = 0;
+
         return;
     }
 

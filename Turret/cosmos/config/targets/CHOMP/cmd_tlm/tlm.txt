@@ -11,14 +11,14 @@
 
 TELEMETRY CHOMP TRK LITTLE_ENDIAN "Tracking"
     APPEND_ID_ITEM PKTID 8 UINT 4 "Packet ID which must be 4"
-    APPEND_ITEM DETX 16 INT "detection x coordinate"
-    APPEND_ITEM DETY 16 INT "detection y coordinate"
-    APPEND_ITEM DETA 32 INT "detection angle"
-    APPEND_ITEM DETR 32 INT "detection radius"
-    APPEND_ITEM FLTX 16 INT "filtered x"
-    APPEND_ITEM FLTVX 16 INT "filtered x velocity"
-    APPEND_ITEM FLTY 16 INT "filtered y"
-    APPEND_ITEM FLTVY 16 INT "filtered y velocity"
+    APPEND_ITEM TARGET_X 16 INT "detection x coordinate"
+    APPEND_ITEM TARGET_Y 16 INT "detection y coordinate"
+    APPEND_ITEM TARGET_ANGLE 32 INT "detection angle"
+    APPEND_ITEM TARGET_RADIUS 32 INT "detection radius"
+    APPEND_ITEM FLT_X 16 INT "filtered x"
+    APPEND_ITEM FLT_VX 16 INT "filtered x velocity"
+    APPEND_ITEM FLT_Y 16 INT "filtered y"
+    APPEND_ITEM FLT_VY 16 INT "filtered y velocity"
 
 #
 #  AUTOF - Auto Fire (Packet ID 5)
@@ -26,7 +26,7 @@ TELEMETRY CHOMP TRK LITTLE_ENDIAN "Tracking"
 
 TELEMETRY CHOMP AUTOF LITTLE_ENDIAN "Autofire"
     APPEND_ID_ITEM PKTID 8 UINT 5 "Packet ID which must be 5"
-    APPEND_ITEM STATE 8 INT "State"
+    APPEND_ITEM AUTOF_STATE 8 INT "State"
         STATE INIT              0
         STATE SAFE              1
         STATE DISABLED          2
