@@ -20,7 +20,7 @@ CFLAGS+=	-Wshadow -Wcast-qual -Wcast-align -Wwrite-strings
 CFLAGS+=	-Wold-style-definition
 CFLAGS+=	-Wsuggest-attribute=noreturn -Wjump-misses-init
 CFLAGS+=	-Wduplicated-cond -Wmisleading-indentation -Wnull-dereference
-CFLAGS+=	-Wduplicated-branches -Wrestrict
+# CFLAGS+=	-Wduplicated-branches -Wrestrict
 
 ifeq ($(MAKECMDGOALS),tests)
 DEBUG=		1
