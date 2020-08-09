@@ -2,6 +2,8 @@ message_defs=$(shell find lcm/*.lcm)
 message_hdrs=$(subst lcm/,inc/lcm/stomp_,$(message_defs:.lcm=.h))
 message_srcs=$(subst lcm/,src/lcm/stomp_,$(message_defs:.lcm=.c))
 message_objs=$(message_srcs:.c=.o)
+message_java=$(subst lcm/,java/stomp/,$(message_defs:.lcm=.java))
+message_clss=$(message_java:.java=.class)
 
 leg_control_srcs=$(shell find src/leg_control/*.c)
 leg_control_objs=$(leg_control_srcs:.c=.o)
@@ -38,6 +40,9 @@ clean:
 leg_control: $(leg_control_objs) ../Common/modbus_device.o src/lcm/messages.a $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB) | $(message_hdrs)
 	gcc $^ -o $@ $(LDFLAGS)
 
+leg_control_cap: leg_control
+	sudo setcap "cap_sys_nice=ep" ./leg_control
+
 sbus_radio: src/sbus_radio/main.o src/lcm/messages.a | $(message_hdrs)
 	gcc $^ -o $@ $(LDFLAGS)
 
@@ -57,6 +62,15 @@ src/lcm:
 
 inc/lcm:
 	mkdir -p inc/lcm
+
+java/stomp/%.java: lcm/%.lcm
+	lcm-gen -j --jpath java $<
+
+stomp.jar: $(message_clss)
+	jar -cf stomp.jar -C java stomp/control_radio.class -C java stomp/modbus.class -C java stomp/telemetry_leg.class
+
+%.class: %.java
+	javac -cp /usr/share/java/lcm.jar $<
 
 ringbuf/lib/libringbuf.a: ringbuf/src/ringbuf.c ringbuf/src/ringbuf.h
 	$(MAKE) -C ringbuf/src LIBDIR=`pwd`/ringbuf/lib INCDIR=`pwd`/ringbuf/include install
