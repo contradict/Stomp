@@ -80,7 +80,7 @@ int main(int argc, char **argv)
         printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
     }
 
-    //set custom baud ratei
+    //set custom baud rate
     struct termios2 tty2;
     ioctl(serial_port, TCGETS2, &tty2);
     tty2.c_cflag &= ~CBAUD;
@@ -107,12 +107,12 @@ int main(int argc, char **argv)
         { 
             FD_ZERO(&rfds);
             FD_SET(serial_port, &rfds);
+            pkt_timeout.tv_usec = pkt_timeout_usecs;
             sret = select(serial_port + 1, &rfds, NULL, NULL, &pkt_timeout);
-            if (sret  == 0) {
-                break;   //timeout occurred, hopefully end of packet
-            } else if (sret > 0)
+            if (sret > 0) //data available
             {
                 num_bytes  = read(serial_port, &read_buff, sizeof(read_buff));
+                printf("Read returned with %i bytes\n", num_bytes);
                 if (num_bytes > 0)
                 {
                     int i;
@@ -120,10 +120,17 @@ int main(int argc, char **argv)
                     {
                         sbus_pkt[pkt_length] = read_buff[i];
                         pkt_length++;
+                        if (pkt_length == sizeof(sbus_pkt))
+                        {
+                            break; //don't run off the end of the array
+                        }
                     }
                 } else {
                     printf("Error %i from read: %s\n", errno, strerror(errno));
                 }
+            } else if (sret  == 0) {
+                printf("Timeout occured");
+                break;   //timeout occurred, hopefully end of packet
             } else {
                 printf("Error %i from select %s\n", errno, strerror(errno));
             }
