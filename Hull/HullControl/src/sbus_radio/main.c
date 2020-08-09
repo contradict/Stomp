@@ -22,7 +22,22 @@ int main(int argc, char **argv)
     const unsigned int sbus_baud = 100000;
     const int sbus_pkt_length = 25; //complete sbus packet size
     const int sbus_ch_cnt = 17;
-    const int pkt_timeout_usecs = 2000; //number of usecs
+    bool debug_out = false;
+    int pkt_timeout_usecs = 2000; //number of usecs
+
+    int opt; //get command line args
+    while((opt = getopt(argc, argv, "v:t")) != -1)
+    {
+        switch(opt)
+        {
+            case 'v':
+                debug_out = true;
+                break;
+            case 't':
+                pkt_timeout_usecs = atoi(optarg);
+        }
+    }
+
     struct timeval pkt_timeout;
     pkt_timeout.tv_sec = 0;
     pkt_timeout.tv_usec = pkt_timeout_usecs;
@@ -39,7 +54,7 @@ int main(int argc, char **argv)
     printf("Trying to open UART10\n");
 
     int serial_port;
-    serial_port = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
+    serial_port = open("/dev/ttyS1", O_RDWR | O_NONBLOCK | O_NOCTTY);
     if (serial_port < 0)
     {
         printf("Error %i from open: %s\n", errno, strerror(errno));
@@ -141,7 +156,11 @@ int main(int argc, char **argv)
         }
 
         if (pkt_length == sbus_pkt_length) {
-            printf("Complete SBUS packet received\n");
+            if (sbus_pkt[0] == 0x0F && sbus_pkt[24]){
+                printf("Complete SBUS packet received\n");
+            } else {
+                printf("Malformed SBUS packet received\n");
+            }
         } else if (pkt_length < sbus_pkt_length) {
             printf("Incomplete packet, %i bytes received\n", pkt_length);
             continue;
@@ -150,8 +169,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        printf("First byte: %i, Last byte: %i, Second byte: %i\n", sbus_pkt[0], sbus_pkt[pkt_length - 1], sbus_pkt[1]);
-
+        //convert SBUS format into channel values as ints
         //low bits come in first byte, high bits in next byte, litte endian
         sbus_chs[0]  = (sbus_pkt[2]  << 8  | sbus_pkt[1])                           & 0x07FF; // 8, 3
         sbus_chs[1]  = (sbus_pkt[3]  << 5  | sbus_pkt[2] >> 3)                      & 0x07FF; // 6, 5
