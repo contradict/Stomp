@@ -22,6 +22,8 @@ int main(int argc, char **argv)
     const unsigned int sbus_baud = 100000;
     const int sbus_pkt_length = 25; //complete sbus packet size
     const int sbus_ch_cnt = 17;
+    const int sbus_max = 1811;
+    const int sbus_min = 172;
     bool debug_out = false;
     int pkt_timeout_usecs = 2000; //number of usecs
 
@@ -114,7 +116,10 @@ int main(int argc, char **argv)
     int pkt_length;
     int num_bytes;
     int sret;
-    uint16_t sbus_chs[sbus_ch_cnt];
+    uint16_t sbus_raw[sbus_ch_cnt -1];
+    float sbus_ch[sbus_ch_cnt -1];
+    float sbus_span = (sbus_max - sbus_min)/2;
+    float sbus_center = (sbus_max + sbus_min)/2;
     bool failsafe = true;
     while(true) //main loop, read sbus, then send data as lcm message
     {
@@ -171,25 +176,32 @@ int main(int argc, char **argv)
 
         //convert SBUS format into channel values as ints
         //low bits come in first byte, high bits in next byte, litte endian
-        sbus_chs[0]  = (sbus_pkt[2]  << 8  | sbus_pkt[1])                           & 0x07FF; // 8, 3
-        sbus_chs[1]  = (sbus_pkt[3]  << 5  | sbus_pkt[2] >> 3)                      & 0x07FF; // 6, 5
-        sbus_chs[2]  = (sbus_pkt[5]  << 10 | sbus_pkt[4] << 2 | sbus_pkt[3] >> 6)   & 0x07FF; // 1, 8, 2
-        sbus_chs[3]  = (sbus_pkt[6]  << 7  | sbus_pkt[5] >> 1)                      & 0x07FF; // 4, 7
-        sbus_chs[4]  = (sbus_pkt[7]  << 4  | sbus_pkt[6] >> 4)                      & 0x07FF; // 7, 4
-        sbus_chs[5]  = (sbus_pkt[9]  << 9  | sbus_pkt[8] << 1 | sbus_pkt[7] >> 7)   & 0x07FF; // 2, 8, 1
-        sbus_chs[6]  = (sbus_pkt[10] << 6  | sbus_pkt[9] >> 2)                      & 0x07FF; // 5, 6
-        sbus_chs[7]  = (sbus_pkt[11] << 3  | sbus_pkt[10] >> 5)                     & 0x07FF; // 8, 3
-        sbus_chs[8]  = (sbus_pkt[13] << 8  | sbus_pkt[12])                          & 0x07FF; // 3, 8
-        sbus_chs[9]  = (sbus_pkt[14] << 5  | sbus_pkt[13] >> 3)                     & 0x07FF; // 6, 5
-        sbus_chs[10] = (sbus_pkt[16] << 10 | sbus_pkt[15] << 2 | sbus_pkt[14] >> 6) & 0x07FF; // 1, 8, 2
-        sbus_chs[11] = (sbus_pkt[17] << 7  | sbus_pkt[16] >> 1)                     & 0x07FF; // 4, 7
-        sbus_chs[12] = (sbus_pkt[18] << 4  | sbus_pkt[17] >> 4)                     & 0x07FF; // 7, 4
-        sbus_chs[13] = (sbus_pkt[20] << 9  | sbus_pkt[19] << 1 | sbus_pkt[18] >> 7) & 0x07FF; // 2, 8, 1
-        sbus_chs[14] = (sbus_pkt[21] << 6  | sbus_pkt[20] >> 2)                     & 0x07FF; // 5, 6
-        sbus_chs[15] = (sbus_pkt[22] << 3  | sbus_pkt[21] >> 5)                     & 0x07FF; // 8, 3
+        sbus_raw[0]  = (sbus_pkt[2]  << 8  | sbus_pkt[1])                           & 0x07FF; // 8, 3
+        sbus_raw[1]  = (sbus_pkt[3]  << 5  | sbus_pkt[2] >> 3)                      & 0x07FF; // 6, 5
+        sbus_raw[2]  = (sbus_pkt[5]  << 10 | sbus_pkt[4] << 2 | sbus_pkt[3] >> 6)   & 0x07FF; // 1, 8, 2
+        sbus_raw[3]  = (sbus_pkt[6]  << 7  | sbus_pkt[5] >> 1)                      & 0x07FF; // 4, 7
+        sbus_raw[4]  = (sbus_pkt[7]  << 4  | sbus_pkt[6] >> 4)                      & 0x07FF; // 7, 4
+        sbus_raw[5]  = (sbus_pkt[9]  << 9  | sbus_pkt[8] << 1 | sbus_pkt[7] >> 7)   & 0x07FF; // 2, 8, 1
+        sbus_raw[6]  = (sbus_pkt[10] << 6  | sbus_pkt[9] >> 2)                      & 0x07FF; // 5, 6
+        sbus_raw[7]  = (sbus_pkt[11] << 3  | sbus_pkt[10] >> 5)                     & 0x07FF; // 8, 3
+        sbus_raw[8]  = (sbus_pkt[13] << 8  | sbus_pkt[12])                          & 0x07FF; // 3, 8
+        sbus_raw[9]  = (sbus_pkt[14] << 5  | sbus_pkt[13] >> 3)                     & 0x07FF; // 6, 5
+        sbus_raw[10] = (sbus_pkt[16] << 10 | sbus_pkt[15] << 2 | sbus_pkt[14] >> 6) & 0x07FF; // 1, 8, 2
+        sbus_raw[11] = (sbus_pkt[17] << 7  | sbus_pkt[16] >> 1)                     & 0x07FF; // 4, 7
+        sbus_raw[12] = (sbus_pkt[18] << 4  | sbus_pkt[17] >> 4)                     & 0x07FF; // 7, 4
+        sbus_raw[13] = (sbus_pkt[20] << 9  | sbus_pkt[19] << 1 | sbus_pkt[18] >> 7) & 0x07FF; // 2, 8, 1
+        sbus_raw[14] = (sbus_pkt[21] << 6  | sbus_pkt[20] >> 2)                     & 0x07FF; // 5, 6
+        sbus_raw[15] = (sbus_pkt[22] << 3  | sbus_pkt[21] >> 5)                     & 0x07FF; // 8, 3
         failsafe = sbus_pkt[23] & 0x08;
 
-        printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_chs[0], sbus_chs[1], failsafe);
+        int i;
+        for (i = 0; i < sbus_ch_cnt; i++)
+        {
+            sbus_ch[i] = (sbus_raw[i] - sbus_center)/sbus_span;
+        }
+
+        printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_raw[0], sbus_raw[1], failsafe);
+        printf("Channel 1: %f.3, Channel 2: %f.3\n", sbus_ch[0], sbus_ch[1]);
 
         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &radio_message);
     }
