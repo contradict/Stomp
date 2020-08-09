@@ -16,10 +16,10 @@ struct leg_thread_definition {
     uint32_t period;
     uint32_t response_timeout;
     toml_table_t *config;
-    struct queue parameter_queue;
-    struct queue command_queue;
-    struct queue response_queue;
-    struct queue telemetry_queue;
+    struct queue *parameter_queue;
+    struct queue *command_queue;
+    struct queue *response_queue;
+    struct queue *telemetry_queue;
 };
 
 enum operation_command {

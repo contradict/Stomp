@@ -471,6 +471,7 @@ int read_parameters(struct queue *pq, struct leg_control_parameters *p)
     if(s == sizeof(struct leg_control_parameters))
     {
         memcpy(p, pq->buffer + offset, s);
+        ringbuf_release(pq->ringbuf, s);
     }
     return s;
 }
@@ -633,10 +634,10 @@ int send_telemetry(struct leg_thread_state* state)
     {
         err = get_toe_feedback(state->ctx, state->legs[leg].address, &(position[leg]), &(pressure[leg]));
     }
-    ssize_t offset = ringbuf_acquire(state->definition->telemetry_queue.ringbuf, state->telemetry_worker, sizeof(stomp_telemetry_leg));
+    ssize_t offset = ringbuf_acquire(state->definition->telemetry_queue->ringbuf, state->telemetry_worker, sizeof(stomp_telemetry_leg));
     if(offset > 0)
     {
-        stomp_telemetry_leg *telem = (stomp_telemetry_leg *)(state->definition->telemetry_queue.buffer + offset);
+        stomp_telemetry_leg *telem = (stomp_telemetry_leg *)(state->definition->telemetry_queue->buffer + offset);
         for(int leg=0;leg<state->nlegs;leg++)
         {
             for(int joint=0;joint<JOINT_COUNT;joint++)
@@ -651,7 +652,7 @@ int send_telemetry(struct leg_thread_state* state)
                 telem->toe_position_commanded_Z[JOINT_COUNT * leg + joint] = state->commanded_toe_positions[leg][2];
             }
         }
-        ringbuf_produce(state->definition->telemetry_queue.ringbuf, state->telemetry_worker);
+        ringbuf_produce(state->definition->telemetry_queue->ringbuf, state->telemetry_worker);
     }
     return 0;
 }
@@ -659,10 +660,10 @@ int send_telemetry(struct leg_thread_state* state)
 int check_command_queue(struct leg_thread_state* state)
 {
     size_t offset;
-    size_t s = ringbuf_consume(state->definition->command_queue.ringbuf, &offset);
+    size_t s = ringbuf_consume(state->definition->command_queue->ringbuf, &offset);
     if(s == sizeof(stomp_modbus))
     {
-        stomp_modbus* request = (stomp_modbus*)(state->definition->command_queue.buffer + offset);
+        stomp_modbus* request = (stomp_modbus*)(state->definition->command_queue->buffer + offset);
         switch(request->command)
         {
             //TODO:
@@ -673,27 +674,28 @@ int check_command_queue(struct leg_thread_state* state)
             //read_input_registers
             //read_bits
         }
-        ssize_t offset = ringbuf_acquire(state->definition->response_queue.ringbuf, state->response_worker, sizeof(stomp_modbus));
+        ssize_t offset = ringbuf_acquire(state->definition->response_queue->ringbuf, state->response_worker, sizeof(stomp_modbus));
         if(offset > 0)
         {
-            stomp_modbus *response = (stomp_modbus *)(state->definition->response_queue.buffer + offset);
+            stomp_modbus *response = (stomp_modbus *)(state->definition->response_queue->buffer + offset);
             memcpy(response, request, sizeof(stomp_modbus));
-            ringbuf_produce(state->definition->response_queue.ringbuf, state->response_worker);
+            ringbuf_produce(state->definition->response_queue->ringbuf, state->response_worker);
         }
+        ringbuf_release(state->definition->command_queue->ringbuf, s);
     }
     return 0;
 }
 
 int run_leg_thread(struct leg_thread_state *state)
 {
-    state->telemetry_worker = ringbuf_register(state->definition->telemetry_queue.ringbuf, 0);
+    state->telemetry_worker = ringbuf_register(state->definition->telemetry_queue->ringbuf, 0);
     if(!state->telemetry_worker)
     {
         printf("Unable to register worker for telemetry queue\n");
         return -1;
     }
 
-    state->response_worker = ringbuf_register(state->definition->response_queue.ringbuf, 0);
+    state->response_worker = ringbuf_register(state->definition->response_queue->ringbuf, 0);
     if(!state->telemetry_worker)
     {
         printf("Unable to register worker for command response queue\n");
@@ -729,7 +731,7 @@ int run_leg_thread(struct leg_thread_state *state)
     {
         if(loop_phase)
         {
-            read_parameters(&state->definition->parameter_queue, &parameters);
+            read_parameters(state->definition->parameter_queue, &parameters);
             if(run_leg_thread_once(state, &parameters, elapsed))
                 restart_rate_timer(timer);
         } else {

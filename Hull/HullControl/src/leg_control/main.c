@@ -11,7 +11,7 @@
 #include "lcm/stomp_telemetry_leg.h"
 #include "leg_control/queue.h"
 #include "leg_control/leg_thread.h"
-#include "leg_control/control_radio.h"
+#include "leg_control/lcm_handlers.h"
 #include "leg_control/toml_utils.h"
 
 int main(int argc, char **argv)
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     char *robot_name;
     toml_rtos(tomlr, &robot_name);
     printf("Starting %s\n", robot_name);
-    
+
     lcm_t *lcm = lcm_create(NULL);
     if(!lcm)
     {
@@ -81,24 +81,49 @@ int main(int argc, char **argv)
 
     leg_thread.lcm = lcm;
 
-    create_queue(1,  3*sizeof(struct leg_control_parameters), &leg_thread.parameter_queue);
-    create_queue(1,  10*sizeof(stomp_modbus), &leg_thread.command_queue);
-    create_queue(1,  10*sizeof(stomp_modbus), &leg_thread.response_queue);
-    create_queue(1,  10*sizeof(stomp_telemetry_leg), &leg_thread.telemetry_queue);
-    struct leg_thread_state *state = create_leg_thread(&leg_thread, argv[0]);
-    if(state==0)
-        exit(3);
-
-    struct control_radio_state radio_state;
+    struct queue parameter_queue;
+    create_queue(1,  3*sizeof(struct leg_control_parameters), &parameter_queue);
+    leg_thread.parameter_queue = &parameter_queue;
+    struct lcm_listener_state radio_state;
     radio_state.lcm = lcm;
-    radio_state.parameter_queue.buffer = leg_thread.parameter_queue.buffer;
-    radio_state.parameter_queue.ringbuf = leg_thread.parameter_queue.ringbuf;
+    radio_state.queue = &parameter_queue;
     int err= control_radio_init(&radio_state);
     if(err)
     {
-        terminate_leg_thread(&state);
+        printf("Failed to initialize control radio LCM receiver.");
         exit(err);
     }
+
+    struct queue telemetry_queue;
+    create_queue(1,  10*sizeof(stomp_telemetry_leg), &telemetry_queue);
+    leg_thread.telemetry_queue = &telemetry_queue;
+    struct lcm_sender_state telemetry_state;
+    telemetry_state.lcm = lcm;
+    telemetry_state.queue = &telemetry_queue;
+
+    struct queue response_queue;
+    create_queue(1,  10*sizeof(stomp_modbus), &response_queue);
+    leg_thread.response_queue = &response_queue;
+    struct lcm_sender_state response_state;
+    response_state.lcm = lcm;
+    response_state.queue = &response_queue;
+
+    struct queue command_queue;
+    create_queue(1,  10*sizeof(stomp_modbus), &command_queue);
+    leg_thread.command_queue = &command_queue;
+    struct lcm_listener_state modbus_state;
+    modbus_state.lcm = lcm;
+    modbus_state.queue = &command_queue;
+    err = modbus_command_init(&modbus_state);
+    if(err)
+    {
+        printf("Failed to initialize modbus command LCM receiver.");
+        exit(err);
+    }
+
+    struct leg_thread_state *state = create_leg_thread(&leg_thread, argv[0]);
+    if(state==0)
+        exit(3);
 
     while(true)
     {
@@ -114,7 +139,8 @@ int main(int argc, char **argv)
         int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
         if(0 == status)
         {
-            // check telemetry and response queues
+            lcm_telemetry_send(&telemetry_state);
+            lcm_response_send(&response_state);
         }
         else if(FD_ISSET(lcm_fd, &fds))
         {
@@ -123,6 +149,7 @@ int main(int argc, char **argv)
     }
 
     control_radio_shutdown(&radio_state);
+    modbus_command_shutdown(&radio_state);
     terminate_leg_thread(&state);
 
     lcm_destroy(lcm);
