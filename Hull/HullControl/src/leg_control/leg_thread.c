@@ -15,6 +15,8 @@
 #include "leg_control/leg_thread.h"
 #include "leg_control/toml_utils.h"
 #include "leg_control/rate_timer.h"
+#include "lcm/stomp_telemetry_leg.h"
+#include "lcm/stomp_modbus.h"
 
 const float deg2rad = M_PI / 180.0f;
 
@@ -62,6 +64,8 @@ enum leg_control_mode {
 struct leg_thread_state {
     struct leg_thread_definition *definition;
     modbus_t *ctx;
+    ringbuf_worker_t *telemetry_worker;
+    ringbuf_worker_t *response_worker;
     pid_t pid;
     int nlegs;
     struct leg_description* legs;
@@ -74,7 +78,7 @@ struct leg_thread_state {
     float position_ramp_time;
     atomic_bool shouldrun;
     enum leg_control_mode mode;
-    float (*startup_toe_positions)[3];
+    float (*commanded_toe_positions)[3];
     float (*initial_toe_positions)[3];
     float turning_width;
     float last_elapsed;
@@ -379,7 +383,7 @@ int retrieve_leg_positions(struct leg_thread_state* state)
     float discard_pressures[6];
     for(int leg=0; leg<state->nlegs; leg++)
     {
-        int err = get_toe_feedback(state->ctx, state->legs[leg].address, &(state->startup_toe_positions[leg]), &discard_pressures);
+        int err = get_toe_feedback(state->ctx, state->legs[leg].address, &(state->commanded_toe_positions[leg]), &discard_pressures);
         if(err!=0)
             return err;
         compute_leg_position(state, leg, 0.0f, 0.0f, &(state->initial_toe_positions[leg]));
@@ -407,7 +411,7 @@ int ramp_position_step(struct leg_thread_state* state, float elapsed)
         float ramp_position[3];
         for(int axis=0;axis<3;axis++)
         {
-            ramp_position[axis] = phase * state->initial_toe_positions[leg][axis] + (1.0 - phase) * state->startup_toe_positions[leg][axis];
+            ramp_position[axis] = phase * state->initial_toe_positions[leg][axis] + (1.0 - phase) * state->commanded_toe_positions[leg][axis];
         }
         int err = set_toe_postion(state->ctx, state->legs[leg].address, &ramp_position);
         if(err == -1)
@@ -455,6 +459,7 @@ int walk_step(struct leg_thread_state* state, struct leg_control_parameters *p, 
         int err = set_toe_postion(state->ctx, state->legs[leg].address, &toe_position);
         if(err != 0)
             return err;
+        memcpy(state->commanded_toe_positions[leg], toe_position, sizeof(toe_position));
     }
     return 0;
 }
@@ -620,14 +625,88 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
     return restart_timer;
 }
 
+int send_telemetry(struct leg_thread_state* state)
+{
+    float position[state->nlegs][3], pressure[state->nlegs][6];
+    int err;
+    for(int leg=0;leg<state->nlegs;state++)
+    {
+        err = get_toe_feedback(state->ctx, state->legs[leg].address, &(position[leg]), &(pressure[leg]));
+    }
+    ssize_t offset = ringbuf_acquire(state->definition->telemetry_queue.ringbuf, state->telemetry_worker, sizeof(stomp_telemetry_leg));
+    if(offset > 0)
+    {
+        stomp_telemetry_leg *telem = (stomp_telemetry_leg *)(state->definition->telemetry_queue.buffer + offset);
+        for(int leg=0;leg<state->nlegs;leg++)
+        {
+            for(int joint=0;joint<JOINT_COUNT;joint++)
+            {
+                telem->base_end_pressure[JOINT_COUNT * leg + joint] = pressure[leg][2*joint];
+                telem->rod_end_pressure[JOINT_COUNT * leg + joint] = pressure[leg][2*joint + 1];
+                telem->toe_position_measured_X[JOINT_COUNT * leg + joint] = position[leg][0];
+                telem->toe_position_measured_Y[JOINT_COUNT * leg + joint] = position[leg][1];
+                telem->toe_position_measured_Z[JOINT_COUNT * leg + joint] = position[leg][2];
+                telem->toe_position_commanded_X[JOINT_COUNT * leg + joint] = state->commanded_toe_positions[leg][0];
+                telem->toe_position_commanded_Y[JOINT_COUNT * leg + joint] = state->commanded_toe_positions[leg][1];
+                telem->toe_position_commanded_Z[JOINT_COUNT * leg + joint] = state->commanded_toe_positions[leg][2];
+            }
+        }
+        ringbuf_produce(state->definition->telemetry_queue.ringbuf, state->telemetry_worker);
+    }
+    return 0;
+}
+
+int check_command_queue(struct leg_thread_state* state)
+{
+    size_t offset;
+    size_t s = ringbuf_consume(state->definition->command_queue.ringbuf, &offset);
+    if(s == sizeof(stomp_modbus))
+    {
+        stomp_modbus* request = (stomp_modbus*)(state->definition->command_queue.buffer + offset);
+        switch(request->command)
+        {
+            //TODO:
+            //write_register
+            //write_registers
+            //write_bits
+            //read_registers
+            //read_input_registers
+            //read_bits
+        }
+        ssize_t offset = ringbuf_acquire(state->definition->response_queue.ringbuf, state->response_worker, sizeof(stomp_modbus));
+        if(offset > 0)
+        {
+            stomp_modbus *response = (stomp_modbus *)(state->definition->response_queue.buffer + offset);
+            memcpy(response, request, sizeof(stomp_modbus));
+            ringbuf_produce(state->definition->response_queue.ringbuf, state->response_worker);
+        }
+    }
+    return 0;
+}
+
 int run_leg_thread(struct leg_thread_state *state)
 {
+    state->telemetry_worker = ringbuf_register(state->definition->telemetry_queue.ringbuf, 0);
+    if(!state->telemetry_worker)
+    {
+        printf("Unable to register worker for telemetry queue\n");
+        return -1;
+    }
+
+    state->response_worker = ringbuf_register(state->definition->response_queue.ringbuf, 0);
+    if(!state->telemetry_worker)
+    {
+        printf("Unable to register worker for command response queue\n");
+        return -1;
+    }
+
+
     toml_table_t *legs_config = toml_table_in(state->definition->config,
                                              "legs");
     state->legs = parse_leg_descriptions(legs_config, &state->nlegs);
     state->joint_gains = parse_joint_gains(legs_config);
     get_float(legs_config, "position_ramp_time", &state->position_ramp_time);
-    state->startup_toe_positions = malloc(sizeof(float[state->nlegs][3]));
+    state->commanded_toe_positions = malloc(sizeof(float[state->nlegs][3]));
     state->initial_toe_positions = malloc(sizeof(float[state->nlegs][3]));
 
     state->steps = parse_steps(state->definition->config, &state->nsteps);
@@ -654,13 +733,8 @@ int run_leg_thread(struct leg_thread_state *state)
             if(run_leg_thread_once(state, &parameters, elapsed))
                 restart_rate_timer(timer);
         } else {
-            // data = read leg telemetry
-            // send telemetry
-            // if(command)
-            // {
-            //      execute command
-            //      send response
-            // }
+            send_telemetry(state);
+            check_command_queue(state);
         }
         elapsed = sleep_rate(timer);
         loop_phase ^= true;
@@ -668,7 +742,7 @@ int run_leg_thread(struct leg_thread_state *state)
     destroy_rate_timer(&timer);
     free_leg_description(state->legs, state->nlegs);
     free(state->joint_gains);
-    free(state->startup_toe_positions);
+    free(state->commanded_toe_positions);
     free(state->initial_toe_positions);
     free_step_descriptions(state->steps, state->nsteps);
     free_gait_descriptions(state->gaits, state->ngaits);

@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 
     leg_thread.lcm = lcm;
 
-    create_queue(1,  3*sizeof(stomp_control_radio), &leg_thread.parameter_queue);
+    create_queue(1,  3*sizeof(struct leg_control_parameters), &leg_thread.parameter_queue);
     create_queue(1,  10*sizeof(stomp_modbus), &leg_thread.command_queue);
     create_queue(1,  10*sizeof(stomp_modbus), &leg_thread.response_queue);
     create_queue(1,  10*sizeof(stomp_telemetry_leg), &leg_thread.telemetry_queue);
