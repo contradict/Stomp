@@ -207,7 +207,12 @@ struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* s
         gaits[g].step_index = find_step(steps, nsteps, step_name);
         free(step_name);
         get_float(gait, "step_cycles", &gaits[g].step_cycles);
-        toml_array_t *phase_offsets = toml_array_in(gait, "phase_offsets");
+        toml_array_t *phase_offsets = toml_array_in(gait, "leg_phase");
+        if(phase_offsets == 0)
+        {
+            printf("No leg_phase for gait %s\n", gaits[g].name);
+            return NULL;
+        }
         gaits[g].nlegs = toml_array_nelem(phase_offsets);
         gaits[g].phase_offsets = calloc(gaits[g].nlegs, sizeof(float));
         for(int p=0; p<gaits[g].nlegs; p++)
@@ -630,7 +635,7 @@ int send_telemetry(struct leg_thread_state* state)
 {
     float position[state->nlegs][3], pressure[state->nlegs][6];
     int err;
-    for(int leg=0;leg<state->nlegs;state++)
+    for(int leg=0;leg<state->nlegs;leg++)
     {
         err = get_toe_feedback(state->ctx, state->legs[leg].address, &(position[leg]), &(pressure[leg]));
     }
