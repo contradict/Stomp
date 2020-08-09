@@ -21,6 +21,7 @@ int main(int argc, char **argv)
 {
     const unsigned int sbus_baud = 100000;
     const int sbus_pkt_length = 25; //complete sbus packet size
+    const int sbus_ch_cnt = 17;
     const int pkt_timeout_usecs = 2000; //number of usecs
     struct timeval pkt_timeout;
     pkt_timeout.tv_sec = 0;
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
     tty.c_oflag &= ~OPOST; //prevent special interpretation of output bytes
     tty.c_oflag &= ~ONLCR; //prevent nl converstion to cr
 
-    tty.c_cc[VTIME] = 0;  //non-blocking reads
+    tty.c_cc[VTIME] = 0; 
     tty.c_cc[VMIN] = 0;
 
     //try to set the configuration of the serial port
@@ -92,12 +93,14 @@ int main(int argc, char **argv)
         printf("Error %i from ioctl: %s\n", errno, strerror(errno));
     }
 
-    char read_buff [256];
-    char sbus_pkt [256];
+    uint8_t read_buff [256];
+    uint8_t sbus_pkt [256];
     fd_set rfds;  //file descriptor set you need to send to select
     int pkt_length;
     int num_bytes;
     int sret;
+    uint16_t sbus_chs[sbus_ch_cnt];
+    bool failsafe = true;
     while(true) //main loop, read sbus, then send data as lcm message
     {
         pkt_length = 0;
@@ -129,14 +132,14 @@ int main(int argc, char **argv)
                     printf("Error %i from read: %s\n", errno, strerror(errno));
                 }
             } else if (sret  == 0) {
-                printf("Timeout occured");
+                printf("Timeout occured\n");
                 break;   //timeout occurred, hopefully end of packet
             } else {
                 printf("Error %i from select %s\n", errno, strerror(errno));
             }
 
         }
-        
+
         if (pkt_length == sbus_pkt_length) {
             printf("Complete SBUS packet received\n");
         } else if (pkt_length < sbus_pkt_length) {
@@ -148,7 +151,28 @@ int main(int argc, char **argv)
         }
 
         printf("First byte: %i, Last byte: %i, Second byte: %i\n", sbus_pkt[0], sbus_pkt[pkt_length - 1], sbus_pkt[1]);
-                
+
+        //low bits come in first byte, high bits in next byte, litte endian
+        sbus_chs[0]  = (sbus_pkt[2]  << 8  | sbus_pkt[1])                           & 0x07FF; // 8, 3
+        sbus_chs[1]  = (sbus_pkt[3]  << 5  | sbus_pkt[2] >> 3)                      & 0x07FF; // 6, 5
+        sbus_chs[2]  = (sbus_pkt[5]  << 10 | sbus_pkt[4] << 2 | sbus_pkt[3] >> 6)   & 0x07FF; // 1, 8, 2
+        sbus_chs[3]  = (sbus_pkt[6]  << 7  | sbus_pkt[5] >> 1)                      & 0x07FF; // 4, 7
+        sbus_chs[4]  = (sbus_pkt[7]  << 4  | sbus_pkt[6] >> 4)                      & 0x07FF; // 7, 4
+        sbus_chs[5]  = (sbus_pkt[9]  << 9  | sbus_pkt[8] << 1 | sbus_pkt[7] >> 7)   & 0x07FF; // 2, 8, 1
+        sbus_chs[6]  = (sbus_pkt[10] << 6  | sbus_pkt[9] >> 2)                      & 0x07FF; // 5, 6
+        sbus_chs[7]  = (sbus_pkt[11] << 3  | sbus_pkt[10] >> 5)                     & 0x07FF; // 8, 3
+        sbus_chs[8]  = (sbus_pkt[13] << 8  | sbus_pkt[12])                          & 0x07FF; // 3, 8
+        sbus_chs[9]  = (sbus_pkt[14] << 5  | sbus_pkt[13] >> 3)                     & 0x07FF; // 6, 5
+        sbus_chs[10] = (sbus_pkt[16] << 10 | sbus_pkt[15] << 2 | sbus_pkt[14] >> 6) & 0x07FF; // 1, 8, 2
+        sbus_chs[11] = (sbus_pkt[17] << 7  | sbus_pkt[16] >> 1)                     & 0x07FF; // 4, 7
+        sbus_chs[12] = (sbus_pkt[18] << 4  | sbus_pkt[17] >> 4)                     & 0x07FF; // 7, 4
+        sbus_chs[13] = (sbus_pkt[20] << 9  | sbus_pkt[19] << 1 | sbus_pkt[18] >> 7) & 0x07FF; // 2, 8, 1
+        sbus_chs[14] = (sbus_pkt[21] << 6  | sbus_pkt[20] >> 2)                     & 0x07FF; // 5, 6
+        sbus_chs[15] = (sbus_pkt[22] << 3  | sbus_pkt[21] >> 5)                     & 0x07FF; // 8, 3
+        failsafe = sbus_pkt[23] & 0x08;
+
+        printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_chs[0], sbus_chs[1], failsafe);
+
         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &radio_message);
     }
 
