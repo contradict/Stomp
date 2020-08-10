@@ -2,13 +2,10 @@ package stomp;
 
 struct control_radio
 {
-    // The possible values of a switch
-    const int8_t OFF=0, CENTER=1, ON=2;
-    // The axes. Expected to be in the range 1000 - 2000, 1500 neutral stick.
-    int16_t axis[8];
-    // the switches, select one value from constants above
-    int8_t toggle[8];
-    // falisafe bit from receiver
-    // indicates loss of communication when true
+    // There are two single bit channels 17, 18.
+    int int8_t toggle[2];
+    // The firt 16 channels. Expected to be in the range -1 to 1.
+    float axis[16];
+    // failsafe bit, indicates loss of communication when true
     boolean failsafe;
 }
