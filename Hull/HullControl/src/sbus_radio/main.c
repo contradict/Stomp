@@ -50,7 +50,7 @@ int main(int argc, char **argv)
         printf("Failed to initialize LCM.\n");
         return 1;
     }
-    stomp_control_radio radio_message;
+    stomp_control_radio lcm_msg;
 
     //open and configure the serial port
     printf("Trying to open UART10\n");
@@ -198,12 +198,14 @@ int main(int argc, char **argv)
         for (i = 0; i < sbus_ch_cnt; i++)
         {
             sbus_ch[i] = (sbus_raw[i] - sbus_center)/sbus_span;
+            lcm_msg.channel[i] = sbus_ch[i];
         }
+        lcm_msg.failsafe = failsafe;
 
         printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_raw[0], sbus_raw[1], failsafe);
-        printf("Channel 1: %.3f, Channel 2: %.3f\n", sbus_ch[0], sbus_ch[1]);
+        printf("Channel 1: %.4444f, Channel 2: %.4f\n", sbus_ch[0], sbus_ch[1]);
 
-        stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &radio_message);
+        stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &lcm_msg);
     }
 
     lcm_destroy(lcm);
