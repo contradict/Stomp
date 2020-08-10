@@ -118,8 +118,8 @@ int main(int argc, char **argv)
     int sret;
     uint16_t sbus_raw[sbus_ch_cnt -1];
     float sbus_ch[sbus_ch_cnt -1];
-    float sbus_span = (sbus_max - sbus_min)/2;
-    float sbus_center = (sbus_max + sbus_min)/2;
+    float sbus_span = (sbus_max - sbus_min)/2.0f;
+    float sbus_center = (sbus_max + sbus_min)/2.0f;
     bool failsafe = true;
     while(true) //main loop, read sbus, then send data as lcm message
     {
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
         }
 
         printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_raw[0], sbus_raw[1], failsafe);
-        printf("Channel 1: %f.3, Channel 2: %f.3\n", sbus_ch[0], sbus_ch[1]);
+        printf("Channel 1: %.3f, Channel 2: %.3f\n", sbus_ch[0], sbus_ch[1]);
 
         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &radio_message);
     }
