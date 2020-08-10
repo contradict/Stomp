@@ -3,9 +3,9 @@ package stomp;
 struct control_radio
 {
     // There are two single bit channels 17, 18.
-    int8_t toggle[2];
+    int8_t toggles[2];
     // The firt 16 channels. Expected to be in the range -1 to 1.
-    float channel[16];
+    float channels[16];
     // failsafe bit, indicates loss of communication when true
     boolean failsafe;
 }

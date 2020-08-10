@@ -8,11 +8,11 @@ static void my_handler(const lcm_recv_buf_t *rbuf, const char *channel,
                        const stomp_control_radio *msg, void *user)
 {
     int i;
-    int channels = sizeof msg->channel;
+    int channels = 16;
     printf("Received message on channel \"%s\":\n", channel);
     printf(" Chs: ");
     for (i = 0; i < channels; i++)
-        printf(" %i:%.3f", i, msg->channel[i]);
+        printf(" %i:%.3f", i, msg->channels[i]);
     printf("\n");
     printf("  failsafe:%i'\n", msg->failsafe);
 }

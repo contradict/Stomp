@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 {
     const unsigned int sbus_baud = 100000;
     const int sbus_pkt_length = 25; //complete sbus packet size
-    const int sbus_ch_cnt = 17;
+    const int sbus_ch_cnt = 16;
     const int sbus_max = 1811;
     const int sbus_min = 172;
     bool debug_out = false;
@@ -116,8 +116,8 @@ int main(int argc, char **argv)
     int pkt_length;
     int num_bytes;
     int sret;
-    uint16_t sbus_raw[sbus_ch_cnt -1];
-    float sbus_ch[sbus_ch_cnt -1];
+    uint16_t sbus_raw[sbus_ch_cnt];
+    float sbus_ch[sbus_ch_cnt];
     float sbus_span = (sbus_max - sbus_min)/2.0f;
     float sbus_center = (sbus_max + sbus_min)/2.0f;
     bool failsafe = true;
@@ -198,12 +198,12 @@ int main(int argc, char **argv)
         for (i = 0; i < sbus_ch_cnt; i++)
         {
             sbus_ch[i] = (sbus_raw[i] - sbus_center)/sbus_span;
-            lcm_msg.channel[i] = sbus_ch[i];
+            lcm_msg.channels[i] = sbus_ch[i];
         }
         lcm_msg.failsafe = failsafe;
 
         printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_raw[0], sbus_raw[1], failsafe);
-        printf("Channel 1: %.4444f, Channel 2: %.4f\n", sbus_ch[0], sbus_ch[1]);
+        printf("Channel 1: %.4f, Channel 2: %.4f\n", sbus_ch[0], sbus_ch[1]);
 
         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &lcm_msg);
     }
