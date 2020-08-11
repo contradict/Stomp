@@ -779,6 +779,7 @@ struct leg_thread_state* create_leg_thread(struct leg_thread_definition *leg_thr
         return 0;
     }
 
+    state->shouldrun = true;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_create(&state->thread, &attr, &run_leg_thread, state);
