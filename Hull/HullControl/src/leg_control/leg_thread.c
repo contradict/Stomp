@@ -650,13 +650,13 @@ int send_telemetry(struct leg_thread_state* state)
             {
                 telem->base_end_pressure[JOINT_COUNT * leg + joint] = pressure[leg][2*joint];
                 telem->rod_end_pressure[JOINT_COUNT * leg + joint] = pressure[leg][2*joint + 1];
-                telem->toe_position_measured_X[JOINT_COUNT * leg + joint] = position[leg][0];
-                telem->toe_position_measured_Y[JOINT_COUNT * leg + joint] = position[leg][1];
-                telem->toe_position_measured_Z[JOINT_COUNT * leg + joint] = position[leg][2];
-                telem->toe_position_commanded_X[JOINT_COUNT * leg + joint] = state->commanded_toe_positions[leg][0];
-                telem->toe_position_commanded_Y[JOINT_COUNT * leg + joint] = state->commanded_toe_positions[leg][1];
-                telem->toe_position_commanded_Z[JOINT_COUNT * leg + joint] = state->commanded_toe_positions[leg][2];
             }
+            telem->toe_position_measured_X[leg] = position[leg][0];
+            telem->toe_position_measured_Y[leg] = position[leg][1];
+            telem->toe_position_measured_Z[leg] = position[leg][2];
+            telem->toe_position_commanded_X[leg] = state->commanded_toe_positions[leg][0];
+            telem->toe_position_commanded_Y[leg] = state->commanded_toe_positions[leg][1];
+            telem->toe_position_commanded_Z[leg] = state->commanded_toe_positions[leg][2];
         }
         ringbuf_produce(state->definition->telemetry_queue->ringbuf, state->telemetry_worker);
     }
