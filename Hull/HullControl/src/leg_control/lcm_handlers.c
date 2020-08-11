@@ -56,13 +56,17 @@ int lcm_telemetry_send(struct lcm_sender_state* state)
 {
     size_t offset;
     size_t s = ringbuf_consume(state->queue->ringbuf, &offset);
-    while(s >= sizeof(stomp_telemetry_leg))
+    if(s >= sizeof(stomp_telemetry_leg))
     {
-        stomp_telemetry_leg *telem = (stomp_telemetry_leg*)(state->queue->buffer + offset);
-        stomp_telemetry_leg_publish(state->lcm, LEG_TELEMETRY, telem);
-        ringbuf_release(state->queue->ringbuf, s);
-        s -= sizeof(stomp_telemetry_leg);
-        offset += sizeof(stomp_telemetry_leg);
+        size_t rs = s;
+        while(s >= sizeof(stomp_telemetry_leg))
+        {
+            stomp_telemetry_leg *telem = (stomp_telemetry_leg*)(state->queue->buffer + offset);
+            stomp_telemetry_leg_publish(state->lcm, LEG_TELEMETRY, telem);
+            s -= sizeof(stomp_telemetry_leg);
+            offset += sizeof(stomp_telemetry_leg);
+        }
+        ringbuf_release(state->queue->ringbuf, rs);
     }
     return s;
 }
@@ -71,13 +75,17 @@ int lcm_response_send(struct lcm_sender_state* state)
 {
     size_t offset;
     size_t s = ringbuf_consume(state->queue->ringbuf, &offset);
-    while(s >= sizeof(stomp_modbus))
+    if(s >= sizeof(stomp_modbus))
     {
-        stomp_modbus *mb = (stomp_modbus*)(state->queue->buffer + offset);
-        stomp_modbus_publish(state->lcm, LEG_TELEMETRY, mb);
-        ringbuf_release(state->queue->ringbuf, s);
-        s -= sizeof(stomp_telemetry_leg);
-        offset += sizeof(stomp_telemetry_leg);
+        size_t rs = s;
+        while(s >= sizeof(stomp_modbus))
+        {
+            stomp_modbus *mb = (stomp_modbus*)(state->queue->buffer + offset);
+            stomp_modbus_publish(state->lcm, LEG_TELEMETRY, mb);
+            s -= sizeof(stomp_telemetry_leg);
+            offset += sizeof(stomp_telemetry_leg);
+        }
+        ringbuf_release(state->queue->ringbuf, rs);
     }
     return s;
 }

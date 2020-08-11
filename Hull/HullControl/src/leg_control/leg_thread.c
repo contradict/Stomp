@@ -667,27 +667,33 @@ int check_command_queue(struct leg_thread_state* state)
 {
     size_t offset;
     size_t s = ringbuf_consume(state->definition->command_queue->ringbuf, &offset);
-    if(s == sizeof(stomp_modbus))
+    if(s >= sizeof(stomp_modbus))
     {
-        stomp_modbus* request = (stomp_modbus*)(state->definition->command_queue->buffer + offset);
-        switch(request->command)
+        size_t rs = s;
+        while(s >= sizeof(stomp_modbus))
         {
-            //TODO:
-            //write_register
-            //write_registers
-            //write_bits
-            //read_registers
-            //read_input_registers
-            //read_bits
+            stomp_modbus* request = (stomp_modbus*)(state->definition->command_queue->buffer + offset);
+            switch(request->command)
+            {
+                //TODO:
+                //write_register
+                //write_registers
+                //write_bits
+                //read_registers
+                //read_input_registers
+                //read_bits
+            }
+            ssize_t offset = ringbuf_acquire(state->definition->response_queue->ringbuf, state->response_worker, sizeof(stomp_modbus));
+            if(offset > 0)
+            {
+                stomp_modbus *response = (stomp_modbus *)(state->definition->response_queue->buffer + offset);
+                memcpy(response, request, sizeof(stomp_modbus));
+                ringbuf_produce(state->definition->response_queue->ringbuf, state->response_worker);
+            }
+            s -= sizeof(stomp_modbus);
+            offset += sizeof(stomp_modbus);
         }
-        ssize_t offset = ringbuf_acquire(state->definition->response_queue->ringbuf, state->response_worker, sizeof(stomp_modbus));
-        if(offset > 0)
-        {
-            stomp_modbus *response = (stomp_modbus *)(state->definition->response_queue->buffer + offset);
-            memcpy(response, request, sizeof(stomp_modbus));
-            ringbuf_produce(state->definition->response_queue->ringbuf, state->response_worker);
-        }
-        ringbuf_release(state->definition->command_queue->ringbuf, s);
+        ringbuf_release(state->definition->command_queue->ringbuf, rs);
     }
     return 0;
 }
