@@ -31,6 +31,8 @@ leg_control: LDFLAGS+= $(MODBUS_LDFLAGS)
 all: leg_control sbus_radio
 
 clean:
+	rm -f src/leg_control/*.o
+	rm -f src/sbus_radio/*.o
 	rm -fr ringbuf/lib ringbuf/include
 	rm -fr inc/lcm src/lcm
 	rm -f leg_control sbus_radio
