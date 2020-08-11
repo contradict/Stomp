@@ -169,11 +169,17 @@ int main(int argc, char **argv)
                 printf("Error %i from select %s\n", errno, strerror(errno));
             }
 
+            gettimeofday(&read_time, 0);
+            if (time_diff_msec(last_packet_time, read_time) > sbus_timeout_msec) 
+            {
+                printf("Timeout waiting for SBUS");
+                break; //break and send zero packet
+            }
+
             if (pkt_length == sbus_pkt_length)
             {
                 if (sbus_pkt[0] == 0x0F && sbus_pkt[24] == 0x00)
                 {
-                    gettimeofday(&last_packet_time, 0);
                     good_packet = true;
                     printf("Complete SBUS packet received\n");
                     break; //leave read loop and send
@@ -187,13 +193,6 @@ int main(int argc, char **argv)
                 printf("Oversize packet, %i bytes received\n", pkt_length);
             }
 
-            gettimeofday(&read_time, 0);
-            if (time_diff_msec(last_packet_time, read_time) > sbus_timeout_msec)
-            {
-                failsafe = true;
-                printf("Timeout waiting for SBUS");
-                break; //break and send zero packet
-            }
 
             // get here if too much data or bad packet
             pkt_length = 0;
@@ -201,6 +200,7 @@ int main(int argc, char **argv)
 
         } //end packet read loop;
 
+        gettimeofday(&last_packet_time, 0);
         if (good_packet) //if pkt is good, process, otherwise set failsafe
         {
             //convert SBUS format into channel values as ints
