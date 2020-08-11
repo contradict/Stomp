@@ -146,6 +146,18 @@ int32_t RadioController::GetHammerIntensity()
     return getHammerIntensity();
 }
 
+int32_t RadioController::GetHammerIntensityAngle()
+{
+    int32_t hammerIntensity = GetHammerIntensity();
+
+    if (hammerIntensity < 0 || hammerIntensity >= 9)
+    {
+        return 0;
+    }
+    
+    return k_hammerIntensitiesAngle[hammerIntensity];
+}
+
 int32_t RadioController::GetHammerStrikeDistance()
 {
     return getRange();

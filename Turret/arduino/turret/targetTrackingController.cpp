@@ -133,6 +133,11 @@ void TargetTrackingController::Update()
 
 Target* TargetTrackingController::GetCurrentTarget()
 {
+    if (!IsTrackingValidTarget())
+    {
+        return NULL;
+    }
+
     return m_pTrackedTarget;
 }
 
@@ -223,6 +228,7 @@ void TargetTrackingController::SendTelem()
     if (IsTrackingValidTarget())
     {
         Telem.SendTrackingTelemetry(
+                m_state,
                 m_pTrackedTarget->GetXCoord(), m_pTrackedTarget->GetYCoord(),
                 m_pTrackedTarget->GetAngle(), m_pTrackedTarget->GetRadius(),
                 m_x / 16, m_vx / 16,
@@ -231,6 +237,7 @@ void TargetTrackingController::SendTelem()
     else
     {
         Telem.SendTrackingTelemetry(
+                m_state,
                 0, 0, 0, 0,
                 m_x / 16, m_vx / 16,
                 m_y / 16, m_vy / 16);
@@ -433,6 +440,12 @@ void TargetTrackingController::setState(controllerState p_state)
         }
         break;
 
+        case ENoTarget:
+        {
+            m_pTrackedTarget = NULL;
+        }
+        break;
+        
         case ETargetAcquired:
         {
             m_pTrackedTarget = m_pTargetAcquisitionController->GetBestTarget();

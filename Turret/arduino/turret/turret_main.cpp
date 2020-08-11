@@ -167,9 +167,11 @@ void turretSendTelem()
                     valid_command);
 
     reset_loop_stats();
-    int16_t hammer_angle = 0; // BB MJS -> HAMMER_INTENSITIES_ANGLE[s_hammerIntensity];
 
-    Telem.SendSbusTelem(s_currentRCBitfield, hammer_angle, s_hammerDistance, Turret.GetTurretRotationSpeed());
+    int16_t hammerIntensityAngle = Radio.GetHammerIntensityAngle();
+    int16_t hammerDistance = Radio.GetHammerStrikeDistance();
+
+    Telem.SendSbusTelem(s_currentRCBitfield, hammerIntensityAngle, hammerDistance, Turret.GetTurretRotationSpeed());
 }
 
 static void reset_loop_stats(void) 

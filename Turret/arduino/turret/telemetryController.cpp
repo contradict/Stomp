@@ -456,6 +456,7 @@ bool TelemetryController::SendORNTelem(bool p_stationary, uint8_t p_orientation,
 
 struct TrackingTelemetryInner 
 {
+    int8_t state;
     int16_t detectionX;
     int16_t detectionY;
     int32_t detectionAngle;
@@ -468,19 +469,21 @@ struct TrackingTelemetryInner
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_TRK, TrackingTelemetryInner> TRKTelemetry;
 
-bool TelemetryController::SendTrackingTelemetry(int16_t p_detectionX,
-                           int16_t p_detectionY,
-                           int32_t p_detectionAngle,
-                           int32_t p_detectionRadius,
-                           int32_t p_filteredX,
-                           int32_t p_filteredVx,
-                           int32_t p_filteredY,
-                           int32_t p_filteredVy) 
+bool TelemetryController::SendTrackingTelemetry(int8_t p_state,
+    int16_t p_detectionX,
+    int16_t p_detectionY,
+    int32_t p_detectionAngle,
+    int32_t p_detectionRadius,
+    int32_t p_filteredX,
+    int32_t p_filteredVx,
+    int32_t p_filteredY,
+    int32_t p_filteredVy) 
 {
     CHECK_ENABLED(TLM_ID_TRK);
 
     TRKTelemetry tlm;
 
+    tlm.inner.state = p_state;
     tlm.inner.detectionX = p_detectionX;
     tlm.inner.detectionY = p_detectionY;
     tlm.inner.detectionAngle = p_detectionAngle;

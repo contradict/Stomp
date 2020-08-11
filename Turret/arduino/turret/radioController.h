@@ -44,6 +44,7 @@ public:
     int32_t GetDesiredManualTurretSpeed();
 
     int32_t GetHammerIntensity();
+    int32_t GetHammerIntensityAngle();
     int32_t GetHammerStrikeDistance();
 
     void SendTelem();
@@ -78,6 +79,8 @@ private:
     //  ====================================================================
     
 private:
+
+    const int8_t k_hammerIntensitiesAngle[9] = { 3, 5, 10, 15, 20, 30, 40, 50, 65 };
 
     //  ====================================================================
     //

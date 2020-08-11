@@ -105,7 +105,8 @@ public:
     bool SendIMUTelem(int16_t (&p_a)[3], int16_t (&p_g)[3], int16_t p_t);
     bool SendORNTelem(bool p_stationary, uint8_t p_orientation, int32_t p_sumAngularRate, int16_t p_totalNorm, int16_t p_crossNorm);
 
-    bool SendTrackingTelemetry(int16_t p_detectionX,
+    bool SendTrackingTelemetry(int8_t p_state,
+        int16_t p_detectionX,
         int16_t p_detectionY,
         int32_t p_detectionAngle,
         int32_t p_detectionRadius,
