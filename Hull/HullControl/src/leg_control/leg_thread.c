@@ -7,6 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdatomic.h>
+#include <pthread.h>
 
 #include "joint.h"
 #include "modbus_register_map.h"
@@ -63,10 +64,10 @@ enum leg_control_mode {
 
 struct leg_thread_state {
     struct leg_thread_definition *definition;
+    pthread_t thread;
     modbus_t *ctx;
     ringbuf_worker_t *telemetry_worker;
     ringbuf_worker_t *response_worker;
-    pid_t pid;
     int nlegs;
     struct leg_description* legs;
     struct joint_gains *joint_gains;
@@ -691,20 +692,21 @@ int check_command_queue(struct leg_thread_state* state)
     return 0;
 }
 
-int run_leg_thread(struct leg_thread_state *state)
+void *run_leg_thread(void *ptr)
 {
+    struct leg_thread_state *state = (struct leg_thread_state*)ptr;
     state->telemetry_worker = ringbuf_register(state->definition->telemetry_queue->ringbuf, 0);
     if(!state->telemetry_worker)
     {
         printf("Unable to register worker for telemetry queue\n");
-        return -1;
+        return (void *)-1;
     }
 
     state->response_worker = ringbuf_register(state->definition->response_queue->ringbuf, 0);
     if(!state->telemetry_worker)
     {
         printf("Unable to register worker for command response queue\n");
-        return -1;
+        return (void *)-1;
     }
 
 
@@ -753,7 +755,7 @@ int run_leg_thread(struct leg_thread_state *state)
     free(state->initial_toe_positions);
     free_step_descriptions(state->steps, state->nsteps);
     free_gait_descriptions(state->gaits, state->ngaits);
-    return 0;
+    return NULL;
 }
 
 struct leg_thread_state* create_leg_thread(struct leg_thread_definition *leg_thread, const char * progname)
@@ -777,17 +779,18 @@ struct leg_thread_state* create_leg_thread(struct leg_thread_definition *leg_thr
         return 0;
     }
 
-    state->pid = fork();
-    if(state->pid == 0)
-        run_leg_thread(state);
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_create(&state->thread, &attr, &run_leg_thread, state);
     return state;
 }
 
 void terminate_leg_thread(struct leg_thread_state **state)
 {
     (*state)->shouldrun = false;
-    int status;
-    waitpid((*state)->pid, &status, 0);
+    void *res;
+    pthread_join((*state)->thread, &res);
+    printf("run_leg_thread=%zu\n", (size_t)res);
     free(*state);
     *state = NULL;
 }
