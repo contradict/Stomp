@@ -68,6 +68,11 @@ VERTICAL
               SPACER 0 0 EXPANDING MINIMUM
           END
           HORIZONTAL
+            VALUE CHOMP SBS FLAME_CTRL RAW 1
+            LABEL "Flame ON"
+              SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
             VALUE CHOMP SBS AUTO_AIM_MODE RAW 1
             LABEL "Auto Aim Enabled"
             SPACER 0 0 EXPANDING MINIMUM
@@ -113,11 +118,21 @@ VERTICAL
             END
           END
           VERTICAL
-            LINEGRAPH CHOMP TROT TROT_STATE 200 402 159 RAW 0 6 1
-            HORIZONTAL
-              SPACER 0 0 EXPANDING MINIMUM
-              VALUE CHOMP TROT TROT_STATE CONVERTED 16
-              SPACER 0 0 EXPANDING MINIMUM
+            VERTICAL
+              LINEGRAPH CHOMP TROT TROT_STATE 200 402 159 RAW 0 6 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE CHOMP TROT TROT_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
+            END
+            VERTICAL
+              LINEGRAPH CHOMP TRK TRK_STATE 200 402 159 RAW 0 4 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE CHOMP TRK TRK_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
             END
           END
         END

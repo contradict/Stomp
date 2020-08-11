@@ -11,6 +11,11 @@
 
 TELEMETRY CHOMP TRK LITTLE_ENDIAN "Tracking"
     APPEND_ID_ITEM PKTID 8 UINT 4 "Packet ID which must be 4"
+    APPEND_ITEM TRK_STATE 8 INT "State"
+        STATE INIT              0 GREEN
+        STATE NO_TARGET         1 GREEN
+        STATE TARGET_AQUIRED    2 YELLOW
+        STATE TARGET_TRACKED    3 RED
     APPEND_ITEM TARGET_X 16 INT "detection x coordinate"
     APPEND_ITEM TARGET_Y 16 INT "detection y coordinate"
     APPEND_ITEM TARGET_ANGLE 32 INT "detection angle"
@@ -27,13 +32,13 @@ TELEMETRY CHOMP TRK LITTLE_ENDIAN "Tracking"
 TELEMETRY CHOMP AUTOF LITTLE_ENDIAN "Autofire"
     APPEND_ID_ITEM PKTID 8 UINT 5 "Packet ID which must be 5"
     APPEND_ITEM AUTOF_STATE 8 INT "State"
-        STATE INIT              0
-        STATE SAFE              1
-        STATE DISABLED          2
-        STATE ROTATION_LOCKOUT  3
-        STATE NO_TARGET         4
-        STATE TRACKING_TARGET   5
-        STATE SWING_AT_TARGET   6
+        STATE INIT              0 GREEN
+        STATE SAFE              1 GREEN
+        STATE DISABLED          2 GREEN
+        STATE ROTATION_LOCKOUT  3 RED
+        STATE NO_TARGET         4 YELLOW
+        STATE TRACKING_TARGET   5 YELLOW
+        STATE SWING_AT_TARGET   6 RED
     APPEND_ITEM SWING 32 INT "Swing"
     APPEND_ITEM PREDX 16 INT "x"
     APPEND_ITEM PREDY 16 INT "y"
@@ -106,7 +111,7 @@ TELEMETRY CHOMP TROT LITTLE_ENDIAN "Turret Rotation telemetry"
 
 TELEMETRY CHOMP SNS LITTLE_ENDIAN "Sensor"
     APPEND_ID_ITEM PKTID 8 UINT 10 "Packet ID which must be 10"
-    APPEND_ITEM ANGLE 16 UINT "Angle"
+    APPEND_ITEM ANGLE 16 INT "Angle"
         UNITS "Degrees" "deg"
     APPEND_ITEM THROW_PRESSURE 16 INT "Throw Pressure"
         UNITS "Pounds per Square Inch" "PSI"
@@ -246,9 +251,11 @@ TELEMETRY CHOMP ORN LITTLE_ENDIAN "Orientation Status"
     APPEND_ID_ITEM PKTID 8 UINT 19 "Packet ID which must be 19"
     APPEND_ITEM STA 1 UINT "Stationary"
     APPEND_ITEM ORN 4 UINT "Orientation"
-        STATE UPRIGHT 0 GREEN
-        STATE NOT_UPRIGHT 1 RED
-        STATE UNKNOWN 3 YELLOW
+        STATE INIT 0 GREEN
+	STATE SAFE 1 GREEN
+	STATE UNKNOWN 2	RED
+        STATE UPRIGHT 3 YELLOW
+        STATE NOT_UPRIGHT 4 RED
     APPEND_ITEM PAD 3 UINT
     APPEND_ITEM SAR 32 INT "Sum of angular rates"
         UNITS "degrees/second" "deg/s"
