@@ -20,7 +20,7 @@ RINGBUF_STATICLIB=ringbuf/lib/libringbuf.a
 TOMLC99_CFLAGS=-I tomlc99
 TOMLC99_STATICLIB=tomlc99/libtoml.a
 
-CFLAGS=-g3 -I inc $(LCM_CFLAGS)
+CFLAGS=-g3 -I inc -Wall -Wpedantic $(LCM_CFLAGS)
 LDFLAGS=-lm $(LCM_LDFLAGS)
 
 src/leg_control/%.o: CFLAGS+= -I ../Common $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS)
