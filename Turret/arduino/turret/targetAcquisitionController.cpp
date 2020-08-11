@@ -182,7 +182,43 @@ void TargetAcquisitionController::updateBestTarget()
     {
         m_pBestTarget = NULL;
     }
-     
+
+    bool validTarget = m_pBestTarget == NULL;
+
+    String minDetectionsString = "";
+
+    for (uint8_t detectionIndex = 0; detectionIndex < LEDDAR_SEGMENTS; detectionIndex++) 
+    {
+        minDetectionsString += String((int16_t) (*m_minDetections)[detectionIndex].Segment) + String(", ");
+        minDetectionsString += String((int16_t) (*m_minDetections)[detectionIndex].Distance) + String(", ");
+        minDetectionsString += String((int16_t) (*m_minDetections)[detectionIndex].Amplitude) + String(", ");
+    }
+
+    String possibleTargetsString = "";
+
+    for (uint32_t targetIndex = 0; targetIndex < 8; targetIndex++)
+    {
+        if (targetIndex < m_possibleTargetsCount)
+        {
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetSize()) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetAngle()) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetXCoord()) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetYCoord()) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetRadius()) + String(", ");
+        }
+        else
+        {
+            possibleTargetsString += String("-1, -1, -1, -1, -1,");
+        }        
+    }
+
+    Telem.LogMessage(String("target acquisition: ") + 
+        String(m_lastUpdateTime) + String(", ") + 
+        String(validTarget) + String(", ") +
+        minDetectionsString +
+        possibleTargetsString + 
+        String(m_possibleTargetsCount));
+
 }
 
 void TargetAcquisitionController::segmentTargets()

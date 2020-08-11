@@ -166,7 +166,19 @@ bool TargetTrackingController::WillHitTrackedTarget(int32_t p_xTolerance, int32_
         project(projectDt, dTheta, &projectedX, &projectedY);
     }
 
-    return projectedX > 0 && (projectedX / 16) < p_xTolerance && abs(projectedY / 16) < p_yTolerance;
+    bool willHit = projectedX > 0 && (projectedX / 16) < p_xTolerance && abs(projectedY / 16) < p_yTolerance;
+
+    Telem.LogMessage(String("will hit: ") + 
+        String(m_lastUpdateTime) + String(" ") + 
+        String(willHit) + String(" ") + 
+        String(swingDt) + String(" ") +
+        String(omegaZ) + String(" ") +
+        String(projectedX) + String(" ") +
+        String(projectedY) + String(" ") +
+        String(p_xTolerance) + String(" ") +
+        String(p_yTolerance));
+
+    return willHit;
 }
 
 int32_t TargetTrackingController::GetTargetErrorAngle(void)
@@ -333,6 +345,19 @@ void TargetTrackingController::updateTracking()
 
     m_vy += m_params.beta * m_residualY / 4096;
     m_vy = constrain(m_vy, -10000L * 16, 10000L * 16);
+
+    Telem.LogMessage(String("tracking: ") + 
+        String(m_lastUpdateTime) + String(" ") + 
+        String(measuredX) + String(" ") +
+        String(measuredY) + String(" ") +
+        String(m_residualX) + String(" ") +
+        String(m_residualY) + String(" ") +
+        String(m_x) + String(" ") +
+        String(m_y) + String(" ") +
+        String(m_vx) + String(" ") +
+        String(m_vy) + String(" ") +
+        String(m_params.alpha) + String(" ") +
+        String(m_params.beta));
 
     /*
     Telem.LogMessage(String("measuredX: ") + String(measuredX) + String(" ") +
