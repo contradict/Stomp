@@ -185,7 +185,7 @@ int main(int argc, char **argv)
         }
 
         uint16_t sbus_raw[sbus_ch_cnt];
-        memset(&sbus_raw, '\0', sizeof(sbus_pkt));
+        memset(&sbus_raw, '\0', sizeof(sbus_raw));
         if (good_packet) //if pkt is good, process, otherwise set failsafe
         {
             //convert SBUS format into channel values as ints
