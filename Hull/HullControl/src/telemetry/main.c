@@ -1,6 +1,7 @@
 #include <inttypes.h>
 #include <lcm/lcm.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include "channel_names.h"
 #include "lcm/stomp_control_radio.h"
 
@@ -9,7 +10,9 @@ static void my_handler(const lcm_recv_buf_t *rbuf, const char *channel,
 {
     int i;
     int channels = 16;
-    printf("Received message on channel \"%s\":\n", channel);
+    struct timeval now;
+    gettimeofday(&now, 0);
+    printf("Received message on channel %s, at %ld.%ld\n", channel, now.tv_sec, now.tv_usec);
     printf(" Chs: ");
     for (i = 0; i < channels; i++)
         printf(" %i:%.3f", i, msg->channels[i]);

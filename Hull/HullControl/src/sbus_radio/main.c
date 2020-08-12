@@ -119,31 +119,24 @@ int main(int argc, char **argv)
         printf("Error %i from ioctl: %s\n", errno, strerror(errno));
     }
 
-    uint8_t read_buff [256];
-    uint8_t sbus_pkt [256];
-    fd_set rfds;  //file descriptor set you need to send to select
-    int pkt_length;
-    int num_bytes;
-    int sret;
-    uint16_t sbus_raw[sbus_ch_cnt];
-    float sbus_ch[sbus_ch_cnt];
-    bool good_packet = false;
-    bool sbus_timeout = false;
-    bool failsafe = true;
     gettimeofday(&last_send_time, 0);
     while(true) //main loop, read sbus, then send data as lcm message
     {
-        pkt_length = 0;
+        int pkt_length = 0;
+        int num_bytes = 0;
+        uint8_t sbus_pkt [256];
+        uint8_t read_buff [256];
         memset(&sbus_pkt, '\0', sizeof(sbus_pkt));
-        failsafe = true;
-        good_packet = false;
-        sbus_timeout = false;
+        bool failsafe = true;
+        bool good_packet = false;
+        bool sbus_timeout = false;
         while(true) //packet read loop
         {
+            fd_set rfds;
             FD_ZERO(&rfds);
             FD_SET(serial_port, &rfds);
             pkt_timeout.tv_usec = pkt_timeout_usec;
-            sret = select(serial_port + 1, &rfds, NULL, NULL, &pkt_timeout);
+            int sret = select(serial_port + 1, &rfds, NULL, NULL, &pkt_timeout);
             if (sret > 0) //data available
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
@@ -177,10 +170,9 @@ int main(int argc, char **argv)
         //check for sbus inactivity timeout first
         gettimeofday(&read_time, 0);
         int millis = time_diff_msec(last_send_time, read_time);
-        printf("Time since last send: %i\n", millis);
         if (millis > sbus_timeout_msec) 
         {
-            printf("Timeout waiting for SBUS");
+            if (dbg_out) printf("Timeout waiting for SBUS");
             sbus_timeout = true;
         } else if (pkt_length == sbus_pkt_length) {
             if (sbus_pkt[0] == 0x0F && sbus_pkt[24] == 0x00)
@@ -192,6 +184,8 @@ int main(int argc, char **argv)
             } 
         }
 
+        uint16_t sbus_raw[sbus_ch_cnt];
+        memset(&sbus_raw, '\0', sizeof(sbus_pkt));
         if (good_packet) //if pkt is good, process, otherwise set failsafe
         {
             //convert SBUS format into channel values as ints
@@ -214,7 +208,6 @@ int main(int argc, char **argv)
             sbus_raw[15] = (sbus_pkt[22] << 3  | sbus_pkt[21] >> 5)                     & 0x07FF; // 8, 3
             failsafe = sbus_pkt[23] & 0x08;
         } else if (sbus_timeout) {
-            memset(&sbus_pkt, '\0', sizeof(sbus_pkt));
             failsafe = true;
         } else {
             //only send an lcm message in the case of a good packet, or to send
@@ -223,6 +216,7 @@ int main(int argc, char **argv)
         }
 
         int i;
+        float sbus_ch[sbus_ch_cnt];
         for (i = 0; i < sbus_ch_cnt; i++)
         {
             sbus_ch[i] = (sbus_raw[i] - sbus_center)/sbus_span;
