@@ -130,6 +130,7 @@ int main(int argc, char **argv)
     float sbus_span = (sbus_max - sbus_min)/2.0f;
     float sbus_center = (sbus_max + sbus_min)/2.0f;
     bool good_packet = false;
+    bool sbus_timeout = false;
     bool failsafe = true;
     gettimeofday(&last_packet_time, 0);
     while(true) //main loop, read sbus, then send data as lcm message
@@ -138,6 +139,7 @@ int main(int argc, char **argv)
         memset(&sbus_pkt, '\0', sizeof(sbus_pkt));
         failsafe = true;
         good_packet = false;
+        sbus_timeout = false;
         while(true) //packet read loop
         {
             FD_ZERO(&rfds);
@@ -156,15 +158,16 @@ int main(int argc, char **argv)
                     {
                         sbus_pkt[pkt_length] = read_buff[i];
                         pkt_length++;
-                        if (pkt_length == sizeof(sbus_pkt)) break; 
-                        //don't run off the end of the array
+                        if (pkt_length > sbus_pkt_length) break; 
+                        //too many bytes
                     }
 
                 } else {
                     printf("Error %i from read: %s\n", errno, strerror(errno));
                 }
-            } else if (sret  == 0) {
-                printf("Select() timeout occured\n");
+            } else if (sret  == 0) { //a valid SBUS packet must be followed
+                printf("Select() timeout occured\n"); //by a select() timeout
+                break; //break and check
             } else {
                 printf("Error %i from select %s\n", errno, strerror(errno));
             }
@@ -173,34 +176,28 @@ int main(int argc, char **argv)
             if (time_diff_msec(last_packet_time, read_time) > sbus_timeout_msec) 
             {
                 printf("Timeout waiting for SBUS");
+                sbus_timeout = true;
                 break; //break and send zero packet
             }
 
-            if (pkt_length == sbus_pkt_length)
-            {
-                if (sbus_pkt[0] == 0x0F && sbus_pkt[24] == 0x00)
-                {
-                    good_packet = true;
-                    printf("Complete SBUS packet received\n");
-                    break; //leave read loop and send
-                } else {
-                    printf("Malformed SBUS packet received\n");
-                }
-            } else if (pkt_length < sbus_pkt_length) {
-                printf("Incomplete packet, %i bytes received\n", pkt_length);
-                continue; //wait for more bytes 
-            } else {
-                printf("Oversize packet, %i bytes received\n", pkt_length);
-            }
-
-
-            // get here if too much data or bad packet
-            pkt_length = 0;
-            memset(&sbus_pkt, '\0', sizeof(sbus_pkt));
-
         } //end packet read loop;
 
-        gettimeofday(&last_packet_time, 0);
+        if (pkt_length == sbus_pkt_length)
+        {
+            if (sbus_pkt[0] == 0x0F && sbus_pkt[24] == 0x00)
+            {
+                good_packet = true;
+                gettimeofday(&last_packet_time, 0); //record good pkt time
+                printf("Complete SBUS packet received\n");
+            } else {
+                printf("Malformed SBUS packet received\n");
+            } 
+        } else if (pkt_length < sbus_pkt_length) {
+            printf("Incomplete packet, %i bytes received\n", pkt_length);
+        } else {
+            printf("Oversize packet, %i bytes received\n", pkt_length);
+        }
+
         if (good_packet) //if pkt is good, process, otherwise set failsafe
         {
             //convert SBUS format into channel values as ints
@@ -222,9 +219,13 @@ int main(int argc, char **argv)
             sbus_raw[14] = (sbus_pkt[21] << 6  | sbus_pkt[20] >> 2)                     & 0x07FF; // 5, 6
             sbus_raw[15] = (sbus_pkt[22] << 3  | sbus_pkt[21] >> 5)                     & 0x07FF; // 8, 3
             failsafe = sbus_pkt[23] & 0x08;
-        } else {
+        } else if (sbus_timeout) {
             memset(&sbus_pkt, '\0', sizeof(sbus_pkt));
             failsafe = true;
+        } else {
+            //only send an lcm message in the case of a good packet, or to send
+            //failsafe=1 in the case of an sbus receive timeout
+            continue;
         }
 
         int i;
