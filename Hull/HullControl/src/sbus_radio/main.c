@@ -30,8 +30,10 @@ int main(int argc, char **argv)
     const int sbus_ch_cnt = 16;
     const int sbus_max = 1811;
     const int sbus_min = 172;
-    bool debug_out = false;
+    const float sbus_span = (sbus_max - sbus_min)/2.0f;
+    const float sbus_center = (sbus_max + sbus_min)/2.0f;
     const int pkt_timeout_usec = 2000; //number of usecs to wait for serial data
+    bool dbg_out = false;
     int sbus_timeout_msec = 500; //number of millis before calling SBUS dead
 
     int opt; //get command line args
@@ -40,7 +42,7 @@ int main(int argc, char **argv)
         switch(opt)
         {
             case 'v':
-                debug_out = true;
+                dbg_out = true;
                 break;
             case 't':
                 sbus_timeout_msec = atoi(optarg);
@@ -61,15 +63,13 @@ int main(int argc, char **argv)
     }
     stomp_control_radio lcm_msg;
 
-    //open and configure the serial port
-    printf("Trying to open UART10\n");
-
+    //open UART10
     int serial_port;
     serial_port = open("/dev/ttyS1", O_RDWR | O_NONBLOCK | O_NOCTTY);
     if (serial_port < 0)
     {
         printf("Error %i from open: %s\n", errno, strerror(errno));
-    } else {
+    } else if (dbg_out) {
         printf("No error while opening port\n");
     }
 
@@ -127,8 +127,6 @@ int main(int argc, char **argv)
     int sret;
     uint16_t sbus_raw[sbus_ch_cnt];
     float sbus_ch[sbus_ch_cnt];
-    float sbus_span = (sbus_max - sbus_min)/2.0f;
-    float sbus_center = (sbus_max + sbus_min)/2.0f;
     bool good_packet = false;
     bool sbus_timeout = false;
     bool failsafe = true;
@@ -150,7 +148,7 @@ int main(int argc, char **argv)
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
                 num_bytes  = read(serial_port, &read_buff, sizeof(read_buff));
-                printf("Read returned with %i bytes\n", num_bytes);
+                if (dbg_out) printf("Read returned with %i bytes\n", num_bytes);
                 if (num_bytes > 0)
                 {
                     int i;
@@ -166,36 +164,31 @@ int main(int argc, char **argv)
                     printf("Error %i from read: %s\n", errno, strerror(errno));
                 }
             } else if (sret  == 0) { //a valid SBUS packet must be followed
-                printf("Select() timeout occured\n"); //by a select() timeout
+                if (dbg_out) printf("Select() timeout occured\n"); //by a select() timeout
                 break; //break and check
             } else {
                 printf("Error %i from select %s\n", errno, strerror(errno));
             }
 
-            gettimeofday(&read_time, 0);
-            if (time_diff_msec(last_packet_time, read_time) > sbus_timeout_msec) 
-            {
-                printf("Timeout waiting for SBUS");
-                sbus_timeout = true;
-                break; //break and send zero packet
-            }
-
         } //end packet read loop;
 
-        if (pkt_length == sbus_pkt_length)
+        if (dbg_out) printf("Bytes received: %i\n", pkt_length);
+
+        //check for sbus inactivity timeout first
+        gettimeofday(&read_time, 0);
+        if (time_diff_msec(last_packet_time, read_time) > sbus_timeout_msec) 
         {
+            printf("Timeout waiting for SBUS");
+            sbus_timeout = true;
+        } else if (pkt_length == sbus_pkt_length) {
             if (sbus_pkt[0] == 0x0F && sbus_pkt[24] == 0x00)
             {
                 good_packet = true;
                 gettimeofday(&last_packet_time, 0); //record good pkt time
-                printf("Complete SBUS packet received\n");
+                if (dbg_out) printf("Complete SBUS packet received\n");
             } else {
-                printf("Malformed SBUS packet received\n");
+                if (dbg_out) printf("Malformed SBUS packet received\n");
             } 
-        } else if (pkt_length < sbus_pkt_length) {
-            printf("Incomplete packet, %i bytes received\n", pkt_length);
-        } else {
-            printf("Oversize packet, %i bytes received\n", pkt_length);
         }
 
         if (good_packet) //if pkt is good, process, otherwise set failsafe
@@ -235,10 +228,13 @@ int main(int argc, char **argv)
             lcm_msg.channels[i] = sbus_ch[i];
         }
         lcm_msg.failsafe = failsafe;
+ 
+        if (dbg_out) {
+            printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_raw[0], sbus_raw[1], failsafe);
+            printf("Channel 1: %.4f, Channel 2: %.4f\n", sbus_ch[0], sbus_ch[1]);
+        }
 
-        printf("Channel 1: %i, Channel 2: %i, Failsafe: %i\n", sbus_raw[0], sbus_raw[1], failsafe);
-        printf("Channel 1: %.4f, Channel 2: %.4f\n", sbus_ch[0], sbus_ch[1]);
-
+        //send the lcm message
         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &lcm_msg);
     }
 
