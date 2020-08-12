@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     int sbus_timeout_msec = 500; //number of millis before calling SBUS dead
 
     int opt; //get command line args
-    while((opt = getopt(argc, argv, "v:t")) != -1)
+    while((opt = getopt(argc, argv, "vt:")) != -1)
     {
         switch(opt)
         {
@@ -207,8 +207,10 @@ int main(int argc, char **argv)
             sbus_raw[14] = (sbus_pkt[21] << 6  | sbus_pkt[20] >> 2)                     & 0x07FF; // 5, 6
             sbus_raw[15] = (sbus_pkt[22] << 3  | sbus_pkt[21] >> 5)                     & 0x07FF; // 8, 3
             failsafe = sbus_pkt[23] & 0x08;
+            lcm_msg.no_data = false;
         } else if (sbus_timeout) {
             failsafe = true;
+            lcm_msg.no_data = true;
         } else {
             //only send an lcm message in the case of a good packet, or to send
             //failsafe=1 in the case of an sbus receive timeout

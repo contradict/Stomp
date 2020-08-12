@@ -8,4 +8,6 @@ struct control_radio
     float channels[16];
     // failsafe bit, indicates loss of communication when true
     boolean failsafe;
+    // no data bit, indicates no valid SBUS packets
+    boolean no_data;
 }
