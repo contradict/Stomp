@@ -184,7 +184,6 @@ int main(int argc, char **argv)
             if (sbus_pkt[0] == 0x0F && sbus_pkt[24] == 0x00)
             {
                 good_packet = true;
-                gettimeofday(&last_packet_time, 0); //record good pkt time
                 if (dbg_out) printf("Complete SBUS packet received\n");
             } else {
                 if (dbg_out) printf("Malformed SBUS packet received\n");
@@ -234,7 +233,8 @@ int main(int argc, char **argv)
             printf("Channel 1: %.4f, Channel 2: %.4f\n", sbus_ch[0], sbus_ch[1]);
         }
 
-        //send the lcm message
+        //send the lcm message, record time
+        gettimeofday(&last_packet_time, 0);
         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &lcm_msg);
     }
 
