@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     struct timeval pkt_timeout;
     pkt_timeout.tv_sec = 0;
     pkt_timeout.tv_usec = pkt_timeout_usec;
-    struct timeval last_packet_time;
+    struct timeval last_send_time;
     struct timeval read_time;
 
     lcm_t *lcm = lcm_create(NULL);
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
     bool good_packet = false;
     bool sbus_timeout = false;
     bool failsafe = true;
-    gettimeofday(&last_packet_time, 0);
+    gettimeofday(&last_send_time, 0);
     while(true) //main loop, read sbus, then send data as lcm message
     {
         pkt_length = 0;
@@ -176,7 +176,9 @@ int main(int argc, char **argv)
 
         //check for sbus inactivity timeout first
         gettimeofday(&read_time, 0);
-        if (time_diff_msec(last_packet_time, read_time) > sbus_timeout_msec) 
+        int millis = time_diff_msec(last_send_time, read_time);
+        printf("Time since last send: %i\n", millis);
+        if (millis > sbus_timeout_msec) 
         {
             printf("Timeout waiting for SBUS");
             sbus_timeout = true;
@@ -234,7 +236,7 @@ int main(int argc, char **argv)
         }
 
         //send the lcm message, record time
-        gettimeofday(&last_packet_time, 0);
+        gettimeofday(&last_send_time, 0);
         stomp_control_radio_publish(lcm, SBUS_RADIO_COMMAND, &lcm_msg);
     }
 
