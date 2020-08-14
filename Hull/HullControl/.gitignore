@@ -6,3 +6,4 @@ inc/lcm
 /sbus_radio
 /java
 stomp.jar
+/telemetry
