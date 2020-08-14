@@ -20,15 +20,16 @@ RINGBUF_STATICLIB=ringbuf/lib/libringbuf.a
 TOMLC99_CFLAGS=-I tomlc99
 TOMLC99_STATICLIB=tomlc99/libtoml.a
 
-CFLAGS=-g3 -I inc -Wall -Wpedantic $(LCM_CFLAGS)
+CFLAGS=-g3 -I inc -Wall -Wpedantic $(LCM_CFLAGS) -I sclog4c/include
 LDFLAGS=-lm $(LCM_LDFLAGS)
 
 src/leg_control/%.o: CFLAGS+= -I ../Common $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS)
 
+
 leg_control: CFLAGS+= -I ../Common -I ../../LegBoard/Firmware/inc/export/ $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS) $(TOMLC99_CFLAGS)
 leg_control: LDFLAGS+= $(MODBUS_LDFLAGS)
 
-all: leg_control sbus_radio
+all: leg_control sbus_radio telemetry
 
 clean:
 	rm -f src/leg_control/*.o
@@ -45,8 +46,11 @@ leg_control: $(leg_control_objs) ../Common/modbus_device.o src/lcm/messages.a $(
 leg_control_cap: leg_control
 	sudo setcap "cap_sys_nice=ep" ./leg_control
 
-sbus_radio: src/sbus_radio/main.o src/lcm/messages.a | $(message_hdrs)
-	gcc $^ -o $@ $(LDFLAGS)
+sbus_radio: src/sbus_radio/main.o src/lcm/messages.a sclog4c/src/libsclog4c.a | $(message_hdrs)
+	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+
+telemetry: src/telemetry/main.o src/lcm/messages.a | $(message_hdrs)
+	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 src/lcm/messages.a: $(message_objs)
 	ar rcs $@ $^
@@ -82,6 +86,9 @@ ringbuf/include/ringbuf.h: ringbuf/src/ringbuf.c ringbuf/src/ringbuf.h
 
 tomlc99/libtoml.a: tomlc99/toml.c tomlc99/toml.h
 	$(MAKE) -C tomlc99
+
+sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
+	$(MAKE) -C sclog4c/src
 
 %.o: %.c
 	gcc -c $(CFLAGS) $? -o $@
