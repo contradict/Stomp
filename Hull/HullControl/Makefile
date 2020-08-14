@@ -3,7 +3,7 @@ message_hdrs=$(subst lcm/,inc/lcm/stomp_,$(message_defs:.lcm=.h))
 message_srcs=$(subst lcm/,src/lcm/stomp_,$(message_defs:.lcm=.c))
 message_objs=$(message_srcs:.c=.o)
 
-CFLAGS=-g3 -I inc -I ../Common
+CFLAGS=-g3 -I inc -I ../Common -I sclog4c/include
 LDFLAGS=-lm
 
 MODBUS_CFLAGS=$(shell pkg-config --cflags libmodbus)
@@ -17,7 +17,7 @@ all: leg_control sbus_radio telemetry
 leg_control: src/leg_control/main.o ../Common/modbus_device.o src/lcm/messages.a
 	gcc $^ -o $@ $(LDFLAGS) $(MODBUS_LDFLAGS) $(LCM_LDFLAGS)
 
-sbus_radio: src/sbus_radio/main.o src/lcm/messages.a
+sbus_radio: src/sbus_radio/main.o src/lcm/messages.a sclog4c/src/sclog4c.a
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 telemetry: src/telemetry/main.o src/lcm/messages.a
@@ -34,9 +34,12 @@ src/lcm/stomp_%.c: lcm/%.lcm
 inc/lcm/stomp_%.h: lcm/%.lcm
 	mkdir -p src/lcm
 	mkdir -p inc/lcm
-	lcm-gen -c --c-cpath src/lcm/ --c-hpath inc/lcm/ --cinclude lcm $<
+	lcm-gen -c --c-cpath src/lcm/ --c-hpath inc/lcm/ --cinclude lcm <
 
 %.o: %.c
 	gcc -c $(CFLAGS) $(MODBUS_CFLAGS) $(LCM_CFLAGS) $? -o $@
+
+sclog4c/src/libsclof4c.a: sclog4c/src/sclog4c.c
+	$(MAKE) -C sclog4c
 
 .PHONY: all messages
