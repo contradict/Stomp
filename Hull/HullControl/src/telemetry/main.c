@@ -15,7 +15,7 @@ static void my_handler(const lcm_recv_buf_t *rbuf, const char *channel,
     printf("Received message on channel %s, at %ld.%ld\n", channel, now.tv_sec, now.tv_usec);
     printf(" Chs: ");
     for (i = 0; i < channels; i++)
-        printf(" %i:%.3f", i, msg->channels[i]);
+        printf(" %i:%.3f", i, msg->channel[i]);
     printf("\n");
     printf("  failsafe:%i\n", msg->failsafe);
     printf("  no_data:%i\n", msg->no_data);

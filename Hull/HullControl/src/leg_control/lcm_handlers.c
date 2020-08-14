@@ -16,9 +16,9 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
     if(offset > 0)
     {
         struct leg_control_parameters *params = (struct leg_control_parameters *)(state->queue->buffer + offset);
-        params->forward_velocity = msg->axis[0];
-        params->angular_velocity = msg->axis[1];
-        switch(msg->toggle[0])
+        params->forward_velocity = msg->channels[0];
+        params->angular_velocity = msg->channels[1];
+        switch(msg->toggles[0])
         {
             case STOMP_CONTROL_RADIO_ON:
                 params->mode = command_walk;
