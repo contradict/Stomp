@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     lcm_t *lcm = lcm_create(NULL);
     if(!lcm)
     {
-        logm(SL4C_FATAL, "SBUS_RADIO: Failed to init LCM.");
+        logm(SL4C_FATAL, "Failed to init LCM.");
         return 1;
     }
     stomp_control_radio lcm_msg;
@@ -69,17 +69,17 @@ int main(int argc, char **argv)
     serial_port = open("/dev/ttyS1", O_RDWR | O_NONBLOCK | O_NOCTTY);
     if (serial_port < 0)
     {
-        logm(SL4C_FATAL, "SBUS_RADIO: Error %i from open(): %s", errno, strerror(errno));
+        logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
         return 1;
     } else if (dbg_out) {
-       logm(SL4C_DEBUG, "SBUS_RADIO: No error while opening port");
+       logm(SL4C_DEBUG, "No error while opening port");
     }
 
     struct termios tty;
     memset(&tty, 0, sizeof tty); //create termios struct and set to zero
     if (tcgetattr(serial_port, &tty) != 0) //read current port config
     {
-        logm(SL4C_WARNING, "SBUS_RADIO: Error %i from tcgetattr: %s", errno, strerror(errno));
+        logm(SL4C_WARNING, "Error %i from tcgetattr: %s", errno, strerror(errno));
     }
 
     tty.c_cflag |= PARENB;  //E
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     //try to set the configuration of the serial port
     if (tcsetattr(serial_port, TCSANOW, &tty) != 0)
     {
-        logm(SL4C_WARNING, "SBUS_RADIO: Error %i from tcsetattr: %s", errno, strerror(errno));
+        logm(SL4C_WARNING, "Error %i from tcsetattr: %s", errno, strerror(errno));
     }
 
     //set custom baud rate
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
     tty2.c_ospeed = sbus_baud;
     if (ioctl(serial_port, TCSETS2, &tty2) < 0)
     {
-        logm(SL4C_WARNING, "SBUS_RADIO: Error %i from ioctl: %s\n", errno, strerror(errno));
+        logm(SL4C_WARNING, "Error %i from ioctl: %s\n", errno, strerror(errno));
     }
 
     gettimeofday(&last_send_time, 0);
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
                 num_bytes  = read(serial_port, &read_buff, sizeof(read_buff));
-                logm(SL4C_DEBUG, "SBUS_RADIO: Read returned with %i bytes", num_bytes);
+                logm(SL4C_DEBUG, "Read returned with %i bytes", num_bytes);
                 if (num_bytes > 0)
                 {
                     int i;
@@ -156,14 +156,14 @@ int main(int argc, char **argv)
                     }
 
                 } else {
-                    logm(SL4C_WARNING, "SBUS_RADIO: Error %i from read: %s", errno, strerror(errno));
+                    logm(SL4C_WARNING, "Error %i from read: %s", errno, strerror(errno));
                 }
             } else if (sret  == 0) { 
                 //a valid SBUS packet must be followed by a select() timeout
-                logm(SL4C_DEBUG, "SBUS_RADIO: Select() timeout occured");
+                logm(SL4C_DEBUG, "Select() timeout occured");
                 break; //break and check
             } else {
-                logm(SL4C_WARNING, "SBUS_RADIO: Error %i from select %s", errno, strerror(errno));
+                logm(SL4C_WARNING, "Error %i from select %s", errno, strerror(errno));
             }
 
         } //end packet read loop;
@@ -173,15 +173,15 @@ int main(int argc, char **argv)
         int millis = time_diff_msec(last_send_time, read_time);
         if (millis > sbus_timeout_msec) 
         {
-            logm(SL4C_DEBUG, "SBUS_RADIO: Timeout waiting for SBUS");
+            logm(SL4C_DEBUG, "Timeout waiting for SBUS");
             sbus_timeout = true;
         } else if (pkt_length == sbus_pkt_length) {
             if (sbus_pkt[0] == 0x0F && sbus_pkt[24] == 0x00)
             {
                 good_packet = true;
-                logm(SL4C_DEBUG, "SBUS_RADIO: Complete SBUS packet received");
+                logm(SL4C_DEBUG, "Complete SBUS packet received");
             } else {
-                logm(SL4C_DEBUG, "SBUS_RADIO: Malformed SBUS packet received");
+                logm(SL4C_DEBUG, "Malformed SBUS packet received");
             } 
         }
 
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
         }
         lcm_msg.failsafe = failsafe;
  
-        logm(SL4C_DEBUG, "SBUS_RADIO: Channel 1: %i, Channel 2: %i, Failsafe: %i",
+        logm(SL4C_DEBUG, "Channel 1: %i, Channel 2: %i, Failsafe: %i",
              sbus_raw[0], sbus_raw[1], failsafe);
 
         //send the lcm message, record time
