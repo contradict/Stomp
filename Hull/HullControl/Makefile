@@ -17,7 +17,7 @@ all: leg_control sbus_radio telemetry
 leg_control: src/leg_control/main.o ../Common/modbus_device.o src/lcm/messages.a
 	gcc $^ -o $@ $(LDFLAGS) $(MODBUS_LDFLAGS) $(LCM_LDFLAGS)
 
-sbus_radio: src/sbus_radio/main.o src/lcm/messages.a sclog4c/src/sclog4c.a
+sbus_radio: src/sbus_radio/main.o src/lcm/messages.a sclog4c/src/libsclog4c.a
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 telemetry: src/telemetry/main.o src/lcm/messages.a
@@ -39,7 +39,7 @@ inc/lcm/stomp_%.h: lcm/%.lcm
 %.o: %.c
 	gcc -c $(CFLAGS) $(MODBUS_CFLAGS) $(LCM_CFLAGS) $? -o $@
 
-sclog4c/src/libsclof4c.a: sclog4c/src/sclog4c.c
-	$(MAKE) -C sclog4c
+sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
+	$(MAKE) -C sclog4c/src
 
 .PHONY: all messages
