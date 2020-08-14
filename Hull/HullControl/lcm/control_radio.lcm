@@ -2,6 +2,8 @@ package stomp;
 
 struct control_radio
 {
+    // The possible values of a toggle
+    const int8_t OFF=0, CENTER=1, ON=2;
     // There are two single bit channels 17, 18.
     int8_t toggles[2];
     // The firt 16 channels. Expected to be in the range -1 to 1.
