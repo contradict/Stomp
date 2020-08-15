@@ -11,6 +11,7 @@
 
 #include "joint.h"
 #include "modbus_register_map.h"
+#include "sclog4c/sclog4c.h"
 
 #include "modbus_device.h"
 #include "leg_control/leg_thread.h"
@@ -495,6 +496,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                0 == ping_all_legs(state->ctx, state->legs, state->nlegs))
             {
                 state->mode = mode_zero_gain;
+                logm(SL4C_INFO, "Ping all legs succeeded.");
             }
             break;
         case mode_zero_gain:
@@ -503,6 +505,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             if(0 == zero_gains(state->ctx, state->legs, state->nlegs))
             {
                 state->mode = mode_ready;
+                logm(SL4C_INFO, "Gain zeroed.");
             } else {
                 state->mode = mode_init;
             }
@@ -521,6 +524,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                 case command_walk:
                     restart_timer = true;
                     state->mode = mode_gain_ramp;
+                    logm(SL4C_INFO, "Gain ramp started.");
                     break;
             }
             break;
@@ -535,6 +539,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             else if(res == 1)
             {
                 state->mode = mode_gain_set;
+                logm(SL4C_INFO, "Gain set.");
             }
             break;
         case mode_gain_set:
@@ -552,6 +557,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                 case command_stop:
                 case command_walk:
                     state->mode = mode_get_position;
+                    logm(SL4C_INFO, "Positioning started.");
                     break;
             }
             break;
@@ -578,6 +584,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             else if(res == 1)
             {
                 state->mode = mode_stop;
+                logm(SL4C_INFO, "Legs positioned.");
             }
             break;
         case mode_stop:
@@ -600,6 +607,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                 case command_walk:
                     restart_timer = true;
                     state->mode = mode_walk;
+                    logm(SL4C_INFO, "Walk mode.");
                     break;
             }
             break;

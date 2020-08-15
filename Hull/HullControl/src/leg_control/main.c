@@ -6,6 +6,8 @@
 
 #include <lcm/lcm.h>
 
+#include "sclog4c/sclog4c.h"
+
 #include "lcm/stomp_control_radio.h"
 #include "lcm/stomp_modbus.h"
 #include "lcm/stomp_telemetry_leg.h"
@@ -24,7 +26,7 @@ int main(int argc, char **argv)
     char *config_filename = "hull_config.toml";
 
     int opt;
-    while((opt = getopt(argc, argv, "p:b:t:r:c:")) != -1)
+    while((opt = getopt(argc, argv, "p:b:t:r:c:d:")) != -1)
     {
         switch(opt)
         {
@@ -42,6 +44,10 @@ int main(int argc, char **argv)
                 break;
             case 'c':
                 config_filename = strdup(optarg);
+                break;
+            case 'd':
+                sclog4c_level = atoi(optarg);
+                logm(SL4C_FATAL, "Log level set to %d.", sclog4c_level);
                 break;
         }
     }
