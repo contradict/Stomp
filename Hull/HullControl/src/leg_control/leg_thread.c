@@ -83,7 +83,6 @@ struct leg_thread_state {
     float (*commanded_toe_positions)[3];
     float (*initial_toe_positions)[3];
     float turning_width;
-    float last_elapsed;
     float walk_phase;
 };
 
@@ -448,12 +447,10 @@ int compute_walk_parameters(struct leg_thread_state *state, struct leg_control_p
     return 0;
 }
 
-int walk_step(struct leg_thread_state* state, struct leg_control_parameters *p, float elapsed)
+int walk_step(struct leg_thread_state* state, struct leg_control_parameters *p, float dt)
 {
     float frequency;
     float leg_scale[state->nlegs];
-    float dt = MAX(0.020f, elapsed - state->last_elapsed);
-    state->last_elapsed = elapsed;
     compute_walk_parameters(state, p, &frequency, leg_scale);
 
     float dummy;
@@ -483,7 +480,7 @@ int read_parameters(struct queue *pq, struct leg_control_parameters *p)
     return s;
 }
 
-bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float elapsed)
+bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float elapsed, float dt)
 {
     int res;
     bool restart_timer = false;
@@ -632,7 +629,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                     state->mode = mode_stop;
                     break;
                 case command_walk:
-                    walk_step(state, parameters, elapsed);
+                    walk_step(state, parameters, dt);
                     break;
             }
             break;
@@ -749,19 +746,19 @@ void *run_leg_thread(void *ptr)
     bool loop_phase = false;
 
     struct rate_timer *timer = create_rate_timer(100.0f);
-    float elapsed = 0;
+    float elapsed = 0, dt=0;;
     while(state->shouldrun)
     {
         if(loop_phase)
         {
             read_parameters(state->definition->parameter_queue, &parameters);
-            if(run_leg_thread_once(state, &parameters, elapsed))
+            if(run_leg_thread_once(state, &parameters, elapsed, dt))
                 restart_rate_timer(timer);
         } else {
             send_telemetry(state);
             check_command_queue(state);
         }
-        elapsed = sleep_rate(timer);
+        sleep_rate(timer, &elapsed, &dt);
         loop_phase ^= true;
     }
     destroy_rate_timer(&timer);

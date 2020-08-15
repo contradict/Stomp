@@ -9,7 +9,7 @@
 
 struct rate_timer {
     float rate;
-    struct timespec increment, start_time, request, wake_time, elapsed;
+    struct timespec increment, start_time, wake_time;
 };
 
 struct rate_timer* create_rate_timer(float rate)
@@ -30,13 +30,26 @@ void restart_rate_timer(struct rate_timer* timer)
     memcpy(&timer->wake_time, &timer->start_time, sizeof(struct timespec));
 }
 
-float sleep_rate(struct rate_timer* timer)
+void sleep_rate(struct rate_timer* timer, float *elapsed, float *dt)
 {
-    timespecadd(&timer->wake_time, &timer->increment, &timer->request);
-    while(EINTR==clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &timer->request, NULL));
-    clock_gettime(CLOCK_MONOTONIC, &timer->wake_time);
-    timespecsub(&timer->wake_time, &timer->start_time, &timer->elapsed);
-    return timer->elapsed.tv_sec + timer->elapsed.tv_nsec;
+    struct timespec request;
+    timespecadd(&timer->wake_time, &timer->increment, &request);
+    while(EINTR==clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &request, NULL));
+    struct timespec wake;
+    clock_gettime(CLOCK_MONOTONIC, &wake);
+    if(dt)
+    {
+        struct timespec delta;
+        timespecsub(&wake, &timer->wake_time, &delta);
+        *dt = delta.tv_sec + delta.tv_nsec * 1e-9f;
+    }
+    memcpy(&timer->wake_time, &wake, sizeof(struct timespec));
+    if(elapsed)
+    {
+        struct timespec el;
+        timespecsub(&timer->wake_time, &timer->start_time, &el);
+        *elapsed = el.tv_sec + el.tv_nsec * 1e-9f;
+    }
 }
 
 void destroy_rate_timer(struct rate_timer** timer)
