@@ -382,7 +382,7 @@ int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], f
         {
             (*cylinder_pressure)[i] = cylinder_value[i] / 100.0f;
         }
-    return err;
+    return err == -1 ? -1 : 0;
 }
 
 int retrieve_leg_positions(struct leg_thread_state* state)
@@ -647,6 +647,8 @@ int send_telemetry(struct leg_thread_state* state)
     for(int leg=0;leg<state->nlegs;leg++)
     {
         err = get_toe_feedback(state->ctx, state->legs[leg].address, &(position[leg]), &(pressure[leg]));
+        if(err)
+            return err;
     }
     ssize_t offset = ringbuf_acquire(state->definition->telemetry_queue->ringbuf, state->telemetry_worker, sizeof(stomp_telemetry_leg));
     if(offset > 0)
