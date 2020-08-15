@@ -11,4 +11,5 @@ struct telemetry_leg {
     float toe_position_commanded_X[6];
     float toe_position_commanded_Y[6];
     float toe_position_commanded_Z[6];
+    float observed_period;
 }

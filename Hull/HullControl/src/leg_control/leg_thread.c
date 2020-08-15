@@ -84,6 +84,7 @@ struct leg_thread_state {
     float (*initial_toe_positions)[3];
     float turning_width;
     float walk_phase;
+    float observed_period;
 };
 
 struct leg_description *parse_leg_descriptions(toml_table_t *legs_config, int *nlegs)
@@ -665,6 +666,7 @@ int send_telemetry(struct leg_thread_state* state)
             telem->toe_position_commanded_Y[leg] = state->commanded_toe_positions[leg][1];
             telem->toe_position_commanded_Z[leg] = state->commanded_toe_positions[leg][2];
         }
+        telem->observed_period = state->observed_period;
         ringbuf_produce(state->definition->telemetry_queue->ringbuf, state->telemetry_worker);
     }
     return 0;
@@ -758,6 +760,8 @@ void *run_leg_thread(void *ptr)
             send_telemetry(state);
             check_command_queue(state);
         }
+        state->observed_period *= 0.9;
+        state->observed_period += 0.1 * dt;
         sleep_rate(timer, &elapsed, &dt);
         loop_phase ^= true;
     }
