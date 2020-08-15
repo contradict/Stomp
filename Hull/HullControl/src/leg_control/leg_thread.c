@@ -629,7 +629,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                     break;
                 case command_stop:
                     restart_timer = true;
-                    state->mode = mode_pos_ramp;
+                    state->mode = mode_stop;
                     break;
                 case command_walk:
                     walk_step(state, parameters, elapsed);
