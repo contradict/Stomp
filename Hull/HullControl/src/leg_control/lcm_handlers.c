@@ -1,6 +1,7 @@
 #include <sys/types.h>
 
-#include "channel_names.h"
+#include "lcm_channels.h"
+#include "sbus_channels.h"
 #include "leg_control/lcm_handlers.h"
 #include "leg_control/leg_thread.h"
 #include "lcm/stomp_telemetry_leg.h"
@@ -16,9 +17,9 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
     if(offset > 0)
     {
         struct leg_control_parameters *params = (struct leg_control_parameters *)(state->queue->buffer + offset);
-        params->forward_velocity = msg->channels[0];
-        params->angular_velocity = msg->channels[1];
-        switch(msg->toggles[0])
+        params->forward_velocity = msg->axis[HULL_VELOCITY_X];
+        params->angular_velocity = msg->axis[HULL_OMEGA_Z];
+        switch(msg->toggle[HULL_MODE])
         {
             case STOMP_CONTROL_RADIO_ON:
                 params->mode = command_walk;
