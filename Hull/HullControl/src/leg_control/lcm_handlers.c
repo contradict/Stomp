@@ -1,5 +1,7 @@
 #include <sys/types.h>
 
+#include "sclog4c/sclog4c.h"
+
 #include "lcm_channels.h"
 #include "sbus_channels.h"
 #include "leg_control/lcm_handlers.h"
@@ -82,7 +84,7 @@ int lcm_response_send(struct lcm_sender_state* state)
         while(s >= sizeof(stomp_modbus))
         {
             stomp_modbus *mb = (stomp_modbus*)(state->queue->buffer + offset);
-            stomp_modbus_publish(state->lcm, LEG_TELEMETRY, mb);
+            stomp_modbus_publish(state->lcm, LEG_RESPONSE, mb);
             s -= sizeof(stomp_telemetry_leg);
             offset += sizeof(stomp_telemetry_leg);
         }
@@ -112,7 +114,7 @@ int modbus_command_init(struct lcm_listener_state *state)
     state->worker = ringbuf_register(state->queue->ringbuf, 0);
     if(!state->worker)
         return -1;
-    state->subscription = stomp_modbus_subscribe(state->lcm, SBUS_RADIO_COMMAND, &modbus_command_handler, state);
+    state->subscription = stomp_modbus_subscribe(state->lcm, LEG_COMMAND, &modbus_command_handler, state);
     if(!state->subscription)
         return -2;
     return 0;
