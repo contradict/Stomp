@@ -244,7 +244,7 @@ void free_gait_descriptions(struct gait *gaits, int ngaits)
 bool ping_all_legs(modbus_t *ctx, struct leg_description *legs, int nlegs)
 {
     /* Ping all the legs */
-    int err = 0;
+    int err = 0, ret = 0;
     for(int leg=0; leg<nlegs; leg++)
     {
         modbus_set_slave(ctx, legs[leg].address);
@@ -254,10 +254,10 @@ bool ping_all_legs(modbus_t *ctx, struct leg_description *legs, int nlegs)
         {
             logm(SL4C_ERROR, "Unable to communicate with leg %d(0x%02x): %s\n",
                     leg, legs[leg].address, modbus_strerror(errno));
-            break;
+            ret = err;
         }
     }
-    return err;
+    return ret;
 }
 
 int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], const float (*damping)[3])
@@ -267,37 +267,66 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], cons
     modbus_set_slave(ctx, address);
     gain_value = 10.0f * (*gain)[JOINT_CURL];
     damping_value = 10.0f * (*damping)[JOINT_CURL];
-    do {
-        err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &gain_value);
-        if(err != -1)
-            err = modbus_write_registers(ctx, CURL_BASE + HForceDamping, 1, &damping_value);
-        gain_value = 10.0f * (*gain)[JOINT_SWING];
-        damping_value = 10.0f * (*damping)[JOINT_SWING];
-        if(err != -1)
-            err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &gain_value);
-        if(err != -1)
-            err = modbus_write_registers(ctx, SWING_BASE + HForceDamping, 1, &damping_value);
-        gain_value = 10.0f * (*gain)[JOINT_LIFT];
-        damping_value = 10.0f * (*damping)[JOINT_LIFT];
-        if(err != -1)
-            err = modbus_write_registers(ctx, LIFT_BASE + HForceDamping, 1, &damping_value);
-        if(err != -1)
-            err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &gain_value);
-    } while(err == -1 && errno == EMBXSFAIL);
-    return err;
+    err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &gain_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Counld not set Curl gain: %s", modbus_strerror(errno));
+        return err;
+    }
+    err = modbus_write_registers(ctx, CURL_BASE + HForceDamping, 1, &damping_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Counld not set Curl damping: %s", modbus_strerror(errno));
+        return err;
+    }
+    gain_value = 10.0f * (*gain)[JOINT_SWING];
+    damping_value = 10.0f * (*damping)[JOINT_SWING];
+    err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &gain_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Counld not set Swing gain: %s", modbus_strerror(errno));
+        return err;
+    }
+    err = modbus_write_registers(ctx, SWING_BASE + HForceDamping, 1, &damping_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Counld not set Swing damping: %s", modbus_strerror(errno));
+        return err;
+    }
+    gain_value = 10.0f * (*gain)[JOINT_LIFT];
+    damping_value = 10.0f * (*damping)[JOINT_LIFT];
+    err = modbus_write_registers(ctx, LIFT_BASE + HForceDamping, 1, &damping_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Counld not set Lift gain: %s", modbus_strerror(errno));
+        return err;
+    }
+    err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &gain_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Counld not set Lift damping: %s", modbus_strerror(errno));
+        return err;
+    }
+    return 0;
 }
 
 int zero_gains(modbus_t *ctx, struct leg_description *legs, int nlegs)
 {
     float zero_gain[3] = {0.0f, 0.0f, 0.0f};
     float zero_damping[3] = {0.0f, 0.0f, 0.0f};
+    int ret=0;
+
     for(int l=0; l<nlegs; l++)
     {
         int err = set_servo_gains(ctx, legs[l].address, &zero_gain, &zero_damping);
-        if(0 != err)
-            return err;
+        if(err == -1)
+        {
+            logm(SL4C_ERROR, "Unable to set gains for leg %d(0x%02x).",
+                    l, legs[l].address);
+            ret = err;
+        }
     }
-    return 0;
+    return ret;
 }
 
 int ramp_gain_step(struct leg_thread_state* state, float elapsed)
@@ -418,6 +447,7 @@ int set_toe_postion(modbus_t *ctx, uint8_t address, float (*toe_position)[3])
 int ramp_position_step(struct leg_thread_state* state, float elapsed)
 {
     float phase = MIN(1.0f, elapsed / state->position_ramp_time);
+    int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
     {
         float ramp_position[3];
@@ -428,10 +458,12 @@ int ramp_position_step(struct leg_thread_state* state, float elapsed)
         int err = set_toe_postion(state->ctx, state->legs[leg].address, &ramp_position);
         if(err == -1)
         {
-            return err;
+            logm(SL4C_ERROR, "Unable to set position for leg %d(0x%02x): %s",
+                 leg, state->legs[leg].address, modbus_strerror(errno));
+            ret = err;
         }
     }
-    return 0;
+    return ret;
 }
 
 int compute_walk_parameters(struct leg_thread_state *state, struct leg_control_parameters *p, float *frequency, float *leg_scale)
@@ -510,6 +542,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                 logm(SL4C_INFO, "Gain zeroed.");
             } else {
                 state->mode = mode_init;
+                logm(SL4C_INFO, "Gain zero failed.");
             }
             break;
         case mode_ready:
@@ -570,6 +603,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             {
                 restart_rate_timer(state->timer);
                 state->mode = mode_pos_ramp;
+                logm(SL4C_INFO, "Initial position retrieved");
             }
             else
             {
@@ -582,7 +616,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             res = ramp_position_step(state, elapsed);
             if(res == -1)
             {
-                state->mode = mode_init;
+                logm(SL4C_ERROR, "Position ramp failed.");
             }
             else if(res == 1)
             {
