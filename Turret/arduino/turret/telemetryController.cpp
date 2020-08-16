@@ -22,8 +22,8 @@
 //  Need to esnure that we can get the telemetry over XBee, reguardless of
 //  the serial port selection logic.  Define FORCE_XBEE to true or false
 
-#define FORCE_XBEE true
-#define FORCE_USB false
+#define FORCE_XBEE false
+#define FORCE_USB true
 
 #define CHECK_ENABLED(TLM_ID) if(!(m_params.enabledTelemetry & (0x1L << (TLM_ID)))) return false;
 const uint16_t TLM_TERMINATOR=0x6666;
