@@ -35,6 +35,7 @@ static void my_handler(const lcm_recv_buf_t *rbuf, const char *channel,
 
         }
     }
+    printf("\n");
     printf("  failsafe:%i\n", msg->failsafe);
     printf("  no_data:%i\n", msg->no_data);
 }

@@ -15,7 +15,7 @@
 #define HULL_MODE 3
 #define HULL_SC 4
 #define HULL_SD 5
-#define HULL_SH 6
-#define HULL_SG 7
+#define HULL_SG 6
+#define HULL_SH 7
 
 #endif

@@ -231,10 +231,9 @@ int main(int argc, char **argv)
         for (i = axes; i < (axes + toggles); i++)
         {
             int tog_i = i-axes;
-            if (sbus_raw[i] > sbus_on_thresh)
-            {
+            if (sbus_raw[i] > sbus_on_thresh) {
                 lcm_msg.toggle[tog_i] = STOMP_CONTROL_RADIO_ON;
-            } else if (sbus_raw[1] < sbus_off_thresh) {
+            } else if (sbus_raw[i] < sbus_off_thresh) {
                 lcm_msg.toggle[tog_i] = STOMP_CONTROL_RADIO_OFF;
             } else {
                 lcm_msg.toggle[tog_i] = STOMP_CONTROL_RADIO_CENTER;
