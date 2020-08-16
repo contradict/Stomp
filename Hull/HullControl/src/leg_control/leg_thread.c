@@ -365,12 +365,13 @@ int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], f
 {
     int err;
     uint16_t toe_value[3];
-    uint16_t cylinder_value[6];
+    //uint16_t cylinder_value[6];
     modbus_set_slave(ctx, address);
     err = modbus_read_registers(ctx, ToeXPosition, 3, toe_value);
     if(err != -1)
         for(int i=0;i<3;i++)
             (*toe_position)[i] = ((int16_t *)toe_value)[i] / 100.0f;
+    /*
     if(err != -1)
         err = modbus_read_registers(ctx, CURL_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[4]));
     if(err != -1)
@@ -382,6 +383,7 @@ int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], f
         {
             (*cylinder_pressure)[i] = cylinder_value[i] / 100.0f;
         }
+    */
     return err == -1 ? -1 : 0;
 }
 
