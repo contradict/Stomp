@@ -316,6 +316,9 @@ int zero_gains(modbus_t *ctx, struct leg_description *legs, int nlegs)
     float zero_damping[3] = {0.0f, 0.0f, 0.0f};
     int ret=0;
 
+    uint32_t sec, saved_timeout;
+    modbus_get_response_timeout(ctx, &sec, &saved_timeout);
+    modbus_set_response_timeout(ctx, 0, 100000);
     for(int l=0; l<nlegs; l++)
     {
         int err = set_servo_gains(ctx, legs[l].address, &zero_gain, &zero_damping);
@@ -326,6 +329,7 @@ int zero_gains(modbus_t *ctx, struct leg_description *legs, int nlegs)
             ret = err;
         }
     }
+    modbus_set_response_timeout(ctx, 0, saved_timeout);
     return ret;
 }
 
