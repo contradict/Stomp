@@ -614,7 +614,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             }
             else
             {
-                state->mode = mode_init;
+                state->mode = mode_gain_set;
             }
             break;
         case mode_pos_ramp:
@@ -623,6 +623,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             res = ramp_position_step(state, elapsed);
             if(res == -1)
             {
+                state->mode = mode_gain_set;
                 logm(SL4C_ERROR, "Position ramp failed.");
             }
             else if(res == 1)
