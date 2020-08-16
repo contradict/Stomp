@@ -514,11 +514,12 @@ int walk_step(struct leg_thread_state* state, struct leg_control_parameters *p, 
 
 int read_parameters(struct queue *pq, struct leg_control_parameters *p)
 {
-    size_t offset;
+    size_t offset, sp;
+    sp = sizeof(struct leg_control_parameters);
     size_t s = ringbuf_consume(pq->ringbuf, &offset);
-    if(s == sizeof(struct leg_control_parameters))
+    if(s >= sp)
     {
-        memcpy(p, pq->buffer + offset, s);
+        memcpy(p, pq->buffer + offset + s - sp, sp);
         ringbuf_release(pq->ringbuf, s);
     }
     return s;
