@@ -32,6 +32,7 @@ struct leg_description {
 
 struct joint_gains {
     float gain_ramp_time;
+    float gain_ramp_frequency;
     float proportional_gain[3];
     float force_damping[3];
 };
@@ -79,6 +80,7 @@ struct leg_thread_state {
     int current_gait;
     float position_ramp_time;
     atomic_bool shouldrun;
+    struct rate_timer *timer;
     enum leg_control_mode mode;
     float (*commanded_toe_positions)[3];
     float (*initial_toe_positions)[3];
@@ -132,6 +134,7 @@ struct joint_gains *parse_joint_gains(toml_table_t *legs_config)
     const char *joint_names[3] = {"Curl", "Swing", "Lift"};
     struct joint_gains *gains = malloc(sizeof(struct joint_gains));
     get_float(legs_config, "gain_ramp_time", &gains->gain_ramp_time);
+    get_float(legs_config, "gain_ramp_frequency", &gains->gain_ramp_frequency);
     for(int j=0; j<3; j++)
     {
         toml_table_t *joint = toml_table_in(joints, joint_names[j]);
@@ -483,10 +486,9 @@ int read_parameters(struct queue *pq, struct leg_control_parameters *p)
     return s;
 }
 
-bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float elapsed, float dt)
+void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float elapsed, float dt)
 {
     int res;
-    bool restart_timer = false;
     switch(state->mode)
     {
         case mode_init:
@@ -522,7 +524,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                 case command_gain_set:
                 case command_stop:
                 case command_walk:
-                    restart_timer = true;
+                    set_rate_timer_rate(state->timer, state->joint_gains->gain_ramp_frequency);
                     state->mode = mode_gain_ramp;
                     logm(SL4C_INFO, "Gain ramp started.");
                     break;
@@ -538,6 +540,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             }
             else if(res == 1)
             {
+                set_rate_timer_rate(state->timer, state->definition->frequency);
                 state->mode = mode_gain_set;
                 logm(SL4C_INFO, "Gain set.");
             }
@@ -565,7 +568,7 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             res = retrieve_leg_positions(state);
             if(res == 0)
             {
-                restart_timer = true;
+                restart_rate_timer(state->timer);
                 state->mode = mode_pos_ramp;
             }
             else
@@ -599,13 +602,13 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                     state->mode = mode_zero_gain;
                     break;
                 case command_gain_set:
-                    restart_timer = true;
+                    restart_rate_timer(state->timer);
                     state->mode = mode_gain_ramp;
                     break;
                 case command_stop:
                     break;
                 case command_walk:
-                    restart_timer = true;
+                    restart_rate_timer(state->timer);
                     state->mode = mode_walk;
                     logm(SL4C_INFO, "Walk mode.");
                     break;
@@ -624,11 +627,11 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                     state->mode = mode_zero_gain;
                     break;
                 case command_gain_set:
-                    restart_timer = true;
+                    restart_rate_timer(state->timer);
                     state->mode = mode_gain_ramp;
                     break;
                 case command_stop:
-                    restart_timer = true;
+                    restart_rate_timer(state->timer);
                     state->mode = mode_stop;
                     break;
                 case command_walk:
@@ -637,7 +640,6 @@ bool run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             }
             break;
     }
-    return restart_timer;
 }
 
 int send_telemetry(struct leg_thread_state* state)
@@ -749,7 +751,7 @@ void *run_leg_thread(void *ptr)
     };
     bool loop_phase = false;
 
-    struct rate_timer *timer = create_rate_timer(state->definition->frequency);
+    state->timer = create_rate_timer(state->definition->frequency);
     logm(SL4C_DEBUG, "Create timer with period %f",state->definition->frequency);
     float elapsed = 0, dt=0;;
     while(state->shouldrun)
@@ -757,19 +759,18 @@ void *run_leg_thread(void *ptr)
         if(loop_phase)
         {
             read_parameters(state->definition->parameter_queue, &parameters);
-            if(run_leg_thread_once(state, &parameters, elapsed, dt))
-                restart_rate_timer(timer);
+            run_leg_thread_once(state, &parameters, elapsed, dt);
         } else {
             send_telemetry(state);
             check_command_queue(state);
         }
         state->observed_period *= 0.9;
         state->observed_period += 0.1 * dt;
-        sleep_rate(timer, &elapsed, &dt);
+        sleep_rate(state->timer, &elapsed, &dt);
         logm(SL4C_FINE, "lp: %s el: %6.3f dt: %5.3f", loop_phase ? "walk" : "tlem", elapsed, dt);
         loop_phase ^= true;
     }
-    destroy_rate_timer(&timer);
+    destroy_rate_timer(&state->timer);
     free_leg_description(state->legs, state->nlegs);
     free(state->joint_gains);
     free(state->commanded_toe_positions);

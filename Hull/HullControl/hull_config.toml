@@ -11,6 +11,7 @@ halfwidth=0.010
 
 count=6
 gain_ramp_time=2.0
+gain_ramp_frequency=5
 position_ramp_time=2.0
 
 [robot.legs.joint_gain.Curl]
