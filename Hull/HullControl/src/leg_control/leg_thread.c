@@ -467,6 +467,8 @@ int ramp_position_step(struct leg_thread_state* state, float elapsed)
             ret = err;
         }
     }
+    if(ret != -1 && phase >= 1.0f)
+        ret = 1;
     return ret;
 }
 
