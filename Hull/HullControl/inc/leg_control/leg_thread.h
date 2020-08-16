@@ -13,7 +13,7 @@ struct leg_thread_definition {
     lcm_t *lcm;
     char *devname;
     uint32_t baud;
-    uint32_t period;
+    float frequency;
     uint32_t response_timeout;
     toml_table_t *config;
     struct queue *parameter_queue;

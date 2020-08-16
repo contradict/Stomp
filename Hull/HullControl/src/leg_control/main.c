@@ -21,12 +21,12 @@ int main(int argc, char **argv)
     struct leg_thread_definition leg_thread;
     leg_thread.devname = "/dev/ttyS4";
     leg_thread.baud = 1000000;
-    leg_thread.period = 10;
+    leg_thread.frequency = 100.0f;
     leg_thread.response_timeout = 2000;
     char *config_filename = "hull_config.toml";
 
     int opt;
-    while((opt = getopt(argc, argv, "p:b:t:r:c:d:")) != -1)
+    while((opt = getopt(argc, argv, "p:b:f:r:c:d:")) != -1)
     {
         switch(opt)
         {
@@ -36,8 +36,8 @@ int main(int argc, char **argv)
             case 'b':
                 leg_thread.baud = atol(optarg);
                 break;
-            case 't':
-                leg_thread.period = atoi(optarg);
+            case 'f':
+                leg_thread.frequency = atof(optarg);
                 break;
             case 'r':
                 leg_thread.response_timeout = 1000*atoi(optarg);

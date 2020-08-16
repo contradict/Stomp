@@ -747,7 +747,8 @@ void *run_leg_thread(void *ptr)
     };
     bool loop_phase = false;
 
-    struct rate_timer *timer = create_rate_timer(100.0f);
+    struct rate_timer *timer = create_rate_timer(state->definition->frequency);
+    logm(SL4C_DEBUG, "Create timer with period %f",state->definition->frequency);
     float elapsed = 0, dt=0;;
     while(state->shouldrun)
     {
@@ -763,6 +764,7 @@ void *run_leg_thread(void *ptr)
         state->observed_period *= 0.9;
         state->observed_period += 0.1 * dt;
         sleep_rate(timer, &elapsed, &dt);
+        logm(SL4C_FINE, "lp: %s el: %6.3f dt: %5.3f", loop_phase ? "walk" : "tlem", elapsed, dt);
         loop_phase ^= true;
     }
     destroy_rate_timer(&timer);
