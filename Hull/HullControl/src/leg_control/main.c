@@ -64,24 +64,24 @@ int main(int argc, char **argv)
     toml_table_t *full_config = toml_parse_file(fp, errbuf, sizeof(errbuf));
     if(0 == full_config)
     {
-        printf("Unable to parse %s: %s\n", config_filename, errbuf);
+        logm(SL4C_FATAL, "Unable to parse %s: %s\n", config_filename, errbuf);
         exit(1);
     }
     leg_thread.config = toml_table_in(full_config, "robot");
     if(0 == leg_thread.config)
     {
-        printf("No table 'robot' in config.\n");
+        logm(SL4C_FATAL, "No table 'robot' in config.\n");
         exit(1);
     }
     toml_raw_t tomlr = toml_raw_in(leg_thread.config, "name");
     char *robot_name;
     toml_rtos(tomlr, &robot_name);
-    printf("Starting %s\n", robot_name);
+    logm(SL4C_INFO, "Starting %s\n", robot_name);
 
     lcm_t *lcm = lcm_create(NULL);
     if(!lcm)
     {
-        printf("Failed to initialize LCM.\n");
+        logm(SL4C_FATAL, "Failed to initialize LCM.\n");
         exit(2);
     }
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     int err= control_radio_init(&radio_state);
     if(err)
     {
-        printf("Failed to initialize control radio LCM receiver.");
+        logm(SL4C_FATAL, "Failed to initialize control radio LCM receiver.");
         exit(err);
     }
 
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     err = modbus_command_init(&modbus_state);
     if(err)
     {
-        printf("Failed to initialize modbus command LCM receiver.");
+        logm(SL4C_FATAL, "Failed to initialize modbus command LCM receiver.");
         exit(err);
     }
 

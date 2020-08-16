@@ -212,7 +212,7 @@ struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* s
         toml_array_t *phase_offsets = toml_array_in(gait, "leg_phase");
         if(phase_offsets == 0)
         {
-            printf("No leg_phase for gait %s\n", gaits[g].name);
+            logm(SL4C_FATAL, "No leg_phase for gait %s\n", gaits[g].name);
             return NULL;
         }
         gaits[g].nlegs = toml_array_nelem(phase_offsets);
@@ -249,7 +249,7 @@ bool ping_all_legs(modbus_t *ctx, struct leg_description *legs, int nlegs)
         err = modbus_read_registers(ctx, 0x55, 1, &dummy);
         if(err == -1)
         {
-            printf("Unable to communicate with leg %d(0x%02x): %s\n",
+            logm(SL4C_ERROR, "Unable to communicate with leg %d(0x%02x): %s\n",
                     leg, legs[leg].address, modbus_strerror(errno));
             break;
         }
@@ -313,7 +313,7 @@ int ramp_gain_step(struct leg_thread_state* state, float elapsed)
         int err = set_servo_gains(state->ctx, state->legs[leg].address, &current_gain, &current_damping);
         if(err == -1)
         {
-            printf("Failed to set servo gain for leg %d(0x%02x): %s.\n",
+            logm(SL4C_ERROR, "Failed to set servo gain for leg %d(0x%02x): %s.\n",
                    leg, state->legs[leg].address, modbus_strerror(errno));
             return -1;
         }
@@ -715,14 +715,14 @@ void *run_leg_thread(void *ptr)
     state->telemetry_worker = ringbuf_register(state->definition->telemetry_queue->ringbuf, 0);
     if(!state->telemetry_worker)
     {
-        printf("Unable to register worker for telemetry queue\n");
+        logm(SL4C_FATAL, "Unable to register worker for telemetry queue\n");
         return (void *)-1;
     }
 
     state->response_worker = ringbuf_register(state->definition->response_queue->ringbuf, 0);
     if(!state->telemetry_worker)
     {
-        printf("Unable to register worker for command response queue\n");
+        logm(SL4C_FATAL, "Unable to register worker for command response queue\n");
         return (void *)-1;
     }
 
@@ -795,7 +795,7 @@ struct leg_thread_state* create_leg_thread(struct leg_thread_definition *leg_thr
     if(sched_setscheduler(0, SCHED_FIFO, &sched) != 0)
     {
         perror("Unable to set scheduler");
-        printf("Try:\nsudo setcap \"cap_sys_nice=ep\" %s\n", progname);
+        logm(SL4C_FATAL, "Try:\nsudo setcap \"cap_sys_nice=ep\" %s\n", progname);
         free(state);
         return 0;
     }
@@ -812,7 +812,7 @@ void terminate_leg_thread(struct leg_thread_state **state)
     (*state)->shouldrun = false;
     void *res;
     pthread_join((*state)->thread, &res);
-    printf("run_leg_thread=%zu\n", (size_t)res);
+    logm(SL4C_INFO, "run_leg_thread=%zu\n", (size_t)res);
     free(*state);
     *state = NULL;
 }
