@@ -500,16 +500,21 @@ int walk_step(struct leg_thread_state* state, struct leg_control_parameters *p, 
     float dummy;
     state->walk_phase = MAX(modff(state->walk_phase + frequency * dt, &dummy), 0.0f);
 
+    int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
     {
         float toe_position[3];
         compute_leg_position(state, leg, state->walk_phase, leg_scale[leg], &toe_position);
         int err = set_toe_postion(state->ctx, state->legs[leg].address, &toe_position);
-        if(err != 0)
-            return err;
+        if(err == -1)
+        {
+            ret = err;
+            logm(SL4C_ERROR, "Unable to set toe position for leg %d(0x%02x): %s",
+                    leg, state->legs[leg].address, modbus_strerror(errno));
+        }
         memcpy(state->commanded_toe_positions[leg], toe_position, sizeof(toe_position));
     }
-    return 0;
+    return ret;
 }
 
 int read_parameters(struct queue *pq, struct leg_control_parameters *p)
