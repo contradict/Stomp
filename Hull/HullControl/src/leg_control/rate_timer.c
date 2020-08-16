@@ -30,6 +30,17 @@ void restart_rate_timer(struct rate_timer* timer)
     memcpy(&timer->wake_time, &timer->start_time, sizeof(struct timespec));
 }
 
+float set_rate_timer_rate(struct rate_timer* timer, float newrate)
+{
+    float fpart, ipart, oldrate;
+    oldrate = 1.0f / (timer->increment.tv_sec + 1e-9f * timer->increment.tv_nsec);
+    fpart = modff(1.0f/newrate, &ipart);
+    timer->increment.tv_sec = truncf(ipart);
+    timer->increment.tv_nsec = truncf(1e9f * fpart);
+    restart_rate_timer(timer);
+    return oldrate;
+}
+
 void sleep_rate(struct rate_timer* timer, float *elapsed, float *dt)
 {
     struct timespec request;
