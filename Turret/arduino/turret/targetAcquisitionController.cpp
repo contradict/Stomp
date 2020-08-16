@@ -163,27 +163,15 @@ void TargetAcquisitionController::updateBestTarget()
 
     getMinimumDetections(&m_minDetections);
 
-    // Now that Leddar has given us the detections, segment then and select the best
+    //  Now that Leddar has given us the detections, segment into m_possibleTargets
+    //  then and select the best one and store in m_pBestTarget
 
     segmentTargets();
+    selectTarget();
 
-    if(m_possibleTargetsCount > 0) 
-    {
-        if(m_params.closestOnly)
-        {
-            selectClosestTarget();
-        }
-        else
-        {
-            selectTarget();
-        }
-    }
-    else
-    {
-        m_pBestTarget = NULL;
-    }
-
-    bool validTarget = m_pBestTarget == NULL;
+    //  BB MJS: Debug Print Info for analysis.  Remove
+    
+    bool validTarget = (m_pBestTarget == NULL);
 
     String minDetectionsString = "";
 
@@ -238,26 +226,48 @@ void TargetAcquisitionController::segmentTargets()
         
         if (delta < -m_params.edgeCallThreshold) 
         {
+            //  transition from further to closer
+
             leftEdge = i;
             m_possibleTargets[targetIndex].SumDistance = 0;
             m_possibleTargets[targetIndex].SumIntensity = 0;
             m_possibleTargets[targetIndex].SumAngleIntensity = 0;
         } 
-        else if (delta > m_params.edgeCallThreshold) 
+        else if (delta > m_params.edgeCallThreshold || i == (LEDDAR_SEGMENTS - 1)) 
         {
-            // call object if there is an unmatched left edge
-            if (leftEdge > rightEdge) 
+            //  transition from closer to further or ran off the right of Leddar FOV
+            //  then call it an object if there is an unmatched left edge or the left
+            //  edge is 0
+
+            if (leftEdge > rightEdge || leftEdge == 0) 
             {
                 rightEdge = i;
 
-                m_possibleTargets[targetIndex].LeftEdge = leftEdge;
-                m_possibleTargets[targetIndex].RightEdge = rightEdge;
-                m_possibleTargets[targetIndex].Time = m_lastUpdateTime;
-
                 int16_t size = m_possibleTargets[targetIndex].GetSize();
                 
-                if(size > m_params.objectSizeMin && size < m_params.objectSizeMax) 
+                if (size > m_params.objectSizeMin && size < m_params.objectSizeMax) 
                 {
+                    m_possibleTargets[targetIndex].LeftEdge = leftEdge;
+                    m_possibleTargets[targetIndex].RightEdge = rightEdge;
+                    m_possibleTargets[targetIndex].Time = m_lastUpdateTime;
+
+                    if (leftEdge == 0 && rightEdge == LEDDAR_SEGMENTS - 1)
+                    {   
+                        m_possibleTargets[targetIndex].Type = Target::ELeftAndRgihtEdgeOutOfFOV;
+                    }
+                    if (leftEdge == 0)
+                    {   
+                        m_possibleTargets[targetIndex].Type = Target::ELeftEdgeOutOfFOV;
+                    }
+                    else if (rightEdge == LEDDAR_SEGMENTS - 1)
+                    {
+                        m_possibleTargets[targetIndex].Type = Target::ERightEdgeOutOfFOV;
+                    }
+                    else
+                    {
+                        m_possibleTargets[targetIndex].Type = Target::EInFOV;
+                    }
+                
                     targetIndex++;
                 }
             }
@@ -272,6 +282,55 @@ void TargetAcquisitionController::segmentTargets()
     m_possibleTargetsCount = targetIndex;
 }
 
+void TargetAcquisitionController::selectTarget()
+{
+    bool onlyUseInFOVTargets = false;
+
+    if (m_state != ETargetAcquired)
+    {
+        //  If we don't currently have a target, then ignore potential targets that 
+        //  hang off either the left or right of our FOV.  We only want to go from
+        //  ENoTarget -> ETargetAcquired IF we see both edges of the target
+
+        onlyUseInFOVTargets = true;
+    }
+    else
+    {
+        //  If we have a current target, then it might now be partially out of FOV and
+        //  we want to consider those UNLESS there are any targets that fully in the FOV
+        //  in which case just consider EInFOV targets
+
+        for (uint32_t targetIndex = 0; targetIndex < m_possibleTargetsCount; targetIndex++)
+        {
+            if (m_possibleTargets[targetIndex].Type == Target::EInFOV)
+            {
+                onlyUseInFOVTargets = true;
+                break;
+            }
+        }
+    }
+    
+    m_pBestTarget = NULL;
+    int32_t minTargetDistance = INT32_MAX;
+
+    for (uint32_t targetIndex = 0; targetIndex < m_possibleTargetsCount; targetIndex++)
+    {
+        if (onlyUseInFOVTargets && m_possibleTargets[targetIndex].Type != Target::EInFOV)
+        {
+            continue;
+        }
+
+        int32_t distance = m_possibleTargets[targetIndex].GetRadius();
+
+        if (distance < minTargetDistance)
+        {
+            m_pBestTarget = &m_possibleTargets[targetIndex];
+            minTargetDistance = distance;
+        }
+    }
+}
+
+/*
 void TargetAcquisitionController::selectTarget()
 {
     m_pBestTarget = NULL;
@@ -315,6 +374,7 @@ void TargetAcquisitionController::selectClosestTarget()
         }
     }
 }
+*/
 
 void TargetAcquisitionController::setState(controllerState p_state)
 {
