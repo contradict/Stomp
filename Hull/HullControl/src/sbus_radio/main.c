@@ -15,7 +15,7 @@
 #include "sclog4c/sclog4c.h"
 #include <lcm/lcm.h>
 
-#include "channel_names.h"
+#include "lcm_channels.h"
 #include "lcm/stomp_control_radio.h"
 
 int time_diff_msec(struct timeval t0, struct timeval t1)
@@ -28,7 +28,8 @@ int main(int argc, char **argv)
     sclog4c_level = SL4C_FATAL; //default logging, fatal errors only
     const unsigned int sbus_baud = 100000;
     const int sbus_pkt_length = 25; //complete sbus packet size
-    const int sbus_ch_cnt = 16;
+    const int sbus_on_thresh = 1390;
+    const int sbus_off_thresh = 590;
     const int sbus_max = 1811;
     const int sbus_min = 172;
     const float sbus_span = (sbus_max - sbus_min)/2.0f;
@@ -185,7 +186,9 @@ int main(int argc, char **argv)
             } 
         }
 
-        uint16_t sbus_raw[sbus_ch_cnt];
+        int axes = STOMP_CONTROL_RADIO_AXES;
+        int toggles = STOMP_CONTROL_RADIO_TOGGLES;
+        uint16_t sbus_raw[axes + toggles];
         memset(&sbus_raw, '\0', sizeof(sbus_raw));
         if (good_packet) //if pkt is good, process, otherwise set failsafe
         {
@@ -219,12 +222,25 @@ int main(int argc, char **argv)
         }
 
         int i;
-        float sbus_ch[sbus_ch_cnt];
-        for (i = 0; i < sbus_ch_cnt; i++)
+        float sbus_axis[axes];
+        for (i = 0; i < axes; i++)
         {
-            sbus_ch[i] = (sbus_raw[i] - sbus_center)/sbus_span;
-            lcm_msg.channels[i] = sbus_ch[i];
+            sbus_axis[i] = (sbus_raw[i] - sbus_center)/sbus_span;
+            lcm_msg.axis[i] = sbus_axis[i];
         }
+        for (i = axes; i < (axes + toggles); i++)
+        {
+            int tog_i = i-axes;
+            if (sbus_raw[i] > sbus_on_thresh)
+            {
+                lcm_msg.toggle[tog_i] = STOMP_CONTROL_RADIO_ON;
+            } else if (sbus_raw[1] < sbus_off_thresh) {
+                lcm_msg.toggle[tog_i] = STOMP_CONTROL_RADIO_OFF;
+            } else {
+                lcm_msg.toggle[tog_i] = STOMP_CONTROL_RADIO_CENTER;
+            }
+        }
+
         lcm_msg.failsafe = failsafe;
  
         logm(SL4C_DEBUG, "Channel 1: %i, Channel 2: %i, Failsafe: %i",

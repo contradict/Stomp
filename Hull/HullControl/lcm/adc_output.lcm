@@ -1,6 +1,6 @@
 package stomp;
 
 struct adc_output {
-    const float tank_psi;
-    const float rail_psi;
+    float tank_psi;
+    float rail_psi;
 }
