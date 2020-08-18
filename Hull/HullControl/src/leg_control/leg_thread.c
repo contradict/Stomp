@@ -17,40 +17,11 @@
 #include "leg_control/leg_thread.h"
 #include "leg_control/toml_utils.h"
 #include "leg_control/rate_timer.h"
+#include "leg_control/modbus_utils.h"
 #include "lcm/stomp_telemetry_leg.h"
 #include "lcm/stomp_modbus.h"
 
 const float deg2rad = M_PI / 180.0f;
-
-struct leg_description {
-    char *name;
-    int index;
-    uint8_t address;
-    float orientation[3];
-    float origin[3];
-};
-
-struct joint_gains {
-    float gain_ramp_time;
-    float gain_ramp_frequency;
-    float proportional_gain[3];
-    float force_damping[3];
-};
-
-struct step {
-    char *name;
-    float length;
-    int npoints;
-    float *phase, *X, *Y, *Z;
-};
-
-struct gait {
-    char *name;
-    int step_index;
-    float step_cycles;
-    int nlegs;
-    float *phase_offsets;
-};
 
 enum leg_control_mode {
     mode_init,
@@ -89,167 +60,14 @@ struct leg_thread_state {
     float observed_period;
 };
 
-struct leg_description *parse_leg_descriptions(toml_table_t *legs_config, int *nlegs)
-{
-    toml_raw_t tomlr = toml_raw_in(legs_config, "count");
-    int64_t num_legs;
-    toml_rtoi(tomlr, &num_legs);
-    *nlegs = num_legs;
-    toml_array_t *descriptions = toml_array_in(legs_config, "description");
-    struct leg_description *legs = calloc(num_legs, sizeof(struct leg_description));
 
-    for(int leg=0; leg<num_legs; leg++)
-    {
-        toml_table_t *desc = toml_table_at(descriptions, leg);
-        tomlr = toml_raw_in(desc, "index");
-        int64_t index;
-        toml_rtoi(tomlr, &index);
-        legs[index].index = index;
-        tomlr = toml_raw_in(desc, "name");
-        toml_rtos(tomlr, &legs[index].name);
-        tomlr = toml_raw_in(desc, "address");
-        int64_t addr;
-        toml_rtoi(tomlr, &addr);
-        legs[index].address = addr;
-        toml_array_t *o= toml_array_in(desc, "orientation");
-        toml_vector_float(o, legs[index].orientation);
-        o= toml_array_in(desc, "origin");
-        toml_vector_float(o, legs[index].origin);
-    }
-    return legs;
-}
-
-void free_leg_description(struct leg_description *legs, int nlegs)
-{
-    for(int i=0; i<nlegs; i++)
-    {
-        free(legs[i].name);
-    }
-    free(legs);
-}
-
-struct joint_gains *parse_joint_gains(toml_table_t *legs_config)
-{
-    toml_table_t *joints = toml_table_in(legs_config, "joint_gain");
-    const char *joint_names[3] = {"Curl", "Swing", "Lift"};
-    struct joint_gains *gains = malloc(sizeof(struct joint_gains));
-    get_float(legs_config, "gain_ramp_time", &gains->gain_ramp_time);
-    get_float(legs_config, "gain_ramp_frequency", &gains->gain_ramp_frequency);
-    for(int j=0; j<3; j++)
-    {
-        toml_table_t *joint = toml_table_in(joints, joint_names[j]);
-        get_float(joint, "ProportionalGain", &gains->proportional_gain[j]);
-        get_float(joint, "ForceDamping", &gains->force_damping[j]);
-    }
-    return gains;
-}
-
-struct step *parse_steps(toml_table_t *config, int *nsteps)
-{
-    toml_array_t *step_descriptions = toml_array_in(config, "steps");
-    *nsteps = toml_array_nelem(step_descriptions);
-    struct step *steps = calloc(*nsteps, sizeof(struct step));
-    for(int s=0; s<*nsteps; s++)
-    {
-        toml_table_t *step = toml_table_at(step_descriptions, s);
-        toml_raw_t tomlr = toml_raw_in(step, "name");
-        toml_rtos(tomlr, &steps[s].name);
-        get_float(step, "length", &steps[s].length);
-        toml_array_t *points = toml_array_in(step, "points");
-        steps[s].npoints = toml_array_nelem(points);
-        steps[s].phase = calloc(steps[s].npoints, sizeof(float));
-        steps[s].X = calloc(steps[s].npoints, sizeof(float));
-        steps[s].Y = calloc(steps[s].npoints, sizeof(float));
-        steps[s].Z = calloc(steps[s].npoints, sizeof(float));
-        for(int p=0; p<steps[s].npoints; p++)
-        {
-            toml_table_t *pt = toml_table_at(points, p);
-            get_float(pt, "phase", &steps[s].phase[p]);
-            get_float(pt, "X", &steps[s].X[p]);
-            get_float(pt, "Y", &steps[s].Y[p]);
-            get_float(pt, "Z", &steps[s].Z[p]);
-        }
-    }
-    return steps;
-}
-
-void free_step_descriptions(struct step *steps, int nsteps)
-{
-    for(int s=0;s<nsteps;s++)
-    {
-        free(steps[s].name);
-        free(steps[s].phase);
-        free(steps[s].X);
-        free(steps[s].Y);
-        free(steps[s].Z);
-    }
-    free(steps);
-}
-
-int find_step(const struct step *steps, int nsteps, const char *step_name)
-{
-    for(int s=0;s<nsteps;s++)
-    {
-        if(strcmp(step_name, steps[s].name) == 0)
-            return s;
-    }
-    return -1;
-}
-
-struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* steps, int nsteps)
-{
-    toml_array_t *gait_descriptions = toml_array_in(config, "gait");
-    *ngaits = toml_array_nelem(gait_descriptions);
-    struct gait *gaits = calloc(*ngaits, sizeof(struct gait));
-    for(int g=0; g<*ngaits; g++)
-    {
-        toml_table_t *gait = toml_table_at(gait_descriptions, g);
-        toml_raw_t tomlr = toml_raw_in(gait, "name");
-        toml_rtos(tomlr, &gaits[g].name);
-        tomlr = toml_raw_in(gait, "step_name");
-        char *step_name;
-        toml_rtos(tomlr, &step_name);
-        gaits[g].step_index = find_step(steps, nsteps, step_name);
-        free(step_name);
-        get_float(gait, "step_cycles", &gaits[g].step_cycles);
-        toml_array_t *phase_offsets = toml_array_in(gait, "leg_phase");
-        if(phase_offsets == 0)
-        {
-            logm(SL4C_FATAL, "No leg_phase for gait %s\n", gaits[g].name);
-            return NULL;
-        }
-        gaits[g].nlegs = toml_array_nelem(phase_offsets);
-        gaits[g].phase_offsets = calloc(gaits[g].nlegs, sizeof(float));
-        for(int p=0; p<gaits[g].nlegs; p++)
-        {
-            tomlr = toml_raw_at(phase_offsets, p);
-            double tmpd;
-            toml_rtod(tomlr, &tmpd);
-            gaits[g].phase_offsets[p] = tmpd;
-        }
-    }
-    return gaits;
-}
-
-void free_gait_descriptions(struct gait *gaits, int ngaits)
-{
-    for(int g=0;g<ngaits;g++)
-    {
-        free(gaits[g].name);
-        free(gaits[g].phase_offsets);
-    }
-    free(gaits);
-}
-
-bool ping_all_legs(modbus_t *ctx, struct leg_description *legs, int nlegs)
+int ping_all_legs(modbus_t *ctx, struct leg_description *legs, int nlegs)
 {
     /* Ping all the legs */
     int err = 0, ret = 0;
     for(int leg=0; leg<nlegs; leg++)
     {
-        modbus_set_slave(ctx, legs[leg].address);
-        uint16_t dummy;
-        err = modbus_read_registers(ctx, 0x55, 1, &dummy);
+        err = ping_leg(ctx, legs[leg].address);
         if(err == -1)
         {
             logm(SL4C_ERROR, "Unable to communicate with leg %d(0x%02x): %s\n",
@@ -258,56 +76,6 @@ bool ping_all_legs(modbus_t *ctx, struct leg_description *legs, int nlegs)
         }
     }
     return ret;
-}
-
-int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], const float (*damping)[3])
-{
-    int err;
-    uint16_t gain_value, damping_value;
-    modbus_set_slave(ctx, address);
-    gain_value = 10.0f * (*gain)[JOINT_CURL];
-    damping_value = 10.0f * (*damping)[JOINT_CURL];
-    err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &gain_value);
-    if(err == -1)
-    {
-        logm(SL4C_ERROR, "Counld not set Curl gain: %s", modbus_strerror(errno));
-        return err;
-    }
-    err = modbus_write_registers(ctx, CURL_BASE + HForceDamping, 1, &damping_value);
-    if(err == -1)
-    {
-        logm(SL4C_ERROR, "Counld not set Curl damping: %s", modbus_strerror(errno));
-        return err;
-    }
-    gain_value = 10.0f * (*gain)[JOINT_SWING];
-    damping_value = 10.0f * (*damping)[JOINT_SWING];
-    err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &gain_value);
-    if(err == -1)
-    {
-        logm(SL4C_ERROR, "Counld not set Swing gain: %s", modbus_strerror(errno));
-        return err;
-    }
-    err = modbus_write_registers(ctx, SWING_BASE + HForceDamping, 1, &damping_value);
-    if(err == -1)
-    {
-        logm(SL4C_ERROR, "Counld not set Swing damping: %s", modbus_strerror(errno));
-        return err;
-    }
-    gain_value = 10.0f * (*gain)[JOINT_LIFT];
-    damping_value = 10.0f * (*damping)[JOINT_LIFT];
-    err = modbus_write_registers(ctx, LIFT_BASE + HForceDamping, 1, &damping_value);
-    if(err == -1)
-    {
-        logm(SL4C_ERROR, "Counld not set Lift gain: %s", modbus_strerror(errno));
-        return err;
-    }
-    err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &gain_value);
-    if(err == -1)
-    {
-        logm(SL4C_ERROR, "Counld not set Lift damping: %s", modbus_strerror(errno));
-        return err;
-    }
-    return 0;
 }
 
 int zero_gains(modbus_t *ctx, struct leg_description *legs, int nlegs)
@@ -397,32 +165,6 @@ int compute_leg_position(struct leg_thread_state* state, int leg_index, float ph
     return 0;
 }
 
-int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], float (*cylinder_pressure)[6])
-{
-    int err;
-    uint16_t toe_value[3];
-    //uint16_t cylinder_value[6];
-    modbus_set_slave(ctx, address);
-    err = modbus_read_registers(ctx, ToeXPosition, 3, toe_value);
-    if(err != -1)
-        for(int i=0;i<3;i++)
-            (*toe_position)[i] = ((int16_t *)toe_value)[i] / 100.0f;
-    /*
-    if(err != -1)
-        err = modbus_read_registers(ctx, CURL_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[4]));
-    if(err != -1)
-        err = modbus_read_registers(ctx, SWING_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[0]));
-    if(err != -1)
-        err = modbus_read_registers(ctx, LIFT_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[2]));
-    if(err != -1)
-        for(int i=0;i<6;i++)
-        {
-            (*cylinder_pressure)[i] = cylinder_value[i] / 100.0f;
-        }
-    */
-    return err == -1 ? -1 : 0;
-}
-
 int retrieve_leg_positions(struct leg_thread_state* state)
 {
     float discard_pressures[6];
@@ -434,18 +176,6 @@ int retrieve_leg_positions(struct leg_thread_state* state)
         compute_leg_position(state, leg, 0.0f, 0.0f, &(state->initial_toe_positions[leg]));
     }
     return 0;
-}
-
-int set_toe_postion(modbus_t *ctx, uint8_t address, float (*toe_position)[3])
-{
-    uint16_t toe_values[3];
-
-    for(int axis=0; axis < 3; axis++)
-    {
-        ((int16_t *)toe_values)[axis] = roundf((*toe_position)[axis] * 100.0f);
-    }
-    modbus_set_slave(ctx, address);
-    return modbus_write_registers(ctx, ToeXPosition, 3, toe_values);
 }
 
 int ramp_position_step(struct leg_thread_state* state, float elapsed)
