@@ -38,6 +38,8 @@ src/leg_control/%.o: CFLAGS+= -I ../Common $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS)
 
 leg_control: CFLAGS+= -I ../Common -I ../../LegBoard/Firmware/inc/export/ $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS) $(TOMLC99_CFLAGS)
 leg_control: LDFLAGS+= $(MODBUS_LDFLAGS)
+test_gain_set: CFLAGS+= -I ../Common -I ../../LegBoard/Firmware/inc/export/ $(MODBUS_CFLAGS)
+test_gain_set: LDFLAGS+= $(MODBUS_LDFLAGS)
 
 all: libs targets
 
@@ -60,6 +62,9 @@ leg_control: $(leg_control_objs) ../Common/modbus_device.o $(MESSAGELIB) $(RINGB
 
 leg_control_cap: leg_control
 	sudo setcap "cap_sys_nice=ep" ./leg_control
+
+test_gain_set: src/leg_control/test/test_gain_set.o src/leg_control/modbus_utils.o ../Common/modbus_device.o
+	gcc $^ -o $@ $(LDFLAGS)
 
 sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
