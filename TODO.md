@@ -1,6 +1,6 @@
 # BeagleBone
 
-## Leg tool
+## Leg tool **#NextYear**
 
 The feature set for a magical do-everything tool to configure the robot
 firmware. For now, see Hull/Test/modbus_ui.c
@@ -40,18 +40,14 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * Command toe position
 
 ## Gait Generation
-  * see Hull/HullControl/ControlDesign.md for the plan
-  * Listen to radio, parameterize gait.
+  * see hull_control branch for current work.
   * https://github.com/csiro-robotics/syropod_highlevel_controller
-
-## S.Bus Radio
-  * Connected to `/dev/tty.mikrobus3`
-  * see Hull/HullControl/ControlDesign.md for the plan
 
 ## Telemetry
   * Radio works, `/dev/tty.mikrobus1`, 115200
   * Radio is RFD900x
   * Jo write a radio driver, works with cosmos. Need to start sending it data.
+  * COSMOS upgrade
 
 ## Pressure ADC
   * Uses a Mikro ADC-Click
@@ -72,9 +68,16 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * DHCP requests arrive, responses sent (tcpdump)
   * Client never receives DHCP response (tcpdump)
 
+## Shutdown
+  * BeagleBone does not power off after executing `halt -p`
+
 # Leg Board
 
-## Firmware update over modbus
+## Crash during startup with new leg_thread
+  * Enfield communication dies
+  * Just setting gain on one leg does not cause the problem
+
+## Firmware update over modbus **#NextYear**
 
   * Firmare uses sectors 5, 6, 7, IVT in Sector 2
   * Bootloader in sector 4, IVT in Sector 1
