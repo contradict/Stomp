@@ -144,7 +144,7 @@ int find_step(const struct step *steps, int nsteps, const char *step_name)
 
 struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* steps, int nsteps)
 {
-    toml_array_t *gait_descriptions = toml_array_in(config, "gait");
+    toml_array_t *gait_descriptions = toml_array_in(config, "gaits");
     *ngaits = toml_array_nelem(gait_descriptions);
     struct gait *gaits = calloc(*ngaits, sizeof(struct gait));
     for(int g=0; g<*ngaits; g++)

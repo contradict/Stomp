@@ -96,7 +96,7 @@ points=[
 
 length=0.014
 
-[[robot.gait]]
+[[robot.gaits]]
 name="Tripod"
 step_name="Trapezoid"
 step_cycles=1.0
