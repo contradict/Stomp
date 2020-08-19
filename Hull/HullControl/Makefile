@@ -30,6 +30,9 @@ TOMLC99_STATICLIB=tomlc99/libtoml.a
 SCLOG4C_CFLAGS=-I sclog4c/include
 SCLOG4C_STATICLIB=sclog4c/src/libsclog4c.a
 
+NCURSES_CFLAGS=$(shell pkg-config --cflags ncurses)
+NCURSES_LDFLAGS=$(shell pkg-config --libs ncurses)
+
 CFLAGS=-g3 -std=gnu11 -I inc -Wall $(LCM_CFLAGS) $(SCLOG4C_CFLAGS)
 LDFLAGS=-lm $(LCM_LDFLAGS) $(SCLOG4C_STATICLIB)
 
@@ -40,6 +43,9 @@ leg_control: CFLAGS+= -I ../Common -I ../../LegBoard/Firmware/inc/export/ $(MODB
 leg_control: LDFLAGS+= $(MODBUS_LDFLAGS)
 test_gain_set: CFLAGS+= -I ../Common -I ../../LegBoard/Firmware/inc/export/ $(MODBUS_CFLAGS)
 test_gain_set: LDFLAGS+= $(MODBUS_LDFLAGS)
+
+fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
+fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
 
 all: libs targets
 
@@ -67,7 +73,10 @@ test_gain_set: src/leg_control/test/test_gain_set.o src/leg_control/modbus_utils
 	gcc $^ -o $@ $(LDFLAGS)
 
 sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
-	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+	gcc src/sbus_radio/main.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+
+fake_sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
+	gcc src/sbus_radio/fake_radio.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 telemetry: $(telemetry_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
