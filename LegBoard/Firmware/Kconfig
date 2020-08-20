@@ -1,0 +1,432 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+#
+
+mainmenu "STM32F7-template configuration"
+
+config HAVE_DOT_CONFIG
+	bool
+	default y
+
+menu "Board"
+
+config PTYPE
+	string "PTYPE"
+	default "stm32f730xx"
+	help
+		Processor type (e.g. stm32f769xx)
+
+config BTYPE
+	string "BTYPE"
+	default "ChompLegBoard"
+	help
+		Processor type (e.g. stm32f769i_discovery)
+
+endmenu
+
+menu "Paths"
+
+config TOOLROOT
+	string "TOOLROOT"
+	default "C:/GNUToolsARMEmbedded/6-2017-q2-update/bin/"
+	help
+		Toolroot path. Leave empty for toolchain already in $PATH.
+
+config LIBROOT
+	string "LIBROOT"
+	default "C:/STM32Cube_FW_F7_V1.7.0"
+	help
+		STM32F7Cube path.
+
+endmenu
+
+menu "Included BSP libraries"
+
+config BSP_MODULE_ENABLED
+	bool "BSP_MODULE_ENABLED"
+	default y
+	help
+		Include BSP module.
+
+config BSP_SDRAM_MODULE_ENABLED
+	bool "BSP_SDRAM_MODULE_ENABLED"
+	default y
+	help
+		Include BSP SDRAM module.
+
+config BSP_AUDIO_MODULE_ENABLED
+	bool "BSP_AUDIO_MODULE_ENABLED"
+	default y
+	help
+		Include BSP audio module.
+
+config BSP_LCD_MODULE_ENABLED
+	bool "BSP_LCD_MODULE_ENABLED"
+	default y
+	help
+		Include BSP LCD module.
+
+endmenu
+
+menu "Included BSP components"
+
+config BSP_WM8994_COMPONENT_ENABLED
+	bool "BSP_WM8994_COMPONENT_ENABLED"
+	default n
+	help
+		Include BSP WM8994 component - hi-fi codec.
+
+config BSP_OTM8009A_COMPONENT_ENABLED
+	bool "BSP_OTM8009A_COMPONENT_ENABLED"
+	default n
+	help
+		Include BSP OTM8009A component - driver for TFT LCDs.
+
+config BSP_ADS57X4_COMPONENT_ENABLED
+	bool "BSP_ADS57X4_COMPONENT_ENABLED"
+	default y
+	help
+		Include BSP ADS57X4 component - driver for SPI DAC.
+
+config BSP_IS31FL3235_COMPONENT_ENABLED
+	bool "BSP_IS31FL3235_COMPONENT_ENABLED"
+	default y
+	help
+		Include BSP IS31FL3235 component - driver for I2C LEDs.
+
+endmenu
+
+menu "Included HAL libraries"
+
+config HAL_MODULE_ENABLED
+	bool "HAL_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Initialization module.
+
+config HAL_GPIO_MODULE_ENABLED
+	bool "HAL_GPIO_MODULE_ENABLED"
+	default y
+	help
+		Include HAL General Purpose Input Output module.
+
+config HAL_DMA_MODULE_ENABLED
+	bool "HAL_DMA_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Direct Memory Access module.
+
+config HAL_DMA_EX_MODULE_ENABLED
+	bool "HAL_DMA_EX_MODULE_ENABLED"
+	default y
+	depends on HAL_DMA_MODULE_ENABLED
+	help
+		Include HAL Direct Memory Access extension module.
+
+config HAL_DMA2D_MODULE_ENABLED
+	bool "HAL_DMA2D_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Direct Memory Access 2D module.
+
+config HAL_SPI_MODULE_ENABLED
+	bool "HAL_SPI_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Serial Peripheral Interface module.
+
+config HAL_UART_MODULE_ENABLED
+	bool "HAL_UART_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Universal Asynchronous Receiver/Transmitter module.	
+
+config HAL_UART_EX_MODULE_ENABLED
+	bool "HAL_UART_EX_MODULE_ENABLED"
+	depends on HAL_UART_MODULE_ENABLED
+	default y
+	help
+		Include HAL Universal Asynchronous Receiver/Transmitter Extra Functions module.	
+
+
+config HAL_USART_MODULE_ENABLED
+	bool "HAL_USART_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Universal Synchronous Asynchronous Receiver/Transmitter module.	
+
+config HAL_I2C_MODULE_ENABLED
+	bool "HAL_I2C_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Inter-Integrated Circuit module.
+
+config HAL_I2C_EX_MODULE_ENABLED
+	bool "HAL_I2C_EX_MODULE_ENABLED"
+	depends on HAL_I2C_MODULE_ENABLED
+	default y
+	help
+		Include HAL Inter-Integrated Circuit extension module.
+
+config HAL_DSI_MODULE_ENABLED
+	bool "HAL_DSI_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Display Serial Interface module.
+
+config HAL_RCC_MODULE_ENABLED
+	bool "HAL_RCC_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Reset and Clock Controller module.
+
+config HAL_RCC_EX_MODULE_ENABLED
+	bool "HAL_RCC_EX_MODULE_ENABLED"
+	default y
+	depends on HAL_RCC_MODULE_ENABLED
+	help
+		Include HAL Reset and Clock Controller extension module.
+
+config HAL_PWR_MODULE_ENABLED
+	bool "HAL_PWR_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Power Controller module.
+
+config HAL_PWR_EX_MODULE_ENABLED
+	bool "HAL_PWR_EX_MODULE_ENABLED"
+	depends on HAL_PWR_MODULE_ENABLED
+	default y
+	help
+		Include HAL Power Controller extension module.
+
+config HAL_ETH_MODULE_ENABLED
+	bool "HAL_ETH_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Ethernet module.
+
+config HAL_ADC_MODULE_ENABLED
+	bool "HAL_ADC_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Analog to Digital Converter module.
+
+config HAL_ADC_EX_MODULE_ENABLED
+	bool "HAL_ADC_EX_MODULE_ENABLED"
+	depends on HAL_ADC_MODULE_ENABLED
+	default y
+	help
+		Include HAL Analog to Digital Converter extension module.
+
+config HAL_DAC_MODULE_ENABLED
+	bool "HAL_DAC_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Digital to Analog Converter module.
+
+config HAL_DAC_EX_MODULE_ENABLED
+	bool "HAL_DAC_EX_MODULE_ENABLED"
+	depends on HAL_ADC_MODULE_ENABLED
+	default y
+	help
+		Include HAL Digital to Analog Converter extension module.
+
+config HAL_CAN_MODULE_ENABLED
+	bool "HAL_CAN_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Controller Area Network module.
+
+config HAL_CEC_MODULE_ENABLED
+	bool "HAL_CEC_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Consumer Electronics Controller module.
+
+config HAL_CORTEX_MODULE_ENABLED
+	bool "HAL_CORTEX_MODULE_ENABLED"
+	default y
+	help
+		Include HAL CORTEX module.	
+
+config HAL_TIM_MODULE_ENABLED
+	bool "HAL_TIM_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Timer module.
+
+config HAL_TIM_EX_MODULE_ENABLED
+	bool "HAL_TIM_EX_MODULE_ENABLED"
+	depends on HAL_TIM_MODULE_ENABLED
+	default y
+	help
+		Include HAL Timer extension module.
+
+config HAL_NOR_MODULE_ENABLED
+	bool "HAL_NOR_MODULE_ENABLED"
+	default y
+	help
+		Include HAL NOR module.
+
+config HAL_SRAM_MODULE_ENABLED
+	bool "HAL_SRAM_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Static Random Access Memory module.
+
+config HAL_SD_MODULE_ENABLED
+	bool "HAL_SD_MODULE_ENABLED"
+	default y
+	help
+		Include HAL SD card module.
+
+config HAL_SDRAM_MODULE_ENABLED
+	bool "HAL_SDRAM_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Synchronous Dynamic Random Access Memory module.
+
+config HAL_WWDG_MODULE_ENABLED
+	bool "HAL_WWDG_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Window Watchdog module.
+	
+config HAL_FLASH_MODULE_ENABLED
+	bool "HAL_FLASH_MODULE_ENABLED"
+	default y
+	help
+		Include HAL internal FLASH memory module.
+
+config HAL_FLASH_EX_MODULE_ENABLED
+	bool "HAL_FLASH_EX_MODULE_ENABLED"
+	depends on HAL_FLASH_MODULE_ENABLED
+	default y
+	help
+		Include HAL internal FLASH memory extension module.
+
+config HAL_CRC_MODULE_ENABLED
+	bool "HAL_CRC_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Cyclic Redundancy Check module.
+
+config HAL_CRC_EX_MODULE_ENABLED
+	bool "HAL_CRC_EX_MODULE_ENABLED"
+	depends on HAL_CRC_MODULE_ENABLED
+	default y
+	help
+		Include HAL Cyclic Redundancy Check extension module.
+
+config HAL_MMC_MODULE_ENABLED
+	bool "HAL_MMC_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Multi Media Card module.
+
+config HAL_PCD_MODULE_ENABLED
+	bool "HAL_PCD_MODULE_ENABLED"
+	default y
+	help
+		Include HAL PCD (usb peripheral controller?) module.
+
+config HAL_PCD_EX_MODULE_ENABLED
+	bool "HAL_PCD_EX_MODULE_ENABLED"
+	depends on HAL_PCD_MODULE_ENABLED
+	default y
+	help
+		Include HAL PCD (usb peripheral controller?) extension module.
+
+config HAL_SAI_MODULE_ENABLED
+	bool "HAL_SAI_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Serial Audio Interface module.
+
+config HAL_DFSDM_MODULE_ENABLED
+	bool "HAL_DFSDM_MODULE_ENABLED"
+	default y
+	help
+		Include HAL Digital Filter for SD modulators module.
+
+config HAL_LTDC_MODULE_ENABLED
+	bool "HAL_LTDC_MODULE_ENABLED"
+	default y
+	help
+		Include HAL LCD TFT Controller module.
+
+config HAL_LTDC_EX_MODULE_ENABLED
+	bool "HAL_LTDC_EX_MODULE_ENABLED"
+	depends on HAL_LTDC_MODULE_ENABLED
+	default y
+	help
+		Include HAL LCD TFT Controller extension module.
+
+endmenu
+
+menu "Use LL driver"
+
+config USE_LL_DRIVER
+	bool "USE_LL_DRIVER"
+	default y
+	help
+		Compiler switch needed to use LL drivers.
+
+endmenu
+
+menu "Included LL libraries"
+
+config LL_FMC_MODULE_ENABLED
+	bool "LL_FMC_MODULE_ENABLED"
+	default y
+	help
+		Include LL Flexible Memory Controller module.
+
+config LL_SDMMC_MODULE_ENABLED
+	bool "LL_SDMMC_MODULE_ENABLED"
+	default y
+	help
+		Include LL SD MMC card module.
+
+config LL_RCC_MODULE_ENABLED
+	bool "LL_RCC_MODULE_ENABLED"
+	default y
+	help
+		Include LL Reset and Clock Controller module.
+
+config LL_USB_MODULE_ENABLED
+	bool "LL_USB_MODULE_ENABLED"
+	default y
+	help
+		Include LL USB module.
+
+endmenu
+
+menu "Included middlewares"
+
+config LWIP_MIDDLEWARE_ENABLED
+	bool "LWIP_MIDDLEWARE_ENABLED"
+	default y
+	help
+		Include lwip tcp/ip stack.
+
+config CMSIS_RTOS_ENABLED
+	bool "CMSIS_RTOS_ENABLED"
+	default y
+	help
+		Include Real Time Operating System.
+
+endmenu
+
+menu "Included utils"
+
+config LCD_LOG_UTIL_ENABLED
+	bool "LCD_LOG_UTIL_ENABLED"
+	depends on BSP_LCD_MODULE_ENABLED && HAL_DMA2D_MODULE_ENABLED && HAL_DSI_MODULE_ENABLED && HAL_LTDC_MODULE_ENABLED && BSP_OTM8009A_COMPONENT_ENABLED && HAL_RCC_MODULE_ENABLED && HAL_SDRAM_MODULE_ENABLED && BSP_SDRAM_MODULE_ENABLED && LL_FMC_MODULE_ENABLED && HAL_LTDC_EX_MODULE_ENABLED && HAL_RCC_EX_MODULE_ENABLED
+	default y
+	help
+		Include lcd log util.
+
+endmenu

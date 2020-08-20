@@ -1,0 +1,6 @@
+src/lcm
+inc/lcm
+*.o
+.*.sw?
+/leg_control
+/sbus_radio

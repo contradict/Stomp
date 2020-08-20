@@ -1,0 +1,4 @@
+SUBSYSTEM=="tty", ATTR{iomem_base}=="0x48020000", SYMLINK+="tty.mikrobus1"
+SUBSYSTEM=="tty", ATTR{iomem_base}=="0x4AE2B000", SYMLINK+="tty.mikrobus2"
+SUBSYSTEM=="tty", ATTR{iomem_base}=="0x4AE2B000", SYMLINK+="tty.mikrobus3"
+SUBSYSTEM=="tty", ATTR{iomem_base}=="0x48066000", SYMLINK+="tty.mikrobus4"
