@@ -299,12 +299,14 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             {
                 case command_init:
                     state->mode = mode_init;
+                    logm(SL4C_INFO, "ready->init");
                     break;
                 case command_zero_gain:
                     break;
                 case command_gain_set:
                 case command_stop:
                 case command_walk:
+                    logm(SL4C_INFO, "ready->gain_ramp");
                     set_rate_timer_rate(state->timer, state->joint_gains->gain_ramp_frequency);
                     state->mode = mode_gain_ramp;
                     logm(SL4C_INFO, "Gain ramp started.");
@@ -332,16 +334,18 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             {
                 case command_init:
                     state->mode = mode_init;
+                    logm(SL4C_INFO, "gain_set->init");
                     break;
                 case command_zero_gain:
                     state->mode = mode_zero_gain;
+                    logm(SL4C_INFO, "gain_set->zero_gain");
                     break;
                 case command_gain_set:
                     break;
                 case command_stop:
                 case command_walk:
                     state->mode = mode_get_position;
-                    logm(SL4C_INFO, "Positioning started.");
+                    logm(SL4C_INFO, "stop->get_position.");
                     break;
             }
             break;
@@ -356,6 +360,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             else
             {
                 state->mode = mode_gain_set;
+                logm(SL4C_ERROR, "Retrieve position failed.");
             }
             break;
         case mode_pos_ramp:
@@ -366,6 +371,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             {
                 state->mode = mode_gain_set;
                 logm(SL4C_ERROR, "Position ramp failed.");
+                logm(SL4C_INFO, "pos_ramp->stop");
             }
             else if(res == 1)
             {
@@ -405,17 +411,21 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             {
                 case command_init:
                     state->mode = mode_init;
+                    logm(SL4C_INFO, "walk->init");
                     break;
                 case command_zero_gain:
                     state->mode = mode_zero_gain;
+                    logm(SL4C_INFO, "walk->zero_gain");
                     break;
                 case command_gain_set:
                     restart_rate_timer(state->timer);
                     state->mode = mode_gain_ramp;
+                    logm(SL4C_INFO, "walk->ready");
                     break;
                 case command_stop:
                     restart_rate_timer(state->timer);
                     state->mode = mode_stop;
+                    logm(SL4C_INFO, "walk->stop");
                     break;
                 case command_walk:
                     walk_step(state, parameters, dt);
