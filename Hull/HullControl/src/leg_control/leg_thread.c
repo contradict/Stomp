@@ -215,8 +215,14 @@ int compute_walk_parameters(struct leg_thread_state *state, struct leg_control_p
         right_scale = -p->angular_velocity * state->turning_width / p->forward_velocity;
         left_scale = copysignf(p->forward_velocity, 1.0);
     }
-    leg_scale[0] = leg_scale[1] = leg_scale[2] = right_scale;
-    leg_scale[3] = leg_scale[4] = leg_scale[5] = left_scale;
+    for(int l=0;l<state->nlegs / 2;l++)
+    {
+        leg_scale[l] = right_scale;
+    }
+    for(int l=state->nlegs/2;l<state->nlegs;l++)
+    {
+        leg_scale[l] = left_scale;
+    }
     *frequency = (fabs(p->angular_velocity) * state->turning_width + fabs(p->forward_velocity)) / state->steps[state->gaits[state->current_gait].step_index].length;
     return 0;
 }
