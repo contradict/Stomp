@@ -1,0 +1,143 @@
+SCREEN AUTO AUTO 0.1
+VERTICAL
+  TITLE "Fight Engineer"
+  HORIZONTAL
+    CANVAS 405 611
+      # Outline the canvas
+      CANVASLINE   0   0 404   0 blue
+      CANVASLINE 404   0 404 610 blue
+      CANVASLINE 404 610   0 610 blue
+      CANVASLINE   0 610   0   0 blue
+
+      # filtered point in red
+      CANVASDOT 'tlm_variable("TURRET TRK FLT_X", :CONVERTED)/15' 'tlm_variable("TURRET TRK FLT_Y", :CONVERTED)/15 + 305' red
+
+      # auto-hammer box in blue
+      CANVASLINE 'tlm_variable("TURRET SBS HMRD", :CONVERTED)/15' 299 'tlm_variable("TURRET SBS HMRD", :CONVERTED)/15' 311 blue
+      CANVASLINE 0 299 'tlm_variable("TURRET SBS HMRD", :CONVERTED)/15' 299 blue
+      CANVASLINE 0 311 'tlm_variable("TURRET SBS HMRD", :CONVERTED)/15' 311 blue
+
+      # LEDDAR FOV in green
+      CANVASLINE 0 305 '6000*cos(1.73/2)/15' ' 6000*sin(1.73/2)/15 + 305' green
+      CANVASLINE 0 305 '6000*cos(1.73/2)/15' '-6000*sin(1.73/2)/15 + 305' green
+      CANVASELLIPSE -400 -95 800 800 green
+    END
+
+    VERTICAL
+      HORIZONTAL
+        VERTICAL
+          LABEL "System Status"
+          HORIZONTAL
+            FORMATVALUE TURRET SYS SYSTEM_TIME "%10d ms" CONVERTED 13
+            LABEL "Uptime"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          LABEL "Sensor Status"
+          HORIZONTAL
+            VALUE TURRET ORN ORN CONVERTED 13
+            LABEL "Orientation"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SNS ANGLE CONVERTED 13
+            LABEL "Hammer Angle"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SNS THROW_PRESSURE CONVERTED 13
+            LABEL "Throw Side Pressure"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SNS RETRACT_PRESSURE CONVERTED 13
+            LABEL "Retract Side Pressure"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+        END
+    
+        VERTICAL
+          LABEL "Radio Status"
+          HORIZONTAL
+            VALUE TURRET SBS WEAPONS_ENABLE RAW 1
+            LABEL "Weapons Enable"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SBS FLAME_PULSE RAW 1
+            LABEL "Flame Pulse"
+              SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SBS FLAME_CTRL RAW 1
+            LABEL "Flame ON"
+              SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SBS AUTO_AIM_MODE RAW 1
+            LABEL "Auto Aim Enabled"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SBS MANUAL_TURRET_MODE RAW 1
+            LABEL "Manual Turret Enabled"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SBS AUTO_HAMMER RAW 1
+            LABEL "Auto Fire Enabled"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+          HORIZONTAL
+            VALUE TURRET SBS HMRI CONVERTED 3
+            RANGEBAR TURRET SBS HMRI 3 65 CONVERTED 200
+            LABEL "Hit Intensity"
+            SPACER 0 0 EXPANDING MINIMUM
+          END
+        END
+      END
+
+      VERTICAL
+        LABEL "Turret Status"
+        HORIZONTAL
+          VERTICAL
+            VERTICAL
+              LINEGRAPH TURRET TUR TUR_STATE 200 402 159 RAW 0 9 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE TURRET TUR TUR_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
+            END
+            VERTICAL
+              LINEGRAPH TURRET AUTOF AUTOF_STATE 200 402 159 RAW 0 7 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE TURRET AUTOF AUTOF_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
+            END
+          END
+          VERTICAL
+            VERTICAL
+              LINEGRAPH TURRET TROT TROT_STATE 200 402 159 RAW 0 6 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE TURRET TROT TROT_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
+            END
+            VERTICAL
+              LINEGRAPH TURRET TRK TRK_STATE 200 402 159 RAW 0 4 1
+              HORIZONTAL
+                SPACER 0 0 EXPANDING MINIMUM
+                VALUE TURRET TRK TRK_STATE CONVERTED 16
+                SPACER 0 0 EXPANDING MINIMUM
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+  LABELVALUE TURRET DBGM MSG RAW 85 LEFT
+END

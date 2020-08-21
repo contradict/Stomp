@@ -3,15 +3,18 @@ TOOL_FONT tahoma 12
 LABEL_FONT tahoma 16
 NUM_COLUMNS 5
 
-MULTITOOL_START "COSMOS" NULL
-  TOOL "LAUNCH CmdTlmServer -x 827 -y 2 -w 756 -t 475 -c cmd_tlm_server.txt"
+MULTITOOL_START "CHOMP" NULL
+  TOOL "LAUNCH CmdTlmServer -x 827 -y 2 -w 756 -t 475 -c chomp_rf.txt"
   DELAY 5
   TOOL "LAUNCH TlmViewer -x 827 -y 517 -w 424 -t 111"
-  TOOL "LAUNCH PacketViewer -x 827 -y 669 -w 422 -t 450"
-  TOOL "LAUNCH ScriptRunner -x 4 -y 2 -w 805 -t 545"
-  TOOL "LAUNCH CmdSender -x 4 -y 586 -w 805 -t 533"
+  TOOL "LAUNCH TlmGrapher -x 0 -y 0 -w 1215 -t 776"
+  TOOL "LAUNCH PacketViewer -x 900 -y 400 -w 360 -t 360 --packet 'TURRET ACK'"
+  TOOL "LAUNCH CmdSender -x 65 -y 52 -w 680 -t 748 --packet 'TURRET TCNTRL'"
 MULTITOOL_END
-TOOL "Command and Telemetry Server" "LAUNCH CmdTlmServer" "cts.png" --config cmd_tlm_server.txt
+
+DIVIDER
+
+TOOL "Chomp RF Cmd&Tlm Server" "LAUNCH CmdTlmServer" "cts.png" --config chomp_rf.txt
 TOOL "Replay" "LAUNCH Replay" "replay.png"
 TOOL "Limits Monitor" "LAUNCH LimitsMonitor" "limits_monitor.png"
 AUTO_GEM_TOOLS

@@ -1,5 +1,6 @@
+# Automatically pull in screens from all targets
 AUTO_TARGETS
 
-# TARGET "INST"
-#  SCREEN "adcs.txt"
-
+TARGET "TURRET"
+  SCREEN "engineer.txt" 186 30
+    SHOW_ON_STARTUP
