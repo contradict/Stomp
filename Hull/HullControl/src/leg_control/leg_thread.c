@@ -319,6 +319,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             res = ramp_gain_step(state, elapsed);
             if(res==-1)
             {
+                set_rate_timer_rate(state->timer, state->definition->frequency);
                 state->mode = mode_init;
             }
             else if(res == 1)
@@ -343,7 +344,37 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                 case command_gain_set:
                     break;
                 case command_stop:
+                    state->mode = mode_stop;
+                    logm(SL4C_INFO, "gain_set->stop.");
+                    break;
                 case command_walk:
+                    state->mode = mode_get_position;
+                    logm(SL4C_INFO, "gain_set->get_position");
+                    break;
+            }
+            break;
+        case mode_stop:
+            // Wait for command
+            // walk or zero
+            switch(parameters->mode)
+            {
+                case command_init:
+                    logm(SL4C_INFO, "stop->init");
+                    state->mode = mode_init;
+                    break;
+                case command_zero_gain:
+                    logm(SL4C_INFO, "stop->zero_gain");
+                    state->mode = mode_zero_gain;
+                    break;
+                case command_gain_set:
+                    restart_rate_timer(state->timer);
+                    state->mode = mode_ready;
+                    logm(SL4C_INFO, "stop->ready");
+                    break;
+                case command_stop:
+                    break;
+                case command_walk:
+                    restart_rate_timer(state->timer);
                     state->mode = mode_get_position;
                     logm(SL4C_INFO, "stop->get_position.");
                     break;
@@ -359,8 +390,8 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             }
             else
             {
-                state->mode = mode_gain_set;
                 logm(SL4C_ERROR, "Retrieve position failed.");
+                state->mode = mode_stop;
             }
             break;
         case mode_pos_ramp:
@@ -369,38 +400,14 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
             res = ramp_position_step(state, elapsed);
             if(res == -1)
             {
-                state->mode = mode_gain_set;
+                state->mode = mode_stop;
                 logm(SL4C_ERROR, "Position ramp failed.");
                 logm(SL4C_INFO, "pos_ramp->stop");
             }
             else if(res == 1)
             {
-                state->mode = mode_stop;
-                logm(SL4C_INFO, "Legs positioned.");
-            }
-            break;
-        case mode_stop:
-            // Wait for command
-            // walk or zero
-            switch(parameters->mode)
-            {
-                case command_init:
-                    state->mode = mode_init;
-                    break;
-                case command_zero_gain:
-                    state->mode = mode_zero_gain;
-                    break;
-                case command_gain_set:
-                    restart_rate_timer(state->timer);
-                    state->mode = mode_gain_ramp;
-                    break;
-                case command_stop:
-                    break;
-                case command_walk:
-                    restart_rate_timer(state->timer);
-                    state->mode = mode_walk;
-                    logm(SL4C_INFO, "Walk mode.");
-                    break;
+                state->mode = mode_walk;
+                logm(SL4C_INFO, "pos_ramp->walk");
             }
             break;
         case mode_walk:
@@ -419,7 +426,7 @@ void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_para
                     break;
                 case command_gain_set:
                     restart_rate_timer(state->timer);
-                    state->mode = mode_gain_ramp;
+                    state->mode = mode_ready;
                     logm(SL4C_INFO, "walk->ready");
                     break;
                 case command_stop:
