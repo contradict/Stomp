@@ -1,0 +1,7 @@
+{
+    "sketch": "turret.ino",
+    "board": "arduino:avr:mega",
+    "configuration": "cpu=atmega2560",
+    "port": "/dev/cu.usbmodem14101",
+    "output": "../build"
+}

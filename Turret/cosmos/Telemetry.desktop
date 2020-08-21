@@ -1,0 +1,8 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=/bin/bash -c 'export PATH=~/.rbenv/bin:$PATH && eval "$(rbenv init -)" && cd ~/Desktop/Stomp/cosmos && ./Launcher'
+Name=Stomp Telemetry
+Icon=/home/chomp/.rbenv/versions/2.4.2/lib/ruby/gems/2.4.0/bundler/gems/COSMOS-8daa0f43e850/data/COSMOS_64x64.png

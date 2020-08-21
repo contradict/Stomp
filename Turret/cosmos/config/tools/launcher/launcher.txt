@@ -1,0 +1,46 @@
+TITLE "Launcher"
+TOOL_FONT tahoma 12
+LABEL_FONT tahoma 16
+NUM_COLUMNS 5 # This is the default
+
+MULTITOOL_START "STOMP"
+  TOOL "LAUNCH CmdTlmServer -x 65 -y 52 -w 1024 -t 400 -c xbee.txt"
+  DELAY 5
+  TOOL "LAUNCH CmdSender -x 65 -y 52 -w 680 -t 748 --packet 'CHOMP TCNTRL'"
+  TOOL "LAUNCH PacketViewer -x 900 -y 400 -w 360 -t 360 --packet 'CHOMP ACK'"
+  TOOL "LAUNCH TlmGrapher -x 0 -y 0 -w 1215 -t 776"
+  TOOL "LAUNCH TlmViewer -x 900 -y 800"
+MULTITOOL_END
+
+DIVIDER
+
+TOOL "XBee Command and Telemetry Server" "LAUNCH CmdTlmServer" "cts.png" --config xbee.txt
+TOOL "Hardwired Command and Telemetry Server" "LAUNCH CmdTlmServer" "cts.png" --config hardwired.txt
+TOOL "Replay" "LAUNCH Replay" "replay.png" --config xbee.txt
+TOOL "Limits Monitor" "LAUNCH LimitsMonitor" "limits_monitor.png"
+
+DIVIDER
+
+LABEL "Commanding and Scripting"
+
+TOOL "Command Sender" "LAUNCH CmdSender" "cmd_sender.png"
+TOOL "Command Sequence" "LAUNCH CmdSequence" "cmd_sequence.png"
+TOOL "Script Runner" "LAUNCH ScriptRunner" "script_runner.png"
+TOOL "Test Runner" "LAUNCH TestRunner" "test_runner.png"
+
+DIVIDER
+LABEL Telemetry
+
+TOOL "Packet Viewer" "LAUNCH PacketViewer" "packet_viewer.png"
+TOOL "Telemetry Viewer" "LAUNCH TlmViewer" "tlm_viewer.png"
+TOOL "Telemetry Grapher" "LAUNCH TlmGrapher" "tlm_grapher.png"
+TOOL "Data Viewer" "LAUNCH DataViewer" "data_viewer.png"
+
+DIVIDER
+LABEL Utilities
+
+TOOL "Config Editor" "LAUNCH ConfigEditor" "config_editor.png"
+TOOL "Telemetry Extractor" "LAUNCH TlmExtractor" "tlm_extractor.png"
+TOOL "Command Extractor" "LAUNCH CmdExtractor" "cmd_extractor.png"
+TOOL "Handbook Creator" "LAUNCH HandbookCreator" "handbook_creator.png"
+TOOL "Table Manager" "LAUNCH TableManager" "table_manager.png"

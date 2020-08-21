@@ -1,0 +1,6 @@
+# This file goes in <COSMOS_FOLDER>/config/targets/HULL/cmd_tlm
+
+TELEMETRY HULL SNS LITTLE_ENDIAN "Tank PSI"
+    APPEND_ID_ITEM PKTID 8 UINT 1 "Packet ID which must be 1"
+    APPEND_ITEM PRESSURE 32 UINT "Pressure"
+        UNITS "Pounds per Square Inch" "PSI"

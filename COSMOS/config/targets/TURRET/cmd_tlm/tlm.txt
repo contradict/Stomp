@@ -1,0 +1,476 @@
+
+####################################
+#
+#  TURRET Telemetry Definitions
+#
+####################################
+
+#
+#  TRK - Tracking (Packet ID 4)
+#
+
+TELEMETRY TURRET TRK LITTLE_ENDIAN "Tracking"
+    APPEND_ID_ITEM PKTID 8 UINT 4 "Packet ID which must be 4"
+    APPEND_ITEM TRK_STATE 8 INT "State"
+        STATE INIT              0 GREEN
+        STATE NO_TARGET         1 GREEN
+        STATE TARGET_AQUIRED    2 YELLOW
+        STATE TARGET_TRACKED    3 RED
+    APPEND_ITEM TARGET_X 16 INT "detection x coordinate"
+    APPEND_ITEM TARGET_Y 16 INT "detection y coordinate"
+    APPEND_ITEM TARGET_ANGLE 32 INT "detection angle"
+    APPEND_ITEM TARGET_RADIUS 32 INT "detection radius"
+    APPEND_ITEM FLT_X 16 INT "filtered x"
+    APPEND_ITEM FLT_VX 16 INT "filtered x velocity"
+    APPEND_ITEM FLT_Y 16 INT "filtered y"
+    APPEND_ITEM FLT_VY 16 INT "filtered y velocity"
+
+#
+#  AUTOF - Auto Fire (Packet ID 5)
+#
+
+TELEMETRY TURRET AUTOF LITTLE_ENDIAN "Autofire"
+    APPEND_ID_ITEM PKTID 8 UINT 5 "Packet ID which must be 5"
+    APPEND_ITEM AUTOF_STATE 8 INT "State"
+        STATE INIT              0 GREEN
+        STATE SAFE              1 GREEN
+        STATE DISABLED          2 GREEN
+        STATE ROTATION_LOCKOUT  3 RED
+        STATE NO_TARGET         4 YELLOW
+        STATE TRACKING_TARGET   5 YELLOW
+        STATE SWING_AT_TARGET   6 RED
+    APPEND_ITEM SWING 32 INT "Swing"
+    APPEND_ITEM PREDX 16 INT "x"
+    APPEND_ITEM PREDY 16 INT "y"
+
+#
+#  ACK - Command Acknowledge (Packet ID 6)
+#
+
+TELEMETRY TURRET ACK LITTLE_ENDIAN "Command Acknowledge"
+   APPEND_ID_ITEM PKTID 8 UINT 6 "Packet ID which must be 6"
+   APPEND_ITEM CMDID 8 UINT "Command ID"
+   APPEND_ITEM VALID 16 UINT "Valid command count"
+   APPEND_ITEM INVALID 16 UINT "Invalid command count"
+
+#
+#  AAIM - Auto Aim (Packet ID 7)
+#
+
+TELEMETRY TURRET AAIM LITTLE_ENDIAN "Auto Aim telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 7 "Packet ID which must be 7"
+   APPEND_ITEM AIM_STATE 32 UINT "Auto Aim State"
+       STATE INIT 	0 GREEN
+       STATE SAFE 	1 GREEN
+       STATE DISABLED 	2 GREEN
+       STATE NO_TARGET 	3 YELLOW
+       STATE TRACKING 	4 RED
+   APPEND_ITEM WANT_SPEED 32 INT "Desired turret speed"
+   APPEND_ITEM ERR 32 INT "Aim Error"
+       POLY_READ_CONVERSION 0.0 0.00005464151
+   APPEND_ITEM ERR_I 32 INT "Aim Error Integral"
+       POLY_READ_CONVERSION 0.0 0.00000095367
+   APPEND_ITEM ERR_D 32 INT "Aim Error Derivitive"
+       POLY_READ_CONVERSION 0.0 0.00000095367
+
+#
+#  TUR - Turret (Packet ID 8)
+#
+
+TELEMETRY TURRET TUR LITTLE_ENDIAN "Turret telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 8 "Packet ID which must be 8"
+   APPEND_ITEM TUR_STATE 16 UINT "Turret State"
+        STATE INIT 	                0 GREEN
+        STATE SAFE 	                1 GREEN
+        STATE NOMINAL 	            2 YELLOW
+        STATE TRIGGER_THROW         3 RED
+        STATE TRIGGER_RETRACT       4 RED
+        STATE HAMMER_ACTIVE         5 RED
+        STATE NEEDS_SELF_RIGHT      6 YELLOW
+        STATE TRIGGER_SELF_RIGHT    7 RED
+        STATE UNKNOWN               8 YELLOW
+
+#
+#  TROT - Turret Rotation (Packet ID 9)
+#
+
+TELEMETRY TURRET TROT LITTLE_ENDIAN "Turret Rotation telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 9 "Packet ID which must be 9"
+   APPEND_ITEM TROT_STATE 16 UINT "Turret Rotation State"
+       STATE INIT 		    0 GREEN
+       STATE SAFE 		    1 GREEN
+       STATE DISABLED 	    2 GREEN
+       STATE MANUAL	 	    3 YELLOW
+       STATE AUTO_AIM 	    4 RED
+       STATE AUTO_ASSIST    5 YELLOW
+   APPEND_ITEM CUR_SPEED 16 INT "Current turret speed"
+
+#
+#  SNS - Sensors (Packet ID 10)
+#
+
+TELEMETRY TURRET SNS LITTLE_ENDIAN "Sensor"
+    APPEND_ID_ITEM PKTID 8 UINT 10 "Packet ID which must be 10"
+    APPEND_ITEM ANGLE 16 INT "Angle"
+        UNITS "Degrees" "deg"
+    APPEND_ITEM THROW_PRESSURE 16 INT "Throw Pressure"
+        UNITS "Pounds per Square Inch" "PSI"
+    APPEND_ITEM RETRACT_PRESSURE 16 INT "Retract Pressure"
+        UNITS "Pounds per Square Inch" "PSI"
+
+#
+#  SYS - System (Packet ID 11)
+#
+
+TELEMETRY TURRET SYS LITTLE_ENDIAN "System"
+    APPEND_ID_ITEM PKTID 8 UINT 11 "Packet ID which must be 11"
+    APPEND_ITEM WEAPONS_ENABLED 1 UINT "Weapons enabled"
+    APPEND_ITEM FLAGS_PADDING 7 UINT "Padding"
+    APPEND_ITEM LOOP_SPEED_MIN 32 UINT "Loop speed minimum"
+        UNITS "microseconds" "us"
+    APPEND_ITEM LOOP_SPEED_AVG 32 UINT "Loop speed average"
+        UNITS "microseconds" "us"
+    APPEND_ITEM LOOP_SPEED_MAX 32 UINT "Loop speed maximum"
+        UNITS "microseconds" "us"
+    APPEND_ITEM LOOP_COUNT 32 UINT "Loop count"
+    APPEND_ITEM LEDDAR_OVERRUN 16 UINT "LEDDAR buffer overruns"
+    APPEND_ITEM LEDDAR_CRC 16 UINT "LEDDAR CRC errors"
+    APPEND_ITEM SBUS_OVERRUN 16 UINT "S.Bus buffer overruns"
+    APPEND_ITEM LAST_COMMAND 8 UINT "Last received command"
+    APPEND_ITEM COMMAND_OVERRUN 16 UINT "Command buffer overruns"
+    APPEND_ITEM INVALID_COMMAND 16 UINT "Invalid commands"
+    APPEND_ITEM VALID_COMMAND 16 UINT "Valid commands"
+    APPEND_ITEM SYSTEM_TIME 32 UINT "System time milis"
+        UNITS "milliseconds" "ms"
+
+#
+#  SBS - S.Bus (Packet ID 12)
+#
+
+TELEMETRY TURRET SBS LITTLE_ENDIAN "S.Bus"
+    APPEND_ID_ITEM PKTID 8 UINT 12 "Packet ID which must be 12"
+    APPEND_ITEM AUTO_SELF_RIGHT 1 UINT "Auto self-right enabled"
+    APPEND_ITEM GENTLE_RETRACT 1 UINT "GENTLE_HAMMER_RETRACT"
+    APPEND_ITEM GENTLE_FIRE 1 UINT "GENTLE_HAMMER_FIRE"
+    APPEND_ITEM FLAME_PULSE 1 UINT "FLAME_PULSE"
+    APPEND_ITEM FLAME_CTRL 1 UINT "FLAME_CTRL"
+    APPEND_ITEM MANUAL_RETRACT 1 UINT "HAMMER_RETRACT"
+    APPEND_ITEM MANUAL_FIRE 1 UINT "HAMMER_FIRE"
+    APPEND_ITEM AUTO_HAMMER 1 UINT "AUTO_HAMMER_ENABLE"
+    APPEND_ITEM WEAPONS_ENABLE 1 UINT "WEAPONS_ENABLE"
+    APPEND_ITEM PAD0 1 UINT "PAD"
+    APPEND_ITEM MANUAL_TURRET_MODE 1 UINT "Manual Turret Mode"
+    APPEND_ITEM AUTO_AIM_MODE 1 UINT "Auto Aim Mode"
+    APPEND_ITEM PAD1 1 UINT "PAD"
+    APPEND_ITEM PAD2 1 UINT "PAD"
+    APPEND_ITEM DANGER 1 UINT "DANGER_CTRL"
+    APPEND_ITEM PAD3 1 UINT
+    APPEND_ITEM HMRI 16 INT "Hammer Intensity"
+        UNITS "degrees" "deg"
+    APPEND_ITEM HMRD 16 INT "Hammer Distance"
+        UNITS "milimeters" "mm"
+    APPEND_ITEM TRTO 16 INT "Turret Angular Velocity"
+        UNITS "revolutions per minute" "rpm"
+
+#
+#  DBGM - Debug Message (Packet ID 13)
+#
+
+TELEMETRY TURRET DBGM LITTLE_ENDIAN "Debug Message"
+    APPEND_ID_ITEM PKTID 8 UINT 13 "Packet ID which must be 13"
+    APPEND_ITEM MSG 1024 STRING "The message text"
+        ALLOW_SHORT
+
+#
+#  SWING - Hammer Swing (Packet ID 14)
+#
+
+TELEMETRY TURRET SWING LITTLE_ENDIAN "Swing Data"
+    APPEND_ID_ITEM PKTID 8 UINT 14 "Packet ID which must be 14"
+    APPEND_ITEM PT 16 UINT "Number of points collected"
+    APPEND_ITEM TIMESTEP 16 UINT "Data sampling frequency"
+        UNITS "microseconds" "us"
+    APPEND_ITEM SWING_START_TIME 32 UINT "Swing Start Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM SWING_STOP_TIME 32 UINT "Swing Stop Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM RETRACT_START_TIME 32 UINT "Retract Start Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM RETRACT_STOP_TIME 32 UINT "Retract Stop Time"
+        UNITS "microseconds" "us"
+    APPEND_ITEM SWING_START_ANGLE 16 UINT "Swing Start Angle"
+        UNITS "degrees" "deg"
+    APPEND_ITEM SWING_STOP_ANGLE 16 UINT "Swing Stop Angle"
+        UNITS "degrees" "deg"
+    APPEND_ITEM RETRACT_START_ANGLE 16 UINT "Retract Start Angle"
+        UNITS "degrees" "deg"
+    APPEND_ITEM RETRACT_STOP_ANGLE 16 UINT "Retract Stop Angle"
+        UNITS "degrees" "deg"
+    APPEND_ARRAY_ITEM HAMMER_ANGLES 16 UINT 2048 "Hammer Angle data"
+        UNITS "Degrees" "deg"
+    APPEND_ARRAY_ITEM THROW_PRESSURES 8 INT 2048 "Throw Pressure data"
+        UNITS "Pounds per Square Inch" "PSI"
+
+#
+#  LIDAR - Lidar (Packet ID 15)
+#
+
+TELEMETRY TURRET LIDAR LITTLE_ENDIAN "Lidar telemetry"
+    APPEND_ID_ITEM PKTID 8 UINT 15 "Packet ID which must be 15"
+    APPEND_ITEM STATE 16 INT "State"
+        STATE FAR_ZONE 1 GREEN
+        STATE ARM_ZONE 2 YELLOW
+        STATE HIT_ZONE 3 RED
+        STATE PREDICTIVE_HIT_ZONE 4 RED
+    APPEND_ITEM COUNT 16 INT "Count"
+    APPEND_ARRAY_ITEM RANGE 16 UINT 256 "Ranges"
+        UNITS "centimeters" "cm"
+    APPEND_ARRAY_ITEM AMPLITUDE 16 UINT 256 "Reflection amplitudes"
+
+#
+#  IMU - Inertial Measurement Unit (Packet ID 17)
+#
+
+TELEMETRY TURRET IMU LITTLE_ENDIAN "Raw IMU measurements"
+    APPEND_ID_ITEM PKTID 8 UINT 17 "Packet ID which must be 17"
+    APPEND_ARRAY_ITEM ACCELERATION 16 INT 48 "Acceleration"
+        UNITS "g" "g"
+        POLY_READ_CONVERSION 0.0 0.000488281
+    APPEND_ARRAY_ITEM ANGULAR_RATE 16 INT 48 "Angular rate"
+        UNITS "degrees/second" "deg/s"
+        POLY_READ_CONVERSION 0.0 0.060976
+    APPEND_ITEM TEMPERATURE 16 INT "Temperature"
+        UNITS "celcius" "C"
+        POLY_READ_CONVERSION 0.0 0.01
+
+#
+#  ORN - Orientation Status (Packet ID 19)
+#
+
+TELEMETRY TURRET ORN LITTLE_ENDIAN "Orientation Status"
+    APPEND_ID_ITEM PKTID 8 UINT 19 "Packet ID which must be 19"
+    APPEND_ITEM STA 1 UINT "Stationary"
+    APPEND_ITEM ORN 4 UINT "Orientation"
+        STATE INIT 0 GREEN
+	STATE SAFE 1 GREEN
+	STATE UNKNOWN 2	RED
+        STATE UPRIGHT 3 YELLOW
+        STATE NOT_UPRIGHT 4 RED
+    APPEND_ITEM PAD 3 UINT
+    APPEND_ITEM SAR 32 INT "Sum of angular rates"
+        UNITS "degrees/second" "deg/s"
+        POLY_READ_CONVERSION 0.0 0.060976
+    APPEND_ITEM TNRM 16 INT "Total norm"
+        UNITS "g" "g"
+        POLY_READ_CONVERSION 0.0  0.000488281
+    APPEND_ITEM CNRM 16 INT "Zhat cross norm"
+        UNITS "g" "g"
+        POLY_READ_CONVERSION 0.0  0.000488281
+
+#
+#  OBJM - Object Measured (Packet ID 19)
+#
+
+TELEMETRY TURRET OBJM LITTLE_ENDIAN "Object measured telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 21 "Packet ID which must be 21"
+   APPEND_ITEM NOBJ 8 INT "Number of detected objects"
+   APPEND_ARRAY_ITEM OBJ_LE 8 INT 64 "Object left edge"
+   APPEND_ARRAY_ITEM OBJ_RE 8 INT 64 "Object right edge"
+   APPEND_ARRAY_ITEM OBJ_SUMD 16 INT 128 "Object sum distance"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.01
+
+#
+#  OBJC - Object Calculated (Packet ID 19)
+#
+
+TELEMETRY TURRET OBJC LITTLE_ENDIAN "Object calculated telemetry"
+   APPEND_ID_ITEM PKTID 8 UINT 22 "Packet ID which must be 22"
+   APPEND_ITEM NOBJ 8 INT "Number of detected objects"
+   APPEND_ARRAY_ITEM OBJ_R 16 INT 128 "Object radius"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.001
+   APPEND_ARRAY_ITEM OBJ_A 16 INT 128 "Object angle"
+       UNITS "radians" "rad"
+       POLY_READ_CONVERSION 0.0 0.00048828125
+   APPEND_ARRAY_ITEM OBJ_X 16 INT 128 "Object X position"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.001
+   APPEND_ARRAY_ITEM OBJ_Y 16 INT 128 "Object Y position"
+       UNITS "meters" "m"
+       POLY_READ_CONVERSION 0.0 0.001
+
+####################################
+#
+#  TURRET Command Definitions
+#
+####################################
+
+#
+#  TCNTRL - Telemetry Control (Packet ID 10)
+#
+
+COMMAND TURRET TCNTRL LITTLE_ENDIAN "Telementry Control"
+    APPEND_ID_PARAMETER CMDID 8 UINT 10 10 10 "Command ID which must be 10"
+    APPEND_PARAMETER SPERIOD 32 UINT 5000 30000000 100000 "Interval between telemetry transmissions"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER LPERIOD 32 UINT 10000 30000000 100000 "Interval between LEDDAR telemetry transmissions"
+        UNITS "microseconds" "us"
+    # BYTE 0
+    APPEND_PARAMETER EN_AAIM 1 UINT 0 1 1 "Eanable Auto Aim Telemetry"
+    APPEND_PARAMETER EN_ACK 1 UINT 0 1 1 "Enable Command Acknowledge"
+    APPEND_PARAMETER EN_AF 1 UINT 0 1 1 "Enable Autofire telemetry"
+    APPEND_PARAMETER EN_TRK 1 UINT 0 1 0 "Enable tracking filter telemetry"
+    APPEND_PARAMETER PAD03 1 UINT 0 0 0
+    APPEND_PARAMETER PAD02 1 UINT 0 0 0
+    APPEND_PARAMETER PAD01 1 UINT 0 0 0
+    APPEND_PARAMETER PAD00 1 UINT 0 0 0
+    # BYTE 1
+    APPEND_PARAMETER EN_LIDAR 1 UINT 0 1 1 "Enable LIDAR telemetry packet"
+    APPEND_PARAMETER EN_SWG 1 UINT 0 1 0 "Enable SWG telemetry packet"
+    APPEND_PARAMETER EN_DBGM 1 UINT 0 1 0 "Enable DBGM telemetry packet"
+    APPEND_PARAMETER EN_SBS 1 UINT 0 1 1 "Enable SBS telemetry packet"
+    APPEND_PARAMETER EN_SYS 1 UINT 0 1 1 "Enable SYS telemetry packet"
+    APPEND_PARAMETER EN_SNS 1 UINT 0 1 0 "Enable SNS telemetry packet"
+    APPEND_PARAMETER EN_TROT  1 UINT 0 1 1 "Enable turret rotation telemetry"
+    APPEND_PARAMETER EN_TUR 1 UINT 0 1 1 "Enable turret telemetry"
+    # BYTE 2
+    APPEND_PARAMETER PAD23 1 UINT 0 0 0
+    APPEND_PARAMETER EN_OBJC 1 UINT 0 1 0 "Enable Object Calculated telemetry"
+    APPEND_PARAMETER EN_OBJM 1 UINT 0 1 0 "Enable Object Measured telemetry"
+    APPEND_PARAMETER PAD20 1 UINT 0 0 0
+    APPEND_PARAMETER EN_ORN 1 UINT 0 1 0 "Enable ORN telemetry packet"
+    APPEND_PARAMETER PAD18 1 UINT 0 0 0
+    APPEND_PARAMETER EN_IMU 1 UINT 0 1 0 "Enable IMU telemetry packet"
+    APPEND_PARAMETER PAD16 1 UINT 0 0 0
+    #BYTE 3
+    APPEND_PARAMETER PADDING32 8 UINT 0 0 0
+
+#
+#  TRKFLT - Tracking Filter (Packet ID 11)
+#
+
+COMMAND TURRET TRKFLT LITTLE_ENDIAN "Tracking Filter Settings"
+    APPEND_ID_PARAMETER CMDID 8 UINT 11 11 11 "Command ID which must be 11"
+    APPEND_PARAMETER ALPHA 16 INT 0 32767 9000 "Filter position update coefficient (scale 32767)"
+    APPEND_PARAMETER BETA 16 INT 0 32767 8192 "Filter velocity update coefficient (scale 4096)"
+    APPEND_PARAMETER MNUP 8 INT 0 127 3 "Minimum updates for valid filter"
+    APPEND_PARAMETER TRKLST 32 UINT 0 10000000 250000 "Track lost timeout"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER MXOT 16 INT 0 32767 32767 "Maximum distance from track"
+        UNITS "milimeter" "mm"
+    APPEND_PARAMETER MXST 16 INT 0 32767 32767 "Maximum initial object distance"
+        UNITS "milimeter" "mm"
+
+#
+#  OBJSEG - Object Segmentation Parameters (Packet ID 12)
+#
+
+COMMAND TURRET OBJSEG LITTLE_ENDIAN "Object Segmentation Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 12 12 12 "Command ID which must be 12"
+    APPEND_PARAMETER MNOS 16 INT 0 32767 200 "Minimum object size"
+        UNITS "centimeters" "cm"
+    APPEND_PARAMETER MXOS 16 INT 0 32767 1800 "Maximum object size"
+        UNITS "centimeters" "cm"
+    APPEND_PARAMETER EDGE 16 INT 0 32767 60 "Object edge threshold"
+        UNITS "centimeters" "cm"
+    APPEND_PARAMETER PAD 7 INT 0 0 0
+    APPEND_PARAMETER CLOSE 1 INT 0 1 1 "Only inspect closest object"
+
+
+#
+#  AF - Auto Fire Parameters (Packet ID 13)
+#
+
+COMMAND TURRET AF LITTLE_ENDIAN "Auto Fire Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 13 13 13 "Command ID which must be 13"
+    APPEND_PARAMETER XTOL 16 INT 0 32767 200 "X tolerance for hit"
+        UNITS "milimeter" "mm"
+    APPEND_PARAMETER YTOL 16 INT 0 32767 200 "Y tolerance for hit"
+        UNITS "milimeter" "mm"
+    APPEND_PARAMETER MAXRT 16 INT 0 32767 50 "Max angular rate"
+        UNITS "degrees/sec" "deg/sec"
+        POLY_WRITE_CONVERSION 0.0 35.7
+
+#
+#  AAIM - Auto Aim Parameters (Packet ID 14)
+#
+
+COMMAND TURRET AAIM LITTLE_ENDIAN "Auto Aim Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 14 14 14 "Command ID which must be 14"
+    APPEND_PARAMETER AAIMP 32 INT 0 32767 2500 "Turret Rotation proportional coefficient"
+    APPEND_PARAMETER AAIMI 32 INT 0 32767 30 "Turret Rotation integral coefficient"
+    APPEND_PARAMETER AAIMD 32 INT 0 32767 1 "Turret Rotation derivative coefficient"
+    APPEND_PARAMETER SPEEDMAX 32 INT 0 1000 1000 "Steering maximum command"
+
+#
+#  IMUP - IMU Parameters (Packet ID 15)
+#
+
+COMMAND TURRET IMUP LITTLE_ENDIAN "IMU Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 15 15 15 "Command ID which must be 15"
+    APPEND_PARAMETER DLPF 8 INT 0 6 6 "Low pass filter bandwidth"
+        STATE MPU6050_DLPF_BW_256 0
+        STATE MPU6050_DLPF_BW_188 1
+        STATE MPU6050_DLPF_BW_98  2
+        STATE MPU6050_DLPF_BW_42  3
+        STATE MPU6050_DLPF_BW_20  4
+        STATE MPU6050_DLPF_BW_10  5
+        STATE MPU6050_DLPF_BW_5   6
+    APPEND_PARAMETER PERIOD 32 INT 0 10000000 100000 "IMU read period"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER STATIONARY 32 INT 0 720 3 "Gyro axis stationary sum"
+        UNITS "degrees/second" "deg/s"
+        POLY_WRITE_CONVERSION 0.0 35.7
+    APPEND_PARAMETER UP_CROSS 16 INT 0 2.0 0.06 "Maximum cross when upright"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER MIN_CROSS 16 INT 0 2.0 0.6 "Minimum valid acceleration cross"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER MAX_CROSS 16 INT 0 2.0 1.2 "Maximum valid acceleration cross"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER MAX_NORM 16 INT 0 4.0 1.75 "Maximum total norm"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER X_THR 16 INT 0 2.0 0.6 "X side threshold"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+    APPEND_PARAMETER Z_THR 16 INT 0 2.0 0.99 "Z upright threshold"
+        UNITS "g" "g"
+        POLY_WRITE_CONVERSION 0.0 2048
+
+#
+#  LDDR - Leddar Paramerters (Packet ID 17)
+#
+
+COMMAND TURRET LDDR LITTLE_ENDIAN "LEDDAR Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 17 17 17 "Command ID which must be 17"
+    APPEND_PARAMETER MINDD 16 INT 0 100 20 "Detections closer than this are ignored"
+    APPEND_PARAMETER MAXDD 16 INT 0 1000 600 "Detections farther than this are ignored"
+
+#
+#  HMR - Hammer Parameters (Packet ID 18)
+#
+
+COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 18 18 18 "Command ID which must be 18"
+    APPEND_PARAMETER HMR_SR 16 INT 0 32767 30 "Self Right Hammer Intensity"
+    APPEND_PARAMETER STEERI 16 INT 0 32767 100 "Swing Telemetry Data Collection Frequency"
+
+#
+#  TRT - Turret Parameters (Packet ID 19)
+#
+
+COMMAND TURRET TRT LITTLE_ENDIAN "Turret Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 19 19 19 "Command ID which must be 19"
+    APPEND_PARAMETER WDTT 32 INT 5000 10000000 4000000 "Watch Dog Timer Timeout"
+
+#
+#  TROT - Turret Rotation Parameters (Packet ID 20)
+#
+
+COMMAND TURRET TROT LITTLE_ENDIAN "Turret Rotation Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 20 20 20 "Command ID which must be 20"
+    APPEND_PARAMETER HMR_SR 32 INT 16 10000000 250 "Manual control overrides autoaim speed"
