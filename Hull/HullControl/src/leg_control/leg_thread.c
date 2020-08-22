@@ -120,21 +120,21 @@ static int equalize_joint_command(struct leg_thread_state* state)
     {
         int err;
         modbus_set_slave(state->ctx, state->legs[l].address);
-        err = modbus_read_registers(state->ctx, CURL_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_CURL]);
+        err = modbus_read_input_registers(state->ctx, CURL_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_CURL]);
         if(err == -1)
         {
             ret = err;
             logm(SL4C_ERROR, "Error reading leg %d(0x%d) curl feedback: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
-        err = modbus_read_registers(state->ctx, SWING_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_SWING]);
+        err = modbus_read_input_registers(state->ctx, SWING_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_SWING]);
         if(err == -1)
         {
             ret = err;
             logm(SL4C_ERROR, "Error reading leg %d(0x%d) swing feedback: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
-        err = modbus_read_registers(state->ctx, LIFT_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_LIFT]);
+        err = modbus_read_input_registers(state->ctx, LIFT_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_LIFT]);
         if(err == -1)
         {
             ret = err;
