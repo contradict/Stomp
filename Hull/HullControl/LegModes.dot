@@ -1,0 +1,56 @@
+digraph {
+  init [label="Boot.", shape=point]
+  node [shape=Mrecord]
+  PING [label="Ping legs."]
+  LOCK [label="Legs locked." shape=rectangle]
+  ZERO [label="Zero servo gain."]
+  FREE [label="Legs free." shape=rectangle]
+  GETP [label="Set Commanded Position\nto Current Position."]
+  GETPD [label="Set Commanded Position\nto Current Position."]
+  GETPE [label="Set Commanded Position\nto Current Position."]
+  GAIN [label="Set servo gain."]
+  GAINF [label="Set servo gain."]
+  GETTP [label="Retrieve initial\ntoe position"]
+  RAMPP [label="Move to start of gait."]
+  WALK [label="Run gait generator."]
+  AIRON [label="Air on." shape=oval]
+  AIRVI [label="Air vent." shape=oval]
+  AIRVW [label="Air vent." shape=oval]
+  DESCRIPTION [label=<
+<font color='red'><b>Red</b></font> edges are taken on Walk.<br/>
+<font color='green'><b>Green</b></font> edges are taken on Disable.<br/>
+<font color='orange'><b>Orange</b></font> edges are taken on Lock.<br/>
+<font color='cyan'><b>Cyan</b></font> edges are taken on Free.<br/>
+<font color='black'><b>Black</b></font> edges are taken on success.<br/>
+<font color='grey'><b>Grey</b></font> edges are taken on error.<br/>
+>
+               shape=box]
+
+  init->AIRVI->PING
+  PING->GETP [label="Walk" color="red"]
+  GETP->GAIN->AIRON->GETTP->RAMPP->WALK
+  WALK->AIRVW [label="Disable" color="green"]
+  AIRVW->FREE [label="Free" color="cyan"]
+  AIRVW->ZERO [label="Lock" color="orange"]
+  ZERO->LOCK
+  PING->GETPD [label="Disable" color="green"]
+  GETPD->GAINF [label="Free" color="cyan"]
+  GAINF->FREE
+  GETPD->ZERO [label="Lock" color="orange"]
+  LOCK->GETP [label="Walk" color="red"]
+  FREE->GETPE [label="Walk" color="red"]
+  LOCK->GETPD [label="Free" color="cyan"]
+  FREE->GETPD [label="Lock" color="orange"]
+  GETPE->AIRON
+
+  PING->PING [color="grey"]
+  GETP->PING [color="grey"]
+  GETPD->PING [color="grey"]
+  GETPE->PING [color="grey"]
+  GAIN->PING [color="grey"]
+  GAINF->PING [color="grey"]
+  ZERO->PING [color="grey"]
+  GETTP->AIRVI [color="grey"]
+  RAMPP->AIRVI [color="grey"]
+  WALK->AIRVI [color="grey"]
+}

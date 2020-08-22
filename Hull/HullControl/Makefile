@@ -59,6 +59,7 @@ clean:
 	rm -fr ringbuf/lib ringbuf/include
 	rm -fr inc/lcm src/lcm
 	rm -f leg_control sbus_radio
+	rm -f LegModes.pdf
 	$(MAKE) -C tomlc99 clean
 	$(MAKE) -C ringbuf/src clean
 	$(MAKE) -C sclog4c clean
@@ -118,5 +119,8 @@ tomlc99/libtoml.a: tomlc99/toml.c tomlc99/toml.h
 
 sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
 	$(MAKE) -C sclog4c/src
+
+LegModes.pdf: LegModes.dot
+	dot -Tpdf $< -o $@
 
 .PHONY: all clean libs targets
