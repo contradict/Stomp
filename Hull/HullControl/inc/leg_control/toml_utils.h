@@ -10,8 +10,6 @@ struct leg_description {
 };
 
 struct joint_gains {
-    float gain_ramp_time;
-    float gain_ramp_frequency;
     float proportional_gain[3];
     float force_damping[3];
 };

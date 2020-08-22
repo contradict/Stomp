@@ -24,13 +24,19 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
         switch(msg->toggle[HULL_MODE])
         {
             case STOMP_CONTROL_RADIO_ON:
-                params->mode = command_walk;
-                break;
-            case STOMP_CONTROL_RADIO_CENTER:
-                params->mode = command_stop;
+                params->lock = LOCK_LOCK;
                 break;
             case STOMP_CONTROL_RADIO_OFF:
-                params->mode = command_init;
+                params->lock = LOCK_FREE;
+                break;
+        }
+        switch(msg->toggle[HULL_ENABLE])
+        {
+            case STOMP_CONTROL_RADIO_ON:
+                params->enable = ENABLE_WALK;
+                break;
+            case STOMP_CONTROL_RADIO_OFF:
+                params->enable = ENABLE_DISABLE;
                 break;
         }
         ringbuf_produce(state->queue->ringbuf, state->worker);

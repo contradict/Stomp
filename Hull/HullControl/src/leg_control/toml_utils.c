@@ -78,8 +78,6 @@ struct joint_gains *parse_joint_gains(toml_table_t *legs_config)
     toml_table_t *joints = toml_table_in(legs_config, "joint_gain");
     const char *joint_names[3] = {"Curl", "Swing", "Lift"};
     struct joint_gains *gains = malloc(sizeof(struct joint_gains));
-    get_float(legs_config, "gain_ramp_time", &gains->gain_ramp_time);
-    get_float(legs_config, "gain_ramp_frequency", &gains->gain_ramp_frequency);
     for(int j=0; j<3; j++)
     {
         toml_table_t *joint = toml_table_in(joints, joint_names[j]);
