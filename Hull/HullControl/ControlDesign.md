@@ -17,10 +17,10 @@ computing the leg positions.
       if command in command queue
         send to hardware
         Queue response in response queue
-  thread 2
-    receive messages from control topic, compute parameters, enqueue to parameters queue
-  thread 3 
-    Receive commands from topic, queue to real-time command queue
+  thread 0 (main, running lcm)
+    Multiplexed by LCM, topic callbacks for
+        receive messages from control topic, compute parameters, enqueue to parameters queue
+        Receive commands from topic, queue to real-time command queue
     Receive responses from response queue, send to response topic
     Receive data from telemetry queue, send to telemetry topic
 ```

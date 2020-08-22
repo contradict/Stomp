@@ -4,3 +4,6 @@ inc/lcm
 .*.sw?
 /leg_control
 /sbus_radio
+/java
+stomp.jar
+/telemetry

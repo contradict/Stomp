@@ -22,6 +22,9 @@ BASE_FLAGS = [
     "-I", DIR_OF_THIS_SCRIPT + "/Common",
     "-I", DIR_OF_THIS_SCRIPT + "/SimpleGait",
     "-I", DIR_OF_THIS_SCRIPT + "/HullControl/inc",
+    "-I", DIR_OF_THIS_SCRIPT + "/HullControl/ringbuf/include",
+    "-I", DIR_OF_THIS_SCRIPT + "/HullControl/tomlc99",
+    "-I", DIR_OF_THIS_SCRIPT + "/HullControl/sclog4c/include",
 ]
 if "ROS_DISTRO" in os.environ:
     ros_base = "/opt/ros/%(ROS_DISTRO)s" % os.environ
