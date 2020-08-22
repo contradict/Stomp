@@ -475,6 +475,7 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
                     logm(SL4C_INFO, "vent_disable->zero");
                     break;
             }
+            break;
         case mode_free:
             switch(parameters->enable)
             {
@@ -492,7 +493,9 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
                             logm(SL4C_INFO, "free->getpos_disable.");
                             break;
                     }
+                    break;
             }
+            break;
         case mode_gain_zero:
             // set all gains to zero, transition to ready on success
             // transition to init on fail
@@ -538,6 +541,7 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
                         case LOCK_LOCK:
                             break;
                     }
+                    break;
             }
             break;
     }
