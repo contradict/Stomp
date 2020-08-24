@@ -35,7 +35,6 @@ int main(int argc, char **argv)
     const float sbus_span = (sbus_max - sbus_min)/2.0f;
     const float sbus_center = (sbus_max + sbus_min)/2.0f;
     const int pkt_timeout_usec = 2000; //number of usecs to wait for serial data
-    bool dbg_out = false;
     int sbus_timeout_msec = 500; //number of millis before calling SBUS dead
 
     int opt; //get command line args
@@ -72,8 +71,8 @@ int main(int argc, char **argv)
     {
         logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
         return 1;
-    } else if (dbg_out) {
-       logm(SL4C_DEBUG, "No error while opening port");
+    } else {
+        logm(SL4C_DEBUG, "No error while opening port");
     }
 
     struct termios tty;
