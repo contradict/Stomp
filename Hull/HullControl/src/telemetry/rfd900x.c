@@ -6,16 +6,16 @@
 #include <unistd.h>
 
 #include "rfd900x.h"
+#include "sclog4c/sclog4c.h"
 
 static int g_serial_port = -1;
 
-static int set_interface_attributes(int fd, int speed, int parity)
+static int set_interface_attributes(int fd, int speed)
 {
     struct termios tty;
     if (tcgetattr (fd, &tty) != 0)
     {
-        printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
-        
+        logm(SL4C_WARNING, "Error %i from tcgetattr: %s", errno, strerror(errno));
         return -1;
     }
 
@@ -36,7 +36,7 @@ static int set_interface_attributes(int fd, int speed, int parity)
 
     if (tcsetattr (fd, TCSANOW, &tty) != 0)
     {
-        printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+        logm(SL4C_WARNING, "Error %i from tcsetattr: %s", errno, strerror(errno));
         return -1;
     }
     return 0;
@@ -44,14 +44,16 @@ static int set_interface_attributes(int fd, int speed, int parity)
 
 void rfd900x_init()
 {
-    g_serial_port = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_SYNC);
+    g_serial_port = open("/dev/ttyS2", O_RDWR | O_NOCTTY | O_SYNC);
     if (g_serial_port < 0)
     {
-        printf("Error %i from open: %s\n", errno, strerror(errno));
+        logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
         return;
+    } else {
+        logm(SL4C_DEBUG, "No error while opening port");
     }
 
-    if (set_interface_attributes(g_serial_port, B115200, 0) < 0)
+    if (set_interface_attributes(g_serial_port, B115200) < 0)
     {
         close(g_serial_port);
         g_serial_port = -1;
@@ -62,7 +64,7 @@ void rfd900x_write(const char* data, size_t size)
 {
     if (g_serial_port < 0)
     {
-        printf("Invalid file descriptor - did you call rfd900x_init()?");
+        logm(SL4C_FATAL, "Invalid file descriptor - did you call rfd900x_init()?");
         return;
     }
     // TODO - validate size is something sane
