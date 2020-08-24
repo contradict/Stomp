@@ -3,7 +3,7 @@
 #include <string.h>
 #include "rfd900x.h"
 
-#include "telem.h"
+#include "telemetry.h"
 
 #define COSMOS_OVERHEAD 3
 #define COSMOS_TERMINATOR_SIZE 2

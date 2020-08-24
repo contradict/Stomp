@@ -12,8 +12,14 @@ leg_control_objs=$(leg_control_srcs:.c=.o)
 sbus_radio_srcs=$(shell find src/sbus_radio/*.c)
 sbus_radio_objs=$(sbus_radio_srcs:.c=.o)
 
-telemetry_srcs=$(shell find src/telemetry/*.c)
+#telemetry_srcs=$(shell find src/telemetry/*.c)
+#telemetry_objs=$(telemetry_srcs:.c=.o)
+
+telemetry_srcs= src/telemetry/rfd900x.c src/telemetry/telemetry.c src/telemetry/main.c
 telemetry_objs=$(telemetry_srcs:.c=.o)
+
+telem_test_srcs= src/telemetry/rfd900x.c src/telemetry/telemetry.c src/telemetry/test_telem.c
+telem_test_objs=$(telem_test_srcs:.c=.o)
 
 MODBUS_CFLAGS=$(shell pkg-config --cflags libmodbus)
 MODBUS_LDFLAGS=$(shell pkg-config --libs libmodbus)
@@ -41,7 +47,7 @@ leg_control: LDFLAGS+= $(MODBUS_LDFLAGS)
 
 all: libs targets
 
-targets: leg_control sbus_radio telemetry
+targets: leg_control sbus_radio telemetry test_telem
 
 libs: $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELIB)
 
@@ -64,8 +70,11 @@ leg_control_cap: leg_control
 sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
-telemetry: $(telemetry_objs) $(MESSAGELIB)
+telemetry: $(telemetry_objs) $(MESSAGELIB) 
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+
+test_telem: $(telem_test_objs) 
+	gcc $^ -o $@ $(LDFLAGS)
 
 $(MESSAGELIB): $(message_objs)
 	ar rcs $@ $^

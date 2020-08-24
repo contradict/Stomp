@@ -7,3 +7,4 @@ inc/lcm
 /java
 stomp.jar
 /telemetry
+/test_telem

@@ -1,7 +1,7 @@
 /*
-    telem.h
-    Utility library for sending out telemetry. Abstracts away the details of the telemetry
-    transport layer.
+    telemetry.h
+    Utility library for sending out telemetry. Abstracts away the details of
+    the telemetry transport layer.
 */
 
 #pragma once

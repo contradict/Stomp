@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include "messages.h"
-#include "telem.h"
+#include "telemetry.h"
 
 int main(int argc, char **argv)
 {
