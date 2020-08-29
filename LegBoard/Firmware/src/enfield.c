@@ -577,6 +577,7 @@ static int Enfield_Transfer(struct EnfieldContext *enf,  uint8_t r, uint16_t *v)
 static int Enfield_Get(struct EnfieldContext *enf, enum EnfieldReadRegister r, uint16_t *v)
 {
     uint8_t err;
+    *v = 0x1111;
     err = Enfield_Transfer(enf, r, v);
     return err;
 }
