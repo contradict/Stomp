@@ -691,7 +691,7 @@ struct leg_thread_state* create_leg_thread(struct leg_thread_definition *leg_thr
 {
     struct leg_thread_state *state = malloc(sizeof(struct leg_thread_state));
     state->definition = leg_thread;
-    if(create_modbus_interface(leg_thread->devname, leg_thread->baud, leg_thread->response_timeout, &state->ctx))
+    if(create_modbus_interface(leg_thread->devname, leg_thread->baud, leg_thread->byte_timeout, leg_thread->response_timeout, &state->ctx))
     {
         free(state);
         return 0;

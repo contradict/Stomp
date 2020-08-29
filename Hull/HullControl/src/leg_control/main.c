@@ -22,11 +22,12 @@ int main(int argc, char **argv)
     leg_thread.devname = "/dev/ttyS4";
     leg_thread.baud = 1000000;
     leg_thread.frequency = 100.0f;
-    leg_thread.response_timeout = 2000;
+    leg_thread.byte_timeout = 20;
+    leg_thread.response_timeout = 10000;
     char *config_filename = "hull_config.toml";
 
     int opt;
-    while((opt = getopt(argc, argv, "p:b:f:r:c:d:")) != -1)
+    while((opt = getopt(argc, argv, "p:b:f:r:t:c:d:")) != -1)
     {
         switch(opt)
         {
@@ -41,6 +42,9 @@ int main(int argc, char **argv)
                 break;
             case 'r':
                 leg_thread.response_timeout = 1000*atoi(optarg);
+                break;
+            case 't':
+                leg_thread.byte_timeout = atoi(optarg);
                 break;
             case 'c':
                 config_filename = strdup(optarg);

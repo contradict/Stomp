@@ -196,7 +196,7 @@ void ensure_ctx(modbus_t **ctx, char *devname, uint32_t baud, uint32_t response_
 {
     if(*ctx == NULL)
     {
-        if(create_modbus_interface(devname, baud, response_timeout, ctx))
+        if(create_modbus_interface(devname, baud, response_timeout, 50, ctx))
         {
             exit(1);
         }

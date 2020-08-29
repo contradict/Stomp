@@ -14,6 +14,7 @@ struct leg_thread_definition {
     char *devname;
     uint32_t baud;
     float frequency;
+    uint32_t byte_timeout;
     uint32_t response_timeout;
     toml_table_t *config;
     struct queue *parameter_queue;

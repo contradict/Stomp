@@ -1157,7 +1157,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if(create_modbus_interface(devname, baud, response_timeout, &ctx))
+    if(create_modbus_interface(devname, baud, 50, response_timeout, &ctx))
     {
         exit(1);
     }

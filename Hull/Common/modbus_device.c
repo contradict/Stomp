@@ -8,9 +8,9 @@
 #include "modbus_device.h"
 
 
-int configure_modbus_context(modbus_t *ctx, uint32_t custom_baud, uint32_t response_timeout)
+int configure_modbus_context(modbus_t *ctx, uint32_t custom_baud, uint32_t byte_timeout, uint32_t response_timeout)
 {
-    modbus_set_byte_timeout(ctx, 0, 0);
+    modbus_set_byte_timeout(ctx, 0, byte_timeout);
 
     // This is weird. The device responds in ~2ms with a
     // full round-trip to the servo. Local port latency?
@@ -64,7 +64,7 @@ int configure_modbus_context(modbus_t *ctx, uint32_t custom_baud, uint32_t respo
     return 0;
 }
 
-int create_modbus_interface(char *devname, uint32_t custom_baud, uint32_t response_timeout, modbus_t **ctx)
+int create_modbus_interface(char *devname, uint32_t custom_baud, uint32_t byte_timeout, uint32_t response_timeout, modbus_t **ctx)
 {
     // Phony baud
     *ctx = modbus_new_rtu(devname, 9600, 'N', 8, 1);
@@ -75,7 +75,7 @@ int create_modbus_interface(char *devname, uint32_t custom_baud, uint32_t respon
     }
 
     // Actual baud rate here
-    if(configure_modbus_context(*ctx, custom_baud, response_timeout))
+    if(configure_modbus_context(*ctx, custom_baud, byte_timeout, response_timeout))
     {
         return -1;
     }
