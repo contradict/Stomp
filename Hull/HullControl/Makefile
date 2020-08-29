@@ -123,4 +123,7 @@ sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
 LegModes.pdf: LegModes.dot
 	dot -Tpdf $< -o $@
 
-.PHONY: all clean libs targets
+lcmspy: stomp.jar
+	CLASSPATH=`pwd`/stomp.jar lcm-spy
+
+.PHONY: all clean libs targets lcmspy
