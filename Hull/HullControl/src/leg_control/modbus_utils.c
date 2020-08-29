@@ -16,7 +16,7 @@ int ping_leg(modbus_t *ctx, uint8_t address)
 
 int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], const float (*damping)[3])
 {
-    int err;
+    int ret=0, err;
     uint16_t gain_value, damping_value;
     modbus_set_slave(ctx, address);
     gain_value = 10.0f * (*gain)[JOINT_CURL];
@@ -25,13 +25,13 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], cons
     if(err == -1)
     {
         logm(SL4C_ERROR, "Counld not set Curl gain: %s", modbus_strerror(errno));
-        return err;
+        ret = err;
     }
     err = modbus_write_registers(ctx, CURL_BASE + HForceDamping, 1, &damping_value);
     if(err == -1)
     {
         logm(SL4C_ERROR, "Counld not set Curl damping: %s", modbus_strerror(errno));
-        return err;
+        ret = err;
     }
     gain_value = 10.0f * (*gain)[JOINT_SWING];
     damping_value = 10.0f * (*damping)[JOINT_SWING];
@@ -39,13 +39,13 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], cons
     if(err == -1)
     {
         logm(SL4C_ERROR, "Counld not set Swing gain: %s", modbus_strerror(errno));
-        return err;
+        ret = err;
     }
     err = modbus_write_registers(ctx, SWING_BASE + HForceDamping, 1, &damping_value);
     if(err == -1)
     {
         logm(SL4C_ERROR, "Counld not set Swing damping: %s", modbus_strerror(errno));
-        return err;
+        ret = err;
     }
     gain_value = 10.0f * (*gain)[JOINT_LIFT];
     damping_value = 10.0f * (*damping)[JOINT_LIFT];
@@ -53,15 +53,15 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], cons
     if(err == -1)
     {
         logm(SL4C_ERROR, "Counld not set Lift gain: %s", modbus_strerror(errno));
-        return err;
+        ret = err;
     }
     err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &gain_value);
     if(err == -1)
     {
         logm(SL4C_ERROR, "Counld not set Lift damping: %s", modbus_strerror(errno));
-        return err;
+        ret = err;
     }
-    return 0;
+    return ret;
 }
 
 int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], float (*cylinder_pressure)[6])
