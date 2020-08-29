@@ -96,8 +96,8 @@ static int set_gains(struct leg_thread_state* state, struct joint_gains* gain)
         int err = set_servo_gains(state->ctx, state->legs[leg].address, &gain->proportional_gain, &gain->force_damping);
         if(err == -1)
         {
-            logm(SL4C_ERROR, "Failed to set servo gain for leg %d(0x%02x): %s.\n",
-                   leg, state->legs[leg].address, modbus_strerror(errno));
+            logm(SL4C_ERROR, "Failed to set servo gain for leg %d(0x%02x).\n",
+                   leg, state->legs[leg].address);
             ret = err;
         }
     }
