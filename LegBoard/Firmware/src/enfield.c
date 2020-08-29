@@ -321,8 +321,16 @@ void Enfield_Thread(const void *arg)
                 st->state = (ENFIELD_OK == errs[0] && ENFIELD_OK == errs[1]) ? StGetCurrent : StWaitRequest;
                 break;
             case StGetCurrent:
-                errs[0] = Enfield_Get(st, ReadFeedbackPosition, &st->FeedbackPosition);
-                st->state = (ENFIELD_OK == errs[0]) ? StSetCommandValue : StWaitRequest;
+                errs[0] = Enfield_Get(st, ReadFeedbackPosition, &read_data);
+                if(errs[0] == ENFIELD_OK)
+                {
+                    st->FeedbackPosition = read_data;
+                    st->state = StSetCommandValue;
+                }
+                else
+                {
+                    st->state = StWaitRequest;
+                }
                 break;
             case StSetCommandValue:
                 errs[0] = Enfield_Write(st, SetDigitalCommand, &st->FeedbackPosition);
