@@ -10,7 +10,7 @@ halfwidth=0.010
 [robot.legs]
 
 count=6
-position_ramp_time=2.0
+position_ramp_time=1.0
 
 [robot.legs.joint_gain.Curl]
 ProportionalGain=12
