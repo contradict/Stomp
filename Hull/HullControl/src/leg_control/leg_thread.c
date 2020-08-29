@@ -454,7 +454,13 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
             switch(parameters->enable)
             {
                 case ENABLE_WALK:
-                    walk_step(state, parameters, dt);
+                    res = walk_step(state, parameters, dt);
+                    if(res == -1)
+                    {
+                        state->mode = mode_air_vent_init;
+                        logm(SL4C_ERROR, "walk_step failed.");
+                        logm(SL4C_INFO, "walk->vent_init.");
+                    }
                     break;
                 case ENABLE_DISABLE:
                     state->mode = mode_air_vent_disable;
