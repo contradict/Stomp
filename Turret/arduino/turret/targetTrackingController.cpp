@@ -252,7 +252,7 @@ void TargetTrackingController::SendTelem()
         Telem.SendTrackingTelemetry(
                 m_state,
                 m_pTrackedTarget->GetXCoord(), m_pTrackedTarget->GetYCoord(),
-                m_pTrackedTarget->GetAngle(), m_pTrackedTarget->GetRadius(),
+                m_pTrackedTarget->GetAngle(), m_pTrackedTarget->GetDistance(),
                 m_x / 16, m_vx / 16,
                 m_y / 16, m_vy / 16);
     }

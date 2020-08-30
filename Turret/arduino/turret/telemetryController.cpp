@@ -609,7 +609,7 @@ bool TelemetryController::SendObjectsTelemetry(uint8_t p_numObjects, const Targe
 struct ObjectsCalcuatedInner 
 {
    uint8_t numObjects;
-   int16_t objectRadius[8];
+   int16_t objectDistance[8];
    int16_t objectAngle[8];
    int16_t objectX[8];
    int16_t objectY[8];
@@ -629,7 +629,7 @@ bool TelemetryController::sendObjectsCalculatedTelemetry(uint8_t p_numObjects, c
 
     for(; i < p_numObjects; i++)
     {
-        tlm.inner.objectRadius[i] = p_objects[i].GetRadius();
+        tlm.inner.objectDistance[i] = p_objects[i].GetDistance();
         tlm.inner.objectAngle[i] = p_objects[i].GetAngle();
         tlm.inner.objectX[i] = p_objects[i].GetXCoord();
         tlm.inner.objectY[i] = p_objects[i].GetYCoord();
@@ -637,7 +637,7 @@ bool TelemetryController::sendObjectsCalculatedTelemetry(uint8_t p_numObjects, c
 
     for(; i < 8; i++)
     {
-        tlm.inner.objectRadius[i] = -1;
+        tlm.inner.objectDistance[i] = -1;
         tlm.inner.objectAngle[i] = -1;
         tlm.inner.objectX[i] = -1;
         tlm.inner.objectY[i] = -1;

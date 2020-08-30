@@ -72,7 +72,9 @@ private:
 
     void updateBestTarget();
 
+    void resetTargets();
     void segmentTargets();
+
     void selectTarget();
     void selectClosestTarget();
 

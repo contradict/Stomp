@@ -192,7 +192,7 @@ void TargetAcquisitionController::updateBestTarget()
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetAngle()) + String(", ");
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetXCoord()) + String(", ");
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetYCoord()) + String(", ");
-            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetRadius()) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetDistance()) + String(", ");
         }
         else
         {
@@ -209,74 +209,69 @@ void TargetAcquisitionController::updateBestTarget()
 
 }
 
+void TargetAcquisitionController::resetTargets()
+{    
+    for (uint8_t targetIndex = 1; targetIndex < LEDDAR_SEGMENTS; targetIndex++) 
+    {
+        m_possibleTargets[targetIndex].Reset();
+    }
+}
+
+//
+//  SegmentTargets
+//
+//  Go through all 16 lidar detections, looking for transformations from far to near
+//  or near to far.
+//      
+//  * Any far to near (or first segment) triggers a start segment
+//  * The frist transition from near to far (or last segment) triggers an end segment
+//
+//  Call it a valid target IF we had both a start and end segment && target is not TOO big
+//
+//  This currently will not find a more distant target obscured by a nearer
+//  target, even if both edges of more distant target are visible
+//
+
 void TargetAcquisitionController::segmentTargets()
 {
-    // call all objects in frame by detecting edges
-    
-    int16_t lastSegDistance = (*m_minDetections)[0].Distance;
-    int16_t rightEdge = 0;
-    int16_t leftEdge = 0;
+    resetTargets();
+
+    //  Always start target 0 off to the left of FOV
+
     uint8_t targetIndex = 0;
-    
-    // this currently will not call a more distant object obscured by a nearer
-    // object, even if both edges of more distant object are visible
-    for (uint8_t i = 1; i < LEDDAR_SEGMENTS; i++) 
+    m_possibleTargets[targetIndex].StartSegment(0, &(*m_minDetections)[0]);
+
+    //  Go through the reset of the leddar segments
+
+    for (uint8_t segmentIndex = 1; segmentIndex < LEDDAR_SEGMENTS; segmentIndex++) 
     {
-        int16_t delta = (int16_t) (*m_minDetections)[i].Distance - lastSegDistance;
+        int16_t delta = (*m_minDetections)[segmentIndex].Distance - (*m_minDetections)[segmentIndex - 1].Distance;
         
         if (delta < -m_params.edgeCallThreshold) 
         {
-            //  transition from further to closer
+            //  Transion from far to near, start a possible valid target, even if we already 
+            //  started a target previously 
 
-            leftEdge = i;
-            m_possibleTargets[targetIndex].SumDistance = 0;
-            m_possibleTargets[targetIndex].SumIntensity = 0;
-            m_possibleTargets[targetIndex].SumAngleIntensity = 0;
+            m_possibleTargets[targetIndex].StartSegment(segmentIndex, &(*m_minDetections)[segmentIndex]);
         } 
-        else if (delta > m_params.edgeCallThreshold || i == (LEDDAR_SEGMENTS - 1)) 
+        else if (delta > m_params.edgeCallThreshold || segmentIndex == (LEDDAR_SEGMENTS - 1)) 
         {
-            //  transition from closer to further or ran off the right of Leddar FOV
-            //  then call it an object if there is an unmatched left edge or the left
-            //  edge is 0
+            //  Transition from near to far or ran off the right of Leddar FOV.
+            //  Call it an object if target is still under construction and not too big
+            
+            int16_t size = m_possibleTargets[targetIndex].GetSize();
 
-            if (leftEdge > rightEdge || leftEdge == 0) 
+            if (m_possibleTargets[targetIndex].Type == Target::EBeingConstructed && 
+                size > m_params.objectSizeMin && size < m_params.objectSizeMax) 
             {
-                rightEdge = i;
-
-                int16_t size = m_possibleTargets[targetIndex].GetSize();
-                
-                if (size > m_params.objectSizeMin && size < m_params.objectSizeMax) 
-                {
-                    m_possibleTargets[targetIndex].LeftEdge = leftEdge;
-                    m_possibleTargets[targetIndex].RightEdge = rightEdge;
-                    m_possibleTargets[targetIndex].Time = m_lastUpdateTime;
-
-                    if (leftEdge == 0 && rightEdge == LEDDAR_SEGMENTS - 1)
-                    {   
-                        m_possibleTargets[targetIndex].Type = Target::ELeftAndRgihtEdgeOutOfFOV;
-                    }
-                    if (leftEdge == 0)
-                    {   
-                        m_possibleTargets[targetIndex].Type = Target::ELeftEdgeOutOfFOV;
-                    }
-                    else if (rightEdge == LEDDAR_SEGMENTS - 1)
-                    {
-                        m_possibleTargets[targetIndex].Type = Target::ERightEdgeOutOfFOV;
-                    }
-                    else
-                    {
-                        m_possibleTargets[targetIndex].Type = Target::EInFOV;
-                    }
-                
-                    targetIndex++;
-                }
+                m_possibleTargets[targetIndex].EndSegment(segmentIndex, &(*m_minDetections)[segmentIndex], m_lastUpdateTime);
+                targetIndex++;
             }
         }
-
-        m_possibleTargets[targetIndex].SumDistance += (*m_minDetections)[i].Distance;
-        m_possibleTargets[targetIndex].SumIntensity += (*m_minDetections)[i].Amplitude;
-        m_possibleTargets[targetIndex].SumAngleIntensity += (int32_t) i * (*m_minDetections)[i].Amplitude;
-        lastSegDistance = (*m_minDetections)[i].Distance;
+        else
+        {
+            m_possibleTargets[targetIndex].AddSegment(segmentIndex, &(*m_minDetections)[segmentIndex]);
+        }
     }
 
     m_possibleTargetsCount = targetIndex;
@@ -284,6 +279,9 @@ void TargetAcquisitionController::segmentTargets()
 
 void TargetAcquisitionController::selectTarget()
 {
+    //  First determaine if we will consider targets that are partially 
+    //  out of our FOV.
+
     bool onlyUseInFOVTargets = false;
 
     if (m_state != ETargetAcquired)
@@ -310,6 +308,8 @@ void TargetAcquisitionController::selectTarget()
         }
     }
     
+    //  Now, get the best target
+
     m_pBestTarget = NULL;
     int32_t minTargetDistance = INT32_MAX;
 
@@ -320,7 +320,7 @@ void TargetAcquisitionController::selectTarget()
             continue;
         }
 
-        int32_t distance = m_possibleTargets[targetIndex].GetRadius();
+        int32_t distance = m_possibleTargets[targetIndex].GetDistance();
 
         if (distance < minTargetDistance)
         {
@@ -364,7 +364,7 @@ void TargetAcquisitionController::selectClosestTarget()
     for (uint32_t targetIndex = 0; targetIndex < m_possibleTargetsCount; targetIndex++)
     {
         int32_t distanceSq;
-        distanceSq = m_possibleTargets[targetIndex].GetRadius();
+        distanceSq = m_possibleTargets[targetIndex].GetDistance();
         distanceSq *= distanceSq;
 
         if (distanceSq < minTargetDistanceSq)

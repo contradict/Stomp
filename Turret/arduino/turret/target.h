@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "leddar_io.h"
+
 //  ====================================================================
 //
 //  Class decleration
@@ -20,13 +22,18 @@ public:
 
     Target() : SumDistance(0), LeftEdge(0), RightEdge(0), Time(0) { }
 
-    int16_t GetSize() const;
-    int16_t GetAngle() const;
-    int16_t GetXCoord() const;
-    int16_t GetYCoord() const;
-    int16_t GetRadius() const;
+    void Reset();
+    void StartSegment(int32_t p_startSegment, Detection* p_detection);
+    void AddSegment(int32_t p_startSegment, Detection* p_detection);
+    void EndSegment(int32_t p_endSegment, Detection* p_detection, uint32_t p_time);
+
+    int16_t GetSize();
+    int16_t GetAngle();
+    int16_t GetXCoord();
+    int16_t GetYCoord();
+    int16_t GetDistance();
     
-    inline int32_t DistanceSq(const Target &other) const;
+    inline int32_t DistanceSq(Target &other);
 
     //  ====================================================================
     //
@@ -36,13 +43,15 @@ public:
 
     enum EdgeFOVType
     {
+        EInvalid,
+        EBeingConstructed,
         ELeftAndRgihtEdgeOutOfFOV,
         ELeftEdgeOutOfFOV,
         ERightEdgeOutOfFOV,
         EInFOV
     };
 
-    uint16_t SumDistance;
+    uint32_t SumDistance;
     int32_t SumIntensity;
     int32_t SumAngleIntensity;
     int8_t LeftEdge, RightEdge;

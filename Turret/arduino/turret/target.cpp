@@ -3,27 +3,84 @@
 
 #include "target.h"
 
-// size in mm
-// r = average radius = sum/(right - left)
-// (pi/180)*LEDDAR_FOV/LEDDAR_SEGMENTS = (pi/180)*99/16 ~ 0.108
-// theta = (left-right)*0.108
-// circumferential size = theta*r = (left-right)*sum/(right - left)*0.108/2
-// leddar reports ranges in cm, so multiply this expression by 10
-// to get mm
-int16_t Target::GetSize() const 
+void Target::Reset()
 {
-    return SumDistance/2;
+    Type = EInvalid;    
+    LeftEdge = 0;
+    RightEdge = 0;
+
+    SumDistance = 0;
+    SumIntensity = 0;
+    SumAngleIntensity = 0;
 }
 
-// average radius in mm
-int16_t Target::GetRadius() const 
+void Target::StartSegment(int32_t p_startSegment, Detection* p_detection)
 {
-    // 10 cm per mm
-    return SumDistance*10/(RightEdge - LeftEdge);
+    Type = EBeingConstructed;
+    LeftEdge = p_startSegment;
+
+    //  Convert distances from cm to mm
+    SumDistance = p_detection->Distance * 10;
+
+    SumIntensity = p_detection->Amplitude;
+    SumAngleIntensity = p_startSegment * p_detection->Amplitude;
+}
+
+void Target::AddSegment(int32_t p_segment, Detection* p_detection)
+{
+    //  Convert distances from cm to mm
+    SumDistance += p_detection->Distance * 10;
+
+    SumIntensity += p_detection->Amplitude;
+    SumAngleIntensity += p_segment * p_detection->Amplitude;
+}
+
+void Target::EndSegment(int32_t p_endSegment, Detection* p_detection, uint32_t p_time)
+{
+    RightEdge = p_endSegment;
+    Time = p_time;
+
+    if (LeftEdge == 0 && RightEdge == LEDDAR_SEGMENTS - 1)
+    {   
+        Type = ELeftAndRgihtEdgeOutOfFOV;
+    }
+    else if (LeftEdge == 0)
+    {   
+        Type = ELeftEdgeOutOfFOV;
+    }
+    else if (RightEdge == LEDDAR_SEGMENTS - 1)
+    {
+        Type = ERightEdgeOutOfFOV;
+    }
+    else
+    {
+        Type = EInFOV;
+    }
+}
+
+//  Estimate the size of a target as the sum of the arc lengh of each segment
+//  Arc length of circle given theta in radians is simpley s = theta * radius
+//
+//  * Take the average distance to the target and use as radius
+//  * The degrees each segment of the leddar covers is 99 deg FOV / 16 segments => 6.1875 deg or 0.108 rad
+//  * Theta therefore is fixed for each segment at 0.108 rad
+//
+//  Return size in mm
+int16_t Target::GetSize() 
+{
+    //  BB MJS: convert to fixed point
+    float size = GetDistance() * ((RightEdge - LeftEdge) * 0.108f);
+    return (int16_t) size;
+}
+
+// return average distance to target in mm
+int16_t Target::GetDistance() 
+{
+    return SumDistance / (RightEdge - LeftEdge);
 }
 
 // angle in radians scaled by 2048
-int16_t Target::GetAngle() const 
+int16_t Target::GetAngle() 
 {
     // 2048*.108 = 221.2
     // 7.5*221.2 = 1659
@@ -31,36 +88,36 @@ int16_t Target::GetAngle() const
 }
 
 // x coordinate in mm
-int16_t Target::GetXCoord() const 
+int16_t Target::GetXCoord() 
 {
     int32_t angle = GetAngle();
-    int32_t radius = GetRadius();
+    int32_t distance = GetDistance();
 
-    int16_t xCoord = (int16_t)((radius * (2048L - ((angle * angle) / 4096L))) / 2048L);
+    int16_t xCoord = (int16_t)((distance * (2048L - ((angle * angle) / 4096L))) / 2048L);
 
     /*
     float degrees = ((float)angle / 2048.0f) * (180.0f/PI);
     Telem.LogMessage(String("xCoord = ") + String(xCoord) + 
         String(" angle = ") + String(degrees) + 
-        String(" radius = ") + String(radius));
+        String(" distance = ") + String(distance));
     */
        
     return xCoord;
 }
 
 // y coordinate in mm
-int16_t Target::GetYCoord() const 
+int16_t Target::GetYCoord() 
 {
-    return ((int32_t)GetRadius()*GetAngle())/2048L;
+    return ((int32_t)GetDistance()*GetAngle())/2048L;
 }
 
 // distance squared in mm
-inline int32_t Target::DistanceSq(const Target &p_otherTarget) const 
+inline int32_t Target::DistanceSq(Target &p_otherTarget) 
 {
-    int32_t r = GetRadius();
+    int32_t r = GetDistance();
     int32_t a = GetAngle();
 
-    int32_t ro=p_otherTarget.GetRadius();
+    int32_t ro=p_otherTarget.GetDistance();
     int32_t ao=p_otherTarget.GetAngle();
 
     // x = radius()*cos(angle());
