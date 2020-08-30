@@ -18,6 +18,7 @@ void Target::StartSegment(int32_t p_startSegment, Detection* p_detection)
 {
     Type = EBeingConstructed;
     LeftEdge = p_startSegment;
+    RightEdge = LeftEdge;
 
     //  Convert distances from cm to mm
     SumDistance = p_detection->Distance * 10;
@@ -28,6 +29,8 @@ void Target::StartSegment(int32_t p_startSegment, Detection* p_detection)
 
 void Target::AddSegment(int32_t p_segment, Detection* p_detection)
 {
+    RightEdge = p_segment;
+    
     //  Convert distances from cm to mm
     SumDistance += p_detection->Distance * 10;
 

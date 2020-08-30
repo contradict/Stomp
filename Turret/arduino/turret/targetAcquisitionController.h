@@ -91,6 +91,7 @@ private:
     //  ====================================================================
     
     static const int32_t k_leddarRequestMaxDt = 100000L;
+    static const uint8_t k_maxPossibleTargets = 8;
 
 private:
 
@@ -110,7 +111,7 @@ private:
     uint32_t m_rawDetectionCount;
     Detection (*m_minDetections)[LEDDAR_SEGMENTS];
 
-    Target m_possibleTargets[8];
+    Target m_possibleTargets[k_maxPossibleTargets];
     uint32_t m_possibleTargetsCount;
 
     // LeddarController* m_pLeddarController;

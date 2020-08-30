@@ -325,7 +325,7 @@ void TargetTrackingController::updateTracking()
         m_vx = 0;
         m_vy = 0;
 
-        Telem.LogMessage(String("tracking: ") + 
+        Telem.LogMessage(String("tracking, ") + 
             String(m_lastUpdateTime) + String(", ") + 
             String("-1, ") +
             String("-1, ") +
@@ -370,7 +370,7 @@ void TargetTrackingController::updateTracking()
     m_vy += m_params.beta * m_residualY / 4096;
     m_vy = constrain(m_vy, -10000L * 16, 10000L * 16);
 
-    Telem.LogMessage(String("tracking: ") + 
+    Telem.LogMessage(String("tracking, ") + 
         String(m_lastUpdateTime) + String(", ") + 
         String(measuredX) + String(", ") +
         String(measuredY) + String(", ") +
