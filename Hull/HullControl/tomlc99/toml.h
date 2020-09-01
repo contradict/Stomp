@@ -36,6 +36,11 @@
 #define TOML_EXTERN extern
 #endif
 
+#define TOML_SAVE_IOERROR -1
+#define TOML_SAVE_NESTING_DEPTH_EXCEEDED -2
+
+#define TOML_SAVE_MAX_NESTING_DEPTH 20
+
 typedef struct toml_table_t toml_table_t;
 typedef struct toml_array_t toml_array_t;
 
@@ -56,6 +61,9 @@ TOML_EXTERN toml_table_t* toml_parse_file(FILE* fp,
 TOML_EXTERN toml_table_t* toml_parse(char* conf, /* NUL terminated, please. */
 									 char* errbuf,
 									 int errbufsz);
+
+/* Save the table to fp */
+TOML_EXTERN int toml_save_file(toml_table_t* tab, FILE* fp);
 
 /* Free the table returned by toml_parse() or toml_parse_file(). */
 TOML_EXTERN void toml_free(toml_table_t* tab);
