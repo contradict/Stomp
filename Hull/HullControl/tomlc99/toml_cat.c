@@ -54,10 +54,7 @@ static void print_table_title(const char* arrname)
 	if (i + 1 < stacktop)
 	    printf(".");
     }
-    if (arrname)
-	printf(".%s]]\n", arrname);
-    else
-	printf("]\n");
+    printf("%s\n", arrname ? "]]" : "]");
 }
 
 
@@ -79,7 +76,11 @@ static void print_table(toml_table_t* curtab)
 	    printf("%s = %s\n", key, raw);
 	} else if (0 != (arr = toml_array_in(curtab, key))) {
 	    if (toml_array_kind(arr) == 't') {
+		stack[stacktop].key = key;
+		stack[stacktop].tab = curtab;
+		stacktop++;
 		print_array_of_tables(arr, key);
+		stacktop--;
 	    }
 	    else {
 		printf("%s = [\n", key);
