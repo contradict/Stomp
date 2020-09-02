@@ -282,9 +282,6 @@ int main(int argc, char **argv)
         }
     }
 
-    uint8_t address = addr;
-    ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, address);
-
     if(leg>0 && leg<6)
     {
         startleg=leg;
@@ -313,11 +310,26 @@ int main(int argc, char **argv)
     }
     fclose(fp);
 
+    uint8_t address = addr;
+    ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, address);
+
     bool restore = (argv[optind] && strcasecmp(argv[optind], "restore") == 0);
     save_values(ctx, startleg, endleg, full_config, !restore);
+    modbus_close(ctx);
+    if(!restore)
+    {
+        if(0 == (fp = fopen(configfile, "w")))
+        {
+            printf("Unable to open %s for writing: %s\n", configfile, strerror(errno));
+        }
+        else
+        {
+            toml_save_file(full_config, fp);
+            fclose(fp);
+        }
+    }
 
     free(full_config);
 
-    modbus_close(ctx);
     return 0;
 }
