@@ -73,6 +73,7 @@ TOML_EXTERN const char* toml_key_in(const toml_table_t* tab, int keyidx);
 
 /* Lookup table by key. Return the element or 0 if not found. */
 TOML_EXTERN toml_raw_t toml_raw_in(const toml_table_t* tab, const char* key);
+TOML_EXTERN int toml_raw_set(toml_table_t* tab, const char* key, toml_raw_t value);
 TOML_EXTERN toml_array_t* toml_array_in(const toml_table_t* tab,
 										const char* key);
 TOML_EXTERN toml_table_t* toml_table_in(const toml_table_t* tab,
@@ -146,6 +147,8 @@ struct toml_timestamp_t {
 
 /* Raw to Timestamp. Return 0 on success, -1 otherwise. */
 TOML_EXTERN int toml_rtots(toml_raw_t s, toml_timestamp_t* ret);
+
+TOML_EXTERN toml_raw_t toml_dtor(double d);
 
 /* misc */
 TOML_EXTERN int toml_utf8_to_ucs(const char* orig, int len, int64_t* ret);

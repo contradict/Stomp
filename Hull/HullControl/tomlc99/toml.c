@@ -1940,6 +1940,40 @@ toml_raw_t toml_raw_in(const toml_table_t* tab, const char* key)
 	return 0;
 }
 
+int toml_raw_set(toml_table_t* tab, const char* key, toml_raw_t value)
+{
+    int i;
+    for(i = 0; i<tab->nkval; i++) {
+        if(0 == strcmp(key, tab->kval[i]->key)){
+            xfree(tab->kval[i]->val);
+            tab->kval[i]->val = value;
+            return 0;
+        }
+    }
+	/* make a new entry */
+	int n = tab->nkval;
+	toml_keyval_t** base;
+	base = (toml_keyval_t**) REALLOC(tab->kval, (n+1) * sizeof(*base));
+    if(base == 0)
+    {
+        return -1;
+    }
+
+	tab->kval = base;
+
+	base[n] = (toml_keyval_t*) CALLOC(1, sizeof(*base[n]));
+    if(base[n] == 0)
+    {
+        return -1;
+    }
+	toml_keyval_t* dest = tab->kval[tab->nkval++];
+
+	/* save the key in the new value struct */
+	dest->key = key;
+    dest->val = value;
+    return 0;
+}
+
 toml_array_t* toml_array_in(const toml_table_t* tab, const char* key)
 {
 	int i;
@@ -2280,7 +2314,15 @@ int toml_rtod(toml_raw_t src, double* ret_)
 	return toml_rtod_ex(src, ret_, buf, sizeof(buf));
 }
 
-
+toml_raw_t toml_dtor(double d)
+{
+    char strt[100];
+    snprintf(strt, 100, "%f", d);
+    int n = strlen(strt);
+    toml_raw_t strout = MALLOC(n + 1);
+    memcpy((void *)strout, strt, n + 1);
+    return strout;
+}
 
 
 int toml_rtos(toml_raw_t src, char** ret)
