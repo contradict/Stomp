@@ -188,7 +188,7 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                     {
                         uint16_t currentval;
                         err = modbus_read_registers(ctx, fulladdr, 1, &currentval);
-                        if(err != 0)
+                        if(err < 0)
                         {
                             printf("Failed to read register %s(0x%02x) joint %s(%d) leg %d idx=%ld: %s\n",
                                     regname, fulladdr, jname, j, i, idx, modbus_strerror(errno));
@@ -215,7 +215,7 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                         }
                         int16_t scaledval = regval * regscale;
                         err = modbus_write_registers(ctx, fulladdr, 1, (uint16_t*)&scaledval);
-                        if(err != 0)
+                        if(err < 0)
                         {
                             printf("Failed to write register %s(0x%02x) joint %s(%d) leg %d idx=%ld: %s\n",
                                     regname, fulladdr, jname, j, i, idx, modbus_strerror(errno));
