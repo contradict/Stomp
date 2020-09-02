@@ -194,7 +194,7 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                                     regname, fulladdr, jname, j, i, idx, modbus_strerror(errno));
                             continue;
                         }
-                        r = toml_dtor(currentval);
+                        r = toml_dtor(currentval / regscale);
                         err = toml_raw_set(settings, regname, r);
                         if(err < 0)
                         {
