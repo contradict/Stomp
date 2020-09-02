@@ -124,42 +124,42 @@ static int equalize_joint_command(struct leg_thread_state* state)
         if(err == -1)
         {
             ret = err;
-            logm(SL4C_ERROR, "Error reading leg %d(0x%d) curl feedback: %s",
+            logm(SL4C_ERROR, "Error reading leg %d(0x%x) curl feedback: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
         err = modbus_read_input_registers(state->ctx, SWING_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_SWING]);
         if(err == -1)
         {
             ret = err;
-            logm(SL4C_ERROR, "Error reading leg %d(0x%d) swing feedback: %s",
+            logm(SL4C_ERROR, "Error reading leg %d(0x%x) swing feedback: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
         err = modbus_read_input_registers(state->ctx, LIFT_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_LIFT]);
         if(err == -1)
         {
             ret = err;
-            logm(SL4C_ERROR, "Error reading leg %d(0x%d) lift feedback: %s",
+            logm(SL4C_ERROR, "Error reading leg %d(0x%x) lift feedback: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
         err = modbus_write_registers(state->ctx, CURL_BASE + HCachedDigitalCommand, 1, &joint_feedback[JOINT_CURL]);
         if(err == -1)
         {
             ret = err;
-            logm(SL4C_ERROR, "Error writing leg %d(0x%d) curl command: %s",
+            logm(SL4C_ERROR, "Error writing leg %d(0x%x) curl command: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
         err = modbus_write_registers(state->ctx, SWING_BASE + HCachedDigitalCommand, 1, &joint_feedback[JOINT_SWING]);
         if(err == -1)
         {
             ret = err;
-            logm(SL4C_ERROR, "Error writing leg %d(0x%d) swing command: %s",
+            logm(SL4C_ERROR, "Error writing leg %d(0x%x) swing command: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
         err = modbus_write_registers(state->ctx, LIFT_BASE + HCachedDigitalCommand, 1, &joint_feedback[JOINT_LIFT]);
         if(err == -1)
         {
             ret = err;
-            logm(SL4C_ERROR, "Error writing leg %d(0x%d) lift command: %s",
+            logm(SL4C_ERROR, "Error writing leg %d(0x%x) lift command: %s",
                     l, state->legs[l].address, modbus_strerror(errno));
         }
     }
