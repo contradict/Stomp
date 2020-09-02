@@ -42,7 +42,7 @@ void ensure_ctx(modbus_t **ctx, char *devname, uint32_t baud, uint32_t byte_time
             exit(1);
         }
         modbus_set_slave(*ctx, address);
-        modbus_set_debug(*ctx, 1);
+        //modbus_set_debug(*ctx, 1);
     }
 }
 
