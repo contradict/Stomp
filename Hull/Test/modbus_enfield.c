@@ -211,7 +211,7 @@ void ensure_ctx(modbus_t **ctx, char *devname, uint32_t baud, uint32_t byte_time
             exit(1);
         }
         modbus_set_slave(*ctx, address);
-        modbus_set_debug(*ctx, 1);
+        //modbus_set_debug(*ctx, 1);
     }
 }
 
@@ -535,7 +535,7 @@ int main(int argc, char **argv)
             case 'D':
                 if(parse_diagnostic(optarg, &subfunc, &value))
                 {
-                    printf("subfunc: %d data: %d\n", subfunc, value);
+                    //printf("subfunc: %d data: %d\n", subfunc, value);
                     ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, addr & 0xff);
                     diagnostic(ctx, subfunc, value);
                 }
