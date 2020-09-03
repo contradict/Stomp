@@ -65,35 +65,36 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
     {
         toml_table_t* currleg = toml_table_at(leg, i);
         toml_raw_t r = toml_raw_in(currleg, "index");
-        int64_t idx;
-        int err = toml_rtoi(r, &idx);
+        int64_t idx_t;
+        int err = toml_rtoi(r, &idx_t);
         if(err < 0)
         {
             printf("Could not parse index for leg %d: %s.", i, (char *)r);
             continue;
         }
+        int idx = idx_t;
         if(idx>=startleg && idx<=endleg)
         {
             r = toml_raw_in(currleg, "address");
             if(r == 0)
             {
-                printf("No address for leg %d, idx=%ld.\n", i, idx);
+                printf("No address for leg %d, idx=%d.\n", i, idx);
                 continue;
             }
-            int64_t addr;
-            err = toml_rtoi(r, &addr);
+            int64_t addr_t;
+            err = toml_rtoi(r, &addr_t);
             if(err < 0)
             {
-                printf("Could not parse address for leg %d idx=%ld: %s.\n",
+                printf("Could not parse address for leg %d idx=%d: %s.\n",
                        i, idx, (char*)r);
                 continue;
             }
-            uint8_t address = addr & 0xFF;
+            uint8_t address = addr_t & 0xFF;
             modbus_set_slave(ctx, address);
             toml_array_t* joint=toml_array_in(currleg, "joint");
             if(joint == 0)
             {
-                printf("No joint table in leg %d idx=%ld.\n", i, idx);
+                printf("No joint table in leg %d idx=%d address=0x%02x.\n", i, idx, address);
                 continue;
             }
             for(int j=0; j<toml_array_nelem(joint); j++)
@@ -102,22 +103,22 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                 r = toml_raw_in(currjoint, "name");
                 if(r == 0)
                 {
-                    printf("No name for joint %d leg %d idx=%ld.\n", j, i, idx);
+                    printf("No name for joint %d leg %d idx=%d address=0x%02x.\n", j, i, idx, address);
                     continue;
                 }
                 char *jname;
                 err = toml_rtos(r, &jname);
                 if(err < 0)
                 {
-                    printf("Unable to parse joint name %d leg %d idx=%ld: %s.\n",
-                           j, i, idx, (char *)r);
+                    printf("Unable to parse joint name %d leg %d idx=%d address=0x%02x: %s.\n",
+                           j, i, idx, address, (char *)r);
                     continue;
                 }
                 toml_table_t* settings = toml_table_in(currjoint, "settings");
                 if(settings == 0)
                 {
-                    printf("No settings for joint %s(%d) leg %d idx=%ld.\n",
-                            jname, j, i, idx);
+                    printf("No settings for joint %s(%d) leg %d idx=%d address=0x%02x.\n",
+                            jname, j, i, idx, address);
                     free(jname);
                     continue;
                 }
@@ -125,7 +126,7 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                 if(jdesc == 0)
                 {
                     printf("No joint description for joint name %s. "
-                           "Found in joint %d leg %d idx=%ld", jname, j, i, idx);
+                           "Found in joint %d leg %d idx=%d address=0x%02x", jname, j, i, idx, address);
                     free(jname);
                     continue;
                 }
@@ -136,8 +137,8 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                     free(jname);
                     continue;
                 }
-                int64_t joffset;
-                err = toml_rtoi(r, &joffset);
+                int64_t joffset_t;
+                err = toml_rtoi(r, &joffset_t);
                 if(err < 0)
                 {
                     printf("Unable to parse joint offset for joint %s: %s.\n",
@@ -145,6 +146,7 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                     free(jname);
                     continue;
                 }
+                int joffset = joffset_t;
                 for(int s=0; s<toml_table_nkval(settings); s++)
                 {
                     const char* regname = toml_key_in(settings, s);
@@ -152,7 +154,7 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                     if(regdesc == 0)
                     {
                         printf("No calibration_register definition for register named %s. "
-                               "Found in joint %d leg %d idx=%ld", regname, j, i, idx);
+                               "Found in joint %d leg %d idx=%d address=0x%02x", regname, j, i, idx, address);
                         continue;
                     }
                     r = toml_raw_in(regdesc, "address");
@@ -161,14 +163,15 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                         printf("Register %s has no address.\n", regname);
                         continue;
                     }
-                    int64_t regaddr;
-                    err = toml_rtoi(r, &regaddr);
+                    int64_t regaddr_t;
+                    err = toml_rtoi(r, &regaddr_t);
                     if(err < 0)
                     {
                         printf("Unable to parse register %s address: %s.\n",
                                regname, (char*)r);
                         continue;
                     }
+                    int regaddr = regaddr_t;
                     r = toml_raw_in(regdesc, "scale");
                     if(r == 0)
                     {
@@ -190,16 +193,16 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                         err = modbus_read_registers(ctx, fulladdr, 1, &currentval);
                         if(err < 0)
                         {
-                            printf("Failed to read register %s(0x%02x) joint %s(%d) leg %d idx=%ld: %s\n",
-                                    regname, fulladdr, jname, j, i, idx, modbus_strerror(errno));
+                            printf("Failed to read register %s(0x%02x) joint %s(%d) leg %d idx=%d address=0x%02x: %s\n",
+                                    regname, fulladdr, jname, j, i, idx, address, modbus_strerror(errno));
                             continue;
                         }
                         r = toml_dtor(currentval / regscale);
                         err = toml_raw_set(settings, regname, r);
                         if(err < 0)
                         {
-                            printf("Failed to save register %s(0x%02x) joint %s(%d) leg %d idx=%ld.\n",
-                                    regname, fulladdr, jname, j, i, idx);
+                            printf("Failed to save register %s(0x%02x) joint %s(%d) leg %d idx=%d address=0x%02x.\n",
+                                    regname, fulladdr, jname, j, i, idx, address);
                         }
                     }
                     else
@@ -209,16 +212,16 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                         err = toml_rtod(r, &regval);
                         if(err < 0)
                         {
-                            printf("Unable to parse value for register %s, joint %s(%d), leg %d idx=%ld: %s.\n",
-                                    regname, jname, j, i, idx, (char*)r);
+                            printf("Unable to parse value for register %s, joint %s(%d), leg %d idx=%d address=0x%02x: %s.\n",
+                                    regname, jname, j, i, idx, address, (char*)r);
                             continue;
                         }
                         int16_t scaledval = regval * regscale;
                         err = modbus_write_registers(ctx, fulladdr, 1, (uint16_t*)&scaledval);
                         if(err < 0)
                         {
-                            printf("Failed to write register %s(0x%02x) joint %s(%d) leg %d idx=%ld: %s\n",
-                                    regname, fulladdr, jname, j, i, idx, modbus_strerror(errno));
+                            printf("Failed to write register %s(0x%02x) joint %s(%d) leg %d idx=%d address=0x%02x: %s\n",
+                                    regname, fulladdr, jname, j, i, idx, address, modbus_strerror(errno));
                             continue;
                         }
                     }
