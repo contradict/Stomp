@@ -530,7 +530,7 @@ void servo_init(modbus_t *mctx, void *sctx)
     sc->input.input_search = false;
     sc->input.input_fields = servo_param_names;
     sc->input.field_count = NUM_SERVO_PARAMS;
-    int n;
+    //int n;
     int err;
     uint32_t sto_sec, sto_usec;
     modbus_get_response_timeout(mctx, &sto_sec, &sto_usec);
@@ -540,7 +540,6 @@ void servo_init(modbus_t *mctx, void *sctx)
         sc->error[j].iserror = false;
         sc->error[j].error[0] = 0;
         sc->isinit[j] = true;
-        n = 0;
         err = modbus_read_registers(
                 mctx, joint[j]+HProportionalGain, 13, sc->params[j]);
         showerror(&sc->error[j], "Initial Gain Read failed", err, NULL);
@@ -1041,17 +1040,17 @@ void save_init(modbus_t *mctx, void *sctx)
 void save_display(modbus_t *mctx, void *sctx)
 {
     struct SaveContext *sc = (struct SaveContext *)sctx;
-    int err;
+    //int err;
     uint8_t save;
     uint16_t address;
 
-    err = modbus_read_bits(mctx, CSaveConstants, 1, &save);
+    modbus_read_bits(mctx, CSaveConstants, 1, &save);
     move(4, 2);
     clrtoeol();
     printw("Saved: %s", save ? "t":"f");
     input_display(4, 12, &sc->input);
 
-    err = modbus_read_registers(mctx, HMODBUSAddress, 1, &address);
+    modbus_read_registers(mctx, HMODBUSAddress, 1, &address);
     move(5, 2);
     clrtoeol();
     printw("Address: 0x%02x", address);
@@ -1064,7 +1063,7 @@ void save_handle_key(modbus_t *mctx, void *sctx, int ch)
 {
     struct SaveContext *sc = (struct SaveContext *)sctx;
     float input_value;
-    int err;
+    //int err;
     enum InputAction input;
     input = input_handle_key(&sc->input, ch, &input_value);
     uint8_t saveval;
@@ -1093,10 +1092,10 @@ void save_handle_key(modbus_t *mctx, void *sctx, int ch)
             break;
         case 'V':
             saveval = 0x01;
-            err = modbus_write_bits(mctx, CSaveConstants, 1, &saveval);
+            modbus_write_bits(mctx, CSaveConstants, 1, &saveval);
             break;
         case 'A':
-            err = modbus_write_registers(mctx, HMODBUSAddress, 1, &(sc->newaddress));
+            modbus_write_registers(mctx, HMODBUSAddress, 1, &(sc->newaddress));
             modbus_set_slave(mctx, sc->newaddress);
             break;
     }
