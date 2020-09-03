@@ -1,5 +1,5 @@
 
-CFLAGS=-g3 -I ../../LegBoard/Firmware/inc/export -I ../Common -I /usr/local/include/modbus/
+CFLAGS=-Wextra -Wall -g3 -I ../../LegBoard/Firmware/inc/export -I ../Common -I /usr/local/include/modbus/
 LDFLAGS=-lm
 
 MODBUS_CFLAGS=$(shell pkg-config --cflags libmodbus)
