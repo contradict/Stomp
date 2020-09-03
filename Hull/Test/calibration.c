@@ -73,7 +73,7 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
             continue;
         }
         int idx = idx_t;
-        if(idx>=startleg && idx<=endleg)
+        if(idx>=startleg && idx<endleg)
         {
             r = toml_raw_in(currleg, "address");
             if(r == 0)
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if(leg>0 && leg<6)
+    if(leg>=0 && leg<6)
     {
         startleg=leg;
         endleg=leg + 1;
