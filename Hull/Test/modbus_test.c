@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     modbus_flush(ctx);
 
     uint16_t value;
-    uint8_t bits_value;
+    //uint8_t bits_value;
     for(int i=0;i<8;i++)
     {
         modbus_read_registers(ctx, 0x55, 1, &value);
