@@ -228,6 +228,16 @@ void save_values(modbus_t* ctx, int startleg, int endleg, toml_table_t* config, 
                 }
                 free(jname);
             }
+            if(!save)
+            {
+                uint8_t saveval = 0x01;
+                err = modbus_write_bits(ctx, CSaveConstants, 1, &saveval);
+                if(err < 0)
+                {
+                    printf("Failed to save to FLASH leg %d idx=%d address=0x%02x: %s\n",
+                            i, idx, address, modbus_strerror(errno));
+                }
+            }
         }
     }
 }
@@ -237,7 +247,7 @@ int main(int argc, char **argv)
     char *devname = "/dev/ttyS4";
     uint32_t baud = 1000000;
     int addr = 0x55;
-    uint32_t response_timeout = 10000;
+    uint32_t response_timeout = 500000;
     uint32_t byte_timeout = 50;
     char *configfile="calibration.toml";
 
