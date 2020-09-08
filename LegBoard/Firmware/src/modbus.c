@@ -755,26 +755,28 @@ void MODBUS_Thread(const void *args)
 
         if(st->responseLength > 0)
         {
-            osDelay(1);
             CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
             SET_BIT(modbus_uart.Instance->CR1, USART_CR1_TE);
-            err = HAL_UART_Transmit_DMA(&modbus_uart, st->txBuffer, st->responseLength);
-            if(err != HAL_OK)
-                while(1);
+            while(true)
+            {
+                err = HAL_UART_Transmit_DMA(&modbus_uart, st->txBuffer, st->responseLength);
+                if(err == HAL_OK)
+                    break;
+                HAL_UART_Abort(&modbus_uart);
+            }
         }
-        else
+        else if(modbus_uart.RxState == HAL_UART_STATE_READY)
         {
             SET_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
+            SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
+            LL_USART_EnableIT_RTO(modbus_uart.Instance);
             while(true)
             {
                 err = HAL_UART_Receive_DMA(&modbus_uart, st->rxBuffer, MAXPACKET);
-                if(err != HAL_OK)
-                    osDelay(1);
-                else
+                if(err == HAL_OK)
                     break;
+                HAL_UART_Abort(&modbus_uart);
             }
-            SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
-            LL_USART_EnableIT_RTO(modbus_uart.Instance);
             LL_USART_EnableRxTimeout(modbus_uart.Instance);
         }
     }
