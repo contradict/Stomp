@@ -1,10 +1,12 @@
 file Firmware.elf
 
-target remote | $OPENOCD/bin/openocd -f openocd.cfg
+define connect
+    target remote | $OPENOCD/bin/openocd -f openocd.cfg
 
-# Info : stm32f7x.cpu: hardware has 8 breakpoints, 4 watchpoints
-set remote hardware-breakpoint-limit 8
-set remote hardware-watchpoint-limit 4
+    # Info : stm32f7x.cpu: hardware has 8 breakpoints, 4 watchpoints
+    set remote hardware-breakpoint-limit 8
+    set remote hardware-watchpoint-limit 4
+end
 
 define reset
   monitor reset halt
@@ -18,6 +20,7 @@ define reload
   reset
 end
 
+connect
 # reload
 # break main
 # continue
