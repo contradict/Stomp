@@ -2237,8 +2237,7 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
            Set the UART state ready to be able to start again the process,
            Disable Rx Interrupts, and disable Rx DMA request, if ongoing */
         UART_EndRxTransfer(huart);
-
-        if(HAL_IS_BIT_SET(huart->Instance->CR2, USART_CR2_RTOEN))
+        if(((cr1its & USART_CR1_RTOIE) != 0U))
         {
           CLEAR_BIT(huart->Instance->CR2, USART_CR2_RTOEN);
           CLEAR_BIT(huart->Instance->CR1, USART_CR1_RTOIE);
