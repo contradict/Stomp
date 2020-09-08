@@ -753,8 +753,8 @@ void MODBUS_Thread(const void *args)
 
         if(st->responseLength > 0)
         {
-            CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
             SET_BIT(modbus_uart.Instance->CR1, USART_CR1_TE);
+            CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
             while(true)
             {
                 err = HAL_UART_Transmit_DMA(&modbus_uart, st->txBuffer, st->responseLength);
@@ -765,6 +765,7 @@ void MODBUS_Thread(const void *args)
         }
         else if(modbus_uart.RxState == HAL_UART_STATE_READY)
         {
+            CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_TE);
             SET_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
             SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
             LL_USART_EnableIT_RTO(modbus_uart.Instance);
