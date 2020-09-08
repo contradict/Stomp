@@ -1,7 +1,11 @@
 import struct
 import time
+import random
+from binascii import hexlify
 
 import crcmod
+
+import serial
 
 # Known registers are named, addresss that return a value are present but
 # commented out. Other addresses time out.
@@ -206,7 +210,7 @@ def transfer(port, register, data=0x1111, timeout=0.2):
     while value is None:
         if time.time() - now > timeout:
             raise TimeoutException()
-        data += port.read(len(data)-RESPONSE_LEN)
+        data += port.read(len(data) - RESPONSE_LEN)
         value, data = parse_response(data)
     return value
 
@@ -292,3 +296,22 @@ def interact(enfport, unknown="ignore"):
                 continue
             x = transfer(enfport, r)
             print("%3d %5d %s" % (r, x, n))
+
+
+def corrupttest(portname):
+    with serial.Serial(portname, 115200, timeout=0.01) as port:
+        while True:
+            ncorrupt = random.randint(0, 5)
+            for _ in ncorrupt:
+                cmd = create_command(0x91, 0x00a3)
+                corrupt_idx = random.choice([0, 1, 5, 6, 7])
+                corrupt_value = random.choice(
+                    [x for x in range(255) if x not in [0x24, 0x43, 0x2b, 0x23]])
+                cmd = cmd[:corrupt_idx] + bytes([corrupt_value]) + cmd[corrupt_idx + 1:]
+                if random.choice([True, False]):
+                    crc = crcfun(cmd)
+                    cmd = cmd[:-2] + struct.pack('H', crc)
+                port.write(cmd)
+                print(hexlify(cmd), hexlify(port.read(6)))
+            for _ in range(3):
+                transfer(0x95, 0x2222)
