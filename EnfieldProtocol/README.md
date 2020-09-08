@@ -13,6 +13,20 @@ another serial port on a second laptop and `twocolumn.py` was used to monitor
 the data flow while interacting with the tool. Once the protocol was clear,
 `enfield.py` was written to send and receive messages.
 
+## Wiring
+
+In order to use this protocol, we modified our servos to have the following
+connections. These colors are the colors in the cables we received from Enfield.
+
+Pin | Color | Function
+----------------------
+ 1  | BRN   | 24V
+ 2  | WHT   | Feedback Voltage
+ 3  | BLU   | GND
+ 4  | BLK   | TXD (data in to Enfield)
+ 5  | GRY   | RXD (data out of Enfield)
+
+
 ## The Protocol
 
 Packets sent in both directions are fixed size and checksummed. All messages are

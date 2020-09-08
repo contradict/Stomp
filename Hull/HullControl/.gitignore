@@ -4,3 +4,9 @@ inc/lcm
 .*.sw?
 /leg_control
 /sbus_radio
+/java
+stomp.jar
+/telemetry
+/test_gain_set
+/fake_sbus_radio
+/LegModes.pdf

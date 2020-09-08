@@ -1,0 +1,6 @@
+package stomp;
+
+struct adc_output {
+    float tank_psi;
+    float rail_psi;
+}
