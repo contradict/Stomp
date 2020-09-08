@@ -20,6 +20,13 @@ define reload
   reset
 end
 
+define setaddress
+  tbreak prvIdleTask
+  continue
+  p modbus_parameters.address = $arg0
+  continue
+end
+
 connect
 # reload
 # break main
