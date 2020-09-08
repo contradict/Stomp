@@ -577,9 +577,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_COILS:
             if(pdu_length != 5)
             {
-                // We can't figure out what the address should have been so it
-                // must be wrong.
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -591,7 +589,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_DISCRETE_INPUTS:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -603,7 +601,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_HOLDING_REGISTERS:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -615,7 +613,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_INPUT_REGISTERS:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -627,7 +625,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case WRITE_SINGLE_COIL:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -639,7 +637,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case WRITE_SINGLE_REGISTER:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -653,7 +651,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case DIAGNOSTIC:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_FUNCTION_CODE, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -665,7 +663,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case WRITE_MULTIPLE_COILS:
             if(pdu_length < 6)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -678,7 +676,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case WRITE_MULTIPLE_REGISTERS:
             if(pdu_length < 6)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
