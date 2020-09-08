@@ -2146,21 +2146,24 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
         if (huart->hdmarx != NULL)
         {
           /* Abort DMA RX */
-          if (HAL_DMA_Abort_IT(huart->hdmarx) != HAL_OK)
+          if (HAL_DMA_Stop_IT(huart->hdmarx) != HAL_OK)
           {
-            /* Call Directly huart->hdmarx->XferAbortCallback function in case of error */
-            huart->hdmarx->XferAbortCallback(huart->hdmarx);
+            /* Call Directly huart->hdmarx->XferErrorCallback function in case of error */
+            huart->hdmarx->XferErrorCallback(huart->hdmarx);
           }
         }
       }
+      else
+      {
 #if (USE_HAL_UART_REGISTER_CALLBACKS == 1)
-      /*Call registered Rx complete callback*/
-      huart->RxCpltCallback(huart);
+        /*Call registered Rx complete callback*/
+        huart->RxCpltCallback(huart);
 #else
-      /*Call legacy weak Rx complete callback*/
-      HAL_UART_RxCpltCallback(huart);
+        /*Call legacy weak Rx complete callback*/
+        HAL_UART_RxCpltCallback(huart);
 #endif /* USE_HAL_UART_REGISTER_CALLBACKS */
-      huart->RxState = HAL_UART_STATE_READY;
+        huart->RxState = HAL_UART_STATE_READY;
+      }
     }
   }
 
