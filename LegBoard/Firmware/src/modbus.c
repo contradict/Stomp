@@ -704,7 +704,6 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
 void MODBUS_Thread(const void *args)
 {
     int err;
-    bool matched;
     struct ModbusThreadState *st = (struct ModbusThreadState *)args;
     // start listening
     HAL_UART_Receive_DMA(&modbus_uart, st->rxBuffer, MAXPACKET);
@@ -733,18 +732,19 @@ void MODBUS_Thread(const void *args)
         else if(st->evt & SIGNAL_RXCPLT)
         {
             st->bus_message_counter += 1;
-            matched = (st->rxBuffer[0] == modbus_parameters.address &&
-                       st->bytes_received > 4);
-            if(matched)
+            if(st->rxBuffer[0] == modbus_parameters.address &&
+               st->bytes_received > 4)
             {
                 st->server_message_count += 1;
                 if(MODBUS_crc(st->rxBuffer, st->bytes_received) == 0)
                 {
                     st->responseLength = MODBUS_Process(st->rxBuffer + 1, st->bytes_received - 3, st->txBuffer, MAXPACKET);
+                    if(st->responseLength <= 0) st->server_no_response_count += 1;
                 }
                 else
                 {
                     st->bus_communication_error_count += 1;
+                    st->server_no_response_count += 1;
                 }
             }
             else
@@ -764,7 +764,6 @@ void MODBUS_Thread(const void *args)
         }
         else
         {
-            if(matched) st->server_no_response_count += 1;
             SET_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
             while(true)
             {
