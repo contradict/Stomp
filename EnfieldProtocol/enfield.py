@@ -5,8 +5,6 @@ from binascii import hexlify
 
 import crcmod
 
-import serial
-
 # Known registers are named, addresss that return a value are present but
 # commented out. Other addresses time out.
 READ_REGISTERS = {
@@ -245,7 +243,7 @@ def monitor(cmdport, respport, ignore=[]):
         if register in ignore:
             continue
         print("%15d %2x %4x %4x %15d" % (
-              int(t0*1000), register, wvalue, value, int(1000*(t1-t0))))
+              int(t0 * 1000), register, wvalue, value, int(1000 * (t1 - t0))))
 
 
 def parseint(w):
@@ -298,20 +296,31 @@ def interact(enfport, unknown="ignore"):
             print("%3d %5d %s" % (r, x, n))
 
 
-def corrupttest(portname):
-    with serial.Serial(portname, 115200, timeout=0.01) as port:
-        while True:
-            ncorrupt = random.randint(0, 5)
-            for _ in ncorrupt:
-                cmd = create_command(0x91, 0x00a3)
-                corrupt_idx = random.choice([0, 1, 5, 6, 7])
-                corrupt_value = random.choice(
-                    [x for x in range(255) if x not in [0x24, 0x43, 0x2b, 0x23]])
-                cmd = cmd[:corrupt_idx] + bytes([corrupt_value]) + cmd[corrupt_idx + 1:]
-                if random.choice([True, False]):
-                    crc = crcfun(cmd)
-                    cmd = cmd[:-2] + struct.pack('H', crc)
-                port.write(cmd)
-                print(hexlify(cmd), hexlify(port.read(6)))
-            for _ in range(3):
-                transfer(0x95, 0x2222)
+def corrupttest(port):
+    sequence = []
+    ping = create_command(0x91, 0x00a3)
+    while True:
+        ncorrupt = random.randint(1, 5)
+        for _ in range(ncorrupt):
+            cmd = create_command(0x91, 0x00a3)
+            corrupt_idx = random.choice([0, 1, 5, 6, 7])
+            corrupt_value = random.choice(
+                [x for x in range(255) if x not in [0x24, 0x43, 0x2b, 0x23]])
+            cmd = cmd[:corrupt_idx] + bytes([corrupt_value]) + cmd[corrupt_idx + 1:]
+            if random.choice([True, False]):
+                crc = crcfun(cmd)
+                cmd = cmd[:-2] + struct.pack('H', crc)
+            sequence.append(cmd)
+            port.write(cmd)
+            print(hexlify(cmd), hexlify(port.read(6)))
+        for _ in range(5):
+            port.write(ping)
+            rsp = port.read(6)
+            if len(rsp) == 6:
+                print("ping success")
+                break
+            else:
+                print("ping fail")
+        else:
+            break
+    return sequence
