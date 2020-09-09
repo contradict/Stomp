@@ -184,7 +184,7 @@ void TargetAcquisitionController::updateBestTarget()
 
     String possibleTargetsString = "";
 
-    for (uint32_t targetIndex = 0; targetIndex < 8; targetIndex++)
+    for (uint32_t targetIndex = 0; targetIndex < k_maxPossibleTargets; targetIndex++)
     {
         if (targetIndex < m_possibleTargetsCount)
         {
@@ -200,7 +200,7 @@ void TargetAcquisitionController::updateBestTarget()
         }        
     }
 
-    Telem.LogMessage(String("target acquisition: ") + 
+    Telem.LogMessage(String("target acquisition, ") + 
         String(m_lastUpdateTime) + String(", ") + 
         String(validTarget) + String(", ") +
         minDetectionsString +
@@ -211,7 +211,7 @@ void TargetAcquisitionController::updateBestTarget()
 
 void TargetAcquisitionController::resetTargets()
 {    
-    for (uint8_t targetIndex = 1; targetIndex < LEDDAR_SEGMENTS; targetIndex++) 
+    for (uint8_t targetIndex = 0; targetIndex < k_maxPossibleTargets; targetIndex++) 
     {
         m_possibleTargets[targetIndex].Reset();
     }
@@ -262,7 +262,7 @@ void TargetAcquisitionController::segmentTargets()
             int16_t size = m_possibleTargets[targetIndex].GetSize();
 
             if (m_possibleTargets[targetIndex].Type == Target::EBeingConstructed && 
-                size > m_params.objectSizeMin && size < m_params.objectSizeMax) 
+                size > m_params.objectSizeMin && size < m_params.objectSizeMax)
             {
                 m_possibleTargets[targetIndex].EndSegment(segmentIndex, &(*m_minDetections)[segmentIndex], m_lastUpdateTime);
                 targetIndex++;
