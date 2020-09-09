@@ -171,7 +171,7 @@ void TargetAcquisitionController::updateBestTarget()
 
     //  BB MJS: Debug Print Info for analysis.  Remove
     
-    bool validTarget = (m_pBestTarget == NULL);
+    bool validTarget = (m_pBestTarget != NULL);
 
     String minDetectionsString = "";
 

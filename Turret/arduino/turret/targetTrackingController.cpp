@@ -178,7 +178,7 @@ bool TargetTrackingController::WillHitTrackedTarget(int32_t p_xTolerance, int32_
 
     bool willHit = projectedX > 0 && (projectedX / 16) < p_xTolerance && abs(projectedY / 16) < p_yTolerance;
 
-    Telem.LogMessage(String("will hit: ") + 
+    Telem.LogMessage(String("will hit, ") + 
         String(m_lastUpdateTime) + String(", ") + 
         String(willHit) + String(", ") + 
         String(swingDt) + String(", ") +

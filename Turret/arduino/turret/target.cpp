@@ -68,7 +68,7 @@ void Target::EndSegment(int32_t p_endSegment, Detection* p_detection, uint32_t p
 //  Return size in mm
 int16_t Target::GetSize() 
 {
-    //  BB MJS: convert to fixed point
+    //  BB MJS: convert this code to use fixed point
     float size = GetDistance() * ((RightEdge - LeftEdge) * 0.108f);
     return (int16_t) size;
 }
