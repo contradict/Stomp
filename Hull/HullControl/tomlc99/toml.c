@@ -1457,6 +1457,195 @@ toml_table_t* toml_parse_file(FILE* fp,
 	return ret;
 }
 
+/* Serialization */
+
+typedef struct toml_serialization_node toml_serialization_node_t;
+struct toml_serialization_node {
+    const char*   key;
+    toml_table_t* tab;
+};
+
+typedef struct toml_serialzation_context toml_serialzation_context_t;
+struct toml_serialzation_context {
+    FILE *fp;
+    toml_serialization_node_t *stack;
+    int stacktop;
+    int stackmax;
+};
+
+static int print_table_title(toml_serialzation_context_t *ctx, const char* arrname)
+{
+    int i;
+    if(fprintf(ctx->fp, "%s", arrname ? "[[" : "[") < 0)
+        return TOML_SAVE_IOERROR;
+    for (i = 1; i < ctx->stacktop; i++) {
+	if(fprintf(ctx->fp, "%s", ctx->stack[i].key) < 0)
+            return TOML_SAVE_IOERROR;
+	if (i + 1 < ctx->stacktop)
+        {
+	    if(fprintf(ctx->fp, ".") < 0)
+                return TOML_SAVE_IOERROR;
+        }
+    }
+    if( fprintf(ctx->fp, "%s\n", arrname ? "]]" : "]") < 0)
+        return TOML_SAVE_IOERROR;
+    else
+        return 0;
+}
+
+static int print_array_of_tables(toml_serialzation_context_t *ctx, toml_array_t* arr, const char* key);
+static int print_array(toml_serialzation_context_t *ctx, toml_array_t* arr);
+
+static int print_table(toml_serialzation_context_t *ctx, toml_table_t* curtab)
+{
+    int i;
+    int err;
+    const char* key;
+    const char* raw;
+    toml_array_t* arr;
+    toml_table_t* tab;
+
+
+    for (i = 0; 0 != (key = toml_key_in(curtab, i)); i++) {
+	if (0 != (raw = toml_raw_in(curtab, key))) {
+	    if(fprintf(ctx->fp, "%s = %s\n", key, raw) < 0)
+                return TOML_SAVE_IOERROR;
+	} else if (0 != (arr = toml_array_in(curtab, key))) {
+	    if (toml_array_kind(arr) == 't') {
+                if(ctx->stacktop<ctx->stackmax) {
+                    ctx->stack[ctx->stacktop].key = key;
+                    ctx->stack[ctx->stacktop].tab = curtab;
+                    ctx->stacktop++;
+                    err = print_array_of_tables(ctx, arr, key);
+                    ctx->stacktop--;
+                    if(err<0)
+                        return err;
+                } else
+                    return TOML_SAVE_NESTING_DEPTH_EXCEEDED;
+	    }
+	    else {
+		if(fprintf(ctx->fp, "%s = [\n", key))
+                    return TOML_SAVE_IOERROR;
+		err = print_array(ctx, arr);
+                if(err<0)
+                    return err;
+		if(fprintf(ctx->fp, "    ]\n"))
+                    return TOML_SAVE_IOERROR;
+	    }
+	} else if (0 != (tab = toml_table_in(curtab, key))) {
+            if(ctx->stacktop < ctx->stackmax)
+            {
+                ctx->stack[ctx->stacktop].key = key;
+                ctx->stack[ctx->stacktop].tab = tab;
+                ctx->stacktop++;
+                err = print_table_title(ctx, 0);
+                if(err<0)
+                {
+                    ctx->stacktop--;
+                    return err;
+                }
+                err = print_table(ctx, tab);
+                ctx->stacktop--;
+                if(err<0)
+                    return err;
+            } else {
+                return TOML_SAVE_NESTING_DEPTH_EXCEEDED;
+            }
+	} else {
+	    abort();
+	}
+    }
+    return 0;
+}
+
+static int print_array_of_tables(toml_serialzation_context_t *ctx, toml_array_t* arr, const char* key)
+{
+    int i;
+    int err;
+    toml_table_t* tab;
+    err = fprintf(ctx->fp, "\n");
+    if(err < 0)
+        return err;
+    for (i = 0; 0 != (tab = toml_table_at(arr, i)); i++) {
+	err = print_table_title(ctx, key);
+        if(err<0)
+            return err;
+	err = print_table(ctx, tab);
+        if(err<0)
+            return err;
+	if(fprintf(ctx->fp, "\n") < 0)
+            return TOML_SAVE_IOERROR;
+    }
+    return 0;
+}
+
+static int print_array(toml_serialzation_context_t *ctx, toml_array_t* curarr)
+{
+    toml_array_t* arr;
+    const char* raw;
+    toml_table_t* tab;
+    int i;
+    int err;
+
+    switch (toml_array_kind(curarr)) {
+
+    case 'v':
+	for (i = 0; 0 != (raw = toml_raw_at(curarr, i)); i++) {
+	    if(fprintf(ctx->fp, "  %d: %s,\n", i, raw) < 0)
+                return TOML_SAVE_IOERROR;
+	}
+	break;
+
+    case 'a':
+	for (i = 0; 0 != (arr = toml_array_at(curarr, i)); i++) {
+	    if(fprintf(ctx->fp, "  %d: \n", i))
+                return TOML_SAVE_IOERROR;
+	    err = print_array(ctx, arr);
+            if(err < 0)
+                return err;
+	}
+	break;
+
+    case 't':
+	for (i = 0; 0 != (tab = toml_table_at(curarr, i)); i++) {
+	    err = print_table(ctx, tab);
+            if(err < 0)
+                return err;
+	}
+	if(fprintf(ctx->fp, "\n"))
+            return TOML_SAVE_IOERROR;
+	break;
+
+    case '\0':
+	break;
+
+    default:
+	abort();
+    }
+    return 0;
+}
+
+int toml_save_file(toml_table_t* tab, FILE* fp)
+{
+    int err;
+
+    toml_serialzation_context_t ctx;
+    ctx.stackmax = TOML_SAVE_MAX_NESTING_DEPTH;
+    ctx.stacktop = 0;
+    ctx.stack = MALLOC(TOML_SAVE_MAX_NESTING_DEPTH * sizeof(toml_serialization_node_t));
+    ctx.fp = fp;
+
+    ctx.stack[ctx.stacktop].tab = tab;
+    ctx.stack[ctx.stacktop].key = "";
+    ctx.stacktop++;
+    err = print_table(&ctx, tab);
+    ctx.stacktop--;
+    if(ctx.stacktop != 0)
+        abort();
+    xfree(ctx.stack);
+    return err;
+}
+
 
 static void xfree_kval(toml_keyval_t* p)
 {
@@ -1749,6 +1938,40 @@ toml_raw_t toml_raw_in(const toml_table_t* tab, const char* key)
 			return tab->kval[i]->val;
 	}
 	return 0;
+}
+
+int toml_raw_set(toml_table_t* tab, const char* key, toml_raw_t value)
+{
+    int i;
+    for(i = 0; i<tab->nkval; i++) {
+        if(0 == strcmp(key, tab->kval[i]->key)){
+            xfree(tab->kval[i]->val);
+            tab->kval[i]->val = value;
+            return 0;
+        }
+    }
+	/* make a new entry */
+	int n = tab->nkval;
+	toml_keyval_t** base;
+	base = (toml_keyval_t**) REALLOC(tab->kval, (n+1) * sizeof(*base));
+    if(base == 0)
+    {
+        return -1;
+    }
+
+	tab->kval = base;
+
+	base[n] = (toml_keyval_t*) CALLOC(1, sizeof(*base[n]));
+    if(base[n] == 0)
+    {
+        return -1;
+    }
+	toml_keyval_t* dest = tab->kval[tab->nkval++];
+
+	/* save the key in the new value struct */
+	dest->key = key;
+    dest->val = value;
+    return 0;
 }
 
 toml_array_t* toml_array_in(const toml_table_t* tab, const char* key)
@@ -2091,7 +2314,15 @@ int toml_rtod(toml_raw_t src, double* ret_)
 	return toml_rtod_ex(src, ret_, buf, sizeof(buf));
 }
 
-
+toml_raw_t toml_dtor(double d)
+{
+    char strt[100];
+    snprintf(strt, 100, "%f", d);
+    int n = strlen(strt);
+    toml_raw_t strout = MALLOC(n + 1);
+    memcpy((void *)strout, strt, n + 1);
+    return strout;
+}
 
 
 int toml_rtos(toml_raw_t src, char** ret)

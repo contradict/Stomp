@@ -10,9 +10,7 @@ halfwidth=0.010
 [robot.legs]
 
 count=6
-gain_ramp_time=2.0
-gain_ramp_frequency=5
-position_ramp_time=2.0
+position_ramp_time=1.0
 
 [robot.legs.joint_gain.Curl]
 ProportionalGain=12
@@ -96,7 +94,7 @@ points=[
 
 length=0.014
 
-[[robot.gait]]
+[[robot.gaits]]
 name="Tripod"
 step_name="Trapezoid"
 step_cycles=1.0

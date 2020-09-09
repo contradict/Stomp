@@ -36,6 +36,9 @@ TOMLC99_STATICLIB=tomlc99/libtoml.a
 SCLOG4C_CFLAGS=-I sclog4c/include
 SCLOG4C_STATICLIB=sclog4c/src/libsclog4c.a
 
+NCURSES_CFLAGS=$(shell pkg-config --cflags ncurses)
+NCURSES_LDFLAGS=$(shell pkg-config --libs ncurses)
+
 CFLAGS=-g3 -std=gnu11 -I inc -Wall $(LCM_CFLAGS) $(SCLOG4C_CFLAGS)
 LDFLAGS=-lm $(LCM_LDFLAGS) $(SCLOG4C_STATICLIB)
 
@@ -44,6 +47,11 @@ src/leg_control/%.o: CFLAGS+= -I ../Common $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS)
 
 leg_control: CFLAGS+= -I ../Common -I ../../LegBoard/Firmware/inc/export/ $(MODBUS_CFLAGS) $(RINGBUF_CFLAGS) $(TOMLC99_CFLAGS)
 leg_control: LDFLAGS+= $(MODBUS_LDFLAGS)
+test_gain_set: CFLAGS+= -I ../Common -I ../../LegBoard/Firmware/inc/export/ $(MODBUS_CFLAGS)
+test_gain_set: LDFLAGS+= $(MODBUS_LDFLAGS)
+
+fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
+fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
 
 all: libs targets
 
@@ -57,6 +65,7 @@ clean:
 	rm -fr ringbuf/lib ringbuf/include
 	rm -fr inc/lcm src/lcm
 	rm -f leg_control sbus_radio
+	rm -f LegModes.pdf
 	$(MAKE) -C tomlc99 clean
 	$(MAKE) -C ringbuf/src clean
 	$(MAKE) -C sclog4c clean
@@ -67,8 +76,14 @@ leg_control: $(leg_control_objs) ../Common/modbus_device.o $(MESSAGELIB) $(RINGB
 leg_control_cap: leg_control
 	sudo setcap "cap_sys_nice=ep" ./leg_control
 
+test_gain_set: src/leg_control/test/test_gain_set.o src/leg_control/modbus_utils.o ../Common/modbus_device.o
+	gcc $^ -o $@ $(LDFLAGS)
+
 sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
-	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+	gcc src/sbus_radio/main.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+
+fake_sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
+	gcc src/sbus_radio/fake_radio.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 telemetry: $(telemetry_objs) $(MESSAGELIB) 
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
@@ -114,4 +129,10 @@ tomlc99/libtoml.a: tomlc99/toml.c tomlc99/toml.h
 sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
 	$(MAKE) -C sclog4c/src
 
-.PHONY: all clean libs targets
+LegModes.pdf: LegModes.dot
+	dot -Tpdf $< -o $@
+
+lcmspy: stomp.jar
+	CLASSPATH=`pwd`/stomp.jar lcm-spy
+
+.PHONY: all clean libs targets lcmspy

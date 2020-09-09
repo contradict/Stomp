@@ -13,6 +13,20 @@ another serial port on a second laptop and `twocolumn.py` was used to monitor
 the data flow while interacting with the tool. Once the protocol was clear,
 `enfield.py` was written to send and receive messages.
 
+## Wiring
+
+In order to use this protocol, we modified our servos to have the following
+connections. These colors are the colors in the cables we received from Enfield.
+
+Pin | Color | Function
+----------------------
+ 1  | BRN   | 24V
+ 2  | WHT   | Feedback Voltage
+ 3  | BLU   | GND
+ 4  | BLK   | TXD (data in to Enfield)
+ 5  | GRY   | RXD (data out of Enfield)
+
+
 ## The Protocol
 
 Packets sent in both directions are fixed size and checksummed. All messages are
@@ -46,7 +60,6 @@ Name             | `r` |      | Range   | Description
 -----------------|-----|------|---------|-------------
 ProportionalGain | 112 | 0x70 | 0-1000  | interpreted as 0-100.0%
 DerivativeGain   | 113 | 0x71 | 0-1000  | 
-                 |     | 0x72 |         |
 ForceDamping     | 119 | 0x77 | 0-1000  | 
 Offset           | 126 | 0x7E | 0-1000  | 
 CommandInput     | 127 | 0x7F | 0-1     | 
@@ -106,6 +119,5 @@ ValveOffset       | 28  | 0-1000  |
 FeedbackPolarity  | 33  | 0-1     | 0-normal, 1-inverted
 CommandSource     | 89  | 0-1     | 1-analog, 0-slider
 DigitalCommand    | 88  | 0-4095  |
-SetZeroGains      | 224 | 0       | always written 0 after changing command input type, no response
-                  |     |         | also sent on 'reset to factory'
+SetZeroGains      | 224 | 0       | always written 0 after changing command input type, no response also sent on 'reset to factory'
 SaveConfiguration | 225 | 0       | write 0 to save configuration, no response

@@ -8,3 +8,6 @@ inc/lcm
 stomp.jar
 /telemetry
 /test_telem
+/test_gain_set
+/fake_sbus_radio
+/LegModes.pdf

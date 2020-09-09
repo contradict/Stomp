@@ -95,18 +95,20 @@ Again. To use the new dtb overlays.
 
 ## Fetch and build libmodbus
 
-The version in the debian repositories is old and busted.
+The version in the debian repositories is old and busted. The version from the
+official libmodbus site works, but is missing diagnostics. For our branch with a
+minimal diagnostics client, use this:
 
     cd src
-    wget https://libmodbus.org/releases/libmodbus-3.1.6.tar.gz
-    tar -xzf libmodbus-3.1.6.tar.gz
-    cd libmodbus-3.1.6
+    git clone -b diagnostics_client https://github.com/contradict/libmodbus
+    cd libmodbus
+    ./autogen.sh
     ./configure --prefix=/usr/local/
     make
-    sudo make install DESTDIR=/usr/local/stow/libmodbus-3.1.6
-    sudo mv /usr/local/stow/libmodbus-3.1.6/usr/local/* /usr/local/stow/libmodbus-3.1.6
-    sudo rm -r /usr/local/stow/libmodbus-3.1.6/usr
-    sudo stow -d /usr/local/stow libmodbus-3.1.6
+    sudo make install DESTDIR=/usr/local/stow/libmodbus-diag
+    sudo mv /usr/local/stow/libmodbus-diag/usr/local/* /usr/local/stow/libmodbus-diag
+    sudo rm -r /usr/local/stow/libmodbus-diag/usr
+    sudo stow -d /usr/local/stow libmodbus-diag
 
 ## Fetch and build project
 

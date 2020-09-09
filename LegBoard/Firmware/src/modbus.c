@@ -46,6 +46,27 @@ enum ModbusFunctionCode
     READ_FIFO_QUEUE               = 24
 };
 
+enum ModbusDiagnosticSubfunction
+{
+	DiagReturnQueryData                  = 0,
+	DiagRestartCommunications            = 1,
+	DiagReturnDiagnosticRegister         = 2,
+	DiagChangeASCIIInputDelimiter        = 3,
+	DiagForceListenOnlyMode              = 4,
+	// 5-9  RESERVED
+	DiagClearCounters                    = 10,
+	DiagReturnBusMessageCount            = 11,
+	DiagReturnBusCommunicationErrorCount = 12,
+	DiagReturnBusExceptionErrorCount     = 13,
+	DiagReturnServerMessageCount         = 14,
+	DiagReturnServerNoResponseCount      = 15,
+	DiagReturnServerNAKCount             = 16,
+	DiagReturnServerBusyCount            = 17,
+	DiagReturnBusCharacterOverrunCount   = 18,
+	// 19  RESERVED
+	DiagClearOverrunCounter              = 20
+};
+
 struct MODBUS_parameters
 {
     uint8_t address;
@@ -63,6 +84,14 @@ static struct ModbusThreadState {
     size_t bytes_received;
     size_t responseLength;
     enum ModbusSignalEvent evt;
+    uint16_t bus_message_counter;
+    uint16_t bus_communication_error_count;
+    uint16_t bus_exception_count;
+    uint16_t server_message_count;
+    uint16_t server_no_response_count;
+    uint16_t server_nak_count;
+    uint16_t server_busy_count;
+    uint16_t bus_overrun_count;
 } modbus_state;
 
 osMailQDef(enfieldQ, 32, struct EnfieldResponse);
@@ -159,6 +188,7 @@ static size_t MODBUS_ExceptionResponse(enum ModbusFunctionCode function, enum Mo
 {
     if(txLength>5) // space for CRC
     {
+        modbus_state.bus_exception_count += 1;
         txBuffer[0] = modbus_parameters.address;
         txBuffer[1] = 0x80 | function;
         txBuffer[2] = code;
@@ -168,6 +198,82 @@ static size_t MODBUS_ExceptionResponse(enum ModbusFunctionCode function, enum Mo
     {
         return 0;
     }
+}
+
+static size_t MODBUS_Diagnostics(enum ModbusDiagnosticSubfunction subfunc, uint16_t value, uint8_t *txBuffer, size_t txLength)
+{
+    size_t responseLength = 0;
+    uint16_t *rsubfunc = (uint16_t *)&(txBuffer[2]);
+    uint16_t *data = (uint16_t *)&(txBuffer[4]);
+    txBuffer[0] = modbus_parameters.address;
+    txBuffer[1] = DIAGNOSTIC;
+    *rsubfunc = __htons(subfunc);
+    switch(subfunc)
+    {
+        case DiagReturnQueryData:
+            *data = __htons(value);
+            responseLength = 6;
+            break;
+        // case DiagRestartCommunications:
+        //     break;
+        // case DiagReturnDiagnosticRegister:
+        //     break;
+        // case DiagChangeASCIIInputDelimiter:
+        //     break;
+        // case DiagForceListenOnlyMode:
+        //     break;
+        case DiagClearCounters:
+            modbus_state.bus_message_counter = 0;
+            modbus_state.bus_communication_error_count = 0;
+            modbus_state.bus_exception_count = 0;
+            modbus_state.server_message_count = 0;
+            modbus_state.server_no_response_count = 0;
+            modbus_state.server_nak_count = 0;
+            modbus_state.server_busy_count = 0;
+            *data = 0;
+            responseLength = 6;
+            break;
+        case DiagReturnBusMessageCount:
+            *data = __htons(modbus_state.bus_message_counter);
+            responseLength = 6;
+            break;
+        case DiagReturnBusCommunicationErrorCount:
+            *data = __htons(modbus_state.bus_communication_error_count);
+            responseLength = 6;
+            break;
+        case DiagReturnBusExceptionErrorCount:
+            *data = __htons(modbus_state.bus_exception_count);
+            responseLength = 6;
+            break;
+        case DiagReturnServerMessageCount:
+            *data = __htons(modbus_state.server_message_count);
+            responseLength = 6;
+            break;
+        case DiagReturnServerNoResponseCount:
+            *data = __htons(modbus_state.server_no_response_count);
+            responseLength = 6;
+            break;
+        case DiagReturnServerNAKCount:
+            *data = __htons(modbus_state.server_nak_count);
+            responseLength = 6;
+            break;
+        case DiagReturnServerBusyCount:
+            *data = __htons(modbus_state.server_busy_count);
+            responseLength = 6;
+            break;
+        case DiagReturnBusCharacterOverrunCount:
+            *data = __htons(modbus_state.bus_overrun_count);
+            responseLength = 6;
+            break;
+        case DiagClearOverrunCounter:
+            modbus_state.bus_overrun_count = 0;
+            responseLength = 6;
+            break;
+        default:
+            responseLength = MODBUS_ExceptionResponse(DIAGNOSTIC, ILLEGAL_FUNCTION_CODE, txBuffer, txLength);
+            break;
+    }
+    return responseLength;
 }
 
 static size_t MODBUS_ReadCoils(uint16_t start, uint16_t count, uint8_t *txBuffer, size_t txLength)
@@ -463,7 +569,7 @@ static size_t MODBUS_WriteMultipleRegisters(uint16_t start, uint16_t count, uint
 size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t txLength)
 {
     size_t responseLength = 0;
-    uint16_t start, count, address, value;
+    uint16_t start, count, address, value, subfunc;
     uint8_t byte_count;
 
     switch(pdu[0])
@@ -471,9 +577,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_COILS:
             if(pdu_length != 5)
             {
-                // We can't figure out what the address should have been so it
-                // must be wrong.
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -485,7 +589,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_DISCRETE_INPUTS:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -497,7 +601,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_HOLDING_REGISTERS:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -509,7 +613,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case READ_INPUT_REGISTERS:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -521,7 +625,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case WRITE_SINGLE_COIL:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -533,7 +637,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case WRITE_SINGLE_REGISTER:
             if(pdu_length != 5)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -542,10 +646,24 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
                 responseLength = MODBUS_WriteSingleRegister(address, value, txBuffer, txLength);
             }
             break;
+        // case READ_EXCEPTION_STATUS:
+        //     break;
+        case DIAGNOSTIC:
+            if(pdu_length != 5)
+            {
+                responseLength = 0;
+            }
+            else
+            {
+                subfunc = WORD(pdu, 1);
+                value = WORD(pdu, 3);
+                responseLength = MODBUS_Diagnostics(subfunc, value, txBuffer, txLength);
+            }
+            break;
         case WRITE_MULTIPLE_COILS:
             if(pdu_length < 6)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -558,7 +676,7 @@ size_t MODBUS_Process(uint8_t *pdu, size_t pdu_length, uint8_t *txBuffer, size_t
         case WRITE_MULTIPLE_REGISTERS:
             if(pdu_length < 6)
             {
-                responseLength = MODBUS_ExceptionResponse(pdu[0], ILLEGAL_DATA_ADDRESS, txBuffer, txLength);
+                responseLength = 0;
             }
             else
             {
@@ -611,11 +729,21 @@ void MODBUS_Thread(const void *args)
         }
         else if(st->evt & SIGNAL_RXCPLT)
         {
+            st->bus_message_counter += 1;
             if(st->rxBuffer[0] == modbus_parameters.address &&
-                    st->bytes_received > 4 &&
-                    MODBUS_crc(st->rxBuffer, st->bytes_received) == 0)
+               st->bytes_received > 4)
             {
-                st->responseLength = MODBUS_Process(st->rxBuffer + 1, st->bytes_received - 3, st->txBuffer, MAXPACKET);
+                st->server_message_count += 1;
+                if(MODBUS_crc(st->rxBuffer, st->bytes_received) == 0)
+                {
+                    st->responseLength = MODBUS_Process(st->rxBuffer + 1, st->bytes_received - 3, st->txBuffer, MAXPACKET);
+                    if(st->responseLength <= 0) st->server_no_response_count += 1;
+                }
+                else
+                {
+                    st->bus_communication_error_count += 1;
+                    st->server_no_response_count += 1;
+                }
             }
             else
             {
@@ -625,26 +753,29 @@ void MODBUS_Thread(const void *args)
 
         if(st->responseLength > 0)
         {
-            osDelay(1);
-            CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
             SET_BIT(modbus_uart.Instance->CR1, USART_CR1_TE);
-            err = HAL_UART_Transmit_DMA(&modbus_uart, st->txBuffer, st->responseLength);
-            if(err != HAL_OK)
-                while(1);
+            CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
+            while(true)
+            {
+                err = HAL_UART_Transmit_DMA(&modbus_uart, st->txBuffer, st->responseLength);
+                if(err == HAL_OK)
+                    break;
+                HAL_UART_Abort(&modbus_uart);
+            }
         }
-        else
+        else if(modbus_uart.RxState == HAL_UART_STATE_READY)
         {
+            CLEAR_BIT(modbus_uart.Instance->CR1, USART_CR1_TE);
             SET_BIT(modbus_uart.Instance->CR1, USART_CR1_RE);
+            SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
+            LL_USART_EnableIT_RTO(modbus_uart.Instance);
             while(true)
             {
                 err = HAL_UART_Receive_DMA(&modbus_uart, st->rxBuffer, MAXPACKET);
-                if(err != HAL_OK)
-                    osDelay(1);
-                else
+                if(err == HAL_OK)
                     break;
+                HAL_UART_Abort(&modbus_uart);
             }
-            SET_BIT(modbus_uart.Instance->ICR, USART_ISR_RTOF);
-            LL_USART_EnableIT_RTO(modbus_uart.Instance);
             LL_USART_EnableRxTimeout(modbus_uart.Instance);
         }
     }
@@ -666,6 +797,10 @@ void MODBUS_RxCplt(UART_HandleTypeDef *huart)
 void MODBUS_UARTError(UART_HandleTypeDef *huart)
 {
     (void)huart;
+    if(huart->ErrorCode == HAL_UART_ERROR_ORE)
+    {
+        modbus_state.bus_overrun_count += 1;
+    }
     osSignalSet(modbus, SIGNAL_ERROR);
 }
 
@@ -792,12 +927,14 @@ int MODBUS_WriteEnfieldCoil(void *ctx, bool v)
 
 int MODBUS_GetAddress(void *ctx, uint16_t *addr)
 {
+    (void)ctx;
     *addr = modbus_parameters.address;
     return 0;
 }
 
 int MODBUS_SetAddress(void *ctx, uint16_t addr)
 {
+    (void)ctx;
     modbus_parameters.address = addr;
     return 0;
 }
