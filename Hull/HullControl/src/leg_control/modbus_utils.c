@@ -67,27 +67,16 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], cons
 int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], float (*cylinder_pressure)[6])
 {
     int err;
-    uint16_t toe_value[3];
-    //uint16_t cylinder_value[6];
+    uint16_t toe_value[9];
     modbus_set_slave(ctx, address);
-    err = modbus_read_registers(ctx, ToeXPosition, 3, toe_value);
+    err = modbus_read_input_registers(ctx, IFeedbackToePositionX, 9, toe_value);
     if(err != -1)
+    {
         for(int i=0;i<3;i++)
             (*toe_position)[i] = ((int16_t *)toe_value)[i] / 100.0f;
-    (void)cylinder_pressure;
-    /*
-    if(err != -1)
-        err = modbus_read_registers(ctx, CURL_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[4]));
-    if(err != -1)
-        err = modbus_read_registers(ctx, SWING_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[0]));
-    if(err != -1)
-        err = modbus_read_registers(ctx, LIFT_BASE + ICachedBaseEndPressure, 2, &(cylinder_value[2]));
-    if(err != -1)
-        for(int i=0;i<6;i++)
-        {
-            (*cylinder_pressure)[i] = cylinder_value[i] / 100.0f;
-        }
-    */
+        for(int i=3;i<9;i++)
+            (*cylinder_pressure)[i-3] = toe_value[i] / 100.0f;
+    }
     return err == -1 ? -1 : 0;
 }
 
