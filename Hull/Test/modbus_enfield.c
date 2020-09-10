@@ -173,6 +173,18 @@ bool parse_number(char *arg, uint16_t *value)
     return false;
 }
 
+uint16_t parse_count(char *arg)
+{
+    char *countcolon = strrchr(arg, ':');
+    uint16_t count = 1;
+    if(countcolon)
+    {
+        if(sscanf(countcolon+1, "%hd", &count) != 1)
+            count = 1;
+    }
+    return count;
+}
+
 uint16_t parse_register(char *arg)
 {
     uint16_t value;
@@ -245,8 +257,8 @@ int checkjoint(int joint)
 {
     if(joint<0)
     {
-        printf("Must specify joint (-j)\n");
-        exit(1);
+        printf("No joint (-j) specified, using offset 0.\n");
+        return 0;
     }
     return joint_base[joint];
 }
@@ -296,11 +308,11 @@ void write_register(modbus_t *ctx, int joint, int write_register, char typ, uint
     }
 }
 
-void read_register(modbus_t *ctx, int joint, int read_register, char typ)
+void read_register(modbus_t *ctx, int joint, int read_register, char typ, int count)
 {
     uint16_t base;
     int err;
-    uint16_t value;
+    uint16_t value[count];
     uint8_t bit_value;
     switch(typ)
     {
@@ -319,41 +331,44 @@ void read_register(modbus_t *ctx, int joint, int read_register, char typ)
             break;
         case 'H':
             base = checkjoint(joint);
-            err = modbus_read_registers(ctx, base + read_register, 1, &value);
+            err = modbus_read_registers(ctx, base + read_register, count, value);
             if(err == -1)
             {
-                printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+                printf("Unable to read joint %d, register 0x%x:%d: %s\n", joint, read_register, count, modbus_strerror(errno));
             }
             else
             {
-                printf("Joint %d, register 0x%x = 0x%x\n",
-                        joint, read_register, value);
+                printf("Joint %d, register 0x%x:%d = [", joint, read_register, count);
+                for(int i=0;i<count;i++)
+                    printf("0x%x%s",  value[i], i<count-1 ? ", " : "].\n");
             }
             break;
         case 'I':
             base = checkjoint(joint);
-            err = modbus_read_input_registers(ctx, base + read_register, 1, &value);
+            err = modbus_read_input_registers(ctx, base + read_register, count, value);
             if(err == -1)
             {
-                printf("Unable to read joint %d, input register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+                printf("Unable to read joint %d, input register 0x%x:%d: %s\n", joint, read_register, count, modbus_strerror(errno));
             }
             else
             {
-                printf("Joint %d, input register 0x%x = 0x%x\n",
-                        joint, read_register, value);
+                printf("Joint %d, input register 0x%x:%d = [", joint, read_register, count);
+                for(int i=0;i<count;i++)
+                    printf("0x%x%s",  value[i], i<count-1 ? ", " : "].\n");
             }
             break;
         case 'J':
         case 'T':
-            err = modbus_read_registers(ctx, read_register, 1, &value);
+            err = modbus_read_registers(ctx, read_register, count, value);
             if(err == -1)
             {
-                printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+                printf("Unable to read joint %d, register 0x%x:%d: %s\n", joint, read_register, count, modbus_strerror(errno));
             }
             else
             {
-                printf("Joint %d, register 0x%x = 0x%x\n",
-                        joint, read_register, value);
+                printf("Joint %d, register 0x%x:%d = [", joint, read_register, count);
+                for(int i=0;i<count;i++)
+                    printf("0x%x%s",  value[i], i<count-1 ? ", " : "].\n");
             }
             break;
     }
@@ -465,6 +480,7 @@ int main(int argc, char **argv)
     char typ;
     char *wreg_ptr, *saveptr;
     int idx;
+    int count;
 
     modbus_t *ctx = NULL;
 
@@ -508,8 +524,9 @@ int main(int argc, char **argv)
             case 'R':
                 reg = parse_register(optarg);
                 typ = optarg[0];
+                count = parse_count(optarg);
                 ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, addr & 0xff);
-                read_register(ctx, joint, reg, typ);
+                read_register(ctx, joint, reg, typ, count);
                 break;
             case 'W':
                 wreg_ptr = strtok_r(optarg, ":", &saveptr);

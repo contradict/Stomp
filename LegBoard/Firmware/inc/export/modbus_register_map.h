@@ -38,6 +38,18 @@ enum InputRegisterOffset {
     IFirmwareVersionA = 0x3a,
     IFirmwareRevLow = 0x3b,
     IFirmwareRevHigh = 0x3c,
+    IFeedbackToePositionX = 0x80,
+    IFeedbackToePositionY = 0x81,
+    IFeedbackToePositionZ = 0x82,
+    IFeedbackBaseEndPressureCurl = 0x83,
+    IFeedbackRodEndPressureCurl = 0x84,
+    IFeedbackBaseEndPressureSwing = 0x85,
+    IFeedbackRodEndPressureSwing = 0x86,
+    IFeedbackBaseEndPressureLift = 0x87,
+    IFeedbackRodEndPressureLift = 0x88,
+    IFeedbackJointAngleCurl = 0x89,
+    IFeedbackJointAngleSwing = 0x8A,
+    IFeedbackJointAngleLift = 0x8B,
 };
 
 enum HoldingRegisterOffset {
@@ -72,4 +84,3 @@ enum LegCommands {
     JointAngleSwing = 0x44,
     JointAngleLift = 0x45, // Causes write to servos
 };
-
