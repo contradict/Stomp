@@ -1,5 +1,0 @@
-TITLE XBee
-INTERFACE XBEE serial_interface.rb /dev/ttyUSB0 /dev/ttyUSB0 57600 NONE 1 1.0 nil TERMINATED 0x6666 0x6666 true 0 nil false
-    TARGET CHOMP
-    DONT_CONNECT
-    DONT_RECONNECT
