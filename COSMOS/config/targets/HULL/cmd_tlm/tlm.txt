@@ -11,9 +11,9 @@
 
 TELEMETRY HULL GNRL LITTLE_ENDIAN "General"
     APPEND_ID_ITEM PKTID 8 UINT 1 "Packet ID which must be 1"
-    APPEND_ITEM TANK_PRESSURE 8 UINT "Tank Pressure"
+    APPEND_ITEM TANK_PSI 8 UINT "Tank Pressure"
         UNITS "Pounds per Square Inch" "PSI"
-    APPEND_ITEM RAIL_PRESSURE 8 UINT "Rail Pressure"
+    APPEND_ITEM RAIL_PSI 8 UINT "Rail Pressure"
         UNITS "Pounds per Square Inch" "PSI"
     APPEND_ITEM SBUS_FAILSAFE 1 UINT "S.bus Failsafe"
     APPEND_ITEM SBUS_NO_DATA 1 UINT "S.bus No Data"
