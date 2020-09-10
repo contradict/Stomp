@@ -9,11 +9,11 @@
 #  GNRL - General robot health (Packet ID 1)
 #
 
-TELEMETRY HULL SNS LITTLE_ENDIAN "General"
+TELEMETRY HULL GNRL LITTLE_ENDIAN "General"
     APPEND_ID_ITEM PKTID 8 UINT 1 "Packet ID which must be 1"
-    APPEND_ITEM PRESSURE 8 UINT "Tank Pressure"
+    APPEND_ITEM TANK_PRESSURE 8 UINT "Tank Pressure"
         UNITS "Pounds per Square Inch" "PSI"
-    APPEND_ITEM PRESSURE 8 UINT "Rail Pressure"
+    APPEND_ITEM RAIL_PRESSURE 8 UINT "Rail Pressure"
         UNITS "Pounds per Square Inch" "PSI"
     APPEND_ITEM SBUS_FAILSAFE 1 UINT "S.bus Failsafe"
     APPEND_ITEM SBUS_NO_DATA 1 UINT "S.bus No Data"
@@ -28,7 +28,7 @@ TELEMETRY HULL SNS LITTLE_ENDIAN "General"
 #  LEGS - Leg status  (Packet ID 2)
 #
 
-TELEMETRY TURRET SNS LITTLE_ENDIAN "Legs"
+TELEMETRY HULL LEGS LITTLE_ENDIAN "Leg Status"
     APPEND_ID_ITEM PKTID 8 UINT 2 "Packet ID which must be 2"
     APPEND_ARRAY_ITEM CURL_BASE_PSI 8 INT 48 "Curl Base Pressures"
         UNITS "Pounds per Square Inch" "psi"
