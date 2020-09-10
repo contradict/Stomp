@@ -18,22 +18,20 @@ void Target::StartSegment(int32_t p_startSegment, Detection* p_detection)
 {
     Type = EBeingConstructed;
     LeftEdge = p_startSegment;
-    RightEdge = LeftEdge;
+    RightEdge = LeftEdge + 1;
 
     //  Convert distances from cm to mm
     SumDistance = p_detection->Distance * 10;
-
     SumIntensity = p_detection->Amplitude;
     SumAngleIntensity = p_startSegment * p_detection->Amplitude;
 }
 
 void Target::AddSegment(int32_t p_segment, Detection* p_detection)
 {
-    RightEdge = p_segment;
+    RightEdge = p_segment + 1;
     
     //  Convert distances from cm to mm
     SumDistance += p_detection->Distance * 10;
-
     SumIntensity += p_detection->Amplitude;
     SumAngleIntensity += p_segment * p_detection->Amplitude;
 }
@@ -96,16 +94,7 @@ int16_t Target::GetXCoord()
     int32_t angle = GetAngle();
     int32_t distance = GetDistance();
 
-    int16_t xCoord = (int16_t)((distance * (2048L - ((angle * angle) / 4096L))) / 2048L);
-
-    /*
-    float degrees = ((float)angle / 2048.0f) * (180.0f/PI);
-    Telem.LogMessage(String("xCoord = ") + String(xCoord) + 
-        String(" angle = ") + String(degrees) + 
-        String(" distance = ") + String(distance));
-    */
-       
-    return xCoord;
+    return (int16_t)((distance * (2048L - ((angle * angle) / 4096L))) / 2048L);
 }
 
 // y coordinate in mm

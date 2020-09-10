@@ -177,7 +177,6 @@ void TargetAcquisitionController::updateBestTarget()
 
     for (uint8_t detectionIndex = 0; detectionIndex < LEDDAR_SEGMENTS; detectionIndex++) 
     {
-        minDetectionsString += String((int16_t) (*m_minDetections)[detectionIndex].Segment) + String(", ");
         minDetectionsString += String((int16_t) (*m_minDetections)[detectionIndex].Distance) + String(", ");
         minDetectionsString += String((int16_t) (*m_minDetections)[detectionIndex].Amplitude) + String(", ");
     }
@@ -203,9 +202,9 @@ void TargetAcquisitionController::updateBestTarget()
     Telem.LogMessage(String("target acquisition, ") + 
         String(m_lastUpdateTime) + String(", ") + 
         String(validTarget) + String(", ") +
+        String(m_possibleTargetsCount) + String(", ") +
         minDetectionsString +
-        possibleTargetsString + 
-        String(m_possibleTargetsCount));
+        possibleTargetsString);
 
 }
 

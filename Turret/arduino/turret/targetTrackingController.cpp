@@ -372,18 +372,15 @@ void TargetTrackingController::updateTracking()
 
     Telem.LogMessage(String("tracking, ") + 
         String(m_lastUpdateTime) + String(", ") + 
+        String(m_numUpdates) + String(", ") +
         String(measuredX) + String(", ") +
         String(measuredY) + String(", ") +
         String(m_residualX) + String(", ") +
         String(m_residualY) + String(", ") +
         String(m_x) + String(", ") +
         String(m_y) + String(", ") +
-        String(m_vx) + String(", ") +
-        String(m_vy) + String(", ") +
-        String(m_numUpdates) + String(", ") +
-        String(m_params.alpha) + String(", ") +
-        String(m_params.beta));
-
+        String(m_vx) + String(", ") + 
+        String(m_vy) + String(", "));
     /*
     Telem.LogMessage(String("measuredX: ") + String(measuredX) + String(" ") +
                 String("measuredY: ") + String(measuredY) + String(" ") +
