@@ -25,10 +25,10 @@ TELEMETRY HULL GNRL LITTLE_ENDIAN "General"
     APPEND_ITEM PAD7 1 UINT "PAD"
 
 #
-#  LEGS - Leg status  (Packet ID 2)
+#  LEGSTAT - Leg status  (Packet ID 2)
 #
 
-TELEMETRY HULL LEGS LITTLE_ENDIAN "Leg Status"
+TELEMETRY HULL LEGSTAT LITTLE_ENDIAN "Leg Status"
     APPEND_ID_ITEM PKTID 8 UINT 2 "Packet ID which must be 2"
     APPEND_ARRAY_ITEM CURL_BASE_PSI 8 INT 48 "Curl Base Pressures"
         UNITS "Pounds per Square Inch" "psi"
@@ -54,5 +54,6 @@ TELEMETRY HULL LEGS LITTLE_ENDIAN "Leg Status"
         UNITS "Millimeters" "mm"
     APPEND_ARRAY_ITEM TOE_CMD_Z 8 INT 48 "Toe Z Commands"
         UNITS "Millimeters" "mm"
-
+    APPEND_ITEM OBSERVED_PERIOD 8 UINT "Observed Period"
+        UNITS "Milliseconds" "ms"
 

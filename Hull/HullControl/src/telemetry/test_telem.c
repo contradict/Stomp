@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     while (1) {
         logm(SL4C_DEBUG, "Sending COSMOS test packet");
         msg.psi = psi++;
-        telem_publish(TANK_PSI, (char *)&msg, sizeof(msg));
+        telem_publish(LEGSTAT, (char *)&msg, sizeof(msg));
         sleep(sleep_time);
     }
 
