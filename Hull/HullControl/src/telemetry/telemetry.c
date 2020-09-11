@@ -4,6 +4,7 @@
 #include "rfd900x.h"
 
 #include "telemetry.h"
+#include "sclog4c/sclog4c.h"
 
 #define COSMOS_OVERHEAD 3
 #define COSMOS_TERMINATOR_SIZE 2
@@ -22,7 +23,7 @@ void telem_init()
 
 void telem_publish(msg_id id, char* data, size_t size)
 {
-    printf("Received msg_id %d size %lu\n", id, size);
+    logm(SL4C_DEBUG, "Sending msg_id %d size %lu\n", id, size);
     // Construct a Cosmos terminated style packet. We assume/expect
     // that there is a matching Cosmos definition for every message
     // in messages.h

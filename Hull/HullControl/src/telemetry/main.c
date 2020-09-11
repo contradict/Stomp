@@ -91,6 +91,7 @@ static void leg_handler(const lcm_recv_buf_t *rbuf, const char *channel,
 int main(int argc, char **argv)
 {
     sclog4c_level = SL4C_FATAL; //default logging, fatal errors only
+    telem_init();
 
     int opt; //get command line args
     while((opt = getopt(argc, argv, "vt:")) != -1)
