@@ -42,11 +42,11 @@ static void sbus_handler(const lcm_recv_buf_t *rbuf, const char *channel,
 }
 
 int8_t m_to_int(float value){
-    return value/100;
+    return (int8_t) value;
 }
 
 int8_t psi_to_int(float value){
-    return value/55;
+    return (int8_t) value;
 }
 
 static void leg_handler(const lcm_recv_buf_t *rbuf, const char *channel,
@@ -77,6 +77,7 @@ static void leg_handler(const lcm_recv_buf_t *rbuf, const char *channel,
             cosmos_msg.lift_base_psi[leg] = psi_to_int(msg->base_end_pressure[lift]);
             cosmos_msg.lift_rod_psi[leg] = psi_to_int(msg->rod_end_pressure[lift]);
             cosmos_msg.toe_pos_x[leg] = m_to_int(msg->toe_position_measured_X[leg]);
+            logm(SL4C_DEBUG, "Leg: %d, toe_x_pos: %.4f, cosmos: %d", leg, msg->toe_position_measured_X[leg], cosmos_msg.toe_pos_x[leg]);
             cosmos_msg.toe_cmd_x[leg] = m_to_int(msg->toe_position_commanded_X[leg]);
             cosmos_msg.toe_pos_y[leg] = m_to_int(msg->toe_position_measured_Y[leg]);
             cosmos_msg.toe_cmd_y[leg] = m_to_int(msg->toe_position_commanded_Y[leg]);
