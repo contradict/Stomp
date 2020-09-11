@@ -41,6 +41,14 @@ static void sbus_handler(const lcm_recv_buf_t *rbuf, const char *channel,
     }
 }
 
+int8_t m_to_int(float value){
+    return value/100;
+}
+
+int8_t psi_to_int(float value){
+    return value/55;
+}
+
 static void leg_handler(const lcm_recv_buf_t *rbuf, const char *channel,
                        const stomp_telemetry_leg *msg, void *user)
 {
@@ -48,18 +56,36 @@ static void leg_handler(const lcm_recv_buf_t *rbuf, const char *channel,
     static struct timeval last_send_time;
 
     gettimeofday(&now, 0);
-    logm(SL4C_DEBUG, "Received message on channel %s, at %ld.%ld\n", channel, now.tv_sec, now.tv_usec);
-    logm(SL4C_DEBUG, "Data size: %d\n", rbuf->data_size);
-
-    logm(SL4C_DEBUG, "Observed period: %.4f", msg->observed_period);
-
     int millis = time_diff_msec(last_send_time, now);
-    if (millis > leg_period_msec)
-    {
-        logm(SL4C_DEBUG, "New leg LCM msg received. %d msec since last COSMOS msg sent", millis);
-        gettimeofday(&last_send_time, 0);
-    }
+    logm(SL4C_DEBUG, "%d msec since last %s msg received", millis, channel);
 
+    if (millis > leg_period_msec) //prepare and send COSMOS msg
+    {
+        gettimeofday(&last_send_time, 0);
+        struct legs_cosmos cosmos_msg;
+        logm(SL4C_DEBUG, "Sending COSMOS LEGS packet");
+        int leg;
+        for (leg = 0; leg < STOMP_TELEMETRY_LEG_LEGS; leg++)
+        {
+            int curl = leg + STOMP_TELEMETRY_LEG_CURL;
+            int swing = leg + STOMP_TELEMETRY_LEG_SWING;
+            int lift = leg + STOMP_TELEMETRY_LEG_LIFT;
+            cosmos_msg.curl_base_psi[leg] = psi_to_int(msg->base_end_pressure[curl]);
+            cosmos_msg.curl_rod_psi[leg] = psi_to_int(msg->rod_end_pressure[curl]);
+            cosmos_msg.swing_base_psi[leg] = psi_to_int(msg->base_end_pressure[swing]);
+            cosmos_msg.swing_rod_psi[leg] = psi_to_int(msg->rod_end_pressure[swing]);
+            cosmos_msg.lift_base_psi[leg] = psi_to_int(msg->base_end_pressure[lift]);
+            cosmos_msg.lift_rod_psi[leg] = psi_to_int(msg->rod_end_pressure[lift]);
+            cosmos_msg.toe_pos_x[leg] = m_to_int(msg->toe_position_measured_X[leg]);
+            cosmos_msg.toe_cmd_x[leg] = m_to_int(msg->toe_position_commanded_X[leg]);
+            cosmos_msg.toe_pos_y[leg] = m_to_int(msg->toe_position_measured_Y[leg]);
+            cosmos_msg.toe_cmd_y[leg] = m_to_int(msg->toe_position_commanded_Y[leg]);
+            cosmos_msg.toe_pos_z[leg] = m_to_int(msg->toe_position_measured_Z[leg]);
+            cosmos_msg.toe_cmd_z[leg] = m_to_int(msg->toe_position_commanded_Z[leg]);
+        }
+        cosmos_msg.observed_period = (uint8_t) (msg->observed_period*1000);
+        telem_publish(LEGSTAT, (char *)&cosmos_msg, sizeof(cosmos_msg));
+    }
 }
 
 int main(int argc, char **argv)
