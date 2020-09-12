@@ -142,7 +142,7 @@ static int compute_leg_position(struct leg_thread_state* state, int leg_index, f
     interpolate_value(step->phase, step->Y, step->npoints, index, leg_phase, &((*toe_position)[1]));
     interpolate_value(step->phase, step->Z, step->npoints, index, leg_phase, &((*toe_position)[2]));
     // TODO Make this correct for angles other than 0, 180.
-    (*toe_position)[1] = copysignf((*toe_position)[1], cosf(state->legs[leg_index].orientation[2] * deg2rad)) * scale;
+    (*toe_position)[1] *= copysignf(1.0f, cosf(state->legs[leg_index].orientation[2] * deg2rad)) * scale;
     return 0;
 }
 
