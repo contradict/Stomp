@@ -7,11 +7,17 @@
 
 #include "leg_control/modbus_utils.h"
 
+#define PING_KEY 0xa956
+
 int ping_leg(modbus_t *ctx, uint8_t address)
 {
+        uint16_t data=PING_KEY;
+        int err;
         modbus_set_slave(ctx, address);
-        uint16_t dummy;
-        return modbus_read_registers(ctx, 0x55, 1, &dummy);
+        err = modbus_diagnostics(ctx, MODBUS_DIAGNOSTICS_RETURN_QUERY_DATA, &data);
+        if(err == -1)
+            return err;
+        return data == PING_KEY;
 }
 
 int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], const float (*damping)[3])
@@ -73,7 +79,7 @@ int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], f
     if(err != -1)
     {
         for(int i=0;i<3;i++)
-            (*toe_position)[i] = ((int16_t *)toe_value)[i] / 100.0f;
+            (*toe_position)[i] = ((int16_t *)toe_value)[i] / 1e4f;
         for(int i=3;i<9;i++)
             (*cylinder_pressure)[i-3] = toe_value[i] / 100.0f;
     }
@@ -86,7 +92,7 @@ int set_toe_postion(modbus_t *ctx, uint8_t address, float (*toe_position)[3])
 
     for(int axis=0; axis < 3; axis++)
     {
-        ((int16_t *)toe_values)[axis] = roundf((*toe_position)[axis] * 100.0f);
+        ((int16_t *)toe_values)[axis] = roundf((*toe_position)[axis] * 10000.0f);
     }
     modbus_set_slave(ctx, address);
     return modbus_write_registers(ctx, ToeXPosition, 3, toe_values);
