@@ -8,6 +8,7 @@
 
 #include "lcm_channels.h"
 #include "lcm/stomp_control_radio.h"
+#include "sbus_channels.h"
 
 #define MAX(a, b) (((a)>(b)) ? (a) : (b))
 #define MIN(a, b) (((a)<(b)) ? (a) : (b))
@@ -77,7 +78,7 @@ void step(int row, int col, int step, stomp_control_radio* sbus_msg)
             sbus_msg->toggle[col] = next_toggle(sbus_msg->toggle[col], step);
             break;
         case 1:
-            sbus_msg->axis[col] = CLAMP(sbus_msg->axis[col] + 1e-2f*step, -1.0f, 1.0f);
+            sbus_msg->axis[col] = CLAMP(sbus_msg->axis[col] + 1e-3f*step, -1.0f, 1.0f);
             break;
         case 2:
             if(col==0)
@@ -88,29 +89,45 @@ void step(int row, int col, int step, stomp_control_radio* sbus_msg)
     }
 }
 
+const int TOGGLE_ROW=2;
+const int AXIS_ROW=4;
+const int SAFE_ROW=6;
+
+const int STARTCOL=5;
+
 void display_message(stomp_control_radio *sbus_msg, int row, int col)
 {
-    move(2, 5);
+    move(TOGGLE_ROW, STARTCOL);
+    clrtoeol();
+    move(TOGGLE_ROW + 2, STARTCOL);
     clrtoeol();
     for(int i=0;i<STOMP_CONTROL_RADIO_TOGGLES;i++)
     {
-        move(2, 5 + 7*i);
+        move(TOGGLE_ROW, STARTCOL + 7*i);
         if(row==0 && col == i)
             attron(A_BOLD);
         printw(" %3s", stomp_control_radio_toggle_str(sbus_msg->toggle[i]));
+        if(i==HULL_ENABLE)
+            mvprintw(TOGGLE_ROW + 1, STARTCOL + 7*i, " %s", (sbus_msg->toggle[i]==STOMP_CONTROL_RADIO_ON) ? "walk" : "dis");
+        else if(i==HULL_MODE)
+            mvprintw(TOGGLE_ROW + 1, STARTCOL + 7*i, " %s", (sbus_msg->toggle[i]==STOMP_CONTROL_RADIO_ON) ? "lock" : "free");
         attroff(A_BOLD);
     }
-    move(4, 5);
+    move(AXIS_ROW, STARTCOL);
     clrtoeol();
     for(int i=0;i<STOMP_CONTROL_RADIO_AXES;i++)
     {
-        move(4, 5 + 7*i);
+        move(AXIS_ROW, STARTCOL + 7*i);
         if(row==1 && col == i)
             attron(A_BOLD);
         if(sbus_msg->axis[i] < -1.0 || 1.0 < sbus_msg->axis[i])
             printw("****** ");
         else
             printw("%6.3f ", sbus_msg->axis[i]);
+        if(i==HULL_VELOCITY_X)
+            mvprintw(AXIS_ROW + 1, STARTCOL + 7*i, " %s", "vel x");
+        else if(i==HULL_OMEGA_Z)
+            mvprintw(AXIS_ROW + 1, STARTCOL + 7*i, " %s", "omg z");
         attroff(A_BOLD);
     }
     move(6, 6);
