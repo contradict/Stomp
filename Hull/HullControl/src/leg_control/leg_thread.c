@@ -239,9 +239,7 @@ static int compute_toe_positions(struct leg_thread_state* state, struct leg_cont
     int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
     {
-        float toe_position[3];
-        compute_leg_position(state, leg, state->walk_phase, leg_scale[leg], &toe_position);
-        memcpy(state->commanded_toe_positions[leg], toe_position, sizeof(toe_position));
+        compute_leg_position(state, leg, state->walk_phase, leg_scale[leg], &state->commanded_toe_positions[leg]);
     }
     return ret;
 }
