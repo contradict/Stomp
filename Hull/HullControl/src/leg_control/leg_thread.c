@@ -544,7 +544,7 @@ static int get_measured_positions(struct leg_thread_state* state)
 static int send_telemetry(struct leg_thread_state* state)
 {
     ssize_t offset = ringbuf_acquire(state->definition->telemetry_queue->ringbuf, state->telemetry_worker, sizeof(stomp_telemetry_leg));
-    if(offset > 0)
+    if(offset >= 0)
     {
         stomp_telemetry_leg *telem = (stomp_telemetry_leg *)(state->definition->telemetry_queue->buffer + offset);
         for(int leg=0;leg<state->nlegs;leg++)
@@ -588,7 +588,7 @@ static int check_command_queue(struct leg_thread_state* state)
                 //read_bits
             }
             ssize_t offset = ringbuf_acquire(state->definition->response_queue->ringbuf, state->response_worker, sizeof(stomp_modbus));
-            if(offset > 0)
+            if(offset >= 0)
             {
                 stomp_modbus *response = (stomp_modbus *)(state->definition->response_queue->buffer + offset);
                 memcpy(response, request, sizeof(stomp_modbus));
