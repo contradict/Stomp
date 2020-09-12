@@ -639,7 +639,7 @@ static void *run_leg_thread(void *ptr)
     state->gaits = parse_gaits(state->definition->config, &state->ngaits, state->steps, state->nsteps);
 
     toml_table_t *geometry = toml_table_in(state->definition->config, "geometry");
-    get_float(geometry, "width", &state->turning_width);
+    get_float(geometry, "halfwidth", &state->turning_width);
 
     struct leg_control_parameters parameters = {
         .forward_velocity = 0.0f,
