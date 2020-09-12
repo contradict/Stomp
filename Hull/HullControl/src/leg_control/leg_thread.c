@@ -114,7 +114,7 @@ static int find_interpolation_index(const float *nodes, size_t length, float x)
     size_t i;
     for(i=0; i<length; i++)
     {
-        if((nodes[i] <= x) && (nodes[i+1] >= x))
+        if((nodes[i] <= x) && (nodes[i+1] > x))
             break;
     }
     if(i==length)
