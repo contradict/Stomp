@@ -174,16 +174,18 @@ static int move_towards_gait(modbus_t* ctx, uint8_t address, float (*measured_to
 
 static int compute_walk_parameters(struct leg_thread_state *state, struct leg_control_parameters *p, float *frequency, float *leg_scale)
 {
-    float left_scale, right_scale;
-    if(p->angular_velocity > 0)
+    float right_velocity = p->forward_velocity + state->turning_width * p->angular_velocity;
+    float left_velocity = p->forward_velocity - state->turning_width * p->angular_velocity;
+    float left_scale, right_scale, scale = fabs(left_velocity / right_velocity);
+    if(scale <= 1.0)
     {
-        right_scale = copysignf(p->forward_velocity, 1.0);
-        left_scale = p->angular_velocity * state->turning_width / p->forward_velocity;
+        left_scale = copysignf(scale, left_velocity);
+        right_scale = copysignf(1.0, right_velocity);
     }
     else
     {
-        right_scale = -p->angular_velocity * state->turning_width / p->forward_velocity;
-        left_scale = copysignf(p->forward_velocity, 1.0);
+        left_scale = copysignf(1.0, left_velocity);
+        right_scale = copysignf(1.0/scale, right_velocity);
     }
     for(int l=0;l<state->nlegs / 2;l++)
     {
@@ -193,7 +195,7 @@ static int compute_walk_parameters(struct leg_thread_state *state, struct leg_co
     {
         leg_scale[l] = left_scale;
     }
-    *frequency = (fabs(p->angular_velocity) * state->turning_width + fabs(p->forward_velocity)) / state->steps[state->gaits[state->current_gait].step_index].length;
+    *frequency = MAX(fabsf(left_velocity), fabsf(right_velocity)) / state->steps[state->gaits[state->current_gait].step_index].length;
     return 0;
 }
 
