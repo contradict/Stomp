@@ -144,18 +144,15 @@ int main(int argc, char **argv)
 
         struct timeval timeout = {
             0,
-            100000,
+            10000,
         };
         int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
-        if(0 == status)
-        {
-            lcm_telemetry_send(&telemetry_state);
-            lcm_response_send(&response_state);
-        }
-        else if(FD_ISSET(lcm_fd, &fds))
+        if(status == 1 && FD_ISSET(lcm_fd, &fds))
         {
             lcm_handle(lcm);
         }
+        lcm_telemetry_send(&telemetry_state);
+        lcm_response_send(&response_state);
     }
 
     control_radio_shutdown(&radio_state);
