@@ -100,7 +100,7 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         get_float(step, "length", &steps[s].length);
         toml_array_t *points = toml_array_in(step, "points");
         steps[s].npoints = toml_array_nelem(points);
-        steps[s].phase = calloc(steps[s].npoints, sizeof(float));
+        steps[s].phase = calloc(steps[s].npoints + 1, sizeof(float));
         steps[s].X = calloc(steps[s].npoints, sizeof(float));
         steps[s].Y = calloc(steps[s].npoints, sizeof(float));
         steps[s].Z = calloc(steps[s].npoints, sizeof(float));
@@ -112,6 +112,7 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
             get_float(pt, "Y", &steps[s].Y[p]);
             get_float(pt, "Z", &steps[s].Z[p]);
         }
+        steps[s].phase[steps[s].npoints] = 1.0f;
     }
     return steps;
 }
