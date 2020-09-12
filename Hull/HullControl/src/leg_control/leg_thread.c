@@ -151,7 +151,12 @@ static int move_towards_gait(modbus_t* ctx, uint8_t address, float (*measured_to
     float distance = 0;
     int ret = 0, err;
     for(int i=0; i<3; i++)
-        distance += pow((measured_toe_position[i] - gait_toe_position[i]), 2);
+        distance += pow(((*measured_toe_position)[i] - (*gait_toe_position)[i]), 2);
+    distance = sqrtf(distance);
+    logm(SL4C_FINE, "addr 0x%02x m:[%5.3f, %5.3f, %5.3f] g:[%5.3f, %5.3f, %5.3f]",
+         address,
+         (*measured_toe_position)[0], (*measured_toe_position)[1], (*measured_toe_position)[2],
+         (*gait_toe_position)[0], (*gait_toe_position)[1], (*gait_toe_position)[2]);
     if(distance<tolerance)
     {
         err = set_toe_postion(ctx, address, gait_toe_position);
@@ -159,17 +164,20 @@ static int move_towards_gait(modbus_t* ctx, uint8_t address, float (*measured_to
             ret = -1;
         else
             ret = 1;
+        logm(SL4C_DEBUG, "addr 0x%02x dist %5.3f", address, distance);
     }
     else
     {
-        distance = sqrt(distance);
         float interp = tolerance / distance;
         float interpolated_toe_position[3];
         for(int i=0; i<3; i++)
-            interpolated_toe_position[i] = *measured_toe_position[i] * interp + *gait_toe_position[i] * (1.0f - interp);
+            interpolated_toe_position[i] = (*measured_toe_position)[i] * (1.0f - interp) + (*gait_toe_position)[i] * interp;
         err = set_toe_postion(ctx, address, &interpolated_toe_position);
         if(err == -1)
             ret = -1;
+        logm(SL4C_DEBUG, "addr 0x%02x dist %5.3f interp %5.3f", address, distance, interp);
+        logm(SL4C_FINE, "addr 0x%02x i:[%5.3f, %5.3f, %5.3f]", address,
+             interpolated_toe_position[0], interpolated_toe_position[1], interpolated_toe_position[2]);
     }
     return ret;
 }
