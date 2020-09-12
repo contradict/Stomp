@@ -23,23 +23,35 @@
 
 const float deg2rad = M_PI / 180.0f;
 
+enum legs_control_mode {
+    mode_all_init,
+    mode_all_ping,
+    mode_all_pos_disable,
+    mode_all_pos_enable,
+    mode_all_air_on,
+    mode_all_gain_zero,
+    mode_all_gain_operational_free,
+    mode_all_gain_operational_walk,
+    mode_all_air_vent_lock,
+    mode_all_air_vent_free,
+    mode_all_walk,
+};
+
 enum leg_control_mode {
-    mode_init,
-    mode_ping,
-    mode_get_position_walk,
-    mode_get_position_disable,
-    mode_get_position_reenable,
-    mode_gain_zero,
-    mode_gain_set_walk,
-    mode_gain_set_free,
-    mode_air_vent_init,
-    mode_air_vent_disable,
-    mode_air_on,
-    mode_get_start,
     mode_move_start,
     mode_walk,
-    mode_lock,
-    mode_free
+
+    mode_set_gain_operational,
+    mode_gain_operational,
+
+    mode_set_position,
+    mode_error_zero,
+
+    mode_set_gain_zero,
+    mode_gain_zero,
+
+    mode_ping,
+    mode_ready,
 };
 
 struct leg_thread_state {
@@ -57,9 +69,15 @@ struct leg_thread_state {
     struct gait *gaits;
     int current_gait;
     float position_ramp_time;
+    float toe_position_tolerance;
     atomic_bool shouldrun;
     struct rate_timer *timer;
-    enum leg_control_mode mode;
+    enum leg_control_mode *leg_mode;
+    enum legs_control_mode legs_mode;
+    bool valid_measurements;
+    float (*toe_position_measured)[3];
+    float (*base_end_pressure)[3];
+    float (*rod_end_pressure)[3];
     float (*commanded_toe_positions)[3];
     float (*initial_toe_positions)[3];
     float turning_width;
@@ -68,102 +86,25 @@ struct leg_thread_state {
 };
 
 
-static int ping_all_legs(modbus_t *ctx, struct leg_description *legs, int nlegs)
+static int set_gain(modbus_t *ctx, uint8_t address, struct joint_gains *gain)
 {
-    /* Ping all the legs */
-    int err = 0, ret = 0;
-    for(int leg=0; leg<nlegs; leg++)
-    {
-        err = ping_leg(ctx, legs[leg].address);
-        if(err == -1)
-        {
-            logm(SL4C_ERROR, "Unable to communicate with leg %d(0x%02x): %s\n",
-                    leg, legs[leg].address, modbus_strerror(errno));
-            ret = err;
-        }
-    }
-    return ret;
-}
-
-static int set_gains(struct leg_thread_state* state, struct joint_gains* gain)
-{
-    int ret = 0;
     uint32_t sec, saved_timeout;
-    modbus_get_response_timeout(state->ctx, &sec, &saved_timeout);
-    modbus_set_response_timeout(state->ctx, 0, 100000);
-    for(int leg=0; leg<state->nlegs; leg++)
+    modbus_get_response_timeout(ctx, &sec, &saved_timeout);
+    modbus_set_response_timeout(ctx, 0, 100000);
+    int err = set_servo_gains(ctx, address, &gain->proportional_gain, &gain->force_damping);
+    if(err == -1)
     {
-        int err = set_servo_gains(state->ctx, state->legs[leg].address, &gain->proportional_gain, &gain->force_damping);
-        if(err == -1)
-        {
-            logm(SL4C_ERROR, "Failed to set servo gain for leg %d(0x%02x).\n",
-                   leg, state->legs[leg].address);
-            ret = err;
-        }
+        logm(SL4C_ERROR, "Failed to set servo gain for leg address 0x%02x).", address);
     }
-    modbus_set_response_timeout(state->ctx, 0, saved_timeout);
-    return ret;
+    modbus_set_response_timeout(ctx, 0, saved_timeout);
+    return err;
 }
 
-static int zero_gains(struct leg_thread_state *state)
+static int zero_gain(modbus_t *ctx, uint8_t address)
 {
-    struct joint_gains zerogain[state->nlegs];
+    struct joint_gains zerogain;
     bzero(&zerogain, sizeof(zerogain));
-    return set_gains(state, (struct joint_gains*)&zerogain);
-}
-
-static int equalize_joint_command(struct leg_thread_state* state)
-{
-    int ret = 0;
-    uint16_t joint_feedback[3];
-    for(int l=0; l<state->nlegs; l++)
-    {
-        int err;
-        modbus_set_slave(state->ctx, state->legs[l].address);
-        err = modbus_read_input_registers(state->ctx, CURL_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_CURL]);
-        if(err == -1)
-        {
-            ret = err;
-            logm(SL4C_ERROR, "Error reading leg %d(0x%x) curl feedback: %s",
-                    l, state->legs[l].address, modbus_strerror(errno));
-        }
-        err = modbus_read_input_registers(state->ctx, SWING_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_SWING]);
-        if(err == -1)
-        {
-            ret = err;
-            logm(SL4C_ERROR, "Error reading leg %d(0x%x) swing feedback: %s",
-                    l, state->legs[l].address, modbus_strerror(errno));
-        }
-        err = modbus_read_input_registers(state->ctx, LIFT_BASE + ICachedFeedbackPosition, 1, &joint_feedback[JOINT_LIFT]);
-        if(err == -1)
-        {
-            ret = err;
-            logm(SL4C_ERROR, "Error reading leg %d(0x%x) lift feedback: %s",
-                    l, state->legs[l].address, modbus_strerror(errno));
-        }
-        err = modbus_write_registers(state->ctx, CURL_BASE + HCachedDigitalCommand, 1, &joint_feedback[JOINT_CURL]);
-        if(err == -1)
-        {
-            ret = err;
-            logm(SL4C_ERROR, "Error writing leg %d(0x%x) curl command: %s",
-                    l, state->legs[l].address, modbus_strerror(errno));
-        }
-        err = modbus_write_registers(state->ctx, SWING_BASE + HCachedDigitalCommand, 1, &joint_feedback[JOINT_SWING]);
-        if(err == -1)
-        {
-            ret = err;
-            logm(SL4C_ERROR, "Error writing leg %d(0x%x) swing command: %s",
-                    l, state->legs[l].address, modbus_strerror(errno));
-        }
-        err = modbus_write_registers(state->ctx, LIFT_BASE + HCachedDigitalCommand, 1, &joint_feedback[JOINT_LIFT]);
-        if(err == -1)
-        {
-            ret = err;
-            logm(SL4C_ERROR, "Error writing leg %d(0x%x) lift command: %s",
-                    l, state->legs[l].address, modbus_strerror(errno));
-        }
-    }
-    return ret;
+    return set_gain(ctx, address, &zerogain);
 }
 
 static int find_interpolation_index(const float *nodes, size_t length, float x)
@@ -203,40 +144,31 @@ static int compute_leg_position(struct leg_thread_state* state, int leg_index, f
     return 0;
 }
 
-static int retrieve_leg_positions(struct leg_thread_state* state)
+static int move_towards_gait(modbus_t* ctx, uint8_t address, float (*measured_toe_position)[3], float (*gait_toe_position)[3], float tolerance)
 {
-    float discard_pressures[6];
-    for(int leg=0; leg<state->nlegs; leg++)
+    float distance = 0;
+    int ret = 0, err;
+    for(int i=0; i<3; i++)
+        distance += pow((measured_toe_position[i] - gait_toe_position[i]), 2);
+    if(distance<tolerance)
     {
-        int err = get_toe_feedback(state->ctx, state->legs[leg].address, &(state->commanded_toe_positions[leg]), &discard_pressures);
-        if(err!=0)
-            return err;
-        compute_leg_position(state, leg, 0.0f, 0.0f, &(state->initial_toe_positions[leg]));
-    }
-    return 0;
-}
-
-static int ramp_position_step(struct leg_thread_state* state, float elapsed)
-{
-    float phase = MIN(1.0f, elapsed / state->position_ramp_time);
-    int ret = 0;
-    for(int leg=0; leg<state->nlegs; leg++)
-    {
-        float ramp_position[3];
-        for(int axis=0;axis<3;axis++)
-        {
-            ramp_position[axis] = phase * state->initial_toe_positions[leg][axis] + (1.0 - phase) * state->commanded_toe_positions[leg][axis];
-        }
-        int err = set_toe_postion(state->ctx, state->legs[leg].address, &ramp_position);
+        err = set_toe_postion(ctx, address, gait_toe_position);
         if(err == -1)
-        {
-            logm(SL4C_ERROR, "Unable to set position for leg %d(0x%02x): %s",
-                 leg, state->legs[leg].address, modbus_strerror(errno));
-            ret = err;
-        }
+            ret = -1;
+        else
+            ret = 1;
     }
-    if(ret != -1 && phase >= 1.0f)
-        ret = 1;
+    else
+    {
+        distance = sqrt(distance);
+        float interp = tolerance / distance;
+        float interpolated_toe_position[3];
+        for(int i=0; i<3; i++)
+            interpolated_toe_position[i] = *measured_toe_position[i] * interp + *gait_toe_position[i] * (1.0f - interp);
+        err = set_toe_postion(ctx, address, &interpolated_toe_position);
+        if(err == -1)
+            ret = -1;
+    }
     return ret;
 }
 
@@ -265,7 +197,7 @@ static int compute_walk_parameters(struct leg_thread_state *state, struct leg_co
     return 0;
 }
 
-static int walk_step(struct leg_thread_state* state, struct leg_control_parameters *p, float dt)
+static int compute_toe_positions(struct leg_thread_state* state, struct leg_control_parameters *p, float dt)
 {
     float frequency;
     float leg_scale[state->nlegs];
@@ -279,13 +211,6 @@ static int walk_step(struct leg_thread_state* state, struct leg_control_paramete
     {
         float toe_position[3];
         compute_leg_position(state, leg, state->walk_phase, leg_scale[leg], &toe_position);
-        int err = set_toe_postion(state->ctx, state->legs[leg].address, &toe_position);
-        if(err == -1)
-        {
-            ret = err;
-            logm(SL4C_ERROR, "Unable to set toe position for leg %d(0x%02x): %s",
-                    leg, state->legs[leg].address, modbus_strerror(errno));
-        }
         memcpy(state->commanded_toe_positions[leg], toe_position, sizeof(toe_position));
     }
     return ret;
@@ -312,257 +237,310 @@ static void air_on()
 {
 }
 
-static void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float elapsed, float dt)
+enum leg_control_mode run_leg_state_machine(enum leg_control_mode mode,
+                                            uint8_t address,
+                                            struct joint_gains *gains,
+                                            float (*measured_toe_position)[3],
+                                            bool valid_measurements,
+                                            float (*gait_toe_position)[3],
+                                            float gait_distance_tolerance,
+                                            modbus_t *ctx)
 {
-    int res;
-    switch(state->mode)
+    enum leg_control_mode newmode = mode;
+    int err;
+    switch(mode)
     {
-        case mode_init:
-            state->mode = mode_air_vent_init;
-            logm(SL4C_INFO, "init->vent.");
-            break;
-        case mode_air_vent_init:
-            air_vent();
-            state->mode = mode_ping;
-            logm(SL4C_INFO, "vent->ping.");
-            break;
-        case mode_ping:
-            // Check comms with all legs, zero gains on success
-            // stay here on fail
-            if(0 == ping_all_legs(state->ctx, state->legs, state->nlegs))
-            {
-                logm(SL4C_INFO, "Ping all legs succeeded.");
-                switch(parameters->enable)
-                {
-                    case ENABLE_WALK:
-                        state->mode = mode_get_position_walk;
-                        logm(SL4C_INFO, "ping->getpos_walk.");
-                        break;
-                    case ENABLE_DISABLE:
-                        state->mode = mode_get_position_disable;
-                        logm(SL4C_INFO, "ping->getpos_disable.");
-                        break;
-                    default:
-                        logm(SL4C_ERROR, "Unhandled enable mode");
-                        break;
-                }
-            }
-            break;
-        case mode_get_position_walk:
-            res = equalize_joint_command(state);
-            if(res == 0)
-            {
-                state->mode = mode_gain_set_walk;
-                logm(SL4C_INFO, "getpos_walk->gainset_walk.");
-            }
-            else
-            {
-                logm(SL4C_ERROR, "Retrieve position failed.");
-                state->mode = mode_ping;
-            }
-            break;
-        case mode_get_position_disable:
-            res = equalize_joint_command(state);
-            if(res == 0)
-            {
-                switch(parameters->lock)
-                {
-                    case LOCK_FREE:
-                        state->mode = mode_gain_set_free;
-                        logm(SL4C_INFO, "getpos_disable->gainset_disable.");
-                        break;
-                    case LOCK_LOCK:
-                        state->mode = mode_gain_zero;
-                        logm(SL4C_INFO, "getpos_disable->gainset_disable.");
-                        break;
-                    default:
-                        logm(SL4C_ERROR, "getpos_disable Unhandled lock setting.");
-                        break;
-                }
-            }
-            else
-            {
-                logm(SL4C_ERROR, "Retrieve position failed.");
-                state->mode = mode_ping;
-            }
-            break;
-        case mode_gain_set_free:
-            res = set_gains(state, state->joint_gains);
-            if(res == 0)
-            {
-                state->mode = mode_free;
-                logm(SL4C_INFO, "gainset_free->free.");
-            }
-            else
-            {
-                state->mode = mode_ping;
-                logm(SL4C_INFO, "gainset_free->ping.");
-            }
-            break;
-        case mode_gain_set_walk:
-            res = set_gains(state, state->joint_gains);
-            if(res == 0)
-            {
-                state->mode = mode_air_on;
-                logm(SL4C_INFO, "gainset_walk->airon.");
-            }
-            else
-            {
-                state->mode = mode_ping;
-                logm(SL4C_INFO, "gainset_walk->ping.");
-            }
-            break;
-        case mode_air_on:
-            air_on();
-            state->mode = mode_get_start;
-            restart_rate_timer(state->timer);
-            logm(SL4C_INFO, "airon->get_start.");
-            break;
-        case mode_get_start:
-            res = retrieve_leg_positions(state);
-            if(res == 0)
-            {
-                state->mode = mode_move_start;
-                logm(SL4C_INFO, "get_start->move_start");
-            }
-            else
-            {
-                state->mode = mode_air_vent_init;
-                logm(SL4C_INFO, "get_start->vent_init");
-            }
-            break;
         case mode_move_start:
             // move legs to start of cycle
-            // on error go to vent
-            res = ramp_position_step(state, elapsed);
-            if(res == -1)
+            if(valid_measurements)
             {
-                state->mode = mode_air_vent_init;
-                logm(SL4C_ERROR, "Position ramp failed.");
-                logm(SL4C_INFO, "move_start->vent_init");
-            }
-            else if(res == 1)
-            {
-                state->mode = mode_walk;
-                logm(SL4C_INFO, "move_start->walk");
+                err = move_towards_gait(ctx, address, measured_toe_position, gait_toe_position, gait_distance_tolerance);
+                if(err == -1)
+                {
+                    //newmode = mode_air_vent_init;
+                    logm(SL4C_ERROR, "Position ramp error: %s.",
+                         modbus_strerror(errno));
+                }
+                else if(err == 1)
+                {
+                    newmode = mode_walk;
+                    logm(SL4C_INFO, "move_start->walk");
+                }
             }
             break;
         case mode_walk:
-            // run gait generator
-            // on error, go back to init
-            // on command, back to stop
-            switch(parameters->enable)
+            err = set_toe_postion(ctx, address, gait_toe_position);
+            if(err == -1)
             {
-                case ENABLE_WALK:
-                    res = walk_step(state, parameters, dt);
-                    if(res == -1)
-                    {
-                        state->mode = mode_air_vent_init;
-                        logm(SL4C_ERROR, "walk_step failed.");
-                        logm(SL4C_INFO, "walk->vent_init.");
-                    }
-                    break;
-                case ENABLE_DISABLE:
-                    state->mode = mode_air_vent_disable;
-                    logm(SL4C_INFO, "walk->vent_disable");
-                    break;
+                newmode = mode_move_start;
+                logm(SL4C_ERROR, "walk failed.");
+                logm(SL4C_INFO, "walk->move_start.");
             }
             break;
-        case mode_air_vent_disable:
-            air_vent();
-            switch(parameters->lock)
+        case mode_set_gain_operational:
+            err = set_gain(ctx, address, gains);
+            if(err == 0)
             {
-                case LOCK_FREE:
-                    state->mode = mode_free;
-                    logm(SL4C_INFO, "vent_disable->free");
-                    break;
-                case LOCK_LOCK:
-                    state->mode = mode_gain_zero;
-                    logm(SL4C_INFO, "vent_disable->zero");
-                    break;
+                newmode = mode_gain_operational;
+                logm(SL4C_INFO, "Leg address 0x%02x set_gain->gain_operational.", address);
+            }
+            else
+            {
+                logm(SL4C_ERROR, "Leg address 0x%02x set operational gain failed.", address);
             }
             break;
-        case mode_free:
-            switch(parameters->enable)
+        case mode_gain_operational:
+            break;
+        case mode_set_position:
+            if(valid_measurements)
             {
-                case ENABLE_WALK:
-                    state->mode = mode_get_position_reenable;
-                    logm(SL4C_INFO, "free->getpos_reenable.");
-                    break;
-                case ENABLE_DISABLE:
-                    switch(parameters->lock)
-                    {
-                        case LOCK_FREE:
-                            break;
-                        case LOCK_LOCK:
-                            state->mode = mode_get_position_disable;
-                            logm(SL4C_INFO, "free->getpos_disable.");
-                            break;
-                    }
-                    break;
+                err = set_toe_postion(ctx, address, measured_toe_position);
+                if(err == -1)
+                {
+                    logm(SL4C_ERROR, "Leg address 0x%02x set position failed: %s.",
+                         address, modbus_strerror(errno));
+                }
+                else
+                {
+                    newmode = mode_error_zero;
+                    logm(SL4C_INFO, "Leg address 0x%02x setpos->errorzero.", address);
+                }
+            }
+            break;
+        case mode_error_zero:
+            break;
+        case mode_set_gain_zero:
+            err = zero_gain(ctx, address);
+            if(err == 0)
+            {
+                newmode = mode_gain_zero;
+                logm(SL4C_INFO, "Leg address 0x%02x set_gain->gain_zero.", address);
+            }
+            else
+            {
+                logm(SL4C_ERROR, "Leg address 0x%02x zero gain failed.", address);
             }
             break;
         case mode_gain_zero:
-            // set all gains to zero, transition to ready on success
-            // transition to init on fail
-            if(0 == zero_gains(state))
+            break;
+        case mode_ping:
+            err = ping_leg(ctx, address);
+            if(err<0)
             {
-                state->mode = mode_lock;
-                logm(SL4C_INFO, "zero->lock.");
+                logm(SL4C_ERROR, "Unable to communicate with leg address 0x%02x: %s\n",
+                     address, modbus_strerror(errno));
+            }
+            else if(err == 0)
+            {
+                logm(SL4C_WARNING, "Leg address 0x%02x returned unexpected ping value.\n",
+                     address);
             }
             else
             {
-                state->mode = mode_init;
-                logm(SL4C_INFO, "Gain zero failed.");
+                logm(SL4C_INFO, "Leg address 0x%02x ping->ready.", address);
+                newmode = mode_ready;
             }
             break;
-        case mode_get_position_reenable:
-            res = equalize_joint_command(state);
-            if(res == 0)
+        case mode_ready:
+            break;
+    }
+    return newmode;
+}
+
+static void setall_leg_mode(enum leg_control_mode *leg_mode, int nlegs, enum leg_control_mode m)
+{
+    for(int i=0; i<nlegs; i++)
+        leg_mode[i] = m;
+}
+
+static bool all_leg_mode(enum leg_control_mode* leg_mode, int nlegs, enum leg_control_mode m)
+{
+    bool ready = true;
+    for(int i=0; i<nlegs; i++)
+        ready &= leg_mode[i] == m;
+    return ready;
+}
+
+static void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float dt)
+{
+    switch(state->legs_mode)
+    {
+        case mode_all_init:
+            setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+            logm(SL4C_INFO, "all_init->all_ping.");
+            state->legs_mode = mode_all_ping;
+            break;
+        case mode_all_ping:
+            if(all_leg_mode(state->leg_mode, state->nlegs, mode_ready))
+                switch(parameters->enable)
+                {
+                    case ENABLE_WALK:
+                        logm(SL4C_INFO, "all_ping->all_pos_enable.");
+                        setall_leg_mode(state->leg_mode, state->nlegs, mode_set_position);
+                        state->legs_mode = mode_all_pos_enable;
+                        break;
+                    case ENABLE_DISABLE:
+                        logm(SL4C_INFO, "all_ping->all_pos_disable.");
+                        setall_leg_mode(state->leg_mode, state->nlegs, mode_set_position);
+                        state->legs_mode = mode_all_pos_disable;
+                        break;
+                }
+            break;
+        case mode_all_pos_disable:
+            if(all_leg_mode(state->leg_mode, state->nlegs, mode_error_zero))
+                switch(parameters->lock)
+                {
+                    case LOCK_LOCK:
+                        logm(SL4C_INFO, "all_pos_disable->all_gain_zero.");
+                        setall_leg_mode(state->leg_mode, state->nlegs, mode_set_gain_zero);
+                        state->legs_mode = mode_all_gain_zero;
+                        break;
+                    case LOCK_FREE:
+                        logm(SL4C_INFO, "all_pos_disable->mode_all_gain_operational_free.");
+                        setall_leg_mode(state->leg_mode, state->nlegs, mode_set_gain_operational);
+                        state->legs_mode = mode_all_gain_operational_free;
+                        break;
+                }
+            break;
+        case mode_all_gain_zero:
+            if(all_leg_mode(state->leg_mode, state->nlegs, mode_gain_zero))
             {
-                state->mode = mode_air_on;
-                logm(SL4C_INFO, "getpos_reenable->airon.");
-            }
-            else
+                logm(SL4C_INFO, "all_gain_zero->all_air_vent_lock.");
+                state->legs_mode = mode_all_air_vent_lock;
+            } else if((parameters->enable == ENABLE_WALK) ||
+                      (parameters->lock == LOCK_FREE))
             {
-                logm(SL4C_ERROR, "Retrieve position failed.");
-                logm(SL4C_INFO, "getpos_reenable->ping.");
-                state->mode = mode_ping;
+                logm(SL4C_INFO, "all_gain_zero->all_ping.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+                state->legs_mode = mode_all_ping;
             }
             break;
-        case mode_lock:
-            switch(parameters->enable)
+        case mode_all_air_vent_lock:
+            air_vent();
+            if(parameters->enable == ENABLE_WALK)
             {
-                case ENABLE_WALK:
-                    state->mode = mode_get_position_walk;
-                    logm(SL4C_INFO, "lock->getpos_walk.");
-                    break;
-                case ENABLE_DISABLE:
-                    switch(parameters->lock)
-                    {
-                        case LOCK_FREE:
-                            state->mode = mode_get_position_disable;
-                            logm(SL4C_INFO, "lock->getpos_disable.");
-                            break;
-                        case LOCK_LOCK:
-                            break;
-                    }
-                    break;
+                logm(SL4C_INFO, "all_air_vent_lock->all_ping.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+                state->legs_mode = mode_all_ping;
+            }
+            else if(parameters->lock == LOCK_FREE)
+            {
+                logm(SL4C_INFO, "all_air_vent_lock->all_pos_disable.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_set_position);
+                state->legs_mode = mode_all_pos_disable;
+            }
+            break;
+        case mode_all_gain_operational_free:
+            if(all_leg_mode(state->leg_mode, state->nlegs, mode_gain_operational))
+            {
+                logm(SL4C_INFO, "all_gain_operational_free->all_air_vent_free.");
+                state->legs_mode = mode_all_air_vent_free;
+            }
+            else if((parameters->enable == ENABLE_WALK) ||
+                      (parameters->lock == LOCK_LOCK))
+            {
+                logm(SL4C_INFO, "all_gain_operational_free->all_ping.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+                state->legs_mode = mode_all_ping;
+            }
+            break;
+        case mode_all_air_vent_free:
+            air_vent();
+            if(parameters->enable == ENABLE_WALK)
+            {
+                logm(SL4C_INFO, "all_air_vent_free->all_ping.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+                state->legs_mode = mode_all_ping;
+            }
+            else if(parameters->lock == LOCK_LOCK)
+            {
+                logm(SL4C_INFO, "all_air_vent_free->all_gain_zero.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_set_gain_zero);
+                state->legs_mode = mode_all_gain_zero;
+            }
+            break;
+        case mode_all_pos_enable:
+            if(all_leg_mode(state->leg_mode, state->nlegs, mode_error_zero))
+            {
+                logm(SL4C_INFO, "all_air_pos_enable->all_air_on.");
+                state->legs_mode = mode_all_air_on;
+            }
+            else if(parameters->enable == ENABLE_DISABLE)
+            {
+                logm(SL4C_INFO, "all_pos_enable->all_ping.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+                state->legs_mode = mode_all_ping;
+            }
+            break;
+        case mode_all_air_on:
+            air_on();
+            logm(SL4C_INFO, "all_air_on->all_gain_operational_walk.");
+            setall_leg_mode(state->leg_mode, state->nlegs, mode_set_gain_operational);
+            state->legs_mode = mode_all_gain_operational_walk;
+            break;
+        case mode_all_gain_operational_walk:
+            if(all_leg_mode(state->leg_mode, state->nlegs, mode_gain_operational))
+            {
+                logm(SL4C_INFO, "all_gain_operational_walk->all_walk.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_move_start);
+                state->legs_mode = mode_all_walk;
+            }
+            else if(parameters->enable == ENABLE_DISABLE)
+            {
+                logm(SL4C_INFO, "all_gain_operational_walk->all_ping.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+                state->legs_mode = mode_all_ping;
+            }
+            break;
+        case mode_all_walk:
+            if(parameters->enable == ENABLE_DISABLE)
+            {
+                logm(SL4C_INFO, "all_walk->all_ping.");
+                setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
+                state->legs_mode = mode_all_ping;
             }
             break;
     }
+    if(state->legs_mode == mode_all_walk)
+    {
+        compute_toe_positions(state, parameters, dt);
+    }
+    for(int leg=0; leg<state->nlegs; leg++)
+    {
+       state->leg_mode[leg] = run_leg_state_machine(state->leg_mode[leg],
+                                                    state->legs[leg].address,
+                                                    state->joint_gains,
+                                                    &state->toe_position_measured[leg],
+                                                    state->valid_measurements,
+                                                    &state->commanded_toe_positions[leg],
+                                                    state->toe_position_tolerance,
+                                                    state->ctx);
+    }
+}
+
+static int get_measured_positions(struct leg_thread_state* state)
+{
+    int err, ret=0;
+    float pressure[state->nlegs][6];
+    for(int leg=0;leg<state->nlegs;leg++)
+    {
+        err = get_toe_feedback(state->ctx, state->legs[leg].address, &(state->toe_position_measured[leg]), &(pressure[leg]));
+        if(err)
+        {
+            ret = err;
+            continue;
+        }
+        for(int joint=0;joint<JOINT_COUNT;joint++)
+        {
+            state->base_end_pressure[leg][joint] = pressure[leg][2*joint];
+            state->rod_end_pressure[leg][joint] = pressure[leg][2*joint + 1];
+        }
+    }
+    return ret;
 }
 
 static int send_telemetry(struct leg_thread_state* state)
 {
-    float position[state->nlegs][3], pressure[state->nlegs][6];
-    int err;
-    for(int leg=0;leg<state->nlegs;leg++)
-    {
-        err = get_toe_feedback(state->ctx, state->legs[leg].address, &(position[leg]), &(pressure[leg]));
-        if(err)
-            return err;
-    }
     ssize_t offset = ringbuf_acquire(state->definition->telemetry_queue->ringbuf, state->telemetry_worker, sizeof(stomp_telemetry_leg));
     if(offset > 0)
     {
@@ -571,12 +549,12 @@ static int send_telemetry(struct leg_thread_state* state)
         {
             for(int joint=0;joint<JOINT_COUNT;joint++)
             {
-                telem->base_end_pressure[JOINT_COUNT * leg + joint] = pressure[leg][2*joint];
-                telem->rod_end_pressure[JOINT_COUNT * leg + joint] = pressure[leg][2*joint + 1];
+                telem->base_end_pressure[JOINT_COUNT * leg + joint] = state->base_end_pressure[leg][joint];
+                telem->rod_end_pressure[JOINT_COUNT * leg + joint] = state->rod_end_pressure[leg][joint];
             }
-            telem->toe_position_measured_X[leg] = position[leg][0];
-            telem->toe_position_measured_Y[leg] = position[leg][1];
-            telem->toe_position_measured_Z[leg] = position[leg][2];
+            telem->toe_position_measured_X[leg] = state->toe_position_measured[leg][0];
+            telem->toe_position_measured_Y[leg] = state->toe_position_measured[leg][1];
+            telem->toe_position_measured_Z[leg] = state->toe_position_measured[leg][2];
             telem->toe_position_commanded_X[leg] = state->commanded_toe_positions[leg][0];
             telem->toe_position_commanded_Y[leg] = state->commanded_toe_positions[leg][1];
             telem->toe_position_commanded_Z[leg] = state->commanded_toe_positions[leg][2];
@@ -644,9 +622,15 @@ static void *run_leg_thread(void *ptr)
                                              "legs");
     state->legs = parse_leg_descriptions(legs_config, &state->nlegs);
     state->joint_gains = parse_joint_gains(legs_config);
-    get_float(legs_config, "position_ramp_time", &state->position_ramp_time);
+    state->toe_position_measured = malloc(sizeof(float[state->nlegs][3]));
     state->commanded_toe_positions = malloc(sizeof(float[state->nlegs][3]));
     state->initial_toe_positions = malloc(sizeof(float[state->nlegs][3]));
+    state->base_end_pressure = malloc(sizeof(float[state->nlegs][3]));
+    state->rod_end_pressure = malloc(sizeof(float[state->nlegs][3]));
+    state->leg_mode = malloc(state->nlegs * sizeof(enum leg_control_mode));
+
+    get_float(legs_config, "position_ramp_time", &state->position_ramp_time);
+    get_float(legs_config, "toe_position_tolerance", &state->toe_position_tolerance);
 
     state->steps = parse_steps(state->definition->config, &state->nsteps);
 
@@ -663,7 +647,7 @@ static void *run_leg_thread(void *ptr)
     };
     bool loop_phase = false;
 
-    state->mode = mode_init;
+    state->legs_mode = mode_all_init;
     state->timer = create_rate_timer(state->definition->frequency);
     logm(SL4C_DEBUG, "Create timer with period %f",state->definition->frequency);
     float elapsed = 0, dt=0;;
@@ -672,9 +656,12 @@ static void *run_leg_thread(void *ptr)
         if(loop_phase)
         {
             read_parameters(state->definition->parameter_queue, &parameters);
-            run_leg_thread_once(state, &parameters, elapsed, dt);
+            run_leg_thread_once(state, &parameters, dt);
         } else {
-            send_telemetry(state);
+            state->valid_measurements = get_measured_positions(state) == 0;
+            if(state->valid_measurements)
+                send_telemetry(state);
+
             check_command_queue(state);
         }
         state->observed_period *= 0.9;
@@ -686,7 +673,10 @@ static void *run_leg_thread(void *ptr)
     destroy_rate_timer(&state->timer);
     free_leg_description(state->legs, state->nlegs);
     free(state->joint_gains);
+    free(state->leg_mode);
+    free(state->initial_toe_positions);
     free(state->commanded_toe_positions);
+    free(state->toe_position_measured);
     free(state->initial_toe_positions);
     free_step_descriptions(state->steps, state->nsteps);
     free_gait_descriptions(state->gaits, state->ngaits);

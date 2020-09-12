@@ -47,7 +47,7 @@ test_gain_set: LDFLAGS+= $(MODBUS_LDFLAGS)
 fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
 fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
 
-all: libs targets
+all: libs targets LegModes.pdf
 
 targets: leg_control sbus_radio telemetry
 
@@ -120,7 +120,7 @@ tomlc99/libtoml.a: tomlc99/toml.c tomlc99/toml.h
 sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
 	$(MAKE) -C sclog4c/src
 
-LegModes.pdf: LegModes.dot
+%.pdf: %.dot
 	dot -Tpdf $< -o $@
 
 lcmspy: stomp.jar
