@@ -389,8 +389,18 @@ static bool all_leg_mode(enum leg_control_mode* leg_mode, int nlegs, enum leg_co
     return ready;
 }
 
+static int count_leg_mode(enum leg_control_mode* leg_mode, int nlegs, enum leg_control_mode m)
+{
+    int c=0;
+    for(int l=0;l<nlegs;l++)
+        if(leg_mode[l] == m) c++;
+    return c;
+}
+
 static void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float dt)
 {
+    int count;
+
     switch(state->legs_mode)
     {
         case mode_all_init:
@@ -526,6 +536,11 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
                 logm(SL4C_INFO, "all_walk->all_ping.");
                 setall_leg_mode(state->leg_mode, state->nlegs, mode_ping);
                 state->legs_mode = mode_all_ping;
+            }
+            count = count_leg_mode(state->leg_mode, state->nlegs, mode_move_start);
+            if(count > 0)
+            {
+                logm(SL4C_INFO, "moving %d", count);
             }
             break;
     }
