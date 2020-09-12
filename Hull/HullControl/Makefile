@@ -47,9 +47,11 @@ test_gain_set: LDFLAGS+= $(MODBUS_LDFLAGS)
 fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
 fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
 
-all: libs targets LegModes.pdf
+all: libs targets
 
 targets: leg_control sbus_radio telemetry
+
+LegModes.pdf: LegModes.dot
 
 libs: $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELIB)
 
