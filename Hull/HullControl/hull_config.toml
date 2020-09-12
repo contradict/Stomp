@@ -13,6 +13,7 @@ count=6
 position_ramp_time=1.0
 toe_position_tolerance=0.010
 telemetry_frequency=10
+telemetry_period_smoothing=0.9
 
 [robot.legs.joint_gain.Curl]
 ProportionalGain=12

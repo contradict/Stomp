@@ -71,6 +71,7 @@ struct leg_thread_state {
     float position_ramp_time;
     float toe_position_tolerance;
     float telemetry_frequency;
+    float telemetry_period_smoothing;
     atomic_bool shouldrun;
     struct rate_timer *timer;
     enum leg_control_mode *leg_mode;
@@ -635,6 +636,7 @@ static void *run_leg_thread(void *ptr)
     get_float(legs_config, "position_ramp_time", &state->position_ramp_time);
     get_float(legs_config, "toe_position_tolerance", &state->toe_position_tolerance);
     get_float(legs_config, "telemetry_frequency", &state->telemetry_frequency);
+    get_float(legs_config, "telemetry_period_smoothing", &state->telemetry_period_smoothing);
 
     state->steps = parse_steps(state->definition->config, &state->nsteps);
 
@@ -674,8 +676,8 @@ static void *run_leg_thread(void *ptr)
 
         check_command_queue(state);
 
-        state->observed_period *= 0.9;
-        state->observed_period += 0.1 * dt;
+        state->observed_period *= state->telemetry_period_smoothing;
+        state->observed_period += (1.0f - state->telemetry_period_smoothing) * dt;
         sleep_rate(state->timer, &elapsed, &dt);
         logm(SL4C_FINE, "lp: %s el: %6.3f dt: %5.3f", loop_phase ? "walk" : "tlem", elapsed, dt);
         loop_phase ^= true;
