@@ -186,16 +186,34 @@ static int compute_walk_parameters(struct leg_thread_state *state, struct leg_co
 {
     float right_velocity = p->forward_velocity + state->turning_width * p->angular_velocity;
     float left_velocity = p->forward_velocity - state->turning_width * p->angular_velocity;
-    float left_scale, right_scale, scale = fabs(left_velocity / right_velocity);
-    if(scale <= 1.0)
+    float left_scale, right_scale, scale;
+    if(fabsf(right_velocity) <= 1e-4 && fabsf(left_velocity) <= 1e-4)
     {
-        left_scale = copysignf(scale, left_velocity);
-        right_scale = copysignf(1.0, right_velocity);
+        left_scale = right_scale = 1.0f;
+    }
+    else if(fabsf(right_velocity) <= 1e-4 && fabsf(left_velocity) > 1e-4)
+    {
+        right_scale = 0.0f;
+        left_scale = copysignf(1.0f, left_velocity);
+    }
+    else if(right_velocity > 1e-4 && left_velocity <= 1e-4)
+    {
+        right_scale = copysignf(1.0f, right_velocity);
+        left_scale = 0.0f;
     }
     else
     {
-        left_scale = copysignf(1.0, left_velocity);
-        right_scale = copysignf(1.0/scale, right_velocity);
+        scale= fabs(left_velocity / right_velocity);
+        if(scale <= 1.0)
+        {
+            left_scale = copysignf(scale, left_velocity);
+            right_scale = copysignf(1.0, right_velocity);
+        }
+        else
+        {
+            left_scale = copysignf(1.0, left_velocity);
+            right_scale = copysignf(1.0/scale, right_velocity);
+        }
     }
     for(int l=0;l<state->nlegs / 2;l++)
     {
