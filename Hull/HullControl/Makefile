@@ -57,6 +57,7 @@ libs: $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELI
 
 clean:
 	rm -f src/leg_control/*.o
+	rm -f src/leg_control/test/*.o
 	rm -f src/sbus_radio/*.o
 	rm -f src/sbus_radio/fake/*.o
 	rm -fr ringbuf/lib ringbuf/include
@@ -72,6 +73,15 @@ leg_control: $(leg_control_objs) ../Common/modbus_device.o $(MESSAGELIB) $(RINGB
 
 leg_control_cap: leg_control
 	sudo setcap "cap_sys_nice=ep" ./leg_control
+
+lissajou: CFLAGS+= -I ../../LegBoard/Firmware/inc/export
+lissajou: LDFLAGS+= $(MODBUS_LDFLAGS)
+
+lissajou: src/leg_control/test/lissajou.o src/leg_control/modbus_utils.o src/leg_control/rate_timer.o ../Common/modbus_device.o
+	gcc $^ -o $@ $(LDFLAGS)
+
+lissajou_cap: lissajou
+	sudo setcap "cap_sys_nice=ep" ./lissajou
 
 test_gain_set: src/leg_control/test/test_gain_set.o src/leg_control/modbus_utils.o ../Common/modbus_device.o
 	gcc $^ -o $@ $(LDFLAGS)
