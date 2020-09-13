@@ -58,6 +58,7 @@ libs: $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELI
 clean:
 	rm -f src/leg_control/*.o
 	rm -f src/sbus_radio/*.o
+	rm -f src/sbus_radio/fake/*.o
 	rm -fr ringbuf/lib ringbuf/include
 	rm -fr inc/lcm src/lcm
 	rm -f leg_control sbus_radio
@@ -78,8 +79,8 @@ test_gain_set: src/leg_control/test/test_gain_set.o src/leg_control/modbus_utils
 sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
 	gcc src/sbus_radio/main.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
-fake_sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
-	gcc src/sbus_radio/fake_radio.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+fake_sbus_radio: src/sbus_radio/fake/fake_radio.o $(MESSAGELIB)
+	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 telemetry: $(telemetry_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
