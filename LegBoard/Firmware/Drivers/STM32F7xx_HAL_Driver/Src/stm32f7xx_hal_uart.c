@@ -2114,7 +2114,16 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
 
   /* If no error occurs */
   errorflags = (isrflags & (uint32_t)(USART_ISR_PE | USART_ISR_FE | USART_ISR_ORE | USART_ISR_NE));
-  if (errorflags == 0U)
+  // FIXME: Terrible hack to ignore NE. Remove when signal integrity is
+  // improved.
+  if((errorflags & USART_ISR_NE) != 0u)
+  {
+      __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_NEF);
+      errorflags &= ~USART_ISR_NE;
+      if((errorflags == 0u) && ((isrflags & (USART_ISR_TXE | USART_ISR_TC)) == 0))
+          return;
+  }
+  else if (errorflags == 0U)
   {
     /* UART in mode Receiver ---------------------------------------------------*/
     if (((isrflags & USART_ISR_RXNE) != 0U)
