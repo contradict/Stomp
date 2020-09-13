@@ -144,6 +144,8 @@ void TargetAcquisitionController::updateBestTarget()
     if (m_lastUpdateTime - m_lastRequestDetectionsTime > k_leddarRequestMaxDt)
     {
         m_lastRequestDetectionsTime = m_lastUpdateTime;
+        Telem.LogMessage("TImeout Retry - Request Detections" + String(m_lastUpdateTime));
+
         requestDetections();
     }
 
@@ -158,9 +160,10 @@ void TargetAcquisitionController::updateBestTarget()
     m_rawDetectionCount = parseDetections();
 
     m_lastRequestDetectionsTime = m_lastUpdateTime;
+    Telem.LogMessage("Request Detections" + String(m_lastUpdateTime));
     requestDetections();
-    calculateMinimumDetections(m_rawDetectionCount);
 
+    calculateMinimumDetections(m_rawDetectionCount);
     getMinimumDetections(&m_minDetections);
 
     //  Now that Leddar has given us the detections, segment into m_possibleTargets
@@ -188,10 +191,9 @@ void TargetAcquisitionController::updateBestTarget()
         if (targetIndex < m_possibleTargetsCount)
         {
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetSize()) + String(", ");
-            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetAngle()) + String(", ");
-            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetXCoord()) + String(", ");
-            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetYCoord()) + String(", ");
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetDistance()) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].LeftEdge) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].RightEdge) + String(", ");
         }
         else
         {
