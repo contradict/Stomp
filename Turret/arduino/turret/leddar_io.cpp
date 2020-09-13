@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "leddar_io.h"
 #include "pins.h"
+#include "telemetryController.h"
 
 // MAX_DETECTIONS should be <255
 #define MAX_DETECTIONS 50
@@ -53,12 +54,14 @@ static const uint8_t CRC_LO[] =
     0x40
 };
 
-struct LeddarParameters {
+struct LeddarParameters 
+{
     int16_t min_detection_distance;
     int16_t max_detection_distance;
 } __attribute__((packed));
 
-static struct LeddarParameters EEMEM saved_params = {
+static struct LeddarParameters EEMEM saved_params = 
+{
     .min_detection_distance = 20,
     .max_detection_distance = 600,
 };
@@ -69,30 +72,34 @@ static void saveLeddarParmeters(void);
 static void restoreLeddarParameters(void);
 
 static Detection RawDetections[MAX_DETECTIONS];
-static uint8_t good_detections;
 static Detection MinimumDetections[LEDDAR_SEGMENTS];
+static uint8_t good_detections;
 
-void initLeddarWrapper(){
-  restoreLeddarParameters();
-  for(size_t i=0; i<LEDDAR_SEGMENTS; i++) {
-    MinimumDetections[i].Segment = i;
-  }
-  s_LeddarSerial.begin(115200);
+void initLeddarWrapper()
+{
+    restoreLeddarParameters();
+
+    for(size_t i=0; i<LEDDAR_SEGMENTS; i++) 
+    {
+        MinimumDetections[i].Segment = i;
+    }
+
+    s_LeddarSerial.begin(115200);
 }
 
 uint16_t CRC16(uint8_t *aBuffer, uint8_t aLength)
 {
-  uint8_t lCRCHi = 0xFF; // high byte of CRC initialized
-  uint8_t lCRCLo = 0xFF; // low byte of CRC initialized
+    uint8_t lCRCHi = 0xFF; // high byte of CRC initialized
+    uint8_t lCRCLo = 0xFF; // low byte of CRC initialized
 
-  for (uint16_t i = 0; i<aLength; ++i)
-  {
-    uint16_t lIndex = lCRCLo ^ aBuffer[i]; // calculate the CRC
-    lCRCLo = lCRCHi ^ CRC_HI[lIndex];
-    lCRCHi = CRC_LO[lIndex];
-  }
+    for (uint16_t i = 0; i < aLength; ++i)
+    {
+        uint16_t lIndex = lCRCLo ^ aBuffer[i]; // calculate the CRC
+        lCRCLo = lCRCHi ^ CRC_HI[lIndex];
+        lCRCHi = CRC_LO[lIndex];
+    }
 
-  return (lCRCHi<<8) | lCRCLo;
+    return (lCRCHi<<8) | lCRCLo;
 }
 
 uint16_t len = 0;
@@ -103,96 +110,148 @@ uint8_t receivedData[MAX_LEDDAR_BUFFER] = {0};
 uint16_t leddar_overrun = 0;
 uint16_t leddar_crc_error = 0;
 
-void requestDetections(){
-  uint8_t data[64] = {0};
-  uint16_t count = s_LeddarSerial.available();
-  //clear serial buffer
-  while (count>0)
-  {
-    s_LeddarSerial.readBytes(data, min(64, count));
-    count = s_LeddarSerial.available();
-  }
-  len = 0;
+void requestDetections()
+{
+    Telem.LogMessage("Request Detections");
+    uint8_t data[64] = {0};
 
-  //send message on uart
-  data[0] = LEDDAR_SLAVE_ID;
-  data[1] = REQUEST_DETECTIONS_CMD;
-  *((uint16_t *)(data+2)) = CRC16(data, 2);
-  s_LeddarSerial.write(data, 4);
+    //  Clear serial buffer
+
+    uint16_t count = s_LeddarSerial.available();
+    Telem.LogMessage("Discarded: " + String(count) + " bytes");
+
+    while (count>0)
+    {
+        s_LeddarSerial.readBytes(data, min(64, count));
+
+        count = s_LeddarSerial.available();
+        Telem.LogMessage("Discarded: " + String(count) + " bytes");
+    }
+
+    len = 0;
+
+    //  Send request for detections
+
+    data[0] = LEDDAR_SLAVE_ID;
+    data[1] = REQUEST_DETECTIONS_CMD;
+    *((uint16_t *)(data+2)) = CRC16(data, 2);
+
+    s_LeddarSerial.write(data, 4);
+    Telem.LogMessage("Request Detections, sent");
 }
 
-bool bufferDetections(){
-  uint16_t count = s_LeddarSerial.available();
-  if (count > 0){
-    if(len+count<MAX_LEDDAR_BUFFER) {
-      s_LeddarSerial.readBytes(receivedData+len, count);
-      len += count;
-    } else {
-      len = 0;
-      leddar_overrun++;
-    }
-  }
-  if (len > 2) {
-    if(receivedData[0] == LEDDAR_SLAVE_ID && receivedData[1] == REQUEST_DETECTIONS_CMD){
-        uint8_t detection_count = receivedData[2];
-        uint16_t target_len = detection_count * 5 + 11;
-        if (target_len == len){
-          return true;
+bool bufferDetections()
+{
+    Telem.LogMessage("Buffer Detections, starting with length = " + String(len));
+
+    uint16_t count = s_LeddarSerial.available();
+
+    Telem.LogMessage(String(count) + " bytes are ready to read");
+
+    if (count > 0)
+    {
+        if(len + count < MAX_LEDDAR_BUFFER) 
+        {
+            s_LeddarSerial.readBytes(receivedData+len, count);
+            len += count;
+        } 
+        else 
+        {
+            Telem.LogMessage("Leddar overrun");
+
+            len = 0;
+            leddar_overrun++;
         }
-    } else {
-        len = 0;
     }
-  }
-  return false;
-}
 
-uint8_t parseDetections(){
-  if(CRC16(receivedData, len) != 0){
-    leddar_crc_error ++;
-    return 0;
-  }
-  uint8_t detection_count = min(MAX_DETECTIONS, receivedData[2]);
-  good_detections = 0;
-  // Parse out detection info
-  for ( uint16_t i = 0; i < detection_count; i++){
-      uint8_t offset = 3 + 5*i;
-      uint16_t *current = (uint16_t*)(receivedData + offset);
-      uint16_t distance = current[0];
-      uint16_t amplitude = current[1];
+    if (len > 2) 
+    {
+        if (receivedData[0] == LEDDAR_SLAVE_ID && receivedData[1] == REQUEST_DETECTIONS_CMD)
+        {
+            uint8_t detection_count = receivedData[2];
+            uint16_t target_len = detection_count * 5 + 11;
 
-      // flip the segment ID since we're upside down
-      uint8_t segment = (LEDDAR_SEGMENTS-1) - (receivedData[offset+4]/LEDDAR_SEGMENTS);
-      RawDetections[good_detections].Distance = distance;
-      RawDetections[good_detections].Amplitude = amplitude;
-      RawDetections[good_detections].Segment = segment;
-      good_detections++;
-  }
+            Telem.LogMessage("Detection Count = " + String(detection_count) + " & Target Lenght = " + String(target_len));
 
-  return good_detections;
-}
-
-size_t getRawDetections(const Detection **detections) {
-  *detections = RawDetections;
-  return good_detections;
-}
-
-void calculateMinimumDetections(size_t good_detections) {
-  for (size_t i=0; i < LEDDAR_SEGMENTS; i++) {
-    MinimumDetections[i].reset();
-  }
-  for (uint8_t i = 0; i < good_detections; i++) {
-    uint8_t segment = RawDetections[i].Segment;
-    if (RawDetections[i].Distance < MinimumDetections[segment].Distance &&
-        RawDetections[i].Distance > params.min_detection_distance &&
-        RawDetections[i].Distance < params.max_detection_distance){
-      MinimumDetections[segment] = RawDetections[i];
+            if (target_len == len)
+            {
+                return true;
+            }
+        } 
+        else 
+        {
+            Telem.LogMessage("Invalid message header");
+            len = 0;
+        }
     }
-  }
+
+    return false;
 }
 
-size_t getMinimumDetections(const Detection (**detections)[LEDDAR_SEGMENTS]) {
- *detections = &MinimumDetections;
- return LEDDAR_SEGMENTS;
+uint8_t parseDetections()
+{
+    if (CRC16(receivedData, len) != 0)
+    {
+        leddar_crc_error++;
+        return 0;
+    }
+
+    uint8_t detection_count = min(MAX_DETECTIONS, receivedData[2]);
+    good_detections = 0;
+    
+    // Parse out detection info
+    for (uint16_t i = 0; i < detection_count; i++)
+    {
+        uint8_t offset = 3 + 5*i;
+        uint16_t *current = (uint16_t*)(receivedData + offset);
+        uint16_t distance = current[0];
+        uint16_t amplitude = current[1];
+
+        // flip the segment ID since we're upside down
+
+        uint8_t segment = (LEDDAR_SEGMENTS-1) - (receivedData[offset+4]/LEDDAR_SEGMENTS);
+        RawDetections[good_detections].Distance = distance;
+        RawDetections[good_detections].Amplitude = amplitude;
+        RawDetections[good_detections].Segment = segment;
+
+        good_detections++;
+    }
+
+    calculateMinimumDetections();
+    
+    return good_detections;
+}
+
+size_t getRawDetections(const Detection **detections) 
+{
+    *detections = RawDetections;
+    return good_detections;
+}
+
+void calculateMinimumDetections() 
+{
+    for (size_t i=0; i < LEDDAR_SEGMENTS; i++) 
+    {
+        MinimumDetections[i].reset();
+    }
+    
+    for (uint8_t i = 0; i < good_detections; i++) 
+    {
+        uint8_t segment = RawDetections[i].Segment;
+
+        if (RawDetections[i].Distance < MinimumDetections[segment].Distance &&
+            RawDetections[i].Distance > params.min_detection_distance &&
+            RawDetections[i].Distance < params.max_detection_distance)
+        {
+            MinimumDetections[segment] = RawDetections[i];
+        }
+    }
+}
+
+size_t getMinimumDetections(const Detection (**detections)[LEDDAR_SEGMENTS]) 
+{
+    *detections = &MinimumDetections;
+    return LEDDAR_SEGMENTS;
 }
 
 void setLeddarParameters(int16_t min_detection_distance,
@@ -203,10 +262,12 @@ void setLeddarParameters(int16_t min_detection_distance,
     saveLeddarParmeters();
 }
 
-static void saveLeddarParmeters(void) {
+static void saveLeddarParmeters(void) 
+{
     eeprom_write_block(&params, &saved_params, sizeof(struct LeddarParameters));
 }
 
-void restoreLeddarParameters(void) {
+void restoreLeddarParameters(void) 
+{
     eeprom_read_block(&params, &saved_params, sizeof(struct LeddarParameters));
 }

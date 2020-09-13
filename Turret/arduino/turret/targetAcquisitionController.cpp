@@ -144,7 +144,7 @@ void TargetAcquisitionController::updateBestTarget()
     if (m_lastUpdateTime - m_lastRequestDetectionsTime > k_leddarRequestMaxDt)
     {
         m_lastRequestDetectionsTime = m_lastUpdateTime;
-        Telem.LogMessage("TImeout Retry - Request Detections" + String(m_lastUpdateTime));
+        Telem.LogMessage("TImeout Retry - Request Detections: " + String(m_lastUpdateTime));
 
         requestDetections();
     }
@@ -160,10 +160,9 @@ void TargetAcquisitionController::updateBestTarget()
     m_rawDetectionCount = parseDetections();
 
     m_lastRequestDetectionsTime = m_lastUpdateTime;
-    Telem.LogMessage("Request Detections" + String(m_lastUpdateTime));
+    Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
     requestDetections();
 
-    calculateMinimumDetections(m_rawDetectionCount);
     getMinimumDetections(&m_minDetections);
 
     //  Now that Leddar has given us the detections, segment into m_possibleTargets
@@ -257,6 +256,17 @@ void TargetAcquisitionController::segmentTargets()
         } 
         else if (delta > m_params.edgeCallThreshold || segmentIndex == (LEDDAR_SEGMENTS - 1)) 
         {
+            int16_t rightEdge = segmentIndex;
+
+            if (delta <= m_params.edgeCallThreshold)
+            {
+                //  If we are accepting this and a target, because it extends
+                //  out of FOV, then the right edge of the target is 16 (not 15)
+                //  so the Target can correctly count how many segments it covers.
+            
+                rightEdge = LEDDAR_SEGMENTS;
+            }
+
             //  Transition from near to far or ran off the right of Leddar FOV.
             //  Call it an object if target is still under construction and not too big
             
@@ -265,7 +275,7 @@ void TargetAcquisitionController::segmentTargets()
             if (m_possibleTargets[targetIndex].Type == Target::EBeingConstructed && 
                 size > m_params.objectSizeMin && size < m_params.objectSizeMax)
             {
-                m_possibleTargets[targetIndex].EndSegment(segmentIndex, &(*m_minDetections)[segmentIndex], m_lastUpdateTime);
+                m_possibleTargets[targetIndex].EndSegment(rightEdge, &(*m_minDetections)[segmentIndex], m_lastUpdateTime);
                 targetIndex++;
             }
         }
