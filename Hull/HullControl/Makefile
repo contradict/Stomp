@@ -51,11 +51,15 @@ all: libs targets
 
 targets: leg_control sbus_radio telemetry
 
+LegModes.pdf: LegModes.dot
+
 libs: $(RINGBUF_STATICLIB) $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELIB)
 
 clean:
 	rm -f src/leg_control/*.o
+	rm -f src/leg_control/test/*.o
 	rm -f src/sbus_radio/*.o
+	rm -f src/sbus_radio/fake/*.o
 	rm -fr ringbuf/lib ringbuf/include
 	rm -fr inc/lcm src/lcm
 	rm -f leg_control sbus_radio
@@ -70,14 +74,23 @@ leg_control: $(leg_control_objs) ../Common/modbus_device.o $(MESSAGELIB) $(RINGB
 leg_control_cap: leg_control
 	sudo setcap "cap_sys_nice=ep" ./leg_control
 
+lissajou: CFLAGS+= -I ../../LegBoard/Firmware/inc/export
+lissajou: LDFLAGS+= $(MODBUS_LDFLAGS)
+
+lissajou: src/leg_control/test/lissajou.o src/leg_control/modbus_utils.o src/leg_control/rate_timer.o ../Common/modbus_device.o
+	gcc $^ -o $@ $(LDFLAGS)
+
+lissajou_cap: lissajou
+	sudo setcap "cap_sys_nice=ep" ./lissajou
+
 test_gain_set: src/leg_control/test/test_gain_set.o src/leg_control/modbus_utils.o ../Common/modbus_device.o
 	gcc $^ -o $@ $(LDFLAGS)
 
 sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
 	gcc src/sbus_radio/main.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
-fake_sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
-	gcc src/sbus_radio/fake_radio.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+fake_sbus_radio: src/sbus_radio/fake/fake_radio.o $(MESSAGELIB)
+	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 telemetry: $(telemetry_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
@@ -120,7 +133,7 @@ tomlc99/libtoml.a: tomlc99/toml.c tomlc99/toml.h
 sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
 	$(MAKE) -C sclog4c/src
 
-LegModes.pdf: LegModes.dot
+%.pdf: %.dot
 	dot -Tpdf $< -o $@
 
 lcmspy: stomp.jar

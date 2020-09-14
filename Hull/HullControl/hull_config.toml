@@ -2,15 +2,20 @@
 
 name="Chomp"
 initial_gait="Tripod"
+forward_deadband = 0.05
+angular_deadband = 0.05
 
 [robot.geometry]
 
-halfwidth=0.010
+halfwidth=0.600
 
 [robot.legs]
 
 count=6
 position_ramp_time=1.0
+toe_position_tolerance=0.015
+telemetry_frequency=10
+telemetry_period_smoothing=0.9
 
 [robot.legs.joint_gain.Curl]
 ProportionalGain=12
@@ -86,13 +91,13 @@ name="Trapezoid"
 # Y - along robot side
 # Z - vertical
 points=[
-    { "phase"=0.0, "X"=19.0, "Y"= 7.0, "Z"=-23.0 },
-    { "phase"=0.6, "X"=19.0, "Y"=-7.0, "Z"=-23.0 },
-    { "phase"=0.7, "X"=19.0, "Y"=-7.0, "Z"=-17.0 },
-    { "phase"=0.9, "X"=19.0, "Y"= 7.0, "Z"=-17.0 },
+    { "phase"=0.0, "X"=0.19, "Y"= 0.070, "Z"=-0.230 },
+    { "phase"=0.6, "X"=0.19, "Y"=-0.070, "Z"=-0.230 },
+    { "phase"=0.7, "X"=0.19, "Y"=-0.070, "Z"=-0.170 },
+    { "phase"=0.9, "X"=0.19, "Y"= 0.070, "Z"=-0.170 },
 ]
 
-length=0.014
+length=0.140
 
 [[robot.gaits]]
 name="Tripod"

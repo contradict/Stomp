@@ -43,23 +43,26 @@ struct leg_description *parse_leg_descriptions(toml_table_t *legs_config, int *n
     toml_array_t *descriptions = toml_array_in(legs_config, "description");
     struct leg_description *legs = calloc(num_legs, sizeof(struct leg_description));
 
-    for(int leg=0; leg<num_legs; leg++)
+    for(int leg=0; leg<toml_array_nelem(descriptions); leg++)
     {
         toml_table_t *desc = toml_table_at(descriptions, leg);
         tomlr = toml_raw_in(desc, "index");
         int64_t index;
         toml_rtoi(tomlr, &index);
-        legs[index].index = index;
-        tomlr = toml_raw_in(desc, "name");
-        toml_rtos(tomlr, &legs[index].name);
-        tomlr = toml_raw_in(desc, "address");
-        int64_t addr;
-        toml_rtoi(tomlr, &addr);
-        legs[index].address = addr;
-        toml_array_t *o= toml_array_in(desc, "orientation");
-        toml_vector_float(o, legs[index].orientation);
-        o= toml_array_in(desc, "origin");
-        toml_vector_float(o, legs[index].origin);
+        if(index < *nlegs)
+        {
+            legs[index].index = index;
+            tomlr = toml_raw_in(desc, "name");
+            toml_rtos(tomlr, &legs[index].name);
+            tomlr = toml_raw_in(desc, "address");
+            int64_t addr;
+            toml_rtoi(tomlr, &addr);
+            legs[index].address = addr;
+            toml_array_t *o= toml_array_in(desc, "orientation");
+            toml_vector_float(o, legs[index].orientation);
+            o= toml_array_in(desc, "origin");
+            toml_vector_float(o, legs[index].origin);
+        }
     }
     return legs;
 }
@@ -100,7 +103,7 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         get_float(step, "length", &steps[s].length);
         toml_array_t *points = toml_array_in(step, "points");
         steps[s].npoints = toml_array_nelem(points);
-        steps[s].phase = calloc(steps[s].npoints, sizeof(float));
+        steps[s].phase = calloc(steps[s].npoints + 1, sizeof(float));
         steps[s].X = calloc(steps[s].npoints, sizeof(float));
         steps[s].Y = calloc(steps[s].npoints, sizeof(float));
         steps[s].Z = calloc(steps[s].npoints, sizeof(float));
@@ -112,6 +115,7 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
             get_float(pt, "Y", &steps[s].Y[p]);
             get_float(pt, "Z", &steps[s].Z[p]);
         }
+        steps[s].phase[steps[s].npoints] = 1.0f;
     }
     return steps;
 }

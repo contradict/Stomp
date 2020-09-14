@@ -16,7 +16,7 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
     (void)channel;
     struct lcm_listener_state *state = user;
     ssize_t offset = ringbuf_acquire(state->queue->ringbuf, state->worker, sizeof(struct leg_control_parameters));
-    if(offset > 0)
+    if(offset >= 0)
     {
         struct leg_control_parameters *params = (struct leg_control_parameters *)(state->queue->buffer + offset);
         params->forward_velocity = msg->axis[HULL_VELOCITY_X];
@@ -107,7 +107,7 @@ void modbus_command_handler(const lcm_recv_buf_t *rbuf, const char *channel, con
     (void)channel;
     struct lcm_listener_state *state = user;
     ssize_t offset = ringbuf_acquire(state->queue->ringbuf, state->worker, sizeof(struct leg_control_parameters));
-    if(offset > 0)
+    if(offset >= 0)
     {
         stomp_modbus *modbus = (stomp_modbus *)(state->queue->buffer + offset);
         memcpy(modbus, msg, sizeof(stomp_modbus));
