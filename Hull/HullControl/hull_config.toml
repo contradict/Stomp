@@ -2,6 +2,8 @@
 
 name="Chomp"
 initial_gait="Tripod"
+forward_deadband = 0.05
+angular_deadband = 0.05
 
 [robot.geometry]
 

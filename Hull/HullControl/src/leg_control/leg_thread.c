@@ -72,6 +72,8 @@ struct leg_thread_state {
     float toe_position_tolerance;
     float telemetry_frequency;
     float telemetry_period_smoothing;
+    float forward_deadband;
+    float angular_deadband;
     atomic_bool shouldrun;
     struct rate_timer *timer;
     enum leg_control_mode *leg_mode;
@@ -182,37 +184,43 @@ static int move_towards_gait(modbus_t* ctx, uint8_t address, float (*measured_to
     return ret;
 }
 
+static float deadband(float f, float d)
+{
+    if(fabsf(f) < d)
+        return 0;
+    else
+        return f - copysignf(d, f);
+}
+
 static int compute_walk_parameters(struct leg_thread_state *state, struct leg_control_parameters *p, float *frequency, float *leg_scale)
 {
-    float right_velocity = p->forward_velocity + state->turning_width * p->angular_velocity;
-    float left_velocity = p->forward_velocity - state->turning_width * p->angular_velocity;
+    float forward = deadband(p->forward_velocity, state->forward_deadband);
+    float angular = deadband(p->angular_velocity, state->angular_deadband);
+    float right_velocity = forward + state->turning_width * angular;
+    float left_velocity = forward - state->turning_width * angular;
     float left_scale, right_scale, scale;
     if(fabsf(right_velocity) <= 1e-4 && fabsf(left_velocity) <= 1e-4)
     {
-        left_scale = right_scale = 1.0f;
+        left_scale = copysignf(1.0f, left_velocity);
+        right_scale = copysignf(1.0f, right_velocity);
     }
     else if(fabsf(right_velocity) <= 1e-4 && fabsf(left_velocity) > 1e-4)
     {
         right_scale = 0.0f;
         left_scale = copysignf(1.0f, left_velocity);
     }
-    else if(right_velocity > 1e-4 && left_velocity <= 1e-4)
-    {
-        right_scale = copysignf(1.0f, right_velocity);
-        left_scale = 0.0f;
-    }
     else
     {
-        scale= fabs(left_velocity / right_velocity);
-        if(scale <= 1.0)
+        scale = fabs(left_velocity / right_velocity);
+        if(scale < 1.0)
         {
             left_scale = copysignf(scale, left_velocity);
-            right_scale = copysignf(1.0, right_velocity);
+            right_scale = copysignf(1.0f, right_velocity);
         }
         else
         {
-            left_scale = copysignf(1.0, left_velocity);
-            right_scale = copysignf(1.0/scale, right_velocity);
+            left_scale = copysignf(1.0f, left_velocity);
+            right_scale = copysignf(1.0f/scale, right_velocity);
         }
     }
     for(int l=0;l<state->nlegs / 2;l++)
@@ -660,6 +668,8 @@ static void *run_leg_thread(void *ptr)
         return (void *)-1;
     }
 
+    get_float(state->definition->config, "forward_deadband", &(state->forward_deadband));
+    get_float(state->definition->config, "angular_deadband", &(state->angular_deadband));
 
     toml_table_t *legs_config = toml_table_in(state->definition->config,
                                              "legs");
