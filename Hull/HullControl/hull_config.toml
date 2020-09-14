@@ -5,7 +5,7 @@ initial_gait="Tripod"
 
 [robot.geometry]
 
-halfwidth=0.010
+halfwidth=0.600
 
 [robot.legs]
 
@@ -95,7 +95,7 @@ points=[
     { "phase"=0.9, "X"=0.19, "Y"= 0.070, "Z"=-0.170 },
 ]
 
-length=0.014
+length=0.140
 
 [[robot.gaits]]
 name="Tripod"
