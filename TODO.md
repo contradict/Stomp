@@ -1,5 +1,11 @@
 # BeagleBone
 
+## System startup
+
+  * Start sbus_radio on system boot
+  * Start leg_control on system boot
+  * Start telemetry on system boot
+
 ## Servo tuning while walking
 
   * leg_control listens on LEG_COMMAND for packets to send on modbus
