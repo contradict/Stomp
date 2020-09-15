@@ -19,12 +19,15 @@ telemetry_period_smoothing=0.9
 
 [robot.legs.joint_gain.Curl]
 ProportionalGain=12
+DerivativeGain=0
 ForceDamping=20
 [robot.legs.joint_gain.Swing]
 ProportionalGain=12
+DerivativeGain=0
 ForceDamping=20
 [robot.legs.joint_gain.Lift]
 ProportionalGain=12
+DerivativeGain=0
 ForceDamping=20
 
 [[robot.legs.description]]

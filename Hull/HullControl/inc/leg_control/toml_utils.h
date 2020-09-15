@@ -11,6 +11,7 @@ struct leg_description {
 
 struct joint_gains {
     float proportional_gain[3];
+    float derivative_gain[3];
     float force_damping[3];
 };
 

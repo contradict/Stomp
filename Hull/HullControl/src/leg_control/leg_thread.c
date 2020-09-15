@@ -96,7 +96,7 @@ static int set_gain(modbus_t *ctx, uint8_t address, struct joint_gains *gain)
     uint32_t sec, saved_timeout;
     modbus_get_response_timeout(ctx, &sec, &saved_timeout);
     modbus_set_response_timeout(ctx, 0, 100000);
-    int err = set_servo_gains(ctx, address, &gain->proportional_gain, &gain->force_damping);
+    int err = set_servo_gains(ctx, address, &gain->proportional_gain, &gain->derivative_gain, &gain->force_damping);
     if(err == -1)
     {
         logm(SL4C_ERROR, "Failed to set servo gain for leg address 0x%02x).", address);

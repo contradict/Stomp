@@ -20,17 +20,24 @@ int ping_leg(modbus_t *ctx, uint8_t address)
         return data == PING_KEY;
 }
 
-int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], const float (*damping)[3])
+int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*pgain)[3], const float (*dgain)[3], const float (*damping)[3])
 {
     int ret=0, err;
-    uint16_t gain_value, damping_value;
+    uint16_t pgain_value, dgain_value, damping_value;
     modbus_set_slave(ctx, address);
-    gain_value = 10.0f * (*gain)[JOINT_CURL];
+    pgain_value = 10.0f * (*pgain)[JOINT_CURL];
+    dgain_value = 10.0f * (*dgain)[JOINT_CURL];
     damping_value = 10.0f * (*damping)[JOINT_CURL];
-    err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &gain_value);
+    err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &pgain_value);
     if(err == -1)
     {
-        logm(SL4C_ERROR, "Could not set Curl gain: %s", modbus_strerror(errno));
+        logm(SL4C_ERROR, "Could not set Curl proportional gain: %s", modbus_strerror(errno));
+        ret = err;
+    }
+    err = modbus_write_registers(ctx, CURL_BASE + HDerivativeGain, 1, &dgain_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Could not set Curl derivative gain: %s", modbus_strerror(errno));
         ret = err;
     }
     err = modbus_write_registers(ctx, CURL_BASE + HForceDamping, 1, &damping_value);
@@ -39,12 +46,19 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], cons
         logm(SL4C_ERROR, "Could not set Curl damping: %s", modbus_strerror(errno));
         ret = err;
     }
-    gain_value = 10.0f * (*gain)[JOINT_SWING];
+    pgain_value = 10.0f * (*pgain)[JOINT_SWING];
+    dgain_value = 10.0f * (*dgain)[JOINT_SWING];
     damping_value = 10.0f * (*damping)[JOINT_SWING];
-    err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &gain_value);
+    err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &pgain_value);
     if(err == -1)
     {
-        logm(SL4C_ERROR, "Could not set Swing gain: %s", modbus_strerror(errno));
+        logm(SL4C_ERROR, "Could not set Swing proportional gain: %s", modbus_strerror(errno));
+        ret = err;
+    }
+    err = modbus_write_registers(ctx, SWING_BASE + HDerivativeGain, 1, &dgain_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Could not set Swing derivative gain: %s", modbus_strerror(errno));
         ret = err;
     }
     err = modbus_write_registers(ctx, SWING_BASE + HForceDamping, 1, &damping_value);
@@ -53,15 +67,22 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*gain)[3], cons
         logm(SL4C_ERROR, "Could not set Swing damping: %s", modbus_strerror(errno));
         ret = err;
     }
-    gain_value = 10.0f * (*gain)[JOINT_LIFT];
+    pgain_value = 10.0f * (*pgain)[JOINT_LIFT];
+    dgain_value = 10.0f * (*dgain)[JOINT_LIFT];
     damping_value = 10.0f * (*damping)[JOINT_LIFT];
-    err = modbus_write_registers(ctx, LIFT_BASE + HForceDamping, 1, &damping_value);
+    err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &pgain_value);
     if(err == -1)
     {
-        logm(SL4C_ERROR, "Could not set Lift gain: %s", modbus_strerror(errno));
+        logm(SL4C_ERROR, "Could not set Lift proportional gain: %s", modbus_strerror(errno));
         ret = err;
     }
-    err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &gain_value);
+    err = modbus_write_registers(ctx, LIFT_BASE + HDerivativeGain, 1, &dgain_value);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Could not set Lift derivative gain: %s", modbus_strerror(errno));
+        ret = err;
+    }
+    err = modbus_write_registers(ctx, LIFT_BASE + HForceDamping, 1, &damping_value);
     if(err == -1)
     {
         logm(SL4C_ERROR, "Could not set Lift damping: %s", modbus_strerror(errno));
