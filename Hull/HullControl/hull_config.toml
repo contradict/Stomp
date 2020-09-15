@@ -26,7 +26,7 @@ ProportionalGain=12
 DerivativeGain=0
 ForceDamping=20
 [robot.legs.joint_gain.Lift]
-ProportionalGain=12
+ProportionalGain=18
 DerivativeGain=0
 ForceDamping=20
 
