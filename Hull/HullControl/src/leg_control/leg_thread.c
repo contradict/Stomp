@@ -84,6 +84,7 @@ struct leg_thread_state {
     float (*rod_end_pressure)[3];
     float (*commanded_toe_positions)[3];
     float (*initial_toe_positions)[3];
+    float *leg_scale;
     float turning_width;
     float walk_phase;
     float observed_period;
@@ -192,12 +193,21 @@ static float deadband(float f, float d)
         return f - copysignf(d, f);
 }
 
-static int compute_walk_parameters(struct leg_thread_state *state, struct leg_control_parameters *p, float *frequency, float *leg_scale)
+static void compute_walk_velocity(struct leg_thread_state* state, struct leg_control_parameters *p, float* left_velocity, float *right_velocity)
 {
     float forward = deadband(p->forward_velocity, state->forward_deadband);
     float angular = deadband(p->angular_velocity, state->angular_deadband);
-    float right_velocity = forward + state->turning_width * angular;
-    float left_velocity = forward - state->turning_width * angular;
+    *right_velocity = forward + state->turning_width * angular;
+    *left_velocity = forward - state->turning_width * angular;
+}
+
+static float compute_walk_frequency(float step_length, float left_velocity, float right_velocity)
+{
+    return MAX(fabsf(left_velocity), fabsf(right_velocity)) / step_length;
+}
+
+static int compute_walk_scale(struct leg_thread_state *state, float phase, float left_velocity, float right_velocity, float* leg_scale)
+{
     float left_scale, right_scale, scale;
     if(fabsf(right_velocity) <= 1e-4 && fabsf(left_velocity) <= 1e-4)
     {
@@ -223,31 +233,38 @@ static int compute_walk_parameters(struct leg_thread_state *state, struct leg_co
             right_scale = copysignf(1.0f/scale, right_velocity);
         }
     }
-    for(int l=0;l<state->nlegs / 2;l++)
-    {
-        leg_scale[l] = right_scale;
-    }
-    for(int l=state->nlegs/2;l<state->nlegs;l++)
-    {
-        leg_scale[l] = left_scale;
-    }
-    *frequency = MAX(fabsf(left_velocity), fabsf(right_velocity)) / state->steps[state->gaits[state->current_gait].step_index].length;
+    if((signbit(leg_scale[0]) == signbit(right_scale)) ||
+       (fabsf(phase - 0.3f) < 0.01f) ||
+       (fabsf(phase - 0.8f) < 0.01f))
+        for(int l=0;l<state->nlegs / 2;l++)
+        {
+            leg_scale[l] = right_scale;
+        }
+
+    if((signbit(leg_scale[state->nlegs/2]) == signbit(left_scale)) ||
+       (fabsf(phase - 0.3f) < 0.01f) ||
+       (fabsf(phase - 0.8f) < 0.01f))
+        for(int l=state->nlegs/2;l<state->nlegs;l++)
+        {
+            leg_scale[l] = left_scale;
+        }
     return 0;
 }
 
 static int compute_toe_positions(struct leg_thread_state* state, struct leg_control_parameters *p, float dt)
 {
-    float frequency;
-    float leg_scale[state->nlegs];
-    compute_walk_parameters(state, p, &frequency, leg_scale);
-
+    float left_velocity, right_velocity;
+    compute_walk_velocity(state, p, &left_velocity, &right_velocity);
+    float frequency = compute_walk_frequency(state->steps[state->gaits[state->current_gait].step_index].length,
+                                             left_velocity, right_velocity);
     float dummy;
     state->walk_phase = MAX(modff(state->walk_phase + frequency * dt, &dummy), 0.0f);
+    compute_walk_scale(state, state->walk_phase, left_velocity, right_velocity, state->leg_scale);
 
     int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
     {
-        compute_leg_position(state, leg, state->walk_phase, leg_scale[leg], &state->commanded_toe_positions[leg]);
+        compute_leg_position(state, leg, state->walk_phase, state->leg_scale[leg], &state->commanded_toe_positions[leg]);
     }
     return ret;
 }
@@ -680,6 +697,9 @@ static void *run_leg_thread(void *ptr)
     state->initial_toe_positions = malloc(sizeof(float[state->nlegs][3]));
     state->base_end_pressure = malloc(sizeof(float[state->nlegs][3]));
     state->rod_end_pressure = malloc(sizeof(float[state->nlegs][3]));
+    state->leg_scale = malloc(sizeof(float[state->nlegs]));
+    for(int i=0;i<state->nlegs;i++)
+        state->leg_scale[i] = 1.0f;
     state->leg_mode = malloc(state->nlegs * sizeof(enum leg_control_mode));
 
     get_float(legs_config, "position_ramp_time", &state->position_ramp_time);
