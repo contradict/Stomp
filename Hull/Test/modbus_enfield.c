@@ -152,21 +152,43 @@ int find_leg(char *arg)
 }
 
 
-int parse_register(char *arg)
+bool parse_number(char *arg, uint16_t *value)
 {
-    int count=0, value;
+    int count=0;
     char *offset;
 
     offset = strchr(arg, 'x');
     if(offset)
     {
-        count = sscanf(offset + 1, "%x", &value);
+        count = sscanf(offset + 1, "%hx", value);
     }
     else
     {
-        count = sscanf(arg+1, "%d", &value);
+        count = sscanf(arg, "%hd", value);
     }
     if(count == 1)
+    {
+        return true;
+    }
+    return false;
+}
+
+uint16_t parse_count(char *arg)
+{
+    char *countcolon = strrchr(arg, ':');
+    uint16_t count = 1;
+    if(countcolon)
+    {
+        if(sscanf(countcolon+1, "%hd", &count) != 1)
+            count = 1;
+    }
+    return count;
+}
+
+uint16_t parse_register(char *arg)
+{
+    uint16_t value;
+    if(parse_number(arg, &value))
     {
         return value;
     }
@@ -192,15 +214,16 @@ int parse_register(char *arg)
     }
 }
 
-void ensure_ctx(modbus_t **ctx, char *devname, uint32_t baud, uint32_t response_timeout, uint8_t address)
+void ensure_ctx(modbus_t **ctx, char *devname, uint32_t baud, uint32_t byte_timeout, uint32_t response_timeout, uint8_t address)
 {
     if(*ctx == NULL)
     {
-        if(create_modbus_interface(devname, baud, response_timeout, ctx))
+        if(create_modbus_interface(devname, baud, byte_timeout, response_timeout, ctx))
         {
             exit(1);
         }
         modbus_set_slave(*ctx, address);
+        //modbus_set_debug(*ctx, 1);
     }
 }
 
@@ -234,8 +257,8 @@ int checkjoint(int joint)
 {
     if(joint<0)
     {
-        printf("Must specify joint (-j)\n");
-        exit(1);
+        printf("No joint (-j) specified, using offset 0.\n");
+        return 0;
     }
     return joint_base[joint];
 }
@@ -285,11 +308,11 @@ void write_register(modbus_t *ctx, int joint, int write_register, char typ, uint
     }
 }
 
-void read_register(modbus_t *ctx, int joint, int read_register, char typ)
+void read_register(modbus_t *ctx, int joint, int read_register, char typ, int count)
 {
     uint16_t base;
     int err;
-    uint16_t value;
+    uint16_t value[count];
     uint8_t bit_value;
     switch(typ)
     {
@@ -308,43 +331,136 @@ void read_register(modbus_t *ctx, int joint, int read_register, char typ)
             break;
         case 'H':
             base = checkjoint(joint);
-            err = modbus_read_registers(ctx, base + read_register, 1, &value);
+            err = modbus_read_registers(ctx, base + read_register, count, value);
             if(err == -1)
             {
-                printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+                printf("Unable to read joint %d, register 0x%x:%d: %s\n", joint, read_register, count, modbus_strerror(errno));
             }
             else
             {
-                printf("Joint %d, register 0x%x = 0x%x\n",
-                        joint, read_register, value);
+                printf("Joint %d, register 0x%x:%d = [", joint, read_register, count);
+                for(int i=0;i<count;i++)
+                    printf("0x%x%s",  value[i], i<count-1 ? ", " : "].\n");
             }
             break;
         case 'I':
             base = checkjoint(joint);
-            err = modbus_read_input_registers(ctx, base + read_register, 1, &value);
+            err = modbus_read_input_registers(ctx, base + read_register, count, value);
             if(err == -1)
             {
-                printf("Unable to read joint %d, input register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+                printf("Unable to read joint %d, input register 0x%x:%d: %s\n", joint, read_register, count, modbus_strerror(errno));
             }
             else
             {
-                printf("Joint %d, input register 0x%x = 0x%x\n",
-                        joint, read_register, value);
+                printf("Joint %d, input register 0x%x:%d = [", joint, read_register, count);
+                for(int i=0;i<count;i++)
+                    printf("0x%x%s",  value[i], i<count-1 ? ", " : "].\n");
             }
             break;
         case 'J':
         case 'T':
-            err = modbus_read_registers(ctx, read_register, 1, &value);
+            err = modbus_read_registers(ctx, read_register, count, value);
             if(err == -1)
             {
-                printf("Unable to read joint %d, register 0x%x: %s\n", joint, read_register, modbus_strerror(errno));
+                printf("Unable to read joint %d, register 0x%x:%d: %s\n", joint, read_register, count, modbus_strerror(errno));
             }
             else
             {
-                printf("Joint %d, register 0x%x = 0x%x\n",
-                        joint, read_register, value);
+                printf("Joint %d, register 0x%x:%d = [", joint, read_register, count);
+                for(int i=0;i<count;i++)
+                    printf("0x%x%s",  value[i], i<count-1 ? ", " : "].\n");
             }
             break;
+    }
+}
+
+struct DiagnosticFunction {
+    char *name;
+    uint16_t code;
+} diag_functions[16] = {
+    {"DiagReturnQueryData", 0},
+    {"DiagRestartCommunications", 1},
+    {"DiagReturnDiagnosticRegister", 2},
+    {"DiagChangeASCIIInputDelimiter", 3},
+    {"DiagForceListenOnlyMode", 4},
+    {"DiagClearCounters", 10},
+    {"DiagReturnBusMessageCount", 11},
+    {"DiagReturnBusCommunicationErrorCount", 12},
+    {"DiagReturnBusExceptionErrorCount", 13},
+    {"DiagReturnServerMessageCount", 14},
+    {"DiagReturnServerNoResponseCount", 15},
+    {"DiagReturnServerNAKCount", 16},
+    {"DiagReturnServerBusyCount", 17},
+    {"DiagReturnBusCharacterOverrunCount", 18},
+    {"DiagClearOverrunCounter", 20},
+    {NULL, 0}};
+
+bool parse_diagnostic(char *optarg, uint16_t* subfunc, uint16_t* data)
+{
+    char* datastr = optarg;
+    char* funcstr = strsep(&datastr, ":");
+
+    // printf("funcstr: %s datastr: %s\n", funcstr, datastr);
+    int i=0;
+    while(diag_functions[i].name)
+    {
+        if(strcasecmp(diag_functions[i].name, funcstr) == 0)
+        {
+            *subfunc = diag_functions[i].code;
+            //printf("parse name %s %d\n", diag_functions[i].name, diag_functions[i].code);
+            break;
+        }
+        i++;
+    }
+    if(!diag_functions[i].name)
+    {
+        if(!parse_number(funcstr, subfunc))
+        {
+            return false;
+        }
+    }
+    bool pdata;
+    if(datastr)
+    {
+        pdata =  parse_number(datastr, data);
+        // printf("parse data %s: %d (%s)\n", datastr, *data, pdata ? "t":"f");
+        return pdata;
+    }
+    return true;
+}
+
+char* str_diagnostic(uint16_t subfunc)
+{
+    int i=0;
+    while(diag_functions[i].name)
+    {
+        if(diag_functions[i].code == subfunc)
+            return diag_functions[i].name;
+        i++;
+    }
+    return "Unknown";
+}
+
+int modbus_diagnostic(modbus_t *ctx, uint16_t subfunc, uint16_t data, uint16_t *rdata)
+{
+    int err = modbus_diagnostics(ctx, subfunc, &data);
+    *rdata = data;
+    return err;
+}
+
+void diagnostic(modbus_t* ctx, uint16_t subfunc, uint16_t data)
+{
+    uint16_t rdata;
+
+    int err = modbus_diagnostic(ctx, subfunc, data, &rdata);
+    if(err < 0)
+    {
+        printf("Error reading diagnostic %s(%d): %s\n",
+                str_diagnostic(subfunc), subfunc, modbus_strerror(errno));
+    }
+    else
+    {
+        printf("Diagnostic %s(%d): %x\n", str_diagnostic(subfunc), subfunc, rdata);
     }
 }
 
@@ -353,19 +469,22 @@ int main(int argc, char **argv)
     char *devname = "/dev/ttyS4";
     uint32_t baud = 1000000;
     int addr = 0x55;
-    uint32_t response_timeout = 2000;
+    uint32_t response_timeout = 10000;
+    uint32_t byte_timeout = 50;
 
     int opt;
     char *offset;
     int joint = -1;
     int16_t reg = -1;
-    uint16_t value;
+    uint16_t subfunc, value;
     char typ;
     char *wreg_ptr, *saveptr;
+    int idx;
+    int count;
 
     modbus_t *ctx = NULL;
 
-    while((opt = getopt(argc, argv, "p:b:a:r:j:sR:W:")) != -1)
+    while((opt = getopt(argc, argv, "p:b:a:r:t:j:sR:W:D:")) != -1)
     {
         switch(opt)
         {
@@ -392,18 +511,22 @@ int main(int argc, char **argv)
             case 'r':
                 response_timeout = 1000*atoi(optarg);
                 break;
+            case 't':
+                byte_timeout = atoi(optarg);
+                break;
             case 'j':
                 joint = parse_joint(optarg);
                 break;
             case 's':
-                ensure_ctx(&ctx, devname, baud, response_timeout, addr & 0xff);
+                ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, addr & 0xff);
                 read_serialnumber(ctx, joint);
                 break;
             case 'R':
                 reg = parse_register(optarg);
                 typ = optarg[0];
-                ensure_ctx(&ctx, devname, baud, response_timeout, addr & 0xff);
-                read_register(ctx, joint, reg, typ);
+                count = parse_count(optarg);
+                ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, addr & 0xff);
+                read_register(ctx, joint, reg, typ, count);
                 break;
             case 'W':
                 wreg_ptr = strtok_r(optarg, ":", &saveptr);
@@ -423,8 +546,26 @@ int main(int argc, char **argv)
                 {
                     value = atoi(wreg_ptr);
                 }
-                ensure_ctx(&ctx, devname, baud, response_timeout, addr & 0xff);
+                ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, addr & 0xff);
                 write_register(ctx, joint, reg, typ, value);
+                break;
+            case 'D':
+                if(parse_diagnostic(optarg, &subfunc, &value))
+                {
+                    //printf("subfunc: %d data: %d\n", subfunc, value);
+                    ensure_ctx(&ctx, devname, baud, byte_timeout, response_timeout, addr & 0xff);
+                    diagnostic(ctx, subfunc, value);
+                }
+                else
+                {
+                    printf("Unable to parse Diagnostic string %s.\nAvailable diagnostic subfunctions:\n", optarg);
+                    idx = 0;
+                    while(diag_functions[idx].name)
+                    {
+                        printf("%s: %d\n", diag_functions[idx].name, diag_functions[idx].code);
+                        idx++;
+                    }
+                }
                 break;
         }
     }

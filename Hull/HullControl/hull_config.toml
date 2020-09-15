@@ -1,0 +1,110 @@
+[robot]
+
+name="Chomp"
+initial_gait="Tripod"
+forward_deadband = 0.05
+angular_deadband = 0.05
+
+[robot.geometry]
+
+halfwidth=0.600
+
+[robot.legs]
+
+count=6
+position_ramp_time=1.0
+toe_position_tolerance=0.015
+telemetry_frequency=10
+telemetry_period_smoothing=0.9
+
+[robot.legs.joint_gain.Curl]
+ProportionalGain=12
+DerivativeGain=0
+ForceDamping=20
+[robot.legs.joint_gain.Swing]
+ProportionalGain=12
+DerivativeGain=0
+ForceDamping=20
+[robot.legs.joint_gain.Lift]
+ProportionalGain=18
+DerivativeGain=0
+ForceDamping=20
+
+[[robot.legs.description]]
+name="LeftFront"
+index=0
+address=0x10
+# X, Y, Z
+origin=[0, 0, 0]
+# Roll, pitch, yaw
+orientation=[0, 0, 180]
+
+[[robot.legs.description]]
+name="LeftCenter"
+index=1
+address=0x20
+# X, Y, Z
+origin=[0, 0, 0]
+# Roll, pitch, yaw
+orientation=[0, 0, 180]
+
+[[robot.legs.description]]
+name="LeftRear"
+index=2
+address=0x30
+# X, Y, Z
+origin=[0, 0, 0]
+# Roll, pitch, yaw
+orientation=[0, 0, 180]
+
+[[robot.legs.description]]
+name="RightRear"
+index=3
+address=0x40
+# X, Y, Z
+origin=[0, 0, 0]
+# Roll, pitch, yaw
+orientation=[0, 0, 0]
+
+[[robot.legs.description]]
+name="RightCenter"
+index=4
+address=0x50
+# X, Y, Z
+origin=[0, 0, 0]
+# Roll, pitch, yaw
+orientation=[0, 0, 0]
+
+[[robot.legs.description]]
+name="RightFront"
+index=5
+address=0x60
+# X, Y, Z
+origin=[0, 0, 0]
+# Roll, pitch, yaw
+orientation=[0, 0, 0]
+
+[[robot.steps]]
+
+name="Trapezoid"
+
+# phase, X, Y, Z
+# phase is periodic on [0, 1.0)
+# X - away from robot
+# Y - along robot side
+# Z - vertical
+points=[
+    { "phase"=0.0, "X"=0.19, "Y"= 0.070, "Z"=-0.230 },
+    { "phase"=0.6, "X"=0.19, "Y"=-0.070, "Z"=-0.230 },
+    { "phase"=0.7, "X"=0.19, "Y"=-0.070, "Z"=-0.170 },
+    { "phase"=0.9, "X"=0.19, "Y"= 0.070, "Z"=-0.170 },
+]
+
+length=0.140
+
+[[robot.gaits]]
+name="Tripod"
+step_name="Trapezoid"
+step_cycles=1.0
+leg_phase=[0.0, 0.5, 0.0, 0.5, 0.0, 0.5]
+

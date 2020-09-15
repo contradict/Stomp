@@ -599,6 +599,22 @@ HAL_StatusTypeDef HAL_DMA_Abort_IT(DMA_HandleTypeDef *hdma)
   return HAL_OK;
 }
 
+HAL_StatusTypeDef HAL_DMA_Stop_IT(DMA_HandleTypeDef *hdma)
+{
+  if(hdma->State != HAL_DMA_STATE_BUSY)
+  {
+    hdma->ErrorCode = HAL_DMA_ERROR_NO_XFER;
+    return HAL_ERROR;
+  }
+  else
+  {
+    /* Disable the stream */
+    __HAL_DMA_DISABLE(hdma);
+  }
+
+  return HAL_OK;
+}
+
 /**
   * @brief  Polling for transfer complete.
   * @param  hdma          pointer to a DMA_HandleTypeDef structure that contains

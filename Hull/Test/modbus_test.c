@@ -7,6 +7,8 @@
 
 int main(int argc, char **argv)
 {
+    (void)argc;
+    (void)argv;
     modbus_t *ctx;
 
     // Phony baud
@@ -19,7 +21,7 @@ int main(int argc, char **argv)
     modbus_set_debug(ctx, true);
 
     // Actual baud rate here
-    if(configure_modbus_context(ctx, 1000000, 100000))
+    if(configure_modbus_context(ctx, 1000000, 50, 100000))
     {
         exit(1);
     }
@@ -29,7 +31,7 @@ int main(int argc, char **argv)
     modbus_flush(ctx);
 
     uint16_t value;
-    uint8_t bits_value;
+    //uint8_t bits_value;
     for(int i=0;i<8;i++)
     {
         modbus_read_registers(ctx, 0x55, 1, &value);

@@ -1,0 +1,90 @@
+digraph {
+    init [label="Boot.", shape=point];
+    node [shape=Mrecord];
+
+    subgraph cluster_eachleg {
+        label="Each leg.";
+        subgraph cluster_allping {
+            label="Ping.";
+            PING [label="Ping legs."];
+            READY [label="Legs Ready." shape=rectangle];
+            PING -> READY;
+            PING -> PING [label="Error."];
+        }
+
+        subgraph cluster_allzero_gain {
+            label="Gain zero.";
+            ZERO [label="Zero servo gain."];
+            LOCK [label="Servo gain\nzero." shape=rectangle];
+            ZERO -> LOCK;
+            ZERO -> ZERO [label="Error."];
+        }
+
+        subgraph cluster_allpos {
+            label="pos==cmd";
+            SETP [label="Set commanded\nposition."];
+            POSSET [label="Error zeroed." shape=rectangle];
+            SETP -> POSSET;
+            SETP -> SETP [label="Error."];
+        }
+
+        subgraph cluster_allset_gain {
+            label="Gain operational.";
+            GAINF [label="Set servo gain."];
+            SET [label="Servo gain\noperational." shape=rectangle];
+            GAINF -> SET;
+            GAINF -> GAINF [label="Error."];
+        }
+
+        subgraph cluster_allwalk {
+            label="Walk.";
+            MOVEW [label="Move towards\ngait position"];
+            WALK [label="Run gait generator."];
+            MOVEW -> WALK [label="At gait\nposition."];
+            MOVEW -> MOVEW [label="Error."]
+            WALK -> MOVEW [label="Error."];
+        }
+    }
+
+    {
+        rank=same;
+        allpos_d [label="All pos==cmd."];
+        allpos_e [label="All pos==cmd."];
+    }
+
+    air_off_l [label="Air vent\nlock."];
+    air_off_f [label="Air vent\nfree."];
+
+    {
+        rank=same;
+        allset_gain_d [label="All gains\noperational."];
+        allset_gain_e [label="All gains\noperational."];
+        allzero_gain
+    }
+
+    allping [label="Ping all legs."];
+    allzero_gain [label="All gains\nzero."];
+    air_on [label="Air on."];
+    allwalk [label="All legs walk."];
+
+    init -> allping;
+    allping -> allpos_d [label="lock\nor\nfree"];
+
+    // Lock
+    allpos_d -> allzero_gain [label="Lock."];
+    allzero_gain -> air_off_l;
+    air_off_l -> allping [label="Walk."];
+    air_off_l -> allpos_d [label="Free."];
+
+    // Free
+    allpos_d -> allset_gain_d [label="Free."];
+    allset_gain_d -> air_off_f;
+    air_off_f -> allping [label="Walk."];
+    air_off_f -> allzero_gain [label="Lock."];
+
+    // walk
+    allping -> allpos_e [label="Walk."];
+    allpos_e -> air_on -> allset_gain_e -> allwalk;
+    allwalk -> allping [label="Lock\nor\nfree."];
+
+}
