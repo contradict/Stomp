@@ -1,5 +1,12 @@
 # BeagleBone
 
+## Servo tuning while walking
+
+  * leg_control listens on LEG_COMMAND for packets to send on modbus
+  * Need to write tool to pack and send
+  * Simultaneous on all legs
+  * Enfield gain values (Gain, Damping, derivative, etc)
+
 ## Leg tool **#NextYear**
 
 The feature set for a magical do-everything tool to configure the robot
@@ -40,14 +47,24 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * Command toe position
 
 ## Gait Generation
-  * see hull_control branch for current work.
   * https://github.com/csiro-robotics/syropod_highlevel_controller
+  * Optimization based gait
+    * Find edges of leg working space? - Toe position -> joint angles -> joint
+      angle limits.
+    * At least three legs on the ground, not all on the same side of the robot
+    * maintain specified velocity
+  * Write ripple gait
+  * Write wave gait.
+  * Crabbing
+
+## Feedback lowpass filter
+  * implement filter
+  * Add modbus message to set filter coefficients.
 
 ## Telemetry
   * Radio works, `/dev/tty.mikrobus1`, 115200
   * Radio is RFD900x
-  * Jo write a radio driver, works with cosmos. Need to start sending it data.
-  * COSMOS upgrade
+  * Get telemetry branch merged!
 
 ## Pressure ADC
   * Uses a Mikro ADC-Click
@@ -68,14 +85,7 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * DHCP requests arrive, responses sent (tcpdump)
   * Client never receives DHCP response (tcpdump)
 
-## Shutdown
-  * BeagleBone does not power off after executing `halt -p`
-
 # Leg Board
-
-## Crash during startup with new leg_thread
-  * Enfield communication dies
-  * Just setting gain on one leg does not cause the problem
 
 ## Firmware update over modbus **#NextYear**
 
