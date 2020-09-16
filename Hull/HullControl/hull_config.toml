@@ -86,7 +86,7 @@ orientation=[0, 0, 0]
 
 [[robot.steps]]
 
-name="Trapezoid"
+name="Square"
 
 # phase, X, Y, Z
 # phase is periodic on [0, 1.0)
@@ -105,9 +105,53 @@ length=0.140
 direction_swap_phase=[0.3, 0.8]
 direction_swap_tolerance=0.01
 
+[[robot.steps]]
+
+name="Trapezoid"
+
+# phase, X, Y, Z
+# phase is periodic on [0, 1.0)
+# X - away from robot
+# Y - along robot side
+# Z - vertical
+points=[
+    { "phase"=0.00, "X"=0.19, "Y"= 0.070, "Z"=-0.230 },
+    { "phase"=0.82, "X"=0.19, "Y"=-0.070, "Z"=-0.230 },
+    { "phase"=0.88, "X"=0.19, "Y"=-0.050, "Z"=-0.170 },
+    { "phase"=0.94, "X"=0.19, "Y"= 0.050, "Z"=-0.170 },
+]
+
+length=0.140
+
+direction_swap_phase=[0.41, 0.91]
+direction_swap_tolerance=0.01
+
 [[robot.gaits]]
 name="Tripod"
-step_name="Trapezoid"
+step_name="Square"
 step_cycles=1.0
 leg_phase=[0.0, 0.5, 0.0, 0.5, 0.0, 0.5]
 
+[[robot.gaits]]
+# definition of stance and flight
+# stance + flight = 1
+# 5 legs on the ground
+# 4*Δφ < stance
+# 6th leg in the air
+# 5*Δφ > stance
+# 6th leg back on the ground before 5th leg picks up
+# 4*Δφ + (1 - 5*Δφ) < stance
+# implies
+# 1 - stance < Δφ
+# stance / 5 < Δφ < stance / 4
+# 4/5 < stance < 5/6
+# Square stance=0.6, Nope!
+# Trapezoid stance=0.82
+# .164 < Δφ < .205
+# 0.18 < Δφ
+# pick 0.19
+
+name="Wave"
+step_name="WaveTrapezoid"
+step_cycles=1
+leg_phase=[0.0, 0.19, 0.38, 0.57, 0.76, 0.95]
