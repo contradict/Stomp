@@ -208,9 +208,9 @@ static float compute_walk_frequency(float step_length, float left_velocity, floa
 
 static bool anyclose(float *x, int n, float y, float dy)
 {
-    bool close = true;
+    bool close = false;
     for(int i=0;i<n;i++)
-        close &= (fabsf(x[i] - y) < dy);
+        close |= (fabsf(x[i] - y) < dy);
     return close;
 }
 
