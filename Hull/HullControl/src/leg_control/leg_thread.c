@@ -241,20 +241,27 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
             right_scale = copysignf(1.0f/scale, right_velocity);
         }
     }
+    struct gait* gait=&state->gaits[state->current_gait];
     struct step* step=&state->steps[state->gaits[state->current_gait].step_index];
-    if((signbit(leg_scale[0]) == signbit(right_scale)) ||
-       anyclose(step->swap_phase, step->nswap, phase, step->swap_tolerance))
-        for(int l=0;l<state->nlegs / 2;l++)
+    for(int l=0;l<state->nlegs / 2;l++)
+    {
+        float discard, leg_phase = modff(phase + gait->phase_offsets[l], &discard);
+        if((signbit(leg_scale[l]) == signbit(right_scale)) ||
+                anyclose(step->swap_phase, step->nswap, leg_phase, step->swap_tolerance))
         {
             leg_scale[l] = right_scale;
         }
+    }
 
-    if((signbit(leg_scale[state->nlegs/2]) == signbit(left_scale)) ||
-       anyclose(step->swap_phase, step->nswap, phase, step->swap_tolerance))
-        for(int l=state->nlegs/2;l<state->nlegs;l++)
+    for(int l=state->nlegs/2; l<state->nlegs; l++)
+    {
+        float discard, leg_phase = modff(phase + gait->phase_offsets[l], &discard);
+        if((signbit(leg_scale[l]) == signbit(left_scale)) ||
+                anyclose(step->swap_phase, step->nswap, leg_phase, step->swap_tolerance))
         {
             leg_scale[l] = left_scale;
         }
+    }
     return 0;
 }
 
