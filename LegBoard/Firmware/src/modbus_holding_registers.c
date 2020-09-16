@@ -194,8 +194,8 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
     {
         .address = CURL_BASE + HFeedbackLowpass,
         .context = (void *)JOINT_CURL,
-        .read = Enfield_ReadDigitalCommand,
-        .write = Enfield_WriteDigitalCommand
+        .read = Linearize_GetFeedbackLowpass,
+        .write = Linearize_SetFeedbackLowpass
     },
     {
         .address = SWING_BASE + HSensorVmin,
@@ -324,6 +324,12 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .write = Enfield_WriteDigitalCommand
     },
     {
+        .address = SWING_BASE + HFeedbackLowpass,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetFeedbackLowpass,
+        .write = Linearize_SetFeedbackLowpass
+    },
+    {
         .address = LIFT_BASE + HSensorVmin,
         .context = (void *)JOINT_LIFT,
         .read = Linearize_GetSensorVmin,
@@ -448,7 +454,13 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .context = (void *)JOINT_LIFT,
         .read = Enfield_ReadDigitalCommand,
         .write = Enfield_WriteDigitalCommand
-    }, 
+    },
+    {
+        .address = LIFT_BASE + HFeedbackLowpass,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetFeedbackLowpass,
+        .write = Linearize_SetFeedbackLowpass
+    },
     {
         .address = 0,
         .context = 0,
