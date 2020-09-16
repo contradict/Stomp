@@ -170,6 +170,12 @@ struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* s
         char *step_name;
         toml_rtos(tomlr, &step_name);
         gaits[g].step_index = find_step(steps, nsteps, step_name);
+        if(gaits[g].step_index < 0)
+        {
+            gaits[g].step_index = 0;
+            logm(SL4C_ERROR, "Unable to find step \"%s\", using step \"%s\".",
+                step_name, steps[0].name);
+        }
         free(step_name);
         get_float(gait, "step_cycles", &gaits[g].step_cycles);
         toml_array_t *phase_offsets = toml_array_in(gait, "leg_phase");
