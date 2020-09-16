@@ -725,6 +725,27 @@ static void *run_leg_thread(void *ptr)
 
     state->gaits = parse_gaits(state->definition->config, &state->ngaits, state->steps, state->nsteps);
 
+    toml_raw_t tomlr = toml_raw_in(state->definition->config, "initial_gait");
+    char *initial_gait;
+    toml_rtos(tomlr, &initial_gait);
+    int g;
+    for(g=0; g<state->ngaits; g++)
+        if(strcmp(state->gaits[g].name, initial_gait) == 0)
+        {
+            state->current_gait = g;
+            break;
+        }
+    if(g==state->ngaits)
+    {
+        logm(SL4C_WARNING, "Could not find gait \"%s\", using index %d = \"%s\"",
+             initial_gait, state->current_gait, state->gaits[state->current_gait].name);
+    }
+    else
+    {
+        logm(SL4C_INFO, "Using gait index %d = \"%s\"",
+             state->current_gait, state->gaits[state->current_gait].name);
+    }
+
     toml_table_t *geometry = toml_table_in(state->definition->config, "geometry");
     get_float(geometry, "halfwidth", &state->turning_width);
 
