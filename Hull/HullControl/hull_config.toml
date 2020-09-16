@@ -102,6 +102,9 @@ points=[
 
 length=0.140
 
+direction_swap_phase=[0.3, 0.8]
+direction_swap_tolerance=0.01
+
 [[robot.gaits]]
 name="Tripod"
 step_name="Trapezoid"

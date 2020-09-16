@@ -19,6 +19,9 @@ struct step {
     char *name;
     float length;
     int npoints;
+    float swap_tolerance;
+    int nswap;
+    float* swap_phase;
     float *phase, *X, *Y, *Z;
 };
 

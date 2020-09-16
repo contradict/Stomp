@@ -102,6 +102,17 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         toml_raw_t tomlr = toml_raw_in(step, "name");
         toml_rtos(tomlr, &steps[s].name);
         get_float(step, "length", &steps[s].length);
+        get_float(step, "direction_swap_tolerance", &steps[s].swap_tolerance);
+        toml_array_t *swap_phase = toml_array_in(step, "direction_swap_phase");
+        steps[s].nswap = toml_array_nelem(swap_phase);
+        steps[s].swap_phase = calloc(steps[s].nswap, sizeof(float));
+        for(int p=0;p<steps[s].nswap;p++)
+        {
+            tomlr = toml_raw_at(swap_phase, p);
+            double tmpd;
+            toml_rtod(tomlr, &tmpd);
+            steps[s].swap_phase[p] = tmpd;
+        }
         toml_array_t *points = toml_array_in(step, "points");
         steps[s].npoints = toml_array_nelem(points);
         steps[s].phase = calloc(steps[s].npoints + 1, sizeof(float));

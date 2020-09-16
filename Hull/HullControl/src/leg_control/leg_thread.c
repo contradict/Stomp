@@ -206,6 +206,14 @@ static float compute_walk_frequency(float step_length, float left_velocity, floa
     return MAX(fabsf(left_velocity), fabsf(right_velocity)) / step_length;
 }
 
+static bool anyclose(float *x, int n, float y, float dy)
+{
+    bool close = true;
+    for(int i=0;i<n;i++)
+        close &= (fabsf(x[i] - y) < dy);
+    return close;
+}
+
 static int compute_walk_scale(struct leg_thread_state *state, float phase, float left_velocity, float right_velocity, float* leg_scale)
 {
     float left_scale, right_scale, scale;
@@ -233,17 +241,16 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
             right_scale = copysignf(1.0f/scale, right_velocity);
         }
     }
+    struct step* step=&state->steps[state->gaits[state->current_gait].step_index];
     if((signbit(leg_scale[0]) == signbit(right_scale)) ||
-       (fabsf(phase - 0.3f) < 0.01f) ||
-       (fabsf(phase - 0.8f) < 0.01f))
+       anyclose(step->swap_phase, step->nswap, phase, step->swap_tolerance))
         for(int l=0;l<state->nlegs / 2;l++)
         {
             leg_scale[l] = right_scale;
         }
 
     if((signbit(leg_scale[state->nlegs/2]) == signbit(left_scale)) ||
-       (fabsf(phase - 0.3f) < 0.01f) ||
-       (fabsf(phase - 0.8f) < 0.01f))
+       anyclose(step->swap_phase, step->nswap, phase, step->swap_tolerance))
         for(int l=state->nlegs/2;l<state->nlegs;l++)
         {
             leg_scale[l] = left_scale;
