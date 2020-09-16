@@ -1,7 +1,7 @@
 [robot]
 
 name="Chomp"
-initial_gait="Tripod"
+initial_gait="StarWave"
 forward_deadband = 0.05
 angular_deadband = 0.05
 
@@ -116,14 +116,14 @@ name="Trapezoid"
 # Z - vertical
 points=[
     { "phase"=0.00, "X"=0.19, "Y"= 0.070, "Z"=-0.230 },
-    { "phase"=0.82, "X"=0.19, "Y"=-0.070, "Z"=-0.230 },
-    { "phase"=0.88, "X"=0.19, "Y"=-0.050, "Z"=-0.170 },
-    { "phase"=0.94, "X"=0.19, "Y"= 0.050, "Z"=-0.170 },
+    { "phase"=0.84, "X"=0.19, "Y"=-0.070, "Z"=-0.230 },
+    { "phase"=0.89, "X"=0.19, "Y"=-0.050, "Z"=-0.170 },
+    { "phase"=0.95, "X"=0.19, "Y"= 0.050, "Z"=-0.170 },
 ]
 
 length=0.140
 
-direction_swap_phase=[0.41, 0.91]
+direction_swap_phase=[0.42, 0.92]
 direction_swap_tolerance=0.01
 
 [[robot.gaits]]
@@ -142,16 +142,22 @@ leg_phase=[0.0, 0.5, 0.0, 0.5, 0.0, 0.5]
 # 6th leg back on the ground before 5th leg picks up
 # 4*Δφ + (1 - 5*Δφ) < stance
 # implies
-# 1 - stance < Δφ
+# 1 -  Δφ < stance
 # stance / 5 < Δφ < stance / 4
 # 4/5 < stance < 5/6
 # Square stance=0.6, Nope!
-# Trapezoid stance=0.82
+# Trapezoid stance=0.84
 # .164 < Δφ < .205
-# 0.18 < Δφ
-# pick 0.19
+# 1 - Δφ < 0.82
+# pick 0.166
 
 name="Wave"
-step_name="WaveTrapezoid"
+step_name="Trapezoid"
 step_cycles=1
-leg_phase=[0.0, 0.19, 0.38, 0.57, 0.76, 0.95]
+leg_phase=[0.0, 0.167, 0.333, 0.500, 0.667, 0.833]
+
+[[robot.gaits]]
+name="StarWave"
+step_name="Trapezoid"
+step_cycles=1
+leg_phase=[0.0, 0.667, 0.333, 0.833, 0.167, 0.500]
