@@ -87,6 +87,7 @@ struct joint_gains *parse_joint_gains(toml_table_t *legs_config)
         get_float(joint, "ProportionalGain", &gains->proportional_gain[j]);
         get_float(joint, "DerivativeGain", &gains->derivative_gain[j]);
         get_float(joint, "ForceDamping", &gains->force_damping[j]);
+        get_float(joint, "FeedbackLowpass", &gains->feedback_lowpass[j]);
     }
     return gains;
 }
