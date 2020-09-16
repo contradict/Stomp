@@ -63,10 +63,6 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * Write wave gait.
   * Crabbing
 
-## Feedback lowpass filter
-  * implement filter
-  * Add modbus message to set filter coefficients.
-
 ## Telemetry
   * Radio works, `/dev/tty.mikrobus1`, 115200
   * Radio is RFD900x
@@ -92,6 +88,15 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * Client never receives DHCP response (tcpdump)
 
 # Leg Board
+
+## Feedback lowpass filter
+  * implement filter
+  * Add modbus message to set filter coefficients.
+
+## Optimize kinematics
+  * Scaling calculation can be partially done at startup.
+  * Complex results usually just use real part, don't compute complex part
+  * Would DH parameters be better?
 
 ## Firmware update over modbus **#NextYear**
 
