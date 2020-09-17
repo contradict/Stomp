@@ -95,7 +95,7 @@ struct HoldingRegisterName {
     enum HoldingRegisterOffset offset;
     const char *name;
 };
-struct HoldingRegisterName holdingRegisterNames[21] = {
+struct HoldingRegisterName holdingRegisterNames[22] = {
     {.offset=HSensorVmin, .name="HSensorVmin"},
     {.offset=HSensorVmax, .name="HSensorVmax"},
     {.offset=HSensorThetamin, .name="HSensorThetamin"},
@@ -117,10 +117,11 @@ struct HoldingRegisterName holdingRegisterNames[21] = {
     {.offset=HValveOffset, .name="HValveOffset"},
     {.offset=HDigitalCommand, .name="HDigitalCommand"},
     {.offset=HCachedDigitalCommand, .name="HCachedDigitalCommand"},
+    {.offset=HFeedbackLowpass, .name="HFeedbackLowpass"},
 };
 int find_holding_register(char *arg)
 {
-    for(int i=0;i<21;i++)
+    for(size_t i=0;i<sizeof(holdingRegisterNames)/sizeof(struct HoldingRegisterName);i++)
     {
         if(strcmp(arg, holdingRegisterNames[i].name) == 0)
             return holdingRegisterNames[i].offset;
