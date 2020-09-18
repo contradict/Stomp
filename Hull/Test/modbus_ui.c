@@ -83,6 +83,8 @@ struct ServoContext
 {
     bool stoponerror;
     uint16_t params[3][NUM_SERVO_PARAMS];
+    int16_t base_pressure[3];
+    int16_t rod_pressure[3];
     int16_t measured[3];
     int joint;
     int param;
@@ -122,7 +124,7 @@ const float servo_param_scale[NUM_SERVO_PARAMS] = {
 const int16_t param_max[NUM_SERVO_PARAMS] = {
        1000,   1000,     1000,    1000,
        32767, 32767,     1000,    1000,
-       1000,    1000,    1000,    1000,  1000,
+       1000,    1000,    1000,    1000,  5000,
        5000,   4095};
 
 const int FB_LP=13;
@@ -627,7 +629,7 @@ void servo_display(modbus_t *mctx, void *sctx)
     const int SERVO_ROWS=7;
     const int SERVO_COL_SPACE=12;
     struct ServoContext *sc = (struct ServoContext *)sctx;
-    uint16_t data[1];
+    uint16_t data[3];
     int err;
     struct timeval before, after;
 
@@ -642,13 +644,15 @@ void servo_display(modbus_t *mctx, void *sctx)
         if(!sc->stoponerror | !anyerr)
         {
             gettimeofday(&before, NULL);
-            err = modbus_read_input_registers(mctx, joint[j]+ICachedFeedbackPosition, 1, data);
+            err = modbus_read_input_registers(mctx, joint[j]+ICachedBaseEndPressure, 3, data);
             gettimeofday(&after, NULL);
             timersub(&after, &before, &after);
             showerror(&sc->error[j], "Read feedback failed", err, &after);
             if(err != -1)
             {
-                sc->measured[j] = data[0];
+                sc->base_pressure[j] = data[0];
+                sc->rod_pressure[j] = data[1];
+                sc->measured[j] = data[2];
             }
             else
             {
@@ -764,7 +768,8 @@ void servo_display(modbus_t *mctx, void *sctx)
         }
         move(4 + SERVO_ROWS * j + 5, 2 + 1*SERVO_COL_SPACE);
         clrtoeol();
-        printw(" m:%6.1f", sc->measured[j] / 40.95f);
+        printw(" m:%6.1f b:%6.1f r:%6.1f",
+                sc->measured[j] / 40.95f, sc->base_pressure[j]/25.8f, sc->rod_pressure[j]/25.8f);
     }
     if(sc->param < 4)
         move(4 + SERVO_ROWS*sc->joint + 1, 2 + SERVO_COL_SPACE*sc->param);
