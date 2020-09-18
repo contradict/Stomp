@@ -41,7 +41,7 @@ The preferred hostname is `chomp-hull`
     GRPS=$(groups | cut -d ' ' -f 2- | tr ' ' ',')
     sudo usermod -a -G $GRPS <username>
 
-# disable USB networking (don't need it, adds noise to the logs)
+## disable USB networking (don't need it, adds noise to the logs)
 
 In `/etc/default/bb-boot`, add the line (or uncomment)
 
