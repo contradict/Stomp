@@ -802,11 +802,11 @@ void set_param(modbus_t *mctx, struct ServoContext *sc, float value)
         {
             case 0:
                 sc->siggen_frequency = value;
-                sc->siggen_frequency = CLIP(sc->siggen_frequency, 0.0f, 5.0f);
+                sc->siggen_frequency = CLIP(sc->siggen_frequency, 0.0f, 10.0f);
                 break;
             case 1:
                 sc->siggen_amplitude = value;
-                sc->siggen_amplitude = CLIP(sc->siggen_amplitude, 0.0f, 100.0f);
+                sc->siggen_amplitude = CLIP(sc->siggen_amplitude, 0.0f, 50.0f);
                 break;
         }
     }
