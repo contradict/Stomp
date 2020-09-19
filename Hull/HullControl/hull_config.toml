@@ -1,7 +1,7 @@
 [robot]
 
 name="Chomp"
-initial_gait="StarWave"
+initial_gait="Ripple"
 forward_deadband = 0.05
 angular_deadband = 0.05
 
@@ -164,3 +164,9 @@ name="StarWave"
 step_name="Trapezoid"
 step_cycles=1
 leg_phase=[0.0, 0.667, 0.333, 0.833, 0.167, 0.500]
+
+[[robot.gaits]]
+name="Ripple"
+step_name="Trapezoid"
+step_cycles=1
+leg_phase=[0.0, 0.333, 0.666, 0.000, 0.333, 0.666]
