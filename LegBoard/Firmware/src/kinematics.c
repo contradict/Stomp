@@ -141,7 +141,7 @@ int Kinematics_WriteToePosition(void *ctx, uint16_t v)
         errno = 0;
         Kinematics_JointAngles(commanded_position, joint_angle);
         Kinematics_CylinderEdgeLengths(joint_angle, cylinder_edge_length);
-        Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_value, 1.0f);
+        Linearize_ScaleCylindersUnit(cylinder_edge_length, cylinder_scaled_value);
         if(errno != 0)
         {
             return ILLEGAL_DATA_VALUE;
@@ -179,7 +179,7 @@ int Kinematics_WriteJointAngle(void *ctx, uint16_t v)
     {
         errno = 0;
         Kinematics_CylinderEdgeLengths(commanded_angle, cylinder_edge_length);
-        Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_value, 1.0f);
+        Linearize_ScaleCylindersUnit(cylinder_edge_length, cylinder_scaled_value);
         if(errno != 0)
         {
             return ILLEGAL_DATA_VALUE;

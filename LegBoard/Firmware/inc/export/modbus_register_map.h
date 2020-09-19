@@ -74,6 +74,7 @@ enum HoldingRegisterOffset {
     HValveOffset = 0x3c,
     HDigitalCommand = 0x3d,
     HCachedDigitalCommand = 0x3e,
+    HFeedbackLowpass = 0x80,
 };
 
 enum LegCommands {

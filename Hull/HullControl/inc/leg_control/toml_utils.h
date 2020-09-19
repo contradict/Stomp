@@ -13,12 +13,16 @@ struct joint_gains {
     float proportional_gain[3];
     float derivative_gain[3];
     float force_damping[3];
+    float feedback_lowpass[3];
 };
 
 struct step {
     char *name;
     float length;
     int npoints;
+    float swap_tolerance;
+    int nswap;
+    float* swap_phase;
     float *phase, *X, *Y, *Z;
 };
 

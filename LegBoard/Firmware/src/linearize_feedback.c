@@ -30,16 +30,22 @@
 #define ADC_CONV_COMPLETE 4
 #define ADC_CONV_ERROR    8
 
+#define LED_RATE_DIVISOR 30
+
 static void Linearize_ConstantInit(void);
 static void Linearize_Thread(const void* args);
-void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
-                          float voltage[JOINT_COUNT],
-                          float joint_angle[JOINT_COUNT]);
-void Linearize_ComputeFeedback(const float cylinder_length[JOINT_COUNT],
-                               float feedback_voltage[JOINT_COUNT],
-                               uint16_t feedback_code[JOINT_COUNT]);
-void compute_led_brightness(const float joint_voltage[JOINT_COUNT]);
+static void lowpass_sensor_readings(const uint32_t channel_values[JOINT_COUNT],
+                                    float voltage[JOINT_COUNT]);
+static void compute_joint_angles(float voltage[JOINT_COUNT],
+                                 float joint_angle[JOINT_COUNT]);
+static void Linearize_ComputeFeedback(const float cylinder_length[JOINT_COUNT],
+                                      float feedback_voltage[JOINT_COUNT],
+                                      uint16_t feedback_code[JOINT_COUNT]);
+static void compute_led_brightness(const float joint_voltage[JOINT_COUNT]);
+static void Linearize_ScaleCylinders(const float cylinder_edge_length[JOINT_COUNT],
+                                     float scaled_values[JOINT_COUNT]);
 
+static const float ADC_SAMPLE_PERIOD = 1e-3f;
 #define __MAX_DAC_OUTPUT 10.8f
 static const float ADC_VREF = 3.3f;
 static const float ADC_MAX_CODE = (float)((1<<12) - 1);
@@ -83,11 +89,15 @@ struct SensorCalibrationStorage {
     float theta_max[JOINT_COUNT];
     float cylinder_length_min[JOINT_COUNT];
     float cylinder_length_max[JOINT_COUNT];
+    float feedback_lowpass_frequency[JOINT_COUNT];
 };
 
 struct SensorCalibrationProcessed {
     float theta_offset[JOINT_COUNT];
     float theta_scale[JOINT_COUNT];
+    float feedback_lowpass_constant[JOINT_COUNT];
+    float cylinder_offset[JOINT_COUNT];
+    float cylinder_scale[JOINT_COUNT];
 };
 
 static struct SensorCalibrationStorage calibration_constants_stored __attribute__ ((section (".storage.linearize"))) = {
@@ -125,7 +135,13 @@ static struct SensorCalibrationStorage calibration_constants_stored __attribute_
         0.17272f, // CURL
         0.103251f, // SWING
         0.07747f, // LIFT
-    }
+    },
+
+    .feedback_lowpass_frequency = { // 0 - disable lowpass, otherwise Hz
+        0.0,
+        0.0,
+        0.0,
+    },
 };
 
 static struct SensorCalibrationProcessed calibration_constants_processed;
@@ -156,10 +172,29 @@ void Linearize_ThreadInit(void)
 
 static void Linearize_ConstantInit(void)
 {
+    float f;
     for(int j=0; j<JOINT_COUNT; j++)
     {
         calibration_constants_processed.theta_offset[j] = THETA_OFFSET(calibration_constants_stored.v_min[j], calibration_constants_stored.v_max[j], calibration_constants_stored.theta_min[j], calibration_constants_stored.theta_max[j]);
         calibration_constants_processed.theta_scale[j] = THETA_SCALE(calibration_constants_stored.v_min[j], calibration_constants_stored.v_max[j], calibration_constants_stored.theta_min[j], calibration_constants_stored.theta_max[j]);
+        calibration_constants_processed.cylinder_scale[j] = FEEDBACK_SCALE(
+                calibration_constants_stored.cylinder_length_min[j],
+                calibration_constants_stored.cylinder_length_max[j],
+                0.0f, MAX_ENFIELD_SCALE);
+        calibration_constants_processed.cylinder_offset[j] = FEEDBACK_OFFSET(
+                calibration_constants_stored.cylinder_length_min[j],
+                calibration_constants_stored.cylinder_length_max[j],
+                0.0f, MAX_ENFIELD_SCALE);
+        if(isnan(calibration_constants_stored.feedback_lowpass_frequency[j]) ||
+           calibration_constants_stored.feedback_lowpass_frequency[j] == 0.0f)
+        {
+            calibration_constants_processed.feedback_lowpass_constant[j] = 1.0f;
+        }
+        else
+        {
+            f = 2 * M_PI * ADC_SAMPLE_PERIOD * calibration_constants_stored.feedback_lowpass_frequency[j];
+            calibration_constants_processed.feedback_lowpass_constant[j] = f / (f + 1.0f);
+        }
     }
 }
 
@@ -210,6 +245,13 @@ int Linearize_GetCylinderLengthMax(void *ctx, uint16_t *lmax)
     return 0;
 }
 
+int Linearize_GetFeedbackLowpass(void *ctx, uint16_t *f)
+{
+    GETJOINT(joint);
+    *f = round(10.0f * calibration_constants_stored.feedback_lowpass_frequency[joint]);
+    return 0;
+}
+
 int Linearize_SetSensorVmin(void *ctx, uint16_t vmin)
 {
     GETJOINT(joint);
@@ -253,6 +295,14 @@ int Linearize_SetCylinderLengthMax(void *ctx, uint16_t lmax)
 {
     GETJOINT(joint);
     calibration_constants_stored.cylinder_length_max[joint] = ((int16_t)lmax) / CYLINDER_LENGTH_SCALE;
+    return 0;
+}
+
+int Linearize_SetFeedbackLowpass(void *ctx, uint16_t f)
+{
+    GETJOINT(joint);
+    calibration_constants_stored.feedback_lowpass_frequency[joint] = (float)f / 10.0f;
+    Linearize_ConstantInit();
     return 0;
 }
 
@@ -365,16 +415,17 @@ static void Linearize_Thread(const void* args)
             else
             {
                 DAC_IO_LDAC(true);
+                compute_led_brightness(sensor_voltage);
             }
         }
         else if(event.value.signals & ADC_CONV_COMPLETE)
         {
             DAC_IO_LDAC(false);
-            compute_joint_angles(channel_values, sensor_voltage, joint_angle);
+            lowpass_sensor_readings(channel_values, sensor_voltage);
+            compute_joint_angles(sensor_voltage, joint_angle);
             Kinematics_CylinderEdgeLengths(joint_angle, cylinder_edge_length);
-            Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_values, MAX_ENFIELD_SCALE);
+            Linearize_ScaleCylinders(cylinder_edge_length, cylinder_scaled_values);
             Linearize_ComputeFeedback(cylinder_scaled_values, feedback_voltage, feedback_code);
-            compute_led_brightness(sensor_voltage);
             sendjoint = 0;
             ads5724_SetVoltage(joint_dac_channel[sendjoint], feedback_code[sendjoint]);
             sendjoint++;
@@ -382,34 +433,47 @@ static void Linearize_Thread(const void* args)
     }
 }
 
-void compute_joint_angles(const uint32_t channel_values[JOINT_COUNT],
-                          float voltage[JOINT_COUNT],
+void lowpass_sensor_readings(const uint32_t channel_values[JOINT_COUNT],
+                             float voltage[JOINT_COUNT])
+{
+    for(enum JointIndex joint=0;joint<JOINT_COUNT;joint++)
+    {
+        voltage[joint] *= 1.0f - calibration_constants_processed.feedback_lowpass_constant[joint];
+        voltage[joint] += calibration_constants_processed.feedback_lowpass_constant[joint] *
+                          (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) / JOINT_DIVIDER);
+    }
+}
+
+void compute_joint_angles(float voltage[JOINT_COUNT],
                           float joint_angle[JOINT_COUNT])
 {
     for(enum JointIndex joint=0;joint<JOINT_COUNT;joint++)
     {
-        voltage[joint] = (ADC_VREF * (channel_values[joint_adc_channel[joint]] / ADC_MAX_CODE) / JOINT_DIVIDER);
         joint_angle[joint] = (calibration_constants_processed.theta_offset[joint] +
                 calibration_constants_processed.theta_scale[joint] * voltage[joint]);
     }
 }
 
 void Linearize_ScaleCylinders(const float cylinder_edge_length[JOINT_COUNT],
-                              float scaled_values[JOINT_COUNT],
-                              float scalemax)
+                              float scaled_values[JOINT_COUNT])
 {
-    float scale, offset;
     for(int joint = 0; joint < JOINT_COUNT; joint++)
     {
-        scale =  FEEDBACK_SCALE(calibration_constants_stored.cylinder_length_min[joint],
-                                calibration_constants_stored.cylinder_length_max[joint],
-                                0.0f, scalemax);
-        offset = FEEDBACK_OFFSET(calibration_constants_stored.cylinder_length_min[joint],
-                                 calibration_constants_stored.cylinder_length_max[joint],
-                                 0.0f, scalemax);
-        scaled_values[joint] = scale*cylinder_edge_length[joint] + offset;
+        scaled_values[joint] = calibration_constants_processed.cylinder_scale[joint]*cylinder_edge_length[joint] +
+                               calibration_constants_processed.cylinder_offset[joint];
     }
 }
+
+void Linearize_ScaleCylindersUnit(const float cylinder_edge_length[JOINT_COUNT],
+                                  float scaled_values[JOINT_COUNT])
+{
+    for(int joint = 0; joint < JOINT_COUNT; joint++)
+    {
+        scaled_values[joint] = calibration_constants_processed.cylinder_scale[joint]*cylinder_edge_length[joint] + calibration_constants_processed.cylinder_offset[joint];
+        scaled_values[joint] /= MAX_ENFIELD_SCALE;
+    }
+}
+
 
 void Linearize_ComputeFeedback(const float scaled_values[JOINT_COUNT],
                                float feedback_voltage[JOINT_COUNT],
@@ -424,12 +488,17 @@ void Linearize_ComputeFeedback(const float scaled_values[JOINT_COUNT],
 
 void compute_led_brightness(const float joint_voltage[JOINT_COUNT])
 {
-    float brightness;
-    for(int joint=0;joint<JOINT_COUNT;joint++)
+    static int reduce_rate=LED_RATE_DIVISOR;
+    if(--reduce_rate == 0)
     {
-        brightness = joint_voltage[joint] * JOINT_DIVIDER / ADC_VREF * 250.0f;
-        brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
-        LED_SetOne(joint_led_channel[joint], 1, brightness);
+        float brightness;
+        for(int joint=0;joint<JOINT_COUNT;joint++)
+        {
+            brightness = joint_voltage[joint] * JOINT_DIVIDER / ADC_VREF * 250.0f;
+            brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
+            LED_SetOne(joint_led_channel[joint], 1, brightness);
+        }
+        reduce_rate = LED_RATE_DIVISOR;
     }
 }
 

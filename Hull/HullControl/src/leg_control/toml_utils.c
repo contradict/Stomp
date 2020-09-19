@@ -87,6 +87,7 @@ struct joint_gains *parse_joint_gains(toml_table_t *legs_config)
         get_float(joint, "ProportionalGain", &gains->proportional_gain[j]);
         get_float(joint, "DerivativeGain", &gains->derivative_gain[j]);
         get_float(joint, "ForceDamping", &gains->force_damping[j]);
+        get_float(joint, "FeedbackLowpass", &gains->feedback_lowpass[j]);
     }
     return gains;
 }
@@ -102,6 +103,17 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         toml_raw_t tomlr = toml_raw_in(step, "name");
         toml_rtos(tomlr, &steps[s].name);
         get_float(step, "length", &steps[s].length);
+        get_float(step, "direction_swap_tolerance", &steps[s].swap_tolerance);
+        toml_array_t *swap_phase = toml_array_in(step, "direction_swap_phase");
+        steps[s].nswap = toml_array_nelem(swap_phase);
+        steps[s].swap_phase = calloc(steps[s].nswap, sizeof(float));
+        for(int p=0;p<steps[s].nswap;p++)
+        {
+            tomlr = toml_raw_at(swap_phase, p);
+            double tmpd;
+            toml_rtod(tomlr, &tmpd);
+            steps[s].swap_phase[p] = tmpd;
+        }
         toml_array_t *points = toml_array_in(step, "points");
         steps[s].npoints = toml_array_nelem(points);
         steps[s].phase = calloc(steps[s].npoints + 1, sizeof(float));
@@ -159,6 +171,12 @@ struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* s
         char *step_name;
         toml_rtos(tomlr, &step_name);
         gaits[g].step_index = find_step(steps, nsteps, step_name);
+        if(gaits[g].step_index < 0)
+        {
+            gaits[g].step_index = 0;
+            logm(SL4C_ERROR, "Unable to find step \"%s\", using step \"%s\".",
+                step_name, steps[0].name);
+        }
         free(step_name);
         get_float(gait, "step_cycles", &gaits[g].step_cycles);
         toml_array_t *phase_offsets = toml_array_in(gait, "leg_phase");

@@ -96,7 +96,7 @@ static int set_gain(modbus_t *ctx, uint8_t address, struct joint_gains *gain)
     uint32_t sec, saved_timeout;
     modbus_get_response_timeout(ctx, &sec, &saved_timeout);
     modbus_set_response_timeout(ctx, 0, 100000);
-    int err = set_servo_gains(ctx, address, &gain->proportional_gain, &gain->derivative_gain, &gain->force_damping);
+    int err = set_servo_gains(ctx, address, &gain->proportional_gain, &gain->derivative_gain, &gain->force_damping, &gain->feedback_lowpass);
     if(err == -1)
     {
         logm(SL4C_ERROR, "Failed to set servo gain for leg address 0x%02x).", address);
@@ -206,6 +206,14 @@ static float compute_walk_frequency(float step_length, float left_velocity, floa
     return MAX(fabsf(left_velocity), fabsf(right_velocity)) / step_length;
 }
 
+static bool anyclose(float *x, int n, float y, float dy)
+{
+    bool close = false;
+    for(int i=0;i<n;i++)
+        close |= (fabsf(x[i] - y) < dy);
+    return close;
+}
+
 static int compute_walk_scale(struct leg_thread_state *state, float phase, float left_velocity, float right_velocity, float* leg_scale)
 {
     float left_scale, right_scale, scale;
@@ -233,21 +241,27 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
             right_scale = copysignf(1.0f/scale, right_velocity);
         }
     }
-    if((signbit(leg_scale[0]) == signbit(right_scale)) ||
-       (fabsf(phase - 0.3f) < 0.01f) ||
-       (fabsf(phase - 0.8f) < 0.01f))
-        for(int l=0;l<state->nlegs / 2;l++)
+    struct gait* gait=&state->gaits[state->current_gait];
+    struct step* step=&state->steps[state->gaits[state->current_gait].step_index];
+    for(int l=0;l<state->nlegs / 2;l++)
+    {
+        float discard, leg_phase = modff(phase + gait->phase_offsets[l], &discard);
+        if((signbit(leg_scale[l]) == signbit(right_scale)) ||
+                anyclose(step->swap_phase, step->nswap, leg_phase, step->swap_tolerance))
         {
             leg_scale[l] = right_scale;
         }
+    }
 
-    if((signbit(leg_scale[state->nlegs/2]) == signbit(left_scale)) ||
-       (fabsf(phase - 0.3f) < 0.01f) ||
-       (fabsf(phase - 0.8f) < 0.01f))
-        for(int l=state->nlegs/2;l<state->nlegs;l++)
+    for(int l=state->nlegs/2; l<state->nlegs; l++)
+    {
+        float discard, leg_phase = modff(phase + gait->phase_offsets[l], &discard);
+        if((signbit(leg_scale[l]) == signbit(left_scale)) ||
+                anyclose(step->swap_phase, step->nswap, leg_phase, step->swap_tolerance))
         {
             leg_scale[l] = left_scale;
         }
+    }
     return 0;
 }
 
@@ -710,6 +724,27 @@ static void *run_leg_thread(void *ptr)
     state->steps = parse_steps(state->definition->config, &state->nsteps);
 
     state->gaits = parse_gaits(state->definition->config, &state->ngaits, state->steps, state->nsteps);
+
+    toml_raw_t tomlr = toml_raw_in(state->definition->config, "initial_gait");
+    char *initial_gait;
+    toml_rtos(tomlr, &initial_gait);
+    int g;
+    for(g=0; g<state->ngaits; g++)
+        if(strcmp(state->gaits[g].name, initial_gait) == 0)
+        {
+            state->current_gait = g;
+            break;
+        }
+    if(g==state->ngaits)
+    {
+        logm(SL4C_WARNING, "Could not find gait \"%s\", using index %d = \"%s\"",
+             initial_gait, state->current_gait, state->gaits[state->current_gait].name);
+    }
+    else
+    {
+        logm(SL4C_INFO, "Using gait index %d = \"%s\"",
+             state->current_gait, state->gaits[state->current_gait].name);
+    }
 
     toml_table_t *geometry = toml_table_in(state->definition->config, "geometry");
     get_float(geometry, "halfwidth", &state->turning_width);
