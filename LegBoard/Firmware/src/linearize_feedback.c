@@ -30,6 +30,8 @@
 #define ADC_CONV_COMPLETE 4
 #define ADC_CONV_ERROR    8
 
+#define LED_RATE_DIVISOR 30
+
 static void Linearize_ConstantInit(void);
 static void Linearize_Thread(const void* args);
 static void lowpass_sensor_readings(const uint32_t channel_values[JOINT_COUNT],
@@ -486,12 +488,17 @@ void Linearize_ComputeFeedback(const float scaled_values[JOINT_COUNT],
 
 void compute_led_brightness(const float joint_voltage[JOINT_COUNT])
 {
-    float brightness;
-    for(int joint=0;joint<JOINT_COUNT;joint++)
+    static int reduce_rate=LED_RATE_DIVISOR;
+    if(--reduce_rate == 0)
     {
-        brightness = joint_voltage[joint] * JOINT_DIVIDER / ADC_VREF * 250.0f;
-        brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
-        LED_SetOne(joint_led_channel[joint], 1, brightness);
+        float brightness;
+        for(int joint=0;joint<JOINT_COUNT;joint++)
+        {
+            brightness = joint_voltage[joint] * JOINT_DIVIDER / ADC_VREF * 250.0f;
+            brightness = (brightness > 255.0f) ? 255.0f : ((brightness < 0.0f) ? 0.0f : brightness);
+            LED_SetOne(joint_led_channel[joint], 1, brightness);
+        }
+        reduce_rate = LED_RATE_DIVISOR;
     }
 }
 
