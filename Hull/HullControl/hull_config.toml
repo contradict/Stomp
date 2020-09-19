@@ -21,17 +21,17 @@ telemetry_period_smoothing=0.9
 ProportionalGain=12
 DerivativeGain=0
 ForceDamping=20
-FeedbackLowpass=50
+FeedbackLowpass=0
 [robot.legs.joint_gain.Swing]
 ProportionalGain=12
 DerivativeGain=0
 ForceDamping=20
-FeedbackLowpass=50
+FeedbackLowpass=0
 [robot.legs.joint_gain.Lift]
-ProportionalGain=18
+ProportionalGain=12
 DerivativeGain=0
 ForceDamping=20
-FeedbackLowpass=50
+FeedbackLowpass=0
 
 [[robot.legs.description]]
 name="LeftFront"
