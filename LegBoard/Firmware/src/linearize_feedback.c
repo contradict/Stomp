@@ -137,10 +137,10 @@ static struct SensorCalibrationStorage calibration_constants_stored __attribute_
         0.07747f, // LIFT
     },
 
-    .feedback_lowpass_frequency = {
-        50.0,
-        50.0,
-        50.0,
+    .feedback_lowpass_frequency = { // 0 - disable lowpass, otherwise Hz
+        0.0,
+        0.0,
+        0.0,
     },
 };
 
