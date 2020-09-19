@@ -16,6 +16,9 @@ position_ramp_time=1.0
 toe_position_tolerance=0.015
 telemetry_frequency=10
 telemetry_period_smoothing=0.9
+support_pressure=50
+desired_ride_height=-0.225
+ride_height_gain=0.25
 
 [robot.legs.joint_gain.Curl]
 ProportionalGain=12

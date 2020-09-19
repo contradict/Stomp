@@ -74,6 +74,9 @@ struct leg_thread_state {
     float telemetry_period_smoothing;
     float forward_deadband;
     float angular_deadband;
+    float support_pressure;
+    float desired_ride_height;
+    float ride_height_gain;
     atomic_bool shouldrun;
     struct rate_timer *timer;
     enum leg_control_mode *leg_mode;
@@ -265,6 +268,35 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
     return 0;
 }
 
+static bool servo_ride_height(struct leg_thread_state* st, float *height_offset)
+{
+    if(st->valid_measurements)
+    {
+        float ride_height=0;
+        int ndown=0;
+        bool down[st->nlegs];
+        for(int l=0; l<st->nlegs; l++)
+        {
+            down[l] = st->rod_end_pressure[l][JOINT_LIFT] > st->support_pressure;
+            if(down[l])
+            {
+                ndown++;
+                ride_height += st->toe_position_measured[l][2];
+            }
+        }
+        ride_height /= ndown;
+        for(int l=0; l<st->nlegs; l++)
+        {
+            if(down[l])
+                height_offset[l] = st->ride_height_gain * (st->desired_ride_height - st->toe_position_measured[l][2]);
+        }
+        return true;
+    }
+    else
+        return false;
+}
+
+
 static int compute_toe_positions(struct leg_thread_state* state, struct leg_control_parameters *p, float dt)
 {
     float left_velocity, right_velocity;
@@ -275,10 +307,15 @@ static int compute_toe_positions(struct leg_thread_state* state, struct leg_cont
     state->walk_phase = MAX(modff(state->walk_phase + frequency * dt, &dummy), 0.0f);
     compute_walk_scale(state, state->walk_phase, left_velocity, right_velocity, state->leg_scale);
 
+    float height_offset[state->nlegs];
+    bool have_offset = servo_ride_height(state, height_offset);
+
     int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
     {
         compute_leg_position(state, leg, state->walk_phase, state->leg_scale[leg], &state->commanded_toe_positions[leg]);
+        if(have_offset)
+            state->commanded_toe_positions[leg][2] += height_offset[leg];
     }
     return ret;
 }
@@ -720,6 +757,9 @@ static void *run_leg_thread(void *ptr)
     get_float(legs_config, "toe_position_tolerance", &state->toe_position_tolerance);
     get_float(legs_config, "telemetry_frequency", &state->telemetry_frequency);
     get_float(legs_config, "telemetry_period_smoothing", &state->telemetry_period_smoothing);
+    get_float(legs_config, "support_pressure", &(state->support_pressure));
+    get_float(legs_config, "desired_ride_height", &(state->desired_ride_height));
+    get_float(legs_config, "ride_height_gain", &(state->ride_height_gain));
 
     state->steps = parse_steps(state->definition->config, &state->nsteps);
 
