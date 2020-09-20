@@ -1,0 +1,7 @@
+[Unit]
+Description=The stomp contol stack
+Requires=sbus_radio.service leg_control.service
+After=multi-user.target
+
+[Install]
+WantedBy=multi-user.target
