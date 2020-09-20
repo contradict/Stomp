@@ -26,7 +26,7 @@ DerivativeGain=0
 ForceDamping=20
 FeedbackLowpass=0
 [robot.legs.joint_gain.Swing]
-ProportionalGain=12
+ProportionalGain=15
 DerivativeGain=0
 ForceDamping=20
 FeedbackLowpass=0
