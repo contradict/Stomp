@@ -751,8 +751,8 @@ static void *run_leg_thread(void *ptr)
         return (void *)-1;
     }
 
-    get_float(state->definition->config, "forward_deadband", &(state->forward_deadband));
-    get_float(state->definition->config, "angular_deadband", &(state->angular_deadband));
+    get_float(state->definition->config, "forward_deadband", 0.05f, &(state->forward_deadband));
+    get_float(state->definition->config, "angular_deadband", 0.05f,  &(state->angular_deadband));
 
     toml_table_t *legs_config = toml_table_in(state->definition->config,
                                              "legs");
@@ -768,13 +768,13 @@ static void *run_leg_thread(void *ptr)
         state->leg_scale[i] = 1.0f;
     state->leg_mode = malloc(state->nlegs * sizeof(enum leg_control_mode));
 
-    get_float(legs_config, "position_ramp_time", &state->position_ramp_time);
-    get_float(legs_config, "toe_position_tolerance", &state->toe_position_tolerance);
-    get_float(legs_config, "telemetry_frequency", &state->telemetry_frequency);
-    get_float(legs_config, "telemetry_period_smoothing", &state->telemetry_period_smoothing);
-    get_float(legs_config, "support_pressure", &(state->support_pressure));
-    get_float(legs_config, "desired_ride_height", &(state->desired_ride_height));
-    get_float(legs_config, "ride_height_gain", &(state->ride_height_gain));
+    get_float(legs_config, "toe_position_tolerance", 0.030, &state->toe_position_tolerance);
+    get_float(legs_config, "telemetry_frequency", 30.0f, &state->telemetry_frequency);
+    get_float(legs_config, "telemetry_period_smoothing", 0.5, &state->telemetry_period_smoothing);
+    get_float(legs_config, "support_pressure", 5.0f, &(state->support_pressure));
+    get_float(legs_config, "desired_ride_height", 0.230, &(state->desired_ride_height));
+    get_float(legs_config, "ride_height_gain", 0.0f, &(state->ride_height_gain));
+    get_float(legs_config, "ride_height_scale", 0.0f, &(state->ride_height_scale));
 
     state->steps = parse_steps(state->definition->config, &state->nsteps);
 
@@ -802,7 +802,7 @@ static void *run_leg_thread(void *ptr)
     }
 
     toml_table_t *geometry = toml_table_in(state->definition->config, "geometry");
-    get_float(geometry, "halfwidth", &state->turning_width);
+    get_float(geometry, "halfwidth", 0.0600f, &state->turning_width);
 
     struct leg_control_parameters parameters = {
         .forward_velocity = 0.0f,

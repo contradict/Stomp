@@ -35,7 +35,7 @@ struct gait {
 };
 
 int toml_vector_float(toml_array_t *a, float dest[3]);
-int get_float(toml_table_t *tab, char *name, float *f);
+int get_float(toml_table_t *tab, char *name, float default_value, float *f);
 struct leg_description *parse_leg_descriptions(toml_table_t *legs_config, int *nlegs);
 void free_leg_description(struct leg_description *legs, int nlegs);
 struct joint_gains *parse_joint_gains(toml_table_t *legs_config);
