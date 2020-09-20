@@ -36,8 +36,12 @@ enum leg_control_lock {
 struct leg_control_parameters {
     float forward_velocity;
     float angular_velocity;
+    float ride_height;
+    float left;
+    float right;
     enum leg_control_enable enable;
     enum leg_control_lock lock;
+    int gait_selection;
 };
 
 struct leg_thread_state* create_leg_thread(struct leg_thread_definition *leg_thread, const char * progname);

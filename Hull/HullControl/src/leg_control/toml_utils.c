@@ -20,8 +20,9 @@ int toml_vector_float(toml_array_t *a, float dest[3])
     return 0;
 }
 
-int get_float(toml_table_t *tab, char *name, float *f)
+int get_float(toml_table_t *tab, char *name, float d, float *f)
 {
+    *f = d;
     toml_raw_t tomlr = toml_raw_in(tab, name);
     if(tomlr == 0)
         return -1;
@@ -84,10 +85,10 @@ struct joint_gains *parse_joint_gains(toml_table_t *legs_config)
     for(int j=0; j<3; j++)
     {
         toml_table_t *joint = toml_table_in(joints, joint_names[j]);
-        get_float(joint, "ProportionalGain", &gains->proportional_gain[j]);
-        get_float(joint, "DerivativeGain", &gains->derivative_gain[j]);
-        get_float(joint, "ForceDamping", &gains->force_damping[j]);
-        get_float(joint, "FeedbackLowpass", &gains->feedback_lowpass[j]);
+        get_float(joint, "ProportionalGain", 12.0f, &gains->proportional_gain[j]);
+        get_float(joint, "DerivativeGain", 0.0f, &gains->derivative_gain[j]);
+        get_float(joint, "ForceDamping", 20.0f, &gains->force_damping[j]);
+        get_float(joint, "FeedbackLowpass", 0.0f, &gains->feedback_lowpass[j]);
     }
     return gains;
 }
@@ -102,8 +103,8 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         toml_table_t *step = toml_table_at(step_descriptions, s);
         toml_raw_t tomlr = toml_raw_in(step, "name");
         toml_rtos(tomlr, &steps[s].name);
-        get_float(step, "length", &steps[s].length);
-        get_float(step, "direction_swap_tolerance", &steps[s].swap_tolerance);
+        get_float(step, "length", 0.140f, &steps[s].length);
+        get_float(step, "direction_swap_tolerance", 0.030f, &steps[s].swap_tolerance);
         toml_array_t *swap_phase = toml_array_in(step, "direction_swap_phase");
         steps[s].nswap = toml_array_nelem(swap_phase);
         steps[s].swap_phase = calloc(steps[s].nswap, sizeof(float));
@@ -120,15 +121,43 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         steps[s].X = calloc(steps[s].npoints, sizeof(float));
         steps[s].Y = calloc(steps[s].npoints, sizeof(float));
         steps[s].Z = calloc(steps[s].npoints, sizeof(float));
-        for(int p=0; p<steps[s].npoints; p++)
+        int p=0;
+        for(p=0; p<steps[s].npoints; p++)
         {
             toml_table_t *pt = toml_table_at(points, p);
-            get_float(pt, "phase", &steps[s].phase[p]);
-            get_float(pt, "X", &steps[s].X[p]);
-            get_float(pt, "Y", &steps[s].Y[p]);
-            get_float(pt, "Z", &steps[s].Z[p]);
+            if(get_float(pt, "phase", 0.0f, &steps[s].phase[p]) < 0)
+            {
+                logm(SL4C_ERROR, "Unable to parse phase value for step %s",
+                        steps[s].name);
+                break;
+            }
+            if(get_float(pt, "X", 0.0f, &steps[s].X[p]))
+            {
+                logm(SL4C_ERROR, "Unable to parse X value for step %s",
+                        steps[s].name);
+                break;
+            }
+            if(get_float(pt, "Y", 0.0f, &steps[s].Y[p]))
+            {
+                logm(SL4C_ERROR, "Unable to parse Y value for step %s",
+                        steps[s].name);
+                break;
+            }
+            if(get_float(pt, "Z", 0.0f, &steps[s].Z[p]))
+            {
+                logm(SL4C_ERROR, "Unable to parse Z value for step %s",
+                        steps[s].name);
+                break;
+            }
         }
-        steps[s].phase[steps[s].npoints] = 1.0f;
+        if(p<steps[s].npoints)
+        {
+            steps[s].npoints = 0;
+        }
+        else
+        {
+            steps[s].phase[steps[s].npoints] = 1.0f;
+        }
     }
     return steps;
 }
@@ -178,7 +207,7 @@ struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* s
                 step_name, steps[0].name);
         }
         free(step_name);
-        get_float(gait, "step_cycles", &gaits[g].step_cycles);
+        get_float(gait, "step_cycles", 1.0f, &gaits[g].step_cycles);
         toml_array_t *phase_offsets = toml_array_in(gait, "leg_phase");
         if(phase_offsets == 0)
         {
@@ -196,6 +225,30 @@ struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* s
         }
     }
     return gaits;
+}
+
+char **parse_gait_selections(toml_table_t* config, struct gait* gaits, int ngaits, char* default_gait)
+{
+    toml_array_t* sel = toml_array_in(config, "gait_selections");
+    char **gait_selections = calloc(toml_array_nelem(sel), sizeof(char*));
+    for(int s=0; s<toml_array_nelem(sel); s++)
+    {
+        toml_raw_t tomlr = toml_raw_at(sel, s);
+        char* name;
+        toml_rtos(tomlr, &name);
+        for(int g=0; g<ngaits; g++)
+        {
+            if(strcmp(name, gaits[g].name) == 0)
+                gait_selections[s] = name;
+        }
+        if(gait_selections[s] == 0)
+        {
+            logm(SL4C_ERROR, "No gait named %s, replaced with default %s",
+                 name, default_gait);
+            gait_selections[s] = default_gait;
+        }
+    }
+    return gait_selections;
 }
 
 void free_gait_descriptions(struct gait *gaits, int ngaits)

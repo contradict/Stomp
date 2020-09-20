@@ -126,7 +126,7 @@ int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], f
         for(int i=0;i<3;i++)
             (*toe_position)[i] = ((int16_t *)toe_value)[i] / 1e4f;
         for(int i=3;i<9;i++)
-            (*cylinder_pressure)[i-3] = toe_value[i] / 100.0f;
+            (*cylinder_pressure)[i-3] = toe_value[i] / 25.6f;
     }
     return err == -1 ? -1 : 0;
 }

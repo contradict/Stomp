@@ -4,6 +4,7 @@ name="Chomp"
 initial_gait="Ripple"
 forward_deadband = 0.05
 angular_deadband = 0.05
+gait_selections = ["StarWave", "Ripple", "Tripod"]
 
 [robot.geometry]
 
@@ -13,9 +14,15 @@ halfwidth=0.600
 
 count=6
 position_ramp_time=1.0
-toe_position_tolerance=0.015
+toe_position_tolerance=0.03
 telemetry_frequency=10
 telemetry_period_smoothing=0.9
+support_pressure=5.0
+desired_ride_height=-0.215
+ride_height_igain=0.012
+ride_height_pgain=0.000
+ride_height_integrator_limit=0.5
+ride_height_scale=-0.029
 
 [robot.legs.joint_gain.Curl]
 ProportionalGain=12
@@ -23,7 +30,7 @@ DerivativeGain=0
 ForceDamping=20
 FeedbackLowpass=0
 [robot.legs.joint_gain.Swing]
-ProportionalGain=12
+ProportionalGain=15
 DerivativeGain=0
 ForceDamping=20
 FeedbackLowpass=0
@@ -97,10 +104,10 @@ name="Square"
 # Y - along robot side
 # Z - vertical
 points=[
-    { "phase"=0.0, "X"=0.19, "Y"= 0.070, "Z"=-0.230 },
-    { "phase"=0.6, "X"=0.19, "Y"=-0.070, "Z"=-0.230 },
-    { "phase"=0.7, "X"=0.19, "Y"=-0.070, "Z"=-0.170 },
-    { "phase"=0.9, "X"=0.19, "Y"= 0.070, "Z"=-0.170 },
+    { "phase"=0.0, "X"=0.19, "Y"= 0.070, "Z"=-0.215 },
+    { "phase"=0.6, "X"=0.19, "Y"=-0.070, "Z"=-0.215 },
+    { "phase"=0.7, "X"=0.19, "Y"=-0.070, "Z"=-0.185 },
+    { "phase"=0.9, "X"=0.19, "Y"= 0.070, "Z"=-0.185 },
 ]
 
 length=0.140
@@ -118,10 +125,10 @@ name="Trapezoid"
 # Y - along robot side
 # Z - vertical
 points=[
-    { "phase"=0.00, "X"=0.19, "Y"= 0.070, "Z"=-0.230 },
-    { "phase"=0.84, "X"=0.19, "Y"=-0.070, "Z"=-0.230 },
-    { "phase"=0.89, "X"=0.19, "Y"=-0.050, "Z"=-0.170 },
-    { "phase"=0.95, "X"=0.19, "Y"= 0.050, "Z"=-0.170 },
+    { "phase"=0.00, "X"=0.19, "Y"= 0.070, "Z"=-0.215 },
+    { "phase"=0.84, "X"=0.19, "Y"=-0.070, "Z"=-0.215 },
+    { "phase"=0.89, "X"=0.19, "Y"=-0.050, "Z"=-0.185 },
+    { "phase"=0.95, "X"=0.19, "Y"= 0.050, "Z"=-0.185 },
 ]
 
 length=0.140
