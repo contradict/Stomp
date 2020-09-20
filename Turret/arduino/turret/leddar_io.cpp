@@ -218,11 +218,11 @@ uint8_t parseDetections()
     }
 
     calculateMinimumDetections();
-    
+
     return good_detections;
 }
 
-size_t getRawDetections(const Detection **detections) 
+size_t getRawDetections(Detection **detections) 
 {
     *detections = RawDetections;
     return good_detections;
@@ -248,7 +248,7 @@ void calculateMinimumDetections()
     }
 }
 
-size_t getMinimumDetections(const Detection (**detections)[LEDDAR_SEGMENTS]) 
+size_t getMinimumDetections(Detection (**detections)[LEDDAR_SEGMENTS]) 
 {
     *detections = &MinimumDetections;
     return LEDDAR_SEGMENTS;

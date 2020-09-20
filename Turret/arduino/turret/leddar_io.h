@@ -26,10 +26,10 @@ void initLeddarWrapper();
 void requestDetections();
 bool bufferDetections();
 uint8_t parseDetections();
-void calculateMinimumDetections(size_t good_detections);
+void calculateMinimumDetections();
 
-size_t getRawDetections(const Detection **detections);
-size_t getMinimumDetections(const Detection (**detections)[LEDDAR_SEGMENTS]);
+size_t getRawDetections(Detection **detections);
+size_t getMinimumDetections(Detection (**detections)[LEDDAR_SEGMENTS]);
 
 void setLeddarParameters(int16_t min_object_distance,
                          int16_t max_object_distance);

@@ -4,4 +4,5 @@ scratch
 .ipynb_checkpoints
 *.*-bak
 *.bck
-Turret/arduino/build
+Turret/arduino/build*
+Turret/arduino/turret/build*

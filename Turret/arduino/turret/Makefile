@@ -6,19 +6,19 @@
 
 # Russel's Linux
 
-#ARDUINO_DIR   = ${HOME}/src/Arduino/build/linux/work
-#ARDMK_DIR     = ${HOME}/src/Arduino-Makefile
-#MONITOR_PORT  = /dev/ttyACM0
+ARDUINO_DIR   = ${HOME}/src/Arduino/build/linux/work
+ARDMK_DIR     = ${HOME}/src/Arduino-Makefile
+MONITOR_PORT  = /dev/ttyACM0
 
 # Matt's OSX
 
-ARDUINO_DIR   = /Applications/Arduino.app/Contents/Java
-ARDMK_DIR     = ${HOME}/MachineCorps/Projects/Arduino-Makefile
+#ARDUINO_DIR   = /Applications/Arduino.app/Contents/Java
+#ARDMK_DIR     = ${HOME}/MachineCorps/Projects/Arduino-Makefile
 
 BOARD_TAG     = mega
 BOARD_SUB     = atmega2560
 
-CXXFLAGS      = -Wall -DSERIAL_TX_BUFFER_SIZE=256 -fno-threadsafe-statics
+CXXFLAGS      = -Wall -DSERIAL_TX_BUFFER_SIZE=256 -DSERIAL_RX_BUFFER_SIZE=256 -fno-threadsafe-statics
 CXXFLAGS_STD  = -std=c++11
 
 LDFLAGS = -Wl,-Map,chomp.map

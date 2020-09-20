@@ -67,7 +67,7 @@ void Target::EndSegment(int32_t p_endSegment, Detection* p_detection, uint32_t p
 //  * Theta therefore is fixed for each segment at 0.108 rad
 //
 //  Return size in mm
-int16_t Target::GetSize() 
+int16_t Target::GetSize() const
 {
     //  BB MJS: convert this code to use fixed point
     float size = GetDistance() * ((RightEdge - LeftEdge) * 0.108f);
@@ -75,13 +75,13 @@ int16_t Target::GetSize()
 }
 
 // return average distance to target in mm
-int16_t Target::GetDistance() 
+int16_t Target::GetDistance() const
 {
     return SumDistance / (RightEdge - LeftEdge);
 }
 
 // angle in radians scaled by 2048
-int16_t Target::GetAngle() 
+int16_t Target::GetAngle() const
 {
     // 2048*.108 = 221.2
     // 7.5*221.2 = 1659
@@ -89,7 +89,7 @@ int16_t Target::GetAngle()
 }
 
 // x coordinate in mm
-int16_t Target::GetXCoord() 
+int16_t Target::GetXCoord() const 
 {
     int32_t angle = GetAngle();
     int32_t distance = GetDistance();
@@ -98,7 +98,7 @@ int16_t Target::GetXCoord()
 }
 
 // y coordinate in mm
-int16_t Target::GetYCoord() 
+int16_t Target::GetYCoord() const
 {
     return ((int32_t)GetDistance()*GetAngle())/2048L;
 }

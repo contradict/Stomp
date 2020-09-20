@@ -20,7 +20,7 @@
 
 #include "radioController.h"
 #include "turretController.h"
-#include "AutoAimController.h"
+#include "autoAimController.h"
 
 
 //  ====================================================================

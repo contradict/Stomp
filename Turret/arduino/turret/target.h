@@ -27,11 +27,11 @@ public:
     void AddSegment(int32_t p_startSegment, Detection* p_detection);
     void EndSegment(int32_t p_endSegment, Detection* p_detection, uint32_t p_time);
 
-    int16_t GetSize();
-    int16_t GetAngle();
-    int16_t GetXCoord();
-    int16_t GetYCoord();
-    int16_t GetDistance();
+    int16_t GetSize() const;
+    int16_t GetAngle() const;
+    int16_t GetXCoord() const;
+    int16_t GetYCoord() const;
+    int16_t GetDistance() const;
     
     inline int32_t DistanceSq(Target &other);
 

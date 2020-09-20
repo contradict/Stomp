@@ -601,9 +601,10 @@ bool TelemetryController::SendTurretRotationTelemetry(int16_t p_state, int16_t p
 
 bool TelemetryController::SendObjectsTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
 {
-    sendObjectsCalculatedTelemetry(p_numObjects, p_objects);
-    sendObjectsMeasuredTelemetry(p_numObjects, p_objects);
+    bool sentCalculatedObjects = sendObjectsCalculatedTelemetry(p_numObjects, p_objects);
+    bool sentMeasuredObjects = sendObjectsMeasuredTelemetry(p_numObjects, p_objects);
 
+    return sentCalculatedObjects && sentMeasuredObjects;
 }
 
 struct ObjectsCalcuatedInner 

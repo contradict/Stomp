@@ -179,7 +179,7 @@ int16_t IMUController::GetOmegaZ()
 
 bool IMUController::IsUpright()
 {
-    return m_state = EUpright;
+    return m_state == EUpright;
 }
 
 void IMUController::SetParams(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
