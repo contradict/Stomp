@@ -42,4 +42,5 @@ struct joint_gains *parse_joint_gains(toml_table_t *legs_config);
 struct step *parse_steps(toml_table_t *config, int *nsteps);
 void free_step_descriptions(struct step *steps, int nsteps);
 struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* steps, int nsteps);
+char **parse_gait_selections(toml_table_t* config, struct gait* gaits, int ngaits, char* default_gait);
 void free_gait_descriptions(struct gait *gaits, int ngaits);

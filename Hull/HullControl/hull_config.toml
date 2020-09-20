@@ -4,6 +4,7 @@ name="Chomp"
 initial_gait="Ripple"
 forward_deadband = 0.05
 angular_deadband = 0.05
+gait_selections = ["StarWave", "Ripple", "Tripod"]
 
 [robot.geometry]
 

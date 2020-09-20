@@ -227,6 +227,30 @@ struct gait *parse_gaits(toml_table_t *config, int *ngaits, const struct step* s
     return gaits;
 }
 
+char **parse_gait_selections(toml_table_t* config, struct gait* gaits, int ngaits, char* default_gait)
+{
+    toml_array_t* sel = toml_array_in(config, "gait_selections");
+    char **gait_selections = calloc(toml_array_nelem(sel), sizeof(char*));
+    for(int s=0; s<toml_array_nelem(sel); s++)
+    {
+        toml_raw_t tomlr = toml_raw_at(sel, s);
+        char* name;
+        toml_rtos(tomlr, &name);
+        for(int g=0; g<ngaits; g++)
+        {
+            if(strcmp(name, gaits[g].name) == 0)
+                gait_selections[s] = name;
+        }
+        if(gait_selections[s] == 0)
+        {
+            logm(SL4C_ERROR, "No gait named %s, replaced with default %s",
+                 name, default_gait);
+            gait_selections[s] = default_gait;
+        }
+    }
+    return gait_selections;
+}
+
 void free_gait_descriptions(struct gait *gaits, int ngaits)
 {
     for(int g=0;g<ngaits;g++)

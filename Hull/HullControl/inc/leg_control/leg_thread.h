@@ -38,6 +38,7 @@ struct leg_control_parameters {
     float angular_velocity;
     enum leg_control_enable enable;
     enum leg_control_lock lock;
+    int gait_selection;
 };
 
 struct leg_thread_state* create_leg_thread(struct leg_thread_definition *leg_thread, const char * progname);

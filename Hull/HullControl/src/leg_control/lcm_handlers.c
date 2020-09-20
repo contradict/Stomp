@@ -39,6 +39,18 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
                 params->enable = ENABLE_DISABLE;
                 break;
         }
+        switch(msg->toggle[HULL_GAIT])
+        {
+            case STOMP_CONTROL_RADIO_ON:
+                params->gait_selection = 2;
+                break;
+            case STOMP_CONTROL_RADIO_CENTER:
+                params->gait_selection = 1;
+                break;
+            case STOMP_CONTROL_RADIO_OFF:
+                params->enable = 0;
+                break;
+        }
         ringbuf_produce(state->queue->ringbuf, state->worker);
     }
 }

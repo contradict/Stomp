@@ -66,6 +66,7 @@ struct leg_thread_state {
     int nsteps;
     struct step *steps;
     int ngaits;
+    char **gait_selections;
     struct gait *gaits;
     int current_gait;
     float position_ramp_time;
@@ -488,6 +489,29 @@ static int count_leg_mode(enum leg_control_mode* leg_mode, int nlegs, enum leg_c
     return c;
 }
 
+static int set_gait(struct leg_thread_state* state, char *gaitname)
+{
+    int g;
+    for(g=0; g<state->ngaits; g++)
+        if(strcmp(state->gaits[g].name, gaitname) == 0)
+        {
+            state->current_gait = g;
+            break;
+        }
+    if(g==state->ngaits)
+    {
+        logm(SL4C_WARNING, "Could not find gait \"%s\", using index %d = \"%s\"",
+                gaitname, state->current_gait, state->gaits[state->current_gait].name);
+        return -1;
+    }
+    else
+    {
+        logm(SL4C_INFO, "Using gait index %d = \"%s\"",
+                state->current_gait, state->gaits[state->current_gait].name);
+        return 0;
+    }
+}
+
 static void run_leg_thread_once(struct leg_thread_state* state, struct leg_control_parameters *parameters, float dt)
 {
     int count;
@@ -612,6 +636,9 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
             {
                 logm(SL4C_INFO, "all_gain_operational_walk->all_walk.");
                 setall_leg_mode(state->leg_mode, state->nlegs, mode_move_start);
+                char *gaitname = state->gait_selections[parameters->gait_selection];
+                set_gait(state, gaitname);
+                logm(SL4C_INFO, "Selected gait %s.", gaitname);
                 state->legs_mode = mode_all_walk;
             }
             else if(parameters->enable == ENABLE_DISABLE)
@@ -783,23 +810,9 @@ static void *run_leg_thread(void *ptr)
     toml_raw_t tomlr = toml_raw_in(state->definition->config, "initial_gait");
     char *initial_gait;
     toml_rtos(tomlr, &initial_gait);
-    int g;
-    for(g=0; g<state->ngaits; g++)
-        if(strcmp(state->gaits[g].name, initial_gait) == 0)
-        {
-            state->current_gait = g;
-            break;
-        }
-    if(g==state->ngaits)
-    {
-        logm(SL4C_WARNING, "Could not find gait \"%s\", using index %d = \"%s\"",
-             initial_gait, state->current_gait, state->gaits[state->current_gait].name);
-    }
-    else
-    {
-        logm(SL4C_INFO, "Using gait index %d = \"%s\"",
-             state->current_gait, state->gaits[state->current_gait].name);
-    }
+    set_gait(state, initial_gait);
+
+    state->gait_selections = parse_gait_selections(state->definition->config, state->gaits, state->ngaits, initial_gait);
 
     toml_table_t *geometry = toml_table_in(state->definition->config, "geometry");
     get_float(geometry, "halfwidth", 0.0600f, &state->turning_width);
