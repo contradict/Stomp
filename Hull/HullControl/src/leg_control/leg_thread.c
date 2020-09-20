@@ -277,7 +277,8 @@ static bool servo_ride_height(struct leg_thread_state* st, float *height_offset)
         bool down[st->nlegs];
         for(int l=0; l<st->nlegs; l++)
         {
-            down[l] = st->rod_end_pressure[l][JOINT_LIFT] > st->support_pressure;
+            float dP = (st->base_end_pressure[l][JOINT_LIFT] - st->rod_end_pressure[l][JOINT_LIFT]);
+            down[l] = dP > st->support_pressure;
             if(down[l])
             {
                 ndown++;
@@ -289,6 +290,20 @@ static bool servo_ride_height(struct leg_thread_state* st, float *height_offset)
         {
             if(down[l])
                 height_offset[l] = st->ride_height_gain * (st->desired_ride_height - st->toe_position_measured[l][2]);
+            else
+                height_offset[l] = 0;
+        }
+        if(sclog4c_level <= SL4C_FINE)
+        {
+            char message[256];
+            int nchar;
+            nchar = snprintf(message, sizeof(message), "down: [");
+            for(int l=0; l<st->nlegs; l++)
+            {
+                nchar += snprintf(message + nchar, sizeof(message) - nchar, "%s%s",
+                        down[l] ? "d" : "u", l<st->nlegs-1 ? "," : "]");
+            }
+            logm(SL4C_FINE, "%s", message);
         }
         return true;
     }
@@ -823,7 +838,7 @@ static void *run_leg_thread(void *ptr)
         state->observed_period *= state->telemetry_period_smoothing;
         state->observed_period += (1.0f - state->telemetry_period_smoothing) * dt;
         sleep_rate(state->timer, &elapsed, &dt);
-        logm(SL4C_FINE, "lp: %s el: %6.3f dt: %5.3f", loop_phase ? "walk" : "tlem", elapsed, dt);
+        logm(SL4C_FINER, "lp: %s el: %6.3f dt: %5.3f", loop_phase ? "walk" : "tlem", elapsed, dt);
         loop_phase ^= true;
     }
     destroy_rate_timer(&state->timer);
