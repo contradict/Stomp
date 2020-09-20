@@ -21,6 +21,8 @@
 #include "lcm/stomp_telemetry_leg.h"
 #include "lcm/stomp_modbus.h"
 
+#define CLIP(x, mn, mx) (((x)<(mn))?(mn):(((x)>(mx))?(mx):(x)))
+
 const float deg2rad = M_PI / 180.0f;
 
 enum legs_control_mode {
@@ -77,6 +79,7 @@ struct leg_thread_state {
     float support_pressure;
     float desired_ride_height;
     float ride_height_gain;
+    float ride_height_integrator_limit;
     float ride_height_scale;
     atomic_bool shouldrun;
     struct rate_timer *timer;
@@ -88,6 +91,7 @@ struct leg_thread_state {
     float (*rod_end_pressure)[3];
     float (*commanded_toe_positions)[3];
     float (*initial_toe_positions)[3];
+    float *ride_height_integrator;
     float *leg_scale;
     float turning_width;
     float walk_phase;
@@ -271,10 +275,9 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
 
 static bool servo_ride_height(struct leg_thread_state* st, float extra, float *height_offset)
 {
+    float target = st->desired_ride_height + st->ride_height_scale * extra;
     if(st->valid_measurements)
     {
-        float ride_height=0;
-        int ndown=0;
         bool down[st->nlegs];
         for(int l=0; l<st->nlegs; l++)
         {
@@ -282,15 +285,10 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
             down[l] = dP > st->support_pressure;
             if(down[l])
             {
-                ndown++;
-                ride_height += st->toe_position_measured[l][2];
+                float error = target - st->toe_position_measured[l][2];
+                st->ride_height_integrator[l] += CLIP(st->ride_height_gain * error, -st->ride_height_integrator_limit,
+                                                      st->ride_height_integrator_limit);
             }
-        }
-        ride_height /= ndown;
-        float target = st->desired_ride_height + st->ride_height_scale * extra;
-        for(int l=0; l<st->nlegs; l++)
-        {
-            height_offset[l] = -st->desired_ride_height + target + st->ride_height_gain * (target - st->toe_position_measured[l][2]);
         }
         if(sclog4c_level <= SL4C_FINE)
         {
@@ -304,10 +302,12 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
             }
             logm(SL4C_FINE, "%s", message);
         }
-        return true;
     }
-    else
-        return false;
+    for(int l=0; l<st->nlegs; l++)
+    {
+        height_offset[l] = st->ride_height_scale * extra + st->ride_height_integrator[l];
+    }
+    return true;
 }
 
 
@@ -800,6 +800,9 @@ static void *run_leg_thread(void *ptr)
     get_float(legs_config, "desired_ride_height", 0.230, &(state->desired_ride_height));
     get_float(legs_config, "ride_height_gain", 0.0f, &(state->ride_height_gain));
     get_float(legs_config, "ride_height_scale", 0.0f, &(state->ride_height_scale));
+    get_float(legs_config, "ride_height_integrator_limit", 0.0f, &(state->ride_height_integrator_limit));
+
+    state->ride_height_integrator = calloc(state->nlegs, sizeof(float));
 
     state->steps = parse_steps(state->definition->config, &state->nsteps);
 

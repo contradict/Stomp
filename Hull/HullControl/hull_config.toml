@@ -19,7 +19,8 @@ telemetry_frequency=10
 telemetry_period_smoothing=0.9
 support_pressure=5.0
 desired_ride_height=-0.215
-ride_height_gain=0.2
+ride_height_gain=0.1
+ride_height_integrator_limit=0.2
 ride_height_scale=-0.029
 
 [robot.legs.joint_gain.Curl]
