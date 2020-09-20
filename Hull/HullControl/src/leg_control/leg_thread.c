@@ -290,10 +290,7 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
         float target = st->desired_ride_height + st->ride_height_scale * extra;
         for(int l=0; l<st->nlegs; l++)
         {
-            if(down[l])
-                height_offset[l] = st->ride_height_gain * (target - st->toe_position_measured[l][2]);
-            else
-                height_offset[l] = 0;
+            height_offset[l] = -st->desired_ride_height + target + st->ride_height_gain * (target - st->toe_position_measured[l][2]);
         }
         if(sclog4c_level <= SL4C_FINE)
         {
