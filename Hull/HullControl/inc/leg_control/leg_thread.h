@@ -37,6 +37,8 @@ struct leg_control_parameters {
     float forward_velocity;
     float angular_velocity;
     float ride_height;
+    float left;
+    float right;
     enum leg_control_enable enable;
     enum leg_control_lock lock;
     int gait_selection;
