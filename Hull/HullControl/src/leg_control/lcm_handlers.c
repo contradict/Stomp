@@ -21,6 +21,7 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
         struct leg_control_parameters *params = (struct leg_control_parameters *)(state->queue->buffer + offset);
         params->forward_velocity = msg->axis[HULL_VELOCITY_X];
         params->angular_velocity = msg->axis[HULL_OMEGA_Z];
+        params->ride_height = msg->axis[HULL_RIDE_HEIGHT];
         switch(msg->toggle[HULL_MODE])
         {
             case STOMP_CONTROL_RADIO_ON:

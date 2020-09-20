@@ -78,6 +78,7 @@ struct leg_thread_state {
     float support_pressure;
     float desired_ride_height;
     float ride_height_gain;
+    float ride_height_scale;
     atomic_bool shouldrun;
     struct rate_timer *timer;
     enum leg_control_mode *leg_mode;
@@ -269,7 +270,7 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
     return 0;
 }
 
-static bool servo_ride_height(struct leg_thread_state* st, float *height_offset)
+static bool servo_ride_height(struct leg_thread_state* st, float extra, float *height_offset)
 {
     if(st->valid_measurements)
     {
@@ -287,10 +288,11 @@ static bool servo_ride_height(struct leg_thread_state* st, float *height_offset)
             }
         }
         ride_height /= ndown;
+        float target = st->desired_ride_height + st->ride_height_scale * extra;
         for(int l=0; l<st->nlegs; l++)
         {
             if(down[l])
-                height_offset[l] = st->ride_height_gain * (st->desired_ride_height - st->toe_position_measured[l][2]);
+                height_offset[l] = st->ride_height_gain * (target - st->toe_position_measured[l][2]);
             else
                 height_offset[l] = 0;
         }
@@ -324,7 +326,7 @@ static int compute_toe_positions(struct leg_thread_state* state, struct leg_cont
     compute_walk_scale(state, state->walk_phase, left_velocity, right_velocity, state->leg_scale);
 
     float height_offset[state->nlegs];
-    bool have_offset = servo_ride_height(state, height_offset);
+    bool have_offset = servo_ride_height(state, p->ride_height, height_offset);
 
     int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
