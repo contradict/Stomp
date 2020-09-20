@@ -69,7 +69,6 @@ struct leg_thread_state {
     char **gait_selections;
     struct gait *gaits;
     int current_gait;
-    float position_ramp_time;
     float toe_position_tolerance;
     float telemetry_frequency;
     float telemetry_period_smoothing;
