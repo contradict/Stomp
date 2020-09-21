@@ -54,6 +54,11 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
                 params->gait_selection = 0;
                 break;
         }
+        if(msg->failsafe || msg->no_data)
+        {
+            params->enable = ENABLE_DISABLE;
+            params->lock = LOCK_FREE;
+        }
         ringbuf_produce(state->queue->ringbuf, state->worker);
     }
 }

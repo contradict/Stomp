@@ -52,6 +52,18 @@ In `/etc/network/interfaces`, comment out the whole `iface usb0` section.
 In `/opt/scripts/boot/bbai.sh`, comment out the two blocks starting around line
 368 that run `autocnifgure_usb[01].sh`.
 
+## Ensure a multicast route always exists.
+If LCM won't start at boot, this is probably the solution.
+
+Add these two `post-up` lines to `/etc/network/interfaces`. The reset should
+already be there:
+
+    auto lo
+    iface lo inet loopback
+      post-up ifconfig lo multicast || true
+      post-up route add -net 224.0.0.0 netmask 240.0.0.0 dev lo || true
+
+
 ## Reboot
 
 If the kernel was upgraded above, a reboot is necessary before building the
