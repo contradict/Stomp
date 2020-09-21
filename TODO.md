@@ -2,8 +2,6 @@
 
 ## System startup
 
-  * Start sbus_radio on system boot
-  * Start leg_control on system boot
   * Start telemetry on system boot
 
 ## Servo tuning while walking
@@ -59,8 +57,6 @@ firmware. For now, see Hull/Test/modbus_ui.c
       angle limits.
     * At least three legs on the ground, not all on the same side of the robot
     * maintain specified velocity
-  * Write ripple gait
-  * Write wave gait.
   * Crabbing
 
 ## Telemetry
@@ -89,12 +85,7 @@ firmware. For now, see Hull/Test/modbus_ui.c
 
 # Leg Board
 
-## Feedback lowpass filter
-  * implement filter
-  * Add modbus message to set filter coefficients.
-
 ## Optimize kinematics
-  * Scaling calculation can be partially done at startup.
   * Complex results usually just use real part, don't compute complex part
   * Would DH parameters be better?
 
