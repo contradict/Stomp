@@ -65,12 +65,12 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * Get telemetry branch merged!
 
 ## Pressure ADC
-  * Uses a Mikro ADC-Click
-  * Pins and driver enabled by [overlay](https://github.com/contradict/BeagleBoard-DeviceTrees/blob/v4.19.x-ti/src/arm/BBAI-SPI3-ADC-IMU.dts)
-  * Pins show correct data on oscilloscope, zeros always arrive in software.
-  * Wrong config on MISO?
-  * Not actually the correct driver?
-  * Reading the wrong file?
+  * Uses internal ADC, depending on wiring read from
+    /sys/bus/iio/devices/iio:device1/in_voltageN_raw
+    to sample value.
+  * read
+    /sys/bus/iio/devices/iio:device1/in_voltage_scale
+    for a scale to convert the raw value to voltage
 
 ## IMU
   * Pins enabled by [overlay](https://github.com/contradict/BeagleBoard-DeviceTrees/blob/v4.19.x-ti/src/arm/BBAI-SPI3-ADC-IMU.dts)
