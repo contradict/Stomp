@@ -33,14 +33,21 @@ enum leg_control_lock {
     LOCK_LOCK,
 };
 
+enum leg_control_motion_mode {
+    MOTION_MODE_STEERING,
+    MOTION_MODE_TRANSLATING,
+};
+
 struct leg_control_parameters {
     float forward_velocity;
+    float left_velocity;
     float angular_velocity;
     float ride_height;
     float left;
     float right;
     enum leg_control_enable enable;
     enum leg_control_lock lock;
+    enum leg_control_motion_mode motion;
     int gait_selection;
 };
 

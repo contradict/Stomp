@@ -18,10 +18,15 @@ struct joint_gains {
 
 struct step {
     char *name;
-    float length;
     int npoints;
     float swap_tolerance;
     int nswap;
+    float minimum[3];
+    float maximum[3];
+    float r_inner;
+    float r_outer;
+    float swing_angle_min;
+    float swing_angle_max;
     float* swap_phase;
     float *phase, *X, *Y, *Z;
 };

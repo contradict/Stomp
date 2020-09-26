@@ -20,6 +20,7 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
     {
         struct leg_control_parameters *params = (struct leg_control_parameters *)(state->queue->buffer + offset);
         params->forward_velocity = msg->axis[HULL_VELOCITY_X];
+        params->left_velocity = msg->axis[HULL_VELOCITY_Y];
         params->angular_velocity = msg->axis[HULL_OMEGA_Z];
         params->ride_height = msg->axis[HULL_RIDE_HEIGHT];
         params->left = msg->axis[HULL_LS];
@@ -52,6 +53,18 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
                 break;
             case STOMP_CONTROL_RADIO_OFF:
                 params->gait_selection = 0;
+                break;
+        }
+        switch(msg->toggle[HULL_MOTION_SEL])
+        {
+            case STOMP_CONTROL_RADIO_OFF:
+                params->motion = MOTION_MODE_STEERING;
+                break;
+            case STOMP_CONTROL_RADIO_CENTER:
+                params->motion = MOTION_MODE_TRANSLATING;
+                break;
+            case STOMP_CONTROL_RADIO_ON:
+                params->motion = MOTION_MODE_STEERING;
                 break;
         }
         if(msg->failsafe || msg->no_data)

@@ -103,7 +103,14 @@ struct step *parse_steps(toml_table_t *config, int *nsteps)
         toml_table_t *step = toml_table_at(step_descriptions, s);
         toml_raw_t tomlr = toml_raw_in(step, "name");
         toml_rtos(tomlr, &steps[s].name);
-        get_float(step, "length", 0.140f, &steps[s].length);
+        toml_array_t* ext = toml_array_in(step, "minimum");
+        toml_vector_float(ext, steps[s].minimum);
+        ext = toml_array_in(step, "maximum");
+        toml_vector_float(ext, steps[s].maximum);
+        get_float(step, "r_inner", 0.153, &steps[s].r_inner);
+        get_float(step, "r_outer", 0.236, &steps[s].r_outer);
+        get_float(step, "swing_angle_min", -1.181, &steps[s].swing_angle_min);
+        get_float(step, "swing_angle_max",  1.181, &steps[s].swing_angle_max);
         get_float(step, "direction_swap_tolerance", 0.030f, &steps[s].swap_tolerance);
         toml_array_t *swap_phase = toml_array_in(step, "direction_swap_phase");
         steps[s].nswap = toml_array_nelem(swap_phase);

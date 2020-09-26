@@ -153,6 +153,12 @@ static int compute_leg_position(struct leg_thread_state* state, int leg_index, f
     interpolate_value(step->phase, step->X, step->npoints, index, leg_phase, &((*toe_position)[0]));
     interpolate_value(step->phase, step->Y, step->npoints, index, leg_phase, &((*toe_position)[1]));
     interpolate_value(step->phase, step->Z, step->npoints, index, leg_phase, &((*toe_position)[2]));
+    for(int i=0;i<3;i++)
+    {
+        float s = step->maximum[i] - step->minimum[i];
+        float o = step->minimum[i];
+        (*toe_position)[i] = (*toe_position)[i] * s + o;
+    }
     // TODO Make this correct for angles other than 0, 180.
     (*toe_position)[1] *= copysignf(1.0f, cosf(state->legs[leg_index].orientation[2] * deg2rad)) * scale;
     return 0;
@@ -202,17 +208,85 @@ static float deadband(float f, float d)
         return f - copysignf(d, f);
 }
 
-static void compute_walk_velocity(struct leg_thread_state* state, struct leg_control_parameters *p, float* left_velocity, float *right_velocity)
+static void compute_walk_velocity(struct leg_thread_state* state, struct leg_control_parameters *p, float* left_velocity, float *right_velocity, float *theta)
 {
     float forward = deadband(p->forward_velocity, state->forward_deadband);
     float angular = deadband(p->angular_velocity, state->angular_deadband);
-    *right_velocity = forward + state->turning_width * angular;
-    *left_velocity = forward - state->turning_width * angular;
+    float lateral = deadband(p->left_velocity, state->forward_deadband);
+    float linear = hypotf(forward, lateral);
+
+    switch(p->motion)
+    {
+        case MOTION_MODE_STEERING:
+            *right_velocity = forward + state->turning_width * angular;
+            *left_velocity = forward - state->turning_width * angular;
+            *theta = 0.0f;
+            break;
+        case MOTION_MODE_TRANSLATING:
+            *right_velocity = *left_velocity = linear;
+            *theta = atan2f(lateral, forward);
+            break;
+    }
 }
 
 static float compute_walk_frequency(float step_length, float left_velocity, float right_velocity)
 {
     return MAX(fabsf(left_velocity), fabsf(right_velocity)) / step_length;
+}
+
+// pt(s) = [xc, 0] + [sin(t), cos(t)] * s
+// || pt || = r_inner
+//        or
+// || pt || = r_outer
+//        or
+// arg(pt) = theta_max
+// (xc - s sin)^2 + s^2 cos^2 = r^2
+// xc^2 - 2 s xc sin + s^2 = r^2
+// s^2 - 2 xc sin s + xc^2 - r^2 = 0
+// s = (2 xc sin +/- sqrt(4 xc^2 sin^2 - 4 (xc^2 - r^2))) / 2
+// s = (xc sin +/- sqrt(xc^2 (sin^2 - 1) + r^2))
+// s = (xc sin +/- sqrt(r^2 - xc^2 cos^2))
+//
+// arctan(s cos / (xc + s sin)) = theta_max
+// s cos / (xc + s sin) = tan(theta_max)
+// s cos - s sin tan(theta_max) = xc tan(theta_max)
+// s (cos - sin tan(theta_max)) = xc tan(theta_max)
+// s = xc tan(theta_max) / (cos - sin tan(theta_max))
+
+static float intersect_working_volume(struct step* step, float theta, float *pxc)
+{
+    float r_inner = step->r_inner;
+    float r_outer = step->r_outer;
+    float xc = step->minimum[0];
+    if(pxc != 0)
+        *pxc = xc;
+    float st = sin(theta), ct=cos(theta);
+    float s_rin = xc * st - sqrtf(r_inner*r_inner - xc*xc*ct*ct);
+    float s_rout = xc * st - sqrtf(r_outer*r_outer - xc*xc*ct*ct);
+    float s_t = xc * tanf(step->swing_angle_max) / (ct - st * tanf(step->swing_angle_max));
+    float s_min;
+    if(isnan(s_rin))
+        s_min = MIN(s_rin, s_rout);
+    else
+        s_min = s_rout;
+    s_min = MIN(s_min, s_t);
+    return s_min;
+}
+
+static float compute_step_length(struct leg_thread_state* state, struct leg_control_parameters* p, float theta, float *xc)
+{
+    float l;
+    struct step* step=&state->steps[state->gaits[state->current_gait].step_index];
+    switch(p->motion)
+    {
+        case MOTION_MODE_STEERING:
+            l = step->maximum[1] - step->minimum[1];
+            break;
+        case MOTION_MODE_TRANSLATING:
+            l = 2 * intersect_working_volume(step, theta, xc);
+            break;
+    }
+    return l;
 }
 
 static bool anyclose(float *x, int n, float y, float dy)
@@ -272,6 +346,13 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
         }
     }
     return 0;
+}
+
+static void rotate_leg_path(float theta, float xc, float (*pos)[3])
+{
+    float st=sin(theta), ct=cos(theta);
+    (*pos)[0] = ((*pos)[0] - xc)*ct - (*pos)[1]*st + xc;
+    (*pos)[1] = ((*pos)[0] - xc)*st + (*pos)[1]*ct;
 }
 
 static bool servo_ride_height(struct leg_thread_state* st, float extra, float *height_offset, float igain, float pgain)
@@ -335,8 +416,11 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
 static int compute_toe_positions(struct leg_thread_state* state, struct leg_control_parameters *p, float dt)
 {
     float left_velocity, right_velocity;
-    compute_walk_velocity(state, p, &left_velocity, &right_velocity);
-    float frequency = compute_walk_frequency(state->steps[state->gaits[state->current_gait].step_index].length,
+    float theta, xc;
+    float step_length;
+    compute_walk_velocity(state, p, &left_velocity, &right_velocity, &theta);
+    step_length = compute_step_length(state, p, theta, &xc);
+    float frequency = compute_walk_frequency(step_length,
                                              left_velocity, right_velocity);
     float dummy;
     state->walk_phase = MAX(modff(state->walk_phase + frequency * dt, &dummy), 0.0f);
@@ -349,6 +433,7 @@ static int compute_toe_positions(struct leg_thread_state* state, struct leg_cont
     for(int leg=0; leg<state->nlegs; leg++)
     {
         compute_leg_position(state, leg, state->walk_phase, state->leg_scale[leg], &state->commanded_toe_positions[leg]);
+        rotate_leg_path(theta, xc, &state->commanded_toe_positions[leg]);
         if(have_offset)
             state->commanded_toe_positions[leg][2] += height_offset[leg];
     }
