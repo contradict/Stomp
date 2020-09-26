@@ -141,7 +141,7 @@ static void interpolate_value(const float *nodes, const float *values, ssize_t l
     *y = (x - nodes[index]) * (values[next_value] - values[index]) / (nodes[next_node] - nodes[index]) + values[index];
 }
 
-static int compute_leg_position(struct leg_thread_state* state, int leg_index, float phase, float scale, float (*toe_position)[3])
+static int compute_leg_position(struct leg_thread_state* state, int leg_index, float phase, float scale, float length, float (*toe_position)[3])
 {
     struct gait *gait = (state->gaits+state->current_gait);
     struct step *step = (state->steps+gait->step_index);
@@ -155,9 +155,9 @@ static int compute_leg_position(struct leg_thread_state* state, int leg_index, f
     interpolate_value(step->phase, step->Z, step->npoints, index, leg_phase, &((*toe_position)[2]));
     for(int i=0;i<3;i++)
     {
-        float s = step->maximum[i] - step->minimum[i];
-        float o = step->minimum[i];
-        (*toe_position)[i] = (*toe_position)[i] * s + o;
+        float s = i==1 ? length : (step->maximum[i] - step->minimum[i]);
+        float o = i==1 ? -length/2: step->minimum[i];
+        (*toe_position)[i] = ((*toe_position)[i] + 1.0f) * s / 2.0f + o;
     }
     // TODO Make this correct for angles other than 0, 180.
     (*toe_position)[1] *= copysignf(1.0f, cosf(state->legs[leg_index].orientation[2] * deg2rad)) * scale;
@@ -249,6 +249,7 @@ static float compute_walk_frequency(float step_length, float left_velocity, floa
 //
 // arctan(s cos / (xc + s sin)) = theta_max
 // s cos / (xc + s sin) = tan(theta_max)
+// s cos = xc tan(theta_max) + s sin tan(theta_max)
 // s cos - s sin tan(theta_max) = xc tan(theta_max)
 // s (cos - sin tan(theta_max)) = xc tan(theta_max)
 // s = xc tan(theta_max) / (cos - sin tan(theta_max))
@@ -260,10 +261,11 @@ static float intersect_working_volume(struct step* step, float theta, float *pxc
     float xc = step->minimum[0];
     if(pxc != 0)
         *pxc = xc;
-    float st = sin(theta), ct=cos(theta);
-    float s_rin = xc * st - sqrtf(r_inner*r_inner - xc*xc*ct*ct);
-    float s_rout = xc * st - sqrtf(r_outer*r_outer - xc*xc*ct*ct);
-    float s_t = xc * tanf(step->swing_angle_max) / (ct - st * tanf(step->swing_angle_max));
+    float st = sinf(theta), ct=cosf(theta);
+    float sgnst = copysignf(1.0f, st);
+    float s_rin = sgnst * xc * st - sqrtf(r_inner*r_inner - xc*xc*ct*ct);
+    float s_rout = -(sgnst * xc * st - sqrtf(r_outer*r_outer - xc*xc*ct*ct));
+    float s_t = fabsf(xc * tanf(step->swing_angle_max) / (ct - st * tanf(step->swing_angle_max)));
     float s_min;
     if(isnan(s_rin))
         s_min = MIN(s_rin, s_rout);
@@ -350,9 +352,10 @@ static int compute_walk_scale(struct leg_thread_state *state, float phase, float
 
 static void rotate_leg_path(float theta, float xc, float (*pos)[3])
 {
-    float st=sin(theta), ct=cos(theta);
-    (*pos)[0] = ((*pos)[0] - xc)*ct - (*pos)[1]*st + xc;
-    (*pos)[1] = ((*pos)[0] - xc)*st + (*pos)[1]*ct;
+    float st=sinf(theta), ct=cosf(theta);
+    float x = (*pos)[0];
+    (*pos)[0] = (x - xc)*ct - (*pos)[1]*st + xc;
+    (*pos)[1] = (x - xc)*st + (*pos)[1]*ct;
 }
 
 static bool servo_ride_height(struct leg_thread_state* st, float extra, float *height_offset, float igain, float pgain)
@@ -432,7 +435,7 @@ static int compute_toe_positions(struct leg_thread_state* state, struct leg_cont
     int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
     {
-        compute_leg_position(state, leg, state->walk_phase, state->leg_scale[leg], &state->commanded_toe_positions[leg]);
+        compute_leg_position(state, leg, state->walk_phase, state->leg_scale[leg], step_length, &state->commanded_toe_positions[leg]);
         rotate_leg_path(theta, xc, &state->commanded_toe_positions[leg]);
         if(have_offset)
             state->commanded_toe_positions[leg][2] += height_offset[leg];

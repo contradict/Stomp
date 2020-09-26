@@ -117,8 +117,8 @@ points=[
 ]
 minimum=[ 0.198, -0.070, -0.215]
 maximum=[ 0.198,  0.070, -0.185]
-r_inner=0.153
-r_outer=0.236
+r_inner=0.170
+r_outer=0.235
 swing_angle_min=-1.181
 swing_angle_max= 1.181
 
@@ -140,7 +140,9 @@ points=[
     { "phase"=0.95, "X"=1.0, "Y"= 0.714, "Z"= 1.0 },
 ]
 minimum=[0.198, -0.070, -0.215]
-minimum=[0.198,  0.070, -0.185]
+maximum=[0.198,  0.070, -0.185]
+r_inner=0.170
+r_outer=0.235
 
 direction_swap_phase=[0.42, 0.92]
 direction_swap_tolerance=0.01
