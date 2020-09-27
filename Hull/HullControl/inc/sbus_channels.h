@@ -1,12 +1,12 @@
 #ifndef SBUS_CHANNELS_H
 #define SBUS_CHANNELS_H
 
-#define HULL_THR         0
+#define HULL_RIDE_HEIGHT 0
 #define HULL_OMEGA_Z     1
 #define HULL_VELOCITY_Y  1
 #define HULL_VELOCITY_X  2
 #define HULL_OMEGA_Z_D   3   // RUD
-#define HULL_RIDE_HEIGHT 4   // S1
+#define HULL_S1          4   // S1
 #define HULL_S2          5
 #define HULL_LS          6
 #define HULL_RS          7

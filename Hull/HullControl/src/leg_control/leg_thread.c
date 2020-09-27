@@ -95,7 +95,9 @@ struct leg_thread_state {
     float *ride_height_integrator;
     float (*leg_scale)[3];
     float (*leg_offset)[3];
+    float theta[2];
     float turning_width;
+    float min_angle_change_velocity;
     float walk_phase;
     float observed_period;
 };
@@ -187,6 +189,13 @@ static void compute_walk_velocity(struct leg_thread_state* state, struct leg_con
             (*theta)[0] = atan2f(lateral, forward - state->turning_width * angular);
             break;
     }
+    if((*velocity)[0] < state->min_angle_change_velocity && (*velocity)[1] < state->min_angle_change_velocity)
+    {
+        (*theta)[0] = state->theta[0];
+        (*theta)[1] = state->theta[1];
+    }
+    state->theta[0] = (*theta)[0];
+    state->theta[1] = (*theta)[1];
 }
 
 static float compute_walk_frequency(float (*step_length)[2], float (*velocity)[2])
@@ -317,7 +326,7 @@ static int compute_walk_scale(struct step* step, struct gait* gait, float phase,
         leg_offset[l][2] = leg_scale[l][2] + step->minimum[2];
 
         leg_scale[l][1] *= (*length)[1] / 2.0f;
-        leg_offset[l][1] = -(*length)[1] / 2.0f;
+        leg_offset[l][1] = 0;
     }
     for(int l=nlegs/2;l<nlegs;l++)
     {
@@ -327,7 +336,7 @@ static int compute_walk_scale(struct step* step, struct gait* gait, float phase,
         leg_offset[l][2] = leg_scale[l][2] + step->minimum[2];
 
         leg_scale[l][1] *= (*length)[0] / 2.0f;
-        leg_offset[l][1] = -(*length)[0] / 2.0f;
+        leg_offset[l][1] = 0;
     }
     return 0;
 }
@@ -336,8 +345,8 @@ static void rotate_leg_path(float theta, float xc, float (*pos)[3])
 {
     float st=sinf(theta), ct=cosf(theta);
     float x = (*pos)[0];
-    (*pos)[0] = (x - xc)*ct - (*pos)[1]*st + xc;
-    (*pos)[1] = (x - xc)*st + (*pos)[1]*ct;
+    (*pos)[0] =  (x - xc)*ct + (*pos)[1]*st + xc;
+    (*pos)[1] = -(x - xc)*st + (*pos)[1]*ct;
 }
 
 static bool servo_ride_height(struct leg_thread_state* st, float extra, float *height_offset, float igain, float pgain)
@@ -792,6 +801,12 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
             {
                 logm(SL4C_INFO, "moving %d", count);
             }
+            char *gaitname = state->gait_selections[parameters->gait_selection];
+            if(strcmp(gaitname, state->gaits[state->current_gait].name) != 0)
+            {
+                set_gait(state, gaitname);
+                logm(SL4C_INFO, "Selected gait %s.", gaitname);
+            }
             break;
     }
     if(state->legs_mode == mode_all_walk)
@@ -912,6 +927,7 @@ static void *run_leg_thread(void *ptr)
 
     get_float(state->definition->config, "forward_deadband", 0.05f, &(state->forward_deadband));
     get_float(state->definition->config, "angular_deadband", 0.05f,  &(state->angular_deadband));
+    get_float(state->definition->config, "min_angle_change_velocity", 0.005f,  &(state->min_angle_change_velocity));
 
     toml_table_t *legs_config = toml_table_in(state->definition->config,
                                              "legs");
@@ -968,7 +984,7 @@ static void *run_leg_thread(void *ptr)
 
     state->legs_mode = mode_all_init;
     state->timer = create_rate_timer(state->definition->frequency);
-    logm(SL4C_DEBUG, "Create timer with period %f",state->definition->frequency);
+    logm(SL4C_DEBUG, "Create timer with frequency %f",state->definition->frequency);
     float elapsed = 0, dt=0;;
     float telem_interval = 0;
     while(state->shouldrun)

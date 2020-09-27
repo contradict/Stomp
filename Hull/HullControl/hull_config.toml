@@ -5,6 +5,7 @@ initial_gait="Ripple"
 forward_deadband = 0.05
 angular_deadband = 0.05
 gait_selections = ["StarWave", "Ripple", "Tripod"]
+min_angle_change_velocity = 0.005
 
 [robot.geometry]
 
