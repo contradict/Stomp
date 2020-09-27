@@ -19,10 +19,28 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
     if(offset >= 0)
     {
         struct leg_control_parameters *params = (struct leg_control_parameters *)(state->queue->buffer + offset);
-        params->forward_velocity = msg->axis[HULL_VELOCITY_X];
-        params->left_velocity = msg->axis[HULL_VELOCITY_Y];
-        params->angular_velocity = msg->axis[HULL_OMEGA_Z];
-        params->ride_height = msg->axis[HULL_RIDE_HEIGHT];
+        switch(msg->toggle[HULL_MOTION_SEL])
+        {
+            case STOMP_CONTROL_RADIO_OFF:
+                params->motion = MOTION_MODE_STEERING;
+                params->forward_velocity = msg->axis[HULL_VELOCITY_X];
+                params->angular_velocity = msg->axis[HULL_OMEGA_Z];
+                params->ride_height = msg->axis[HULL_RIDE_HEIGHT];
+                break;
+            case STOMP_CONTROL_RADIO_CENTER:
+                params->motion = MOTION_MODE_TRANSLATING;
+                params->forward_velocity = msg->axis[HULL_VELOCITY_X];
+                params->right_velocity = msg->axis[HULL_VELOCITY_Y];
+                params->ride_height = msg->axis[HULL_RIDE_HEIGHT];
+                break;
+            case STOMP_CONTROL_RADIO_ON:
+                params->motion = MOTION_MODE_DRIVING;
+                params->forward_velocity = msg->axis[HULL_VELOCITY_X];
+                params->right_velocity = msg->axis[HULL_VELOCITY_Y];
+                params->angular_velocity = msg->axis[HULL_OMEGA_Z_D];
+                params->ride_height = msg->axis[HULL_THR];
+                break;
+        }
         params->left = msg->axis[HULL_LS];
         params->right = msg->axis[HULL_RS];
         switch(msg->toggle[HULL_MODE])
@@ -53,18 +71,6 @@ void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, cons
                 break;
             case STOMP_CONTROL_RADIO_OFF:
                 params->gait_selection = 0;
-                break;
-        }
-        switch(msg->toggle[HULL_MOTION_SEL])
-        {
-            case STOMP_CONTROL_RADIO_OFF:
-                params->motion = MOTION_MODE_STEERING;
-                break;
-            case STOMP_CONTROL_RADIO_CENTER:
-                params->motion = MOTION_MODE_TRANSLATING;
-                break;
-            case STOMP_CONTROL_RADIO_ON:
-                params->motion = MOTION_MODE_STEERING;
                 break;
         }
         if(msg->failsafe || msg->no_data)
