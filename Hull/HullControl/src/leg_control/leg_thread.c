@@ -93,12 +93,14 @@ struct leg_thread_state {
     float (*commanded_toe_positions)[3];
     float (*initial_toe_positions)[3];
     float *ride_height_integrator;
-    float *leg_scale;
+    float (*leg_scale)[3];
+    float (*leg_offset)[3];
+    float theta[2];
     float turning_width;
+    float min_angle_change_velocity;
     float walk_phase;
     float observed_period;
 };
-
 
 static int set_gain(modbus_t *ctx, uint8_t address, struct joint_gains *gain)
 {
@@ -141,10 +143,8 @@ static void interpolate_value(const float *nodes, const float *values, ssize_t l
     *y = (x - nodes[index]) * (values[next_value] - values[index]) / (nodes[next_node] - nodes[index]) + values[index];
 }
 
-static int compute_leg_position(struct leg_thread_state* state, int leg_index, float phase, float scale, float (*toe_position)[3])
+static int interpolate_step(struct step* step, struct gait* gait, int leg_index, float phase, float (*toe_position)[3])
 {
-    struct gait *gait = (state->gaits+state->current_gait);
-    struct step *step = (state->steps+gait->step_index);
     float discard;
     float leg_phase = modff(phase + gait->phase_offsets[leg_index], &discard);
     int index = find_interpolation_index(step->phase, step->npoints, leg_phase);
@@ -153,45 +153,7 @@ static int compute_leg_position(struct leg_thread_state* state, int leg_index, f
     interpolate_value(step->phase, step->X, step->npoints, index, leg_phase, &((*toe_position)[0]));
     interpolate_value(step->phase, step->Y, step->npoints, index, leg_phase, &((*toe_position)[1]));
     interpolate_value(step->phase, step->Z, step->npoints, index, leg_phase, &((*toe_position)[2]));
-    // TODO Make this correct for angles other than 0, 180.
-    (*toe_position)[1] *= copysignf(1.0f, cosf(state->legs[leg_index].orientation[2] * deg2rad)) * scale;
     return 0;
-}
-
-static int move_towards_gait(modbus_t* ctx, uint8_t address, float (*measured_toe_position)[3], float (*gait_toe_position)[3], float tolerance)
-{
-    float distance = 0;
-    int ret = 0, err;
-    for(int i=0; i<3; i++)
-        distance += pow(((*measured_toe_position)[i] - (*gait_toe_position)[i]), 2);
-    distance = sqrtf(distance);
-    logm(SL4C_FINE, "addr 0x%02x m:[%5.3f, %5.3f, %5.3f] g:[%5.3f, %5.3f, %5.3f]",
-         address,
-         (*measured_toe_position)[0], (*measured_toe_position)[1], (*measured_toe_position)[2],
-         (*gait_toe_position)[0], (*gait_toe_position)[1], (*gait_toe_position)[2]);
-    if(distance<tolerance)
-    {
-        err = set_toe_postion(ctx, address, gait_toe_position);
-        if(err == -1)
-            ret = -1;
-        else
-            ret = 1;
-        logm(SL4C_DEBUG, "addr 0x%02x dist %5.3f", address, distance);
-    }
-    else
-    {
-        float interp = tolerance / distance;
-        float interpolated_toe_position[3];
-        for(int i=0; i<3; i++)
-            interpolated_toe_position[i] = (*measured_toe_position)[i] * (1.0f - interp) + (*gait_toe_position)[i] * interp;
-        err = set_toe_postion(ctx, address, &interpolated_toe_position);
-        if(err == -1)
-            ret = -1;
-        logm(SL4C_DEBUG, "addr 0x%02x dist %5.3f interp %5.3f", address, distance, interp);
-        logm(SL4C_FINE, "addr 0x%02x i:[%5.3f, %5.3f, %5.3f]", address,
-             interpolated_toe_position[0], interpolated_toe_position[1], interpolated_toe_position[2]);
-    }
-    return ret;
 }
 
 static float deadband(float f, float d)
@@ -202,17 +164,102 @@ static float deadband(float f, float d)
         return f - copysignf(d, f);
 }
 
-static void compute_walk_velocity(struct leg_thread_state* state, struct leg_control_parameters *p, float* left_velocity, float *right_velocity)
+static void compute_walk_velocity(struct leg_thread_state* state, struct leg_control_parameters *p, float (*velocity)[2], float (*theta)[2])
 {
     float forward = deadband(p->forward_velocity, state->forward_deadband);
     float angular = deadband(p->angular_velocity, state->angular_deadband);
-    *right_velocity = forward + state->turning_width * angular;
-    *left_velocity = forward - state->turning_width * angular;
+    float lateral = deadband(p->right_velocity, state->forward_deadband);
+    float linear = hypotf(forward, lateral);
+
+    switch(p->motion)
+    {
+        case MOTION_MODE_STEERING:
+            (*velocity)[0] = forward - state->turning_width * angular;
+            (*velocity)[1] = forward + state->turning_width * angular;
+            (*theta)[0] = (*theta)[1] = 0.0f;
+            break;
+        case MOTION_MODE_TRANSLATING:
+            (*velocity)[1] = (*velocity)[0] = linear;
+            (*theta)[0] = (*theta)[1] = atan2f(lateral, forward);
+            break;
+        case MOTION_MODE_DRIVING:
+            (*velocity)[1] = hypotf(forward + state->turning_width * angular, lateral);
+            (*theta)[1] = atan2f(lateral, forward + state->turning_width * angular);
+            (*velocity)[0] = hypotf(forward - state->turning_width * angular, lateral);
+            (*theta)[0] = atan2f(lateral, forward - state->turning_width * angular);
+            break;
+    }
+    if((*velocity)[0] < state->min_angle_change_velocity && (*velocity)[1] < state->min_angle_change_velocity)
+    {
+        (*theta)[0] = state->theta[0];
+        (*theta)[1] = state->theta[1];
+    }
+    state->theta[0] = (*theta)[0];
+    state->theta[1] = (*theta)[1];
 }
 
-static float compute_walk_frequency(float step_length, float left_velocity, float right_velocity)
+static float compute_walk_frequency(float (*step_length)[2], float (*velocity)[2])
 {
-    return MAX(fabsf(left_velocity), fabsf(right_velocity)) / step_length;
+    return MAX(fabsf((*velocity)[0]) / (*step_length)[0], fabsf((*velocity)[1]) / (*step_length)[1]);
+}
+
+// pt(s) = [xc, 0] + [sin(t), cos(t)] * s
+// || pt || = r_inner
+//        or
+// || pt || = r_outer
+//        or
+// arg(pt) = theta_max
+// (xc - s sin)^2 + s^2 cos^2 = r^2
+// xc^2 - 2 s xc sin + s^2 = r^2
+// s^2 - 2 xc sin s + xc^2 - r^2 = 0
+// s = (2 xc sin +/- sqrt(4 xc^2 sin^2 - 4 (xc^2 - r^2))) / 2
+// s = (xc sin +/- sqrt(xc^2 (sin^2 - 1) + r^2))
+// s = (xc sin +/- sqrt(r^2 - xc^2 cos^2))
+//
+// arctan(s cos / (xc + s sin)) = theta_max
+// s cos / (xc + s sin) = tan(theta_max)
+// s cos = xc tan(theta_max) + s sin tan(theta_max)
+// s cos - s sin tan(theta_max) = xc tan(theta_max)
+// s (cos - sin tan(theta_max)) = xc tan(theta_max)
+// s = xc tan(theta_max) / (cos - sin tan(theta_max))
+
+static float intersect_working_volume(struct step* step, float theta, float *pxc)
+{
+    float r_inner = step->r_inner;
+    float r_outer = step->r_outer;
+    float xc = step->minimum[0];
+    if(pxc != 0)
+        *pxc = xc;
+    float st = sinf(theta), ct=cosf(theta);
+    float sgnst = copysignf(1.0f, st);
+    float s_rin = sgnst * xc * st - sqrtf(r_inner*r_inner - xc*xc*ct*ct);
+    float s_rout = -(sgnst * xc * st - sqrtf(r_outer*r_outer - xc*xc*ct*ct));
+    float s_t = fabsf(xc * tanf(step->swing_angle_max) / (ct - st * tanf(step->swing_angle_max)));
+    float s_min;
+    if(isnan(s_rin))
+        s_min = MIN(s_rin, s_rout);
+    else
+        s_min = s_rout;
+    s_min = MIN(s_min, s_t);
+    return s_min;
+}
+
+static float compute_step_length(struct step* step, struct leg_control_parameters* p, float theta, float *xc)
+{
+    float l;
+    switch(p->motion)
+    {
+        case MOTION_MODE_STEERING:
+            if(xc != 0)
+                *xc = step->minimum[0];
+            l = step->maximum[1] - step->minimum[1];
+            break;
+        case MOTION_MODE_TRANSLATING:
+        case MOTION_MODE_DRIVING:
+            l = 2 * intersect_working_volume(step, theta, xc);
+            break;
+    }
+    return l;
 }
 
 static bool anyclose(float *x, int n, float y, float dy)
@@ -223,55 +270,83 @@ static bool anyclose(float *x, int n, float y, float dy)
     return close;
 }
 
-static int compute_walk_scale(struct leg_thread_state *state, float phase, float left_velocity, float right_velocity, float* leg_scale)
+static int compute_walk_scale(struct step* step, struct gait* gait, float phase, float (*velocity)[2], float (*length)[2], int nlegs, float (*leg_scale)[3], float (*leg_offset)[3])
 {
+    // scale slower leg to achieve commanded velocity
     float left_scale, right_scale, scale;
-    if(fabsf(right_velocity) <= 1e-4 && fabsf(left_velocity) <= 1e-4)
+    if(fabsf((*velocity)[1]) <= 1e-4 && fabsf((*velocity)[0]) <= 1e-4)
     {
-        left_scale = copysignf(1.0f, left_velocity);
-        right_scale = copysignf(1.0f, right_velocity);
+        left_scale = copysignf(1.0f, (*velocity)[0]);
+        right_scale = copysignf(1.0f, (*velocity)[1]);
     }
-    else if(fabsf(right_velocity) <= 1e-4 && fabsf(left_velocity) > 1e-4)
+    else if(fabsf((*velocity)[1]) <= 1e-4 && fabsf((*velocity)[0]) > 1e-4)
     {
         right_scale = 0.0f;
-        left_scale = copysignf(1.0f, left_velocity);
+        left_scale = copysignf(1.0f, (*velocity)[0]);
     }
     else
     {
-        scale = fabs(left_velocity / right_velocity);
+        scale = fabs((*velocity)[0] / (*velocity)[1]);
         if(scale < 1.0)
         {
-            left_scale = copysignf(scale, left_velocity);
-            right_scale = copysignf(1.0f, right_velocity);
+            left_scale = copysignf(scale, (*velocity)[0]);
+            right_scale = copysignf(1.0f, (*velocity)[1]);
         }
         else
         {
-            left_scale = copysignf(1.0f, left_velocity);
-            right_scale = copysignf(1.0f/scale, right_velocity);
+            left_scale = copysignf(1.0f, (*velocity)[0]);
+            right_scale = copysignf(1.0f/scale, (*velocity)[1]);
         }
     }
-    struct gait* gait=&state->gaits[state->current_gait];
-    struct step* step=&state->steps[state->gaits[state->current_gait].step_index];
-    for(int l=0;l<state->nlegs / 2;l++)
+    // don't change direction until at the center to avoid lare swings
+    for(int l=0;l<nlegs / 2;l++)
     {
         float discard, leg_phase = modff(phase + gait->phase_offsets[l], &discard);
-        if((signbit(leg_scale[l]) == signbit(right_scale)) ||
+        if((signbit(leg_scale[l][1]) == signbit(right_scale)) ||
                 anyclose(step->swap_phase, step->nswap, leg_phase, step->swap_tolerance))
         {
-            leg_scale[l] = right_scale;
+            leg_scale[l][1] = right_scale;
         }
     }
+    for(int l=nlegs/2; l<nlegs; l++)
+    {
+        float discard, leg_phase = modff(phase + gait->phase_offsets[l], &discard);
+        if((signbit(leg_scale[l][1]) == signbit(left_scale)) ||
+                anyclose(step->swap_phase, step->nswap, leg_phase, step->swap_tolerance))
+        {
+            leg_scale[l][1] = left_scale;
+        }
+    }
+    // scale to real units with correct length for current step angle
+    for(int l=0;l<nlegs/2;l++)
+    {
+        leg_scale[l][0] = (step->maximum[0] - step->minimum[0]) / 2.0f;
+        leg_offset[l][0] = leg_scale[l][0] + step->minimum[0];
+        leg_scale[l][2] = (step->maximum[2] - step->minimum[2]) / 2.0f;
+        leg_offset[l][2] = leg_scale[l][2] + step->minimum[2];
 
-    for(int l=state->nlegs/2; l<state->nlegs; l++)
+        leg_scale[l][1] *= (*length)[1] / 2.0f;
+        leg_offset[l][1] = 0;
+    }
+    for(int l=nlegs/2;l<nlegs;l++)
     {
-        float discard, leg_phase = modff(phase + gait->phase_offsets[l], &discard);
-        if((signbit(leg_scale[l]) == signbit(left_scale)) ||
-                anyclose(step->swap_phase, step->nswap, leg_phase, step->swap_tolerance))
-        {
-            leg_scale[l] = left_scale;
-        }
+        leg_scale[l][0] = (step->maximum[0] - step->minimum[0]) / 2.0f;
+        leg_offset[l][0] = leg_scale[l][0] + step->minimum[0];
+        leg_scale[l][2] = (step->maximum[2] - step->minimum[2]) / 2.0f;
+        leg_offset[l][2] = leg_scale[l][2] + step->minimum[2];
+
+        leg_scale[l][1] *= (*length)[0] / 2.0f;
+        leg_offset[l][1] = 0;
     }
     return 0;
+}
+
+static void rotate_leg_path(float theta, float xc, float (*pos)[3])
+{
+    float st=sinf(theta), ct=cosf(theta);
+    float x = (*pos)[0];
+    (*pos)[0] =  (x - xc)*ct + (*pos)[1]*st + xc;
+    (*pos)[1] = -(x - xc)*st + (*pos)[1]*ct;
 }
 
 static bool servo_ride_height(struct leg_thread_state* st, float extra, float *height_offset, float igain, float pgain)
@@ -331,16 +406,20 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
     return true;
 }
 
-
 static int compute_toe_positions(struct leg_thread_state* state, struct leg_control_parameters *p, float dt)
 {
-    float left_velocity, right_velocity;
-    compute_walk_velocity(state, p, &left_velocity, &right_velocity);
-    float frequency = compute_walk_frequency(state->steps[state->gaits[state->current_gait].step_index].length,
-                                             left_velocity, right_velocity);
+    struct gait *gait = (state->gaits+state->current_gait);
+    struct step *step = (state->steps+gait->step_index);
+    float velocity[2];
+    float theta[2], xc;
+    float step_length[2];
+    compute_walk_velocity(state, p, &velocity, &theta);
+    step_length[0] = compute_step_length(step, p, theta[0], &xc);
+    step_length[1] = compute_step_length(step, p, theta[1], NULL);
+    float frequency = compute_walk_frequency(&step_length, &velocity);
     float dummy;
     state->walk_phase = MAX(modff(state->walk_phase + frequency * dt, &dummy), 0.0f);
-    compute_walk_scale(state, state->walk_phase, left_velocity, right_velocity, state->leg_scale);
+    compute_walk_scale(step, gait, state->walk_phase, &velocity, &step_length, state->nlegs, state->leg_scale, state->leg_offset);
 
     float height_offset[state->nlegs];
     bool have_offset = servo_ride_height(state, p->ride_height, height_offset, state->ride_height_igain, state->ride_height_pgain);
@@ -348,9 +427,52 @@ static int compute_toe_positions(struct leg_thread_state* state, struct leg_cont
     int ret = 0;
     for(int leg=0; leg<state->nlegs; leg++)
     {
-        compute_leg_position(state, leg, state->walk_phase, state->leg_scale[leg], &state->commanded_toe_positions[leg]);
+        interpolate_step(step, gait, leg, state->walk_phase, &state->commanded_toe_positions[leg]);
+        // Orient step for each leg, only handles 180 rotation about Z to get
+        // left/right side correct
+        state->commanded_toe_positions[leg][1] *= copysignf(1.0f, cosf(state->legs[leg].orientation[2] * deg2rad));
+        // apply scale
+        for(int i=0;i<3;i++)
+            state->commanded_toe_positions[leg][i] = state->commanded_toe_positions[leg][i] * state->leg_scale[leg][i] + state->leg_offset[leg][i];
+        rotate_leg_path(leg<state->nlegs/2 ? theta[1] : theta[0], xc, &state->commanded_toe_positions[leg]);
         if(have_offset)
             state->commanded_toe_positions[leg][2] += height_offset[leg];
+    }
+    return ret;
+}
+
+static int move_towards_gait(modbus_t* ctx, uint8_t address, float (*measured_toe_position)[3], float (*gait_toe_position)[3], float tolerance)
+{
+    float distance = 0;
+    int ret = 0, err;
+    for(int i=0; i<3; i++)
+        distance += pow(((*measured_toe_position)[i] - (*gait_toe_position)[i]), 2);
+    distance = sqrtf(distance);
+    logm(SL4C_FINE, "addr 0x%02x m:[%5.3f, %5.3f, %5.3f] g:[%5.3f, %5.3f, %5.3f]",
+         address,
+         (*measured_toe_position)[0], (*measured_toe_position)[1], (*measured_toe_position)[2],
+         (*gait_toe_position)[0], (*gait_toe_position)[1], (*gait_toe_position)[2]);
+    if(distance<tolerance)
+    {
+        err = set_toe_postion(ctx, address, gait_toe_position);
+        if(err == -1)
+            ret = -1;
+        else
+            ret = 1;
+        logm(SL4C_DEBUG, "addr 0x%02x dist %5.3f", address, distance);
+    }
+    else
+    {
+        float interp = tolerance / distance;
+        float interpolated_toe_position[3];
+        for(int i=0; i<3; i++)
+            interpolated_toe_position[i] = (*measured_toe_position)[i] * (1.0f - interp) + (*gait_toe_position)[i] * interp;
+        err = set_toe_postion(ctx, address, &interpolated_toe_position);
+        if(err == -1)
+            ret = -1;
+        logm(SL4C_DEBUG, "addr 0x%02x dist %5.3f interp %5.3f", address, distance, interp);
+        logm(SL4C_FINE, "addr 0x%02x i:[%5.3f, %5.3f, %5.3f]", address,
+             interpolated_toe_position[0], interpolated_toe_position[1], interpolated_toe_position[2]);
     }
     return ret;
 }
@@ -679,6 +801,12 @@ static void run_leg_thread_once(struct leg_thread_state* state, struct leg_contr
             {
                 logm(SL4C_INFO, "moving %d", count);
             }
+            char *gaitname = state->gait_selections[parameters->gait_selection];
+            if(strcmp(gaitname, state->gaits[state->current_gait].name) != 0)
+            {
+                set_gait(state, gaitname);
+                logm(SL4C_INFO, "Selected gait %s.", gaitname);
+            }
             break;
     }
     if(state->legs_mode == mode_all_walk)
@@ -799,6 +927,7 @@ static void *run_leg_thread(void *ptr)
 
     get_float(state->definition->config, "forward_deadband", 0.05f, &(state->forward_deadband));
     get_float(state->definition->config, "angular_deadband", 0.05f,  &(state->angular_deadband));
+    get_float(state->definition->config, "min_angle_change_velocity", 0.005f,  &(state->min_angle_change_velocity));
 
     toml_table_t *legs_config = toml_table_in(state->definition->config,
                                              "legs");
@@ -809,9 +938,14 @@ static void *run_leg_thread(void *ptr)
     state->initial_toe_positions = malloc(sizeof(float[state->nlegs][3]));
     state->base_end_pressure = malloc(sizeof(float[state->nlegs][3]));
     state->rod_end_pressure = malloc(sizeof(float[state->nlegs][3]));
-    state->leg_scale = malloc(sizeof(float[state->nlegs]));
+    state->leg_scale = malloc(sizeof(float[state->nlegs][3]));
     for(int i=0;i<state->nlegs;i++)
-        state->leg_scale[i] = 1.0f;
+        for(int j=0;j<3;j++)
+            state->leg_scale[i][j] = 1.0f;
+    state->leg_offset = malloc(sizeof(float[state->nlegs][3]));
+    for(int i=0;i<state->nlegs;i++)
+        for(int j=0;j<3;j++)
+            state->leg_offset[i][j] = 0.0f;
     state->leg_mode = malloc(state->nlegs * sizeof(enum leg_control_mode));
 
     get_float(legs_config, "toe_position_tolerance", 0.030, &state->toe_position_tolerance);
@@ -850,7 +984,7 @@ static void *run_leg_thread(void *ptr)
 
     state->legs_mode = mode_all_init;
     state->timer = create_rate_timer(state->definition->frequency);
-    logm(SL4C_DEBUG, "Create timer with period %f",state->definition->frequency);
+    logm(SL4C_DEBUG, "Create timer with frequency %f",state->definition->frequency);
     float elapsed = 0, dt=0;;
     float telem_interval = 0;
     while(state->shouldrun)
