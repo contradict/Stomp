@@ -57,7 +57,6 @@ firmware. For now, see Hull/Test/modbus_ui.c
       angle limits.
     * At least three legs on the ground, not all on the same side of the robot
     * maintain specified velocity
-  * Crabbing
 
 ## Telemetry
   * Radio works, `/dev/tty.mikrobus1`, 115200
@@ -74,7 +73,8 @@ firmware. For now, see Hull/Test/modbus_ui.c
 
 ## IMU
   * Pins enabled by [overlay](https://github.com/contradict/BeagleBoard-DeviceTrees/blob/v4.19.x-ti/src/arm/BBAI-SPI3-ADC-IMU.dts)
-  * Untested
+  * No signals verified with scope, no response from device. Sent message to
+    Yost through website contact form, also no response.
 
 ## WiFi
   * hostapd configured /etc/hostapd.conf, SSID ChompTheBattlebot
