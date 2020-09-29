@@ -49,6 +49,7 @@ public:
 
     int16_t GetOmegaZ();
     bool IsUpright();
+    bool IsUpsideDown();
 
     void SetParams(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
         int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,
@@ -67,7 +68,7 @@ private:
 
         EUnknown,
         EUpright,
-        ENotUpright,
+        EUpsideDown,
 
         EInvalid = -1
     };

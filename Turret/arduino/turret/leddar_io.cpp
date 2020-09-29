@@ -112,20 +112,17 @@ uint16_t leddar_crc_error = 0;
 
 void requestDetections()
 {
-    Telem.LogMessage("Request Detections");
     uint8_t data[64] = {0};
 
     //  Clear serial buffer
 
     uint16_t count = s_LeddarSerial.available();
-    Telem.LogMessage("Discarded: " + String(count) + " bytes");
 
     while (count>0)
     {
         s_LeddarSerial.readBytes(data, min(64, count));
 
         count = s_LeddarSerial.available();
-        Telem.LogMessage("Discarded: " + String(count) + " bytes");
     }
 
     len = 0;
@@ -137,16 +134,11 @@ void requestDetections()
     *((uint16_t *)(data+2)) = CRC16(data, 2);
 
     s_LeddarSerial.write(data, 4);
-    Telem.LogMessage("Request Detections, sent");
 }
 
 bool bufferDetections()
 {
-    Telem.LogMessage("Buffer Detections, starting with length = " + String(len));
-
     uint16_t count = s_LeddarSerial.available();
-
-    Telem.LogMessage(String(count) + " bytes are ready to read");
 
     if (count > 0)
     {
@@ -157,7 +149,7 @@ bool bufferDetections()
         } 
         else 
         {
-            Telem.LogMessage("Leddar overrun");
+            Telem.LogMessage("\tLeddar overrun");
 
             len = 0;
             leddar_overrun++;
@@ -171,8 +163,6 @@ bool bufferDetections()
             uint8_t detection_count = receivedData[2];
             uint16_t target_len = detection_count * 5 + 11;
 
-            Telem.LogMessage("Detection Count = " + String(detection_count) + " & Target Lenght = " + String(target_len));
-
             if (target_len == len)
             {
                 return true;
@@ -180,7 +170,7 @@ bool bufferDetections()
         } 
         else 
         {
-            Telem.LogMessage("Invalid message header");
+            Telem.LogMessage("\tInvalid message header");
             len = 0;
         }
     }

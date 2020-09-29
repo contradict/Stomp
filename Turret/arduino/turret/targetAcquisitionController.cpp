@@ -122,7 +122,7 @@ void TargetAcquisitionController::RestoreParams()
 
 void TargetAcquisitionController::SendTelem()
 {
-    Telem.SendObjectsTelemetry(m_possibleTargetsCount, m_possibleTargets); 
+    Telem.SendObjectsTelemetry(m_possibleTargetsCount, m_bestTargetIndex, m_possibleTargets); 
 }
 
 void TargetAcquisitionController::SendLeddarTelem()
@@ -152,16 +152,13 @@ void TargetAcquisitionController::updateBestTarget()
     //  If not ready to get all the detections forom Leddar, just return
     //  we can pick them up next call
 
+    Telem.LogMessage("Buffer Detections: " + String(m_lastUpdateTime));
     if (!bufferDetections())
     {
         return;
     }
 
     m_rawDetectionCount = parseDetections();
-
-    m_lastRequestDetectionsTime = m_lastUpdateTime;
-    Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
-    requestDetections();
 
     getMinimumDetections(&m_minDetections);
 
@@ -190,7 +187,7 @@ void TargetAcquisitionController::updateBestTarget()
         if (targetIndex < m_possibleTargetsCount)
         {
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetSize()) + String(", ");
-            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetDistance()) + String(", ");
+            possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].GetDistance() / 10) + String(", ");
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].LeftEdge) + String(", ");
             possibleTargetsString += String((int16_t) m_possibleTargets[targetIndex].RightEdge) + String(", ");
         }
@@ -207,6 +204,11 @@ void TargetAcquisitionController::updateBestTarget()
         minDetectionsString +
         possibleTargetsString);
 
+    //  Issue the next request for detections
+    
+    m_lastRequestDetectionsTime = m_lastUpdateTime;
+    Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
+    requestDetections();
 }
 
 void TargetAcquisitionController::resetTargets()
@@ -322,9 +324,11 @@ void TargetAcquisitionController::selectTarget()
     //  Now, get the best target
 
     m_pBestTarget = NULL;
+    m_bestTargetIndex = -1;
+
     int32_t minTargetDistance = INT32_MAX;
 
-    for (uint32_t targetIndex = 0; targetIndex < m_possibleTargetsCount; targetIndex++)
+    for (uint8_t targetIndex = 0; targetIndex < m_possibleTargetsCount; targetIndex++)
     {
         if (onlyUseInFOVTargets && m_possibleTargets[targetIndex].Type != Target::EInFOV)
         {
@@ -335,7 +339,8 @@ void TargetAcquisitionController::selectTarget()
 
         if (distance < minTargetDistance)
         {
-            m_pBestTarget = &m_possibleTargets[targetIndex];
+            m_bestTargetIndex = targetIndex;
+            m_pBestTarget = &m_possibleTargets[m_bestTargetIndex];
             minTargetDistance = distance;
         }
     }
@@ -400,6 +405,9 @@ void TargetAcquisitionController::setState(controllerState p_state)
     {
         case EInit:
         {
+            m_lastRequestDetectionsTime = m_lastUpdateTime;
+            Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
+            requestDetections();
         }
         break;
 
@@ -433,6 +441,8 @@ void TargetAcquisitionController::init()
     m_lastRequestDetectionsTime = 0;
     m_rawDetectionCount = 0;
     m_possibleTargetsCount = 0;
+
+    m_bestTargetIndex = -1;
 }
 
 void TargetAcquisitionController::saveParams() 

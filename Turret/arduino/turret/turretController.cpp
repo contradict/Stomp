@@ -62,7 +62,7 @@ void TurretController::Init()
 
 void TurretController::Update()
 {
-    //  BB MJS: update the old turret_main
+    //  BB MJS: update the old turret_main, should remove at some point
     turretUpdate();
 
     m_lastUpdateTime = micros();
@@ -95,25 +95,33 @@ void TurretController::Update()
 
                 if (m_lastUpdateTime - m_stateStartTime > k_safeStateMinDt && Radio.IsNominal())
                 {
-                    setState(EUnknown);
+                    setState(EUnknownOrientation);
                 }
             }
             break;
 
-            case EUnknown:
+            case EUnknownOrientation:
             {
                 if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
-                else if (m_pIMUController->IsUpright() && m_pHammerController->ReadyToSwing())
+                if (Radio.IsSelfRightEnabled())
+                {
+                    if (m_pIMUController->IsUpright())
+                    {
+                        setState(ENominal);
+                    }
+                    else if (m_pIMUController->IsUpsideDown())
+                    {
+                        setState(ENeedsSelfRight);
+                    }
+                }
+                else
                 {
                     setState(ENominal);
                 }
-                else if (!m_pIMUController->IsUpright())
-                {
-                    setState(ENeedsSelfRight);
-                }
+                
             }
             break;
 
@@ -123,7 +131,46 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (m_pHammerController->ReadyToSwing() && (Radio.IsHammerSwingRequested() || m_pAutoFireController->ShouldSwingAtTarget()))
+                else if (Radio.IsSelfRightEnabled())
+                {
+                    if (m_pIMUController->IsUpsideDown())
+                    {
+                        setState(ENeedsSelfRight);
+                    }
+                    else if (!m_pIMUController->IsUpright() && !m_pIMUController->IsUpsideDown())
+                    {
+                        setState(EUnknownOrientation);
+                    }
+                }
+                else if (m_pHammerController->ReadyToSwing())
+                {
+                    setState(ENominalArmed);
+                }
+            }
+            break;
+
+            case ENominalArmed:
+            {
+                if (!Radio.IsNominal())
+                {
+                    setState(ESafe);
+                }
+                else if (!m_pHammerController->ReadyToSwing())
+                {
+                    setState(ENominal);
+                }
+                else if (Radio.IsSelfRightEnabled())
+                {
+                    if (m_pIMUController->IsUpsideDown())
+                    {
+                        setState(ENeedsSelfRight);
+                    }
+                    else if (!m_pIMUController->IsUpright() && !m_pIMUController->IsUpsideDown())
+                    {
+                        setState(EUnknownOrientation);
+                    }
+                }
+                else if (Radio.IsHammerSwingRequested() || m_pAutoFireController->ShouldSwingAtTarget())
                 {
                     setState(EHammerTriggerThrowRetract);
                 }
@@ -150,20 +197,9 @@ void TurretController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (!isWeaponEnabled())
+                else if (m_pHammerController->ReadyToSwing() || !isWeaponEnabled())
                 {
-                    setState(EUnknown);
-                }
-                else if (m_pHammerController->ReadyToSwing())
-                {
-                    if (m_pIMUController->IsUpright())
-                    {
-                        setState(ENominal);
-                    }
-                    else
-                    {
-                        setState(EUnknown);
-                    }
+                    setState(EUnknownOrientation);
                 }
             }
             break;
@@ -176,9 +212,13 @@ void TurretController::Update()
 
             case ENeedsSelfRight:
             {
-                if (m_pIMUController->IsUpright())
+                if (!Radio.IsSelfRightEnabled() || m_pIMUController->IsUpright())
                 {
-                    setState(EUnknown);
+                    setState(ENominal);
+                }
+                else if (!m_pIMUController->IsUpsideDown())
+                {
+                    setState(EUnknownOrientation);
                 }
                 if (m_lastUpdateTime - m_stateStartTime > k_selfRightTriggerDt)
                 {
@@ -202,7 +242,12 @@ void TurretController::Update()
 
 bool TurretController::IsNominal()
 {
-    return m_state == ENominal;
+    return m_state == ENominal || m_state == ENominalArmed;
+}
+
+bool TurretController::IsNominalArmed()
+{
+    return m_state == ENominalArmed;
 }
 
 int16_t TurretController::GetTurretRotationSpeed()

@@ -22,8 +22,8 @@
 //  Need to esnure that we can get the telemetry over XBee, reguardless of
 //  the serial port selection logic.  Define FORCE_XBEE to true or false
 
-#define FORCE_XBEE false
-#define FORCE_USB true
+#define FORCE_XBEE true
+#define FORCE_USB false
 
 #define CHECK_ENABLED(TLM_ID) if(!(m_params.enabledTelemetry & (0x1L << (TLM_ID)))) return false;
 const uint16_t TLM_TERMINATOR=0x6666;
@@ -297,7 +297,6 @@ bool TelemetryController::SendSbusTelem(uint16_t p_cmdBitfield, int16_t p_hammer
 
 struct LeddarTelemetryInner 
 {
-    uint16_t state;
     uint16_t count;
     uint16_t range[LEDDAR_SEGMENTS];
     uint16_t amplitude[LEDDAR_SEGMENTS];
@@ -309,17 +308,17 @@ static LeddarTelemetry leddar_tlm;
 
 bool TelemetryController::SendLeddarTelem(const Detection (&p_detections)[LEDDAR_SEGMENTS], unsigned int count)
 {
-  CHECK_ENABLED(TLM_ID_LIDAR);
+    CHECK_ENABLED(TLM_ID_LIDAR);
 
-  leddar_tlm.inner.count = count;
+    leddar_tlm.inner.count = count;
 
-  for (uint8_t i = 0; i < LEDDAR_SEGMENTS; i++)
-  {
-      leddar_tlm.inner.range[i] = p_detections[i].Distance;
-      leddar_tlm.inner.amplitude[i] = p_detections[i].Amplitude;
-  }
+    for (uint8_t i = 0; i < LEDDAR_SEGMENTS; i++)
+    {
+        leddar_tlm.inner.range[i] = p_detections[i].Distance;
+        leddar_tlm.inner.amplitude[i] = p_detections[i].Amplitude;
+    }
 
-  return enqueue((unsigned char *)&leddar_tlm, sizeof(leddar_tlm));
+    return enqueue((unsigned char *)&leddar_tlm, sizeof(leddar_tlm));
 }
 
 //
@@ -599,10 +598,10 @@ bool TelemetryController::SendTurretRotationTelemetry(int16_t p_state, int16_t p
     return write((unsigned char *)&tlm, sizeof(tlm));
 }
 
-bool TelemetryController::SendObjectsTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
+bool TelemetryController::SendObjectsTelemetry(uint8_t p_numObjects, int8_t p_bestTarget, const Target (&p_objects)[8])
 {
-    bool sentCalculatedObjects = sendObjectsCalculatedTelemetry(p_numObjects, p_objects);
-    bool sentMeasuredObjects = sendObjectsMeasuredTelemetry(p_numObjects, p_objects);
+    bool sentCalculatedObjects = sendObjectsCalculatedTelemetry(p_numObjects, p_bestTarget, p_objects);
+    bool sentMeasuredObjects = sendObjectsMeasuredTelemetry(p_numObjects, p_bestTarget, p_objects);
 
     return sentCalculatedObjects && sentMeasuredObjects;
 }
@@ -610,6 +609,7 @@ bool TelemetryController::SendObjectsTelemetry(uint8_t p_numObjects, const Targe
 struct ObjectsCalcuatedInner 
 {
    uint8_t numObjects;
+   int8_t bestTarget;
    int16_t objectDistance[8];
    int16_t objectAngle[8];
    int16_t objectX[8];
@@ -618,13 +618,14 @@ struct ObjectsCalcuatedInner
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_OBJC, ObjectsCalcuatedInner> ObjectsCalculatedTelemetry;
 
-bool TelemetryController::sendObjectsCalculatedTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
+bool TelemetryController::sendObjectsCalculatedTelemetry(uint8_t p_numObjects, int8_t p_bestTarget, const Target (&p_objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJC);
     
     ObjectsCalculatedTelemetry tlm;
     
     tlm.inner.numObjects = p_numObjects;
+    tlm.inner.bestTarget = p_bestTarget;
     
     int i=0;
 
@@ -649,21 +650,23 @@ bool TelemetryController::sendObjectsCalculatedTelemetry(uint8_t p_numObjects, c
 
 struct ObjectsMeasuredInner 
 {
-   uint8_t numObjects;
-   uint8_t leftEdge[8];
-   uint8_t rightEdge[8];
-   int16_t objectSumDistance[8];
+    uint8_t numObjects;
+    int8_t bestTarget;
+    uint8_t leftEdge[8];
+    uint8_t rightEdge[8];
+    int16_t objectSumDistance[8];
 } __attribute__((packed));
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_OBJM, ObjectsMeasuredInner> ObjectsMeasuredTelemetry;
 
-bool TelemetryController::sendObjectsMeasuredTelemetry(uint8_t p_numObjects, const Target (&p_objects)[8])
+bool TelemetryController::sendObjectsMeasuredTelemetry(uint8_t p_numObjects, int8_t p_bestTarget, const Target (&p_objects)[8])
 {
     CHECK_ENABLED(TLM_ID_OBJM);
 
     ObjectsMeasuredTelemetry tlm;
 
     tlm.inner.numObjects = p_numObjects;
+    tlm.inner.bestTarget = p_bestTarget;
 
     int i=0;
 

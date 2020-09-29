@@ -90,7 +90,7 @@ private:
     //
     //  ====================================================================
     
-    static const int32_t k_leddarRequestMaxDt = 100000L;
+    static const int32_t k_leddarRequestMaxDt = 200000L;
     static const uint8_t k_maxPossibleTargets = 8;
 
 private:
@@ -107,6 +107,7 @@ private:
     uint32_t m_lastRequestDetectionsTime;
 
     Target* m_pBestTarget;
+    int8_t m_bestTargetIndex;
 
     uint32_t m_rawDetectionCount;
     Detection (*m_minDetections)[LEDDAR_SEGMENTS];

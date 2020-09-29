@@ -1,4 +1,5 @@
 #include "turret_main.h"
+#include "pins.h"
 
 #include "turretController.h"
 #include "radioController.h"
@@ -38,12 +39,35 @@ TelemetryController Telem;
 
 volatile bool g_enabled = false;
 
+//  FORCE ALL IMPORTANT OUTPUTS TO LOW FIRST THING WHEN WE BOOT
+
+void safe()
+{
+    digitalWrite(THROW_PRESSURE_VALVE_DO, LOW);
+    digitalWrite(THROW_VENT_VALVE_DO, LOW);
+    digitalWrite(RETRACT_PRESSURE_VALVE_DO, LOW);
+    digitalWrite(RETRACT_VENT_VALVE_DO, LOW);
+
+    digitalWrite(IGNITER_DO, LOW);
+    digitalWrite(PROPANE_DO, LOW);
+
+    pinMode(THROW_PRESSURE_VALVE_DO, OUTPUT);
+    pinMode(THROW_VENT_VALVE_DO, OUTPUT);
+    pinMode(RETRACT_PRESSURE_VALVE_DO, OUTPUT);
+    pinMode(RETRACT_VENT_VALVE_DO, OUTPUT);
+
+    pinMode(IGNITER_DO, OUTPUT);
+    pinMode(PROPANE_DO, OUTPUT);
+}
+
 // 
 //  Redirect the setup and loop to the TurretController
 //
 
 void setup()
 {
+    safe();
+    
     //  Initilize the four global objects
     //  Order is important
 

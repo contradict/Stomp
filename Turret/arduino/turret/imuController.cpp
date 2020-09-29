@@ -103,7 +103,7 @@ void IMUController::Update()
                 } 
                 else if (doesMathSayNotUpright())
                 {
-                    setState(ENotUpright);
+                    setState(EUpsideDown);
                 }
             }
             break;
@@ -120,7 +120,7 @@ void IMUController::Update()
                 }
                 else if (doesMathSayNotUpright())
                 {
-                    setState(ENotUpright);
+                    setState(EUpsideDown);
                 }
                 else if (!doesMathSayUpright())
                 {
@@ -129,7 +129,7 @@ void IMUController::Update()
             }
             break;
 
-            case ENotUpright:
+            case EUpsideDown:
             {
                 if (!Radio.IsNominal())
                 {
@@ -182,6 +182,11 @@ bool IMUController::IsUpright()
     return m_state == EUpright;
 }
 
+bool IMUController::IsUpsideDown()
+{
+    return m_state == EUpsideDown;
+}
+
 void IMUController::SetParams(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
     int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,
     int16_t p_maxTotalNorm, int16_t p_xThreshold, int16_t p_zThreshold)
@@ -207,7 +212,7 @@ void IMUController::RestoreParams()
 void IMUController::SendTelem()
 {
     Telem.SendIMUTelem(m_acceleration, m_angularRate, m_temperature);
-    Telem.SendORNTelem(m_state == EUpright || m_state == ENotUpright, m_state, m_sumAngularRate, m_totalNorm, m_crossNorm);
+    Telem.SendORNTelem(m_state == EUpright || m_state == EUpsideDown, m_state, m_sumAngularRate, m_totalNorm, m_crossNorm);
 }
 
 //  ====================================================================

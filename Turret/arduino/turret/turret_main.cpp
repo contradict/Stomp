@@ -49,11 +49,6 @@ static int16_t s_hammerIntensity;
 static int16_t s_hammerDistance;
 static uint16_t s_currentRCBitfield;
 
-//  Have various update frequencies for different systems
-
-static uint32_t s_last_request_time = micros();
-static uint32_t s_last_sensor_time = micros();
-
 //  ====================================================================
 //
 //  External references

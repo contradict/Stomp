@@ -47,6 +47,7 @@ public:
     void Update();
 
     bool IsNominal();
+    bool IsNominalArmed();
 
     int16_t GetTurretRotationSpeed();
     int16_t GetTurretAngle();
@@ -82,6 +83,7 @@ private:
         ESafe,
 
         ENominal,
+        ENominalArmed,
 
         EHammerTriggerThrowRetract,
         EHammerTriggerRetract,
@@ -90,8 +92,7 @@ private:
         ENeedsSelfRight,
         ESelfRightTrigger,
 
-        EUnknown,
-        EDegraded,
+        EUnknownOrientation,
 
         EInvalid = -1
     };
