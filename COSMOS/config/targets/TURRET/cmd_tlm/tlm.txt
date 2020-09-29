@@ -80,15 +80,16 @@ TELEMETRY TURRET AAIM LITTLE_ENDIAN "Auto Aim telemetry"
 TELEMETRY TURRET TUR LITTLE_ENDIAN "Turret telemetry"
    APPEND_ID_ITEM PKTID 8 UINT 8 "Packet ID which must be 8"
    APPEND_ITEM TUR_STATE 16 UINT "Turret State"
-        STATE INIT 	                0 GREEN
-        STATE SAFE 	                1 GREEN
-        STATE NOMINAL 	            2 YELLOW
-        STATE TRIGGER_THROW         3 RED
-        STATE TRIGGER_RETRACT       4 RED
-        STATE HAMMER_ACTIVE         5 RED
-        STATE NEEDS_SELF_RIGHT      6 YELLOW
-        STATE TRIGGER_SELF_RIGHT    7 RED
-        STATE UNKNOWN               8 YELLOW
+        STATE INIT 	            0 GREEN
+        STATE SAFE 	            1 GREEN
+        STATE NOMINAL 	            2 GREEN
+        STATE NOMINAL_ARMED 	    3 YELLOW
+        STATE TRIGGER_THROW         4 RED
+        STATE TRIGGER_RETRACT       5 RED
+        STATE HAMMER_ACTIVE         6 RED
+        STATE NEEDS_SELF_RIGHT      7 YELLOW
+        STATE TRIGGER_SELF_RIGHT    8 RED
+        STATE UNKNOWN_ORIENTATION   9 YELLOW
 
 #
 #  TROT - Turret Rotation (Packet ID 9)
@@ -217,11 +218,6 @@ TELEMETRY TURRET SWING LITTLE_ENDIAN "Swing Data"
 
 TELEMETRY TURRET LIDAR LITTLE_ENDIAN "Lidar telemetry"
     APPEND_ID_ITEM PKTID 8 UINT 15 "Packet ID which must be 15"
-    APPEND_ITEM STATE 16 INT "State"
-        STATE FAR_ZONE 1 GREEN
-        STATE ARM_ZONE 2 YELLOW
-        STATE HIT_ZONE 3 RED
-        STATE PREDICTIVE_HIT_ZONE 4 RED
     APPEND_ITEM COUNT 16 INT "Count"
     APPEND_ARRAY_ITEM RANGE 16 UINT 256 "Ranges"
         UNITS "centimeters" "cm"
@@ -274,6 +270,7 @@ TELEMETRY TURRET ORN LITTLE_ENDIAN "Orientation Status"
 TELEMETRY TURRET OBJM LITTLE_ENDIAN "Object measured telemetry"
    APPEND_ID_ITEM PKTID 8 UINT 21 "Packet ID which must be 21"
    APPEND_ITEM NOBJ 8 INT "Number of detected objects"
+   APPEND_ITEM BEST 8 INT "Best Target"
    APPEND_ARRAY_ITEM OBJ_LE 8 INT 64 "Object left edge"
    APPEND_ARRAY_ITEM OBJ_RE 8 INT 64 "Object right edge"
    APPEND_ARRAY_ITEM OBJ_SUMD 16 INT 128 "Object sum distance"
@@ -287,6 +284,7 @@ TELEMETRY TURRET OBJM LITTLE_ENDIAN "Object measured telemetry"
 TELEMETRY TURRET OBJC LITTLE_ENDIAN "Object calculated telemetry"
    APPEND_ID_ITEM PKTID 8 UINT 22 "Packet ID which must be 22"
    APPEND_ITEM NOBJ 8 INT "Number of detected objects"
+   APPEND_ITEM BEST 8 INT "Best Target"
    APPEND_ARRAY_ITEM OBJ_R 16 INT 128 "Object radius"
        UNITS "meters" "m"
        POLY_READ_CONVERSION 0.0 0.001
