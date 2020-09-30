@@ -11,3 +11,6 @@ in.
   * `uart6` is connected to the WiFi/Bluetooth module on board, using it
     requires disabling WiFi. It would be nice to use a different UART for the
     control radio.
+    
+  * 'Resistors'  If possible, no resistor smaller than 0603, any user installable
+     jump resistor should be at least 0804, preferably 1206 if possible.
