@@ -81,7 +81,7 @@ void FlameThrowerController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (Radio.IsFlameOnEnabled() || Radio.IsFlamePulseEnabled())
+                else if (Radio.IsFlameRightOnEnabled() || Radio.IsFlameRightPulseEnabled())
                 {
                     setState(EReadyToFire);
                 }
@@ -94,7 +94,7 @@ void FlameThrowerController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (Radio.IsFlameOnEnabled())
+                else if (Radio.IsFlameRightOnEnabled())
                 {
                     setState(EManualFlameOn);
                 }
@@ -107,7 +107,7 @@ void FlameThrowerController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (!Radio.IsFlameOnEnabled())
+                else if (!Radio.IsFlameRightOnEnabled())
                 {
                     setState(EDisabled);
                 }
@@ -150,7 +150,7 @@ void FlameThrowerController::FlamePulseStart()
 
 void FlameThrowerController::FlamePulseStop()
 {
-    if (Radio.IsFlamePulseEnabled())
+    if (Radio.IsFlameRightPulseEnabled() || Radio.IsFlameLeftPulseEnabled())
     {
         setState(EReadyToFire);
     }
@@ -206,34 +206,37 @@ void FlameThrowerController::setState(controllerState p_state)
 
         case ESafe:
         {
-            digitalWrite(PROPANE_DO, LOW);
-            digitalWrite(IGNITER_DO, LOW);
+            digitalWrite(IGNITERS_DO, LOW);
+            digitalWrite(PROPANE_LEFT_DO, LOW);
+            digitalWrite(PROPANE_RIGTH_DO, LOW);
         }
         break;
 
         case EDisabled:
         {
-            digitalWrite(PROPANE_DO, LOW);
-            digitalWrite(IGNITER_DO, LOW);
+            digitalWrite(IGNITERS_DO, LOW);
+            digitalWrite(PROPANE_LEFT_DO, LOW);
+            digitalWrite(PROPANE_RIGTH_DO, LOW);
         }
         break;
 
         case EReadyToFire:
         {
-            digitalWrite(PROPANE_DO, LOW);
-            digitalWrite(IGNITER_DO, HIGH);
+            digitalWrite(IGNITERS_DO, HIGH);
+            digitalWrite(PROPANE_LEFT_DO, LOW);
+            digitalWrite(PROPANE_RIGTH_DO, LOW);
         }
         break;
 
         case EPulseFlameOn:
         {
-            digitalWrite(PROPANE_DO, HIGH);
+            digitalWrite(PROPANE_LEFT_DO, HIGH);
         }
         break;
 
         case EManualFlameOn:
         {
-            digitalWrite(PROPANE_DO, HIGH);
+            digitalWrite(PROPANE_LEFT_DO, HIGH);
         }
         break;
 
@@ -246,6 +249,7 @@ void FlameThrowerController::init()
 {
     //  Ensure everything is off
     
-    digitalWrite(PROPANE_DO, LOW);
-    digitalWrite(IGNITER_DO, LOW);
+    digitalWrite(IGNITERS_DO, LOW);
+    digitalWrite(PROPANE_LEFT_DO, LOW);
+    digitalWrite(PROPANE_RIGTH_DO, LOW);
 }

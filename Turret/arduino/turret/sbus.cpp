@@ -119,6 +119,26 @@ bool isSelfRightEnabled()
     return s_radioConnected && (bitfield & AUTO_SELF_RIGHT_BIT);
 }
 
+bool isFlameRightOnEnabled()
+{
+    return s_radioConnected && (bitfield & FLAME_RIGHT_CTRL_BIT);
+}
+
+bool isFlameRightPulseEnabled()
+{
+    return s_radioConnected && (bitfield & FLAME_RIGHT_PULSE_BIT);
+}
+
+bool isFlameLeftOnEnabled()
+{
+    return s_radioConnected && (bitfield & FLAME_LEFT_CTRL_BIT);
+}
+
+bool isFlameLeftPulseEnabled()
+{
+    return s_radioConnected && (bitfield & FLAME_LEFT_PULSE_BIT);
+}
+
 bool hammerManualThrowAndRetract()
 {
     return isWeaponEnabled() && (bitfield & HAMMER_FIRE_BIT);
@@ -201,12 +221,21 @@ static uint16_t computeRCBitfield() {
   }
 
   // Full stick, flamethrower is on
-  if ( sbusChannels[FLAME_CTRL] > FLAME_CTRL_THRESHOLD){
-    bitfield |= FLAME_CTRL_BIT;
+  if (sbusChannels[FLAME_RIGHT_CTRL] > FLAME_CTRL_THRESHOLD){
+    bitfield |= FLAME_RIGHT_CTRL_BIT;
   }
   // Center position enables pulse mode
-  if ( sbusChannels[FLAME_CTRL] > FLAME_PULSE_THRESHOLD && sbusChannels[FLAME_CTRL] < FLAME_CTRL_THRESHOLD ){
-    bitfield |= FLAME_PULSE_BIT;
+  if (sbusChannels[FLAME_RIGHT_CTRL] > FLAME_PULSE_THRESHOLD && sbusChannels[FLAME_RIGHT_CTRL] < FLAME_CTRL_THRESHOLD ){
+    bitfield |= FLAME_RIGHT_PULSE_BIT;
+  }
+
+  // Full stick, flamethrower is on
+  if (sbusChannels[FLAME_LEFT_CTRL] > FLAME_CTRL_THRESHOLD){
+    bitfield |= FLAME_LEFT_CTRL_BIT;
+  }
+  // Center position enables pulse mode
+  if (sbusChannels[FLAME_LEFT_CTRL] > FLAME_PULSE_THRESHOLD && sbusChannels[FLAME_LEFT_CTRL] < FLAME_CTRL_THRESHOLD ){
+    bitfield |= FLAME_LEFT_PULSE_BIT;
   }
 
  if( sbusChannels[TURRET_CTL_MODE] > AUTO_AIM_THRESHOLD ){
@@ -217,18 +246,15 @@ static uint16_t computeRCBitfield() {
       bitfield |= MANUAL_TURRET_BIT;
   }
 
-  if ( sbusChannels[GENTLE_HAM_CTRL] < GENTLE_HAM_F_THRESHOLD){
-    bitfield |= GENTLE_HAM_F_BIT;
-  }
-  if ( sbusChannels[GENTLE_HAM_CTRL] > GENTLE_HAM_R_THRESHOLD){
-    bitfield |= GENTLE_HAM_R_BIT;
-  }
-if ( sbusChannels[AUTO_SELF_RIGHT] > AUTO_SELF_RIGHT_THRESHOLD){
+  if ( sbusChannels[AUTO_SELF_RIGHT] > AUTO_SELF_RIGHT_THRESHOLD){
     bitfield |= AUTO_SELF_RIGHT_BIT;
   }
-  if ( sbusChannels[DANGER_MODE] > DANGER_MODE_THRESHOLD){
-    bitfield |= DANGER_CTRL_BIT;
-  }
+
+  // BB MJS: REmove
+  // if ( sbusChannels[DANGER_MODE] > DANGER_MODE_THRESHOLD){
+  //   bitfield |= DANGER_CTRL_BIT;
+  // }
+
   return bitfield;
 }
 

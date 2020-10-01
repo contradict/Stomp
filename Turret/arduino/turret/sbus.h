@@ -4,11 +4,11 @@ enum SBUSChannels {
     WEAPONS_ENABLE = 0,
     AUTO_HAMMER_ENABLE = 1,
     HAMMER_CTRL = 2,
-    FLAME_CTRL = 3,
+    FLAME_RIGHT_CTRL = 3,
     AUTO_SELF_RIGHT = 4,
     GENTLE_HAM_CTRL = 5,
     INTENSITY = 6,
-    DANGER_MODE = 7,
+    FLAME_LEFT_CTRL = 7,
     RANGE = 8,
     TURRET_SPIN = 9,
     TURRET_CTL_MODE = 10
@@ -20,10 +20,10 @@ enum RCBitfield {
     AUTO_FIRE_ENABLE_BIT = 1,
     HAMMER_FIRE_BIT = 2,
     HAMMER_RETRACT_BIT = 4,
-    FLAME_CTRL_BIT = 8,
-    FLAME_PULSE_BIT = 16,
-    GENTLE_HAM_F_BIT = 32,
-    GENTLE_HAM_R_BIT = 64,
+    FLAME_RIGHT_CTRL_BIT = 8,
+    FLAME_RIGHT_PULSE_BIT = 16,
+    FLAME_LEFT_CTRL_BIT = 32,
+    FLAME_LEFT_PULSE_BIT = 64,
     AUTO_SELF_RIGHT_BIT = 128,
     // = 256,
     DANGER_CTRL_BIT = 512,
@@ -44,6 +44,11 @@ bool isManualTurretEnabled();
 bool isAutoAimEnabled();
 bool isAutoFireEnabled();
 bool isSelfRightEnabled();
+
+bool isFlameRightOnEnabled();
+bool isFlameRightPulseEnabled();
+bool isFlameLeftOnEnabled();
+bool isFlameLeftPulseEnabled();
 
 bool hammerManualThrowAndRetract();
 bool hammerManualRetractOnly();

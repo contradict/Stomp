@@ -112,18 +112,24 @@ bool RadioController::IsSelfRightEnabled()
     return isSelfRightEnabled();
 }
 
-bool RadioController::IsFlameOnEnabled()
+bool RadioController::IsFlameRightOnEnabled()
 {
-    // BB MJS: Implement
-
-    return false;
+    return isFlameRightOnEnabled();
 }
 
-bool RadioController::IsFlamePulseEnabled()
+bool RadioController::IsFlameRightPulseEnabled()
 {
-    // BB MJS: Implement
+    return isFlameRightPulseEnabled();
+}
 
-    return false;
+bool RadioController::IsFlameLeftOnEnabled()
+{
+    return isFlameLeftOnEnabled();
+}
+
+bool RadioController::IsFlameLeftPulseEnabled()
+{
+    return isFlameLeftPulseEnabled();
 }
 
 bool RadioController::IsHammerSwingRequested()

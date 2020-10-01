@@ -48,16 +48,18 @@ void safe()
     digitalWrite(RETRACT_PRESSURE_VALVE_DO, LOW);
     digitalWrite(RETRACT_VENT_VALVE_DO, LOW);
 
-    digitalWrite(IGNITER_DO, LOW);
-    digitalWrite(PROPANE_DO, LOW);
+    digitalWrite(IGNITERS_DO, LOW);
+    digitalWrite(PROPANE_LEFT_DO, LOW);
+    digitalWrite(PROPANE_RIGTH_DO, LOW);
 
     pinMode(THROW_PRESSURE_VALVE_DO, OUTPUT);
     pinMode(THROW_VENT_VALVE_DO, OUTPUT);
     pinMode(RETRACT_PRESSURE_VALVE_DO, OUTPUT);
     pinMode(RETRACT_VENT_VALVE_DO, OUTPUT);
 
-    pinMode(IGNITER_DO, OUTPUT);
-    pinMode(PROPANE_DO, OUTPUT);
+    pinMode(IGNITERS_DO, OUTPUT);
+    pinMode(PROPANE_LEFT_DO, OUTPUT);
+    pinMode(PROPANE_RIGTH_DO, OUTPUT);
 }
 
 // 

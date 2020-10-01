@@ -35,8 +35,11 @@ public:
     bool IsAutoAimEnabled();
     bool IsAutoFireEnabled();
     bool IsSelfRightEnabled();
-    bool IsFlameOnEnabled();
-    bool IsFlamePulseEnabled();
+    
+    bool IsFlameRightOnEnabled();
+    bool IsFlameRightPulseEnabled();
+    bool IsFlameLeftOnEnabled();
+    bool IsFlameLeftPulseEnabled();
 
     bool IsHammerSwingRequested();
     bool IsHammerRetractRequested();

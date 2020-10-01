@@ -6,25 +6,38 @@
 // Sensors
 
 #define HAMMER_ANGLE_AI A1
-#define HAMMER_THROW_PRESSURE_AI A2
-#define HAMMER_RETRACT_PRESSURE_AI A3
+#define HAMMER_THROW_PRESSURE_AI A3
+#define HAMMER_RETRACT_PRESSURE_AI A5
 
 // ----------------- DIGITAL PINS ---------------
+
+//  Flame Thrower Control
+
+#define PROPANE_LEFT_DO 2
+#define PROPANE_RIGTH_DO 3
+#define IGNITERS_DO 5
 
 //  Hammer Control
 
 //  VERY IMPORTANT: In HammerController.cpp there is optimized code that requires
 //  these pin asignments DONT change.  Chaning just here will break things.  
 
+//#define THROW_PRESSURE_VALVE_DO 6
+//#define THROW_VENT_VALVE_DO 7
+//#define RETRACT_PRESSURE_VALVE_DO 8
+//#define RETRACT_VENT_VALVE_DO 9
+
+//  Hammer Pressure
 #define THROW_PRESSURE_VALVE_DO 6
-#define THROW_VENT_VALVE_DO 7
-#define RETRACT_PRESSURE_VALVE_DO 8
+#define RETRACT_PRESSURE_VALVE_DO 7
+
+//  Hammer Vent
+#define THROW_VENT_VALVE_DO 8
 #define RETRACT_VENT_VALVE_DO 9
 
-//  Flame Thrower Control
+//  Hammer Enable
+#define HAMMER_ENABLE_DO A8
 
-#define IGNITER_DO 5
-#define PROPANE_DO A6
 
 //  XBee
 

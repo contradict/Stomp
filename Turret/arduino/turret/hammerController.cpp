@@ -342,7 +342,7 @@ void HammerController::setState(controllerState p_state)
 
         case EFullCycleInterruptMode:
         {
-            if (Radio.IsFlamePulseEnabled())
+            if (Radio.IsFlameRightPulseEnabled() || Radio.IsFlameLeftPulseEnabled())
             {
                 Turret.FlamePulseStart();
             }
