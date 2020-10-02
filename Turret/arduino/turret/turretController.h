@@ -64,7 +64,15 @@ public:
 
     void SetAutoAimParameters(int32_t p_proportionalConstant, int32_t p_derivativeConstant, int32_t p_steer_max, int32_t p_gyro_gain);
     void SetAutoFireParameters(int16_t p_xtol, int16_t p_ytol, int16_t p_max_omegaz);
-    void SetHammerParameters(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency);
+    void SetHammerParameters(uint32_t p_selfRightIntensity, 
+        uint32_t p_swingTelemetryFrequency,
+        uint16_t p_maxThrowAngle,
+        uint16_t p_minRetractAngle,
+        uint32_t p_maxThrowUnderPressureDt,
+        uint32_t p_maxThrowExpandDt,
+        uint32_t p_maxRetractUnderPressureDt,
+        uint32_t p_maxRetractExpandDt,
+        uint32_t p_maxRetractBreakDt);
     void SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed);
     void SetIMUParameters(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
         int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,

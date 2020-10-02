@@ -29,6 +29,13 @@ public:
     {
         int16_t selfRightIntensity;
         int16_t swingTelemetryFrequency;
+        int16_t maxThrowAngle;
+        int16_t minRetractAngle;
+        uint32_t maxThrowUnderPressureDt;
+        uint32_t maxThrowExpandDt;
+        uint32_t maxRetractUnderPressureDt;
+        uint32_t maxRetractExpandDt;
+        uint32_t maxRetractBreakDt;
     } __attribute__((packed));
 
     //  ====================================================================
@@ -52,7 +59,16 @@ public:
     int32_t GetHammerSpeed();
     int16_t GetHammerAngle();
 
-    void SetParams(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency);
+    void SetParams(uint32_t p_selfRightIntensity, 
+        uint32_t p_swingTelemetryFrequency,
+        uint16_t p_maxThrowAngle,
+        uint16_t p_minRetractAngle,
+        uint32_t p_maxThrowUnderPressureDt,
+        uint32_t p_maxThrowExpandDt,
+        uint32_t p_maxRetractUnderPressureDt,
+        uint32_t p_maxRetractExpandDt,
+        uint32_t p_maxRetractBreakDt);
+
     void RestoreParams();
 
     void SendTelem();
@@ -84,10 +100,6 @@ private:
     //
     //  ====================================================================
 
-    void updateSpeed();
-    void updateAngle();
-    void updatePressure();
-    
     void setState(controllerState p_state);
     void init();
 

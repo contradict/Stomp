@@ -55,22 +55,40 @@ static const int16_t k_invalidHammerRetractPressureRead = -1;
 static struct HammerController::Params EEMEM s_savedParams = 
 {
     .selfRightIntensity = 30,
-    .swingTelemetryFrequency = 100
+    .swingTelemetryFrequency = 100,
+    .maxThrowAngle = 210,
+    .minRetractAngle = 5,
+    .maxThrowUnderPressureDt = 750000,
+    .maxThrowExpandDt = 1000000,
+    .maxRetractUnderPressureDt = 1000000,
+    .maxRetractExpandDt = 1000000,
+    .maxRetractBreakDt = 1000000
 };
     
 static uint16_t s_telemetryFrequency;
+
 volatile static bool s_swingComplete;
 
 //  These are file static rather than member variables because they are 
 //  being accesses from an interrupt service routing
 
 volatile static int16_t s_hammerAngleCurrent = k_invalidHammerAngleRead;
-volatile static int32_t s_hammerSpeedCurrent = 0;
+volatile static int16_t s_hammerAnglePrev = s_hammerAngleCurrent;
+volatile static int32_t s_hammerVelocityCurrent = 0;
+volatile static int32_t s_hammerAngleReadTimeLast = 0;
 
 volatile static int16_t s_hammerThrowPressureCurrent = k_invalidHammerThrowPressureRead;
 volatile static int16_t s_hammerRetractPressureCurrent = k_invalidHammerRetractPressureRead;
 
 volatile static int16_t s_hammerThrowAngle = 0;
+
+volatile static int16_t s_maxThrowAngle;
+volatile static int16_t s_minRetractAngle;
+volatile static uint32_t s_maxThrowUnderPressureDt;
+volatile static uint32_t s_maxThrowExpandDt;
+volatile static uint32_t s_maxRetractUnderPressureDt;
+volatile static uint32_t s_maxRetractExpandDt;
+volatile static uint32_t s_maxRetractBreakDt; 
 
 //  ====================================================================
 //
@@ -197,8 +215,6 @@ void HammerController::Update()
     }
 
     //  Now that the state is stable, take action based on stable state
-
-    updateSpeed();
 }
 
 void HammerController::Safe()
@@ -248,7 +264,7 @@ void HammerController::TriggerRetract()
 
 int32_t HammerController::GetHammerSpeed()
 {
-    return s_hammerSpeedCurrent;
+    return s_hammerVelocityCurrent;
 }
 
 int16_t HammerController::GetHammerAngle()
@@ -256,10 +272,27 @@ int16_t HammerController::GetHammerAngle()
     return s_hammerAngleCurrent;
 }
 
-void HammerController::SetParams(uint32_t p_selfRightIntensity, uint32_t p_swingTelemetryFrequency)
+void HammerController::SetParams(uint32_t p_selfRightIntensity, 
+    uint32_t p_swingTelemetryFrequency,
+    uint16_t p_maxThrowAngle,
+    uint16_t p_minRetractAngle,
+    uint32_t p_maxThrowUnderPressureDt,
+    uint32_t p_maxThrowExpandDt,
+    uint32_t p_maxRetractUnderPressureDt,
+    uint32_t p_maxRetractExpandDt,
+    uint32_t p_maxRetractBreakDt)
 {
     m_params.selfRightIntensity = p_selfRightIntensity;
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
+    m_params.selfRightIntensity = p_selfRightIntensity;
+    m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
+    m_params.maxThrowAngle = p_maxThrowAngle;
+    m_params.minRetractAngle = p_minRetractAngle;
+    m_params.maxThrowUnderPressureDt = p_maxThrowUnderPressureDt;
+    m_params.maxThrowExpandDt = p_maxThrowExpandDt;
+    m_params.maxRetractUnderPressureDt = p_maxRetractUnderPressureDt;
+    m_params.maxRetractExpandDt = p_maxRetractExpandDt;
+    m_params.maxRetractBreakDt = p_maxRetractBreakDt;
 
     saveParams();
 }
@@ -279,13 +312,6 @@ void HammerController::SendTelem()
 //  Private methods
 //
 //  ====================================================================
-
-void HammerController::updateSpeed()
-{
-    //  Not calculating right Now
-
-    s_hammerSpeedCurrent = 0;
-}
 
 void HammerController::setState(controllerState p_state)
 {
@@ -351,6 +377,13 @@ void HammerController::setState(controllerState p_state)
 
             s_hammerThrowAngle = m_throwPressureAngle;
             s_telemetryFrequency = m_params.swingTelemetryFrequency;
+            s_maxThrowAngle = m_params.maxThrowAngle;
+            s_minRetractAngle = m_params.minRetractAngle;
+            s_maxThrowUnderPressureDt = m_params.maxThrowUnderPressureDt;
+            s_maxThrowExpandDt = m_params.maxThrowExpandDt;
+            s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
+            s_maxRetractExpandDt = m_params.maxRetractExpandDt;
+            s_maxRetractBreakDt = m_params.maxRetractBreakDt; 
 
             startFullCycleStateMachine();
         }
@@ -362,6 +395,10 @@ void HammerController::setState(controllerState p_state)
             //  No need for s_throwPressureAngle becasue we are only retracting
 
             s_telemetryFrequency = m_params.swingTelemetryFrequency;
+            s_minRetractAngle = m_params.minRetractAngle;
+            s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
+            s_maxRetractExpandDt = m_params.maxRetractExpandDt;
+            s_maxRetractBreakDt = m_params.maxRetractBreakDt; 
 
             startRetractOnlyStateMachine();
         }
@@ -412,22 +449,16 @@ void HammerController::saveParams()
 //
 //  ====================================================================
 
+static const float k_throwSideBreakingForce = 0.005102f;
 static const uint8_t k_valveCloseDt = 10;                          //  10 microseconds
 static const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
-
-static const int16_t k_maxThrowAngle = 210;                       //  210 degrees
-static const uint32_t k_maxThrowPressureDt = 750000;               //  0.75 second
-static const uint32_t k_maxThrowDt = 1000000;                      //  1.00 second
-
-static const int16_t k_minRetractAngle = 5;                       //    5 degrees
-static const uint32_t k_maxRetractDt = 1000000;                    //  1.0 seconds
 
 static const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
 static const uint32_t k_subStateMachineUpdateFrequency = 50000;    //  50kHz or update every 20 microseconds
                                                                    //  at 100kHz, serail communication to Robotek stoped working
 
 static const uint16_t k_telmSamplesMax = 256;
-static const int32_t k_angleReadSwitchToPressureCount = 10;        //  10 Angle Reads for each pressure read
+static const int32_t k_angleReadSwitchToPressureCount = 1;        //  1 Angle Reads for each pressure read
 
 static const int16_t k_minValidHammerAngleDifferential = 120;
 static const int16_t k_maxValidHammerAngleDifferential = 920;
@@ -453,13 +484,19 @@ static const int16_t k_maxExpectedRetractPressureDifferential = 920;
 //  Telemetry info
 
 volatile static uint32_t s_swingStartTime;
-volatile static uint32_t s_swingStopTime;
+volatile static uint32_t s_swingExpandStartTime;
+
 volatile static uint32_t s_retractStartTime;
+volatile static uint32_t s_retractExpandStartTime;
+volatile static uint32_t s_retractBreakStartTime;
 volatile static uint32_t s_retractStopTime;
 
 volatile static uint16_t s_swingStartAngle;
-volatile static uint16_t s_swingStopAngle;
+volatile static uint32_t s_swingExpandStartAngle;
+
 volatile static uint16_t s_retractStartAngle;
+volatile static uint32_t s_retractExpandStartAngle;
+volatile static uint32_t s_retractBreakStartAngle;
 volatile static uint16_t s_retractStopAngle;
 
 volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
@@ -477,6 +514,9 @@ enum hammerSubState
     EThrowExpand,
     ERetractSetup,
     ERetractPressurize,
+    ERetractExpand,
+    ERetractBreak,
+    ERetractSettle,
     ERetractComplete
 };
 
@@ -646,7 +686,7 @@ void startRetractOnlyStateMachine()
     //  Enter start state
 
     s_hammerSubState = ERetractSetup;
-    s_hammerSubStateStart = s_swingStartTime;
+    s_hammerSubStateStart = s_retractStartTime;
 
     //  open throw vent
     digitalWrite(THROW_VENT_VALVE_DO, LOW); 
@@ -686,8 +726,10 @@ void swingComplete()
         s_swingRetractPressureSamples,
         s_telemetryFrequency,
         s_swingStartTime, s_swingStartAngle,
-        s_swingStopTime, s_swingStopAngle,
+        s_swingExpandStartTime, s_swingExpandStartAngle,
         s_retractStartTime, s_retractStartAngle,
+        s_retractExpandStartTime, s_retractExpandStartAngle,
+        s_retractBreakStartTime, s_retractBreakStartAngle,
         s_retractStopTime, s_retractStopAngle);
 }
 
@@ -701,7 +743,9 @@ void swingComplete()
 
 ISR(ADC_vect)
 {
-    //  Get ADC results
+    uint32_t now = micros();
+
+    //  Get ADC results (between 0 - 1024)
 
     int16_t differential = ADCL | (ADCH << 8);
     
@@ -712,22 +756,11 @@ ISR(ADC_vect)
         case EReadThrowPressure:
         {
             // calculate throw pressure
+            // P (c) = (c − 102) ∗ 24/5
 
-            s_hammerThrowPressureCurrent = k_invalidHammerThrowPressureRead;
+            //  BB MJS: Check the ranges to not do conversion if it is out of range
 
-            if (differential >= k_minExpectedThrowPressureDifferential && differential <= k_maxExpectedThrowPressureDifferential)
-            {
-                //  ((differential * 11) / 25) = conversion of differential range into anggle range
-
-                s_hammerThrowPressureCurrent = ((((1024 - differential) - k_minValidThrowPressureDifferential) * 11) / 25);
-            }
-            else if (differential >= k_minValidThrowPressureDifferential && differential <= k_maxValidThrowPressureDifferential)
-            {
-                //  We believe the Analog read was good, but we don't expect the hammer to be in this
-                //  position.  It likely just retracted too far.  Set to 0 degrees
-
-                s_hammerThrowPressureCurrent = 0;
-            }
+            s_hammerThrowPressureCurrent = (differential - 102) * 24/5;
 
             //  Set up next analog read
 
@@ -737,23 +770,12 @@ ISR(ADC_vect)
 
         case EReadRetractPressure:
         {
-            // calculate throw pressure
+            // calculate retract pressure
+            // P (c) = (c − 102) ∗ 24/5
 
-            s_hammerRetractPressureCurrent = k_invalidHammerRetractPressureRead;
+            //  BB MJS: Check the ranges to not do conversion if it is out of range
 
-            if (differential >= k_minExpectedRetractPressureDifferential && differential <= k_maxExpectedRetractPressureDifferential)
-            {
-                //  ((differential * 11) / 25) = conversion of differential range into anggle range
-
-                s_hammerRetractPressureCurrent = ((((1024 - differential) - k_minValidRetractPressureDifferential) * 11) / 25);
-            }
-            else if (differential >= k_minValidRetractPressureDifferential && differential <= k_maxValidRetractPressureDifferential)
-            {
-                //  We believe the Analog read was good, but we don't expect the hammer to be in this
-                //  position.  It likely just retracted too far.  Set to 0 degrees
-
-                s_hammerRetractPressureCurrent = 0;
-            }
+            s_hammerRetractPressureCurrent = (differential - 102) * 24/5;
 
             //  Set up next analog read
 
@@ -765,21 +787,22 @@ ISR(ADC_vect)
         {
             // calculate Hammer Angle
 
+            s_hammerAnglePrev = s_hammerAngleCurrent;
+
             s_hammerAngleCurrent = k_invalidHammerAngleRead;
 
             if (differential >= k_minExpectedHammerAngleDifferential && differential <= k_maxExpectedHammerAngleDifferential)
             {
-                //  ((differential * 11) / 25) = conversion of differential range into anggle range
+                //  Conversion of differential range into anggle range (as radians * 1000)
+                //  θ(differential) = (820 − differential) ∗ 37/5 + (820 − differential) ∗ 2/100
 
-                s_hammerAngleCurrent = ((((1024 - differential) - k_minValidHammerAngleDifferential) * 11) / 25);
+                s_hammerAngleCurrent = (820 - differential) * 37/5 + (820 - differential) * 2/100;
             }
-            else if (differential >= k_minValidHammerAngleDifferential && differential <= k_maxValidHammerAngleDifferential)
-            {
-                //  We believe the Analog read was good, but we don't expect the hammer to be in this
-                //  position.  It likely just retracted too far.  Set to 0 degrees
 
-                s_hammerAngleCurrent = 0;
-            }
+            //  Now calculate velocity
+
+            s_hammerVelocityCurrent = (s_hammerAngleCurrent - s_hammerAnglePrev) / (now - s_hammerAngleReadTimeLast);
+            s_hammerAngleReadTimeLast = now;
 
             //  Set up next analog read
 
@@ -829,6 +852,7 @@ ISR(TIMER5_COMPA_vect)
             if (s_hammerSubStateDt >= k_valveCloseDt)
             {
                 //  Go to EThrowPressurize state
+
                 desiredState = EThrowPressurize;
                 OPEN_THROW_PRESSURE;
             }
@@ -837,14 +861,14 @@ ISR(TIMER5_COMPA_vect)
 
         case EThrowPressurize:
         {
-            if (s_hammerAngleCurrent > s_hammerThrowAngle || s_hammerSubStateDt > k_maxThrowPressureDt)
+            if (s_hammerAngleCurrent > s_hammerThrowAngle || s_hammerSubStateDt > s_maxThrowUnderPressureDt)
             {
-                s_swingStopTime = now;
-                s_swingStopAngle = s_hammerAngleCurrent;
-
                 //  Go to EThrowExpand state
 
                 desiredState = EThrowExpand;
+                s_swingExpandStartTime = now;
+                s_swingExpandStartAngle = s_hammerAngleCurrent;
+
                 CLOSE_THROW_PRESSURE;
             }
         }
@@ -852,14 +876,14 @@ ISR(TIMER5_COMPA_vect)
 
         case EThrowExpand:
         {
-            if (s_hammerAngleCurrent >= k_maxThrowAngle || s_hammerSubStateDt > k_maxThrowDt)
+            if (s_hammerAngleCurrent >= s_maxThrowAngle || s_hammerSubStateDt > s_maxThrowExpandDt)
             {
-                s_retractStartTime = now;
-                s_retractStartAngle = s_hammerAngleCurrent;
-
                 // Go to ERetractSetup state
 
                 desiredState = ERetractSetup;
+                s_retractStartTime = now;
+                s_retractStartAngle = s_hammerAngleCurrent;
+
                 OPEN_THROW_VENT;
             }
         }
@@ -870,7 +894,9 @@ ISR(TIMER5_COMPA_vect)
             if (s_hammerSubStateDt >= k_valveCloseDt)
             {
                 //  Go to ERetractPressurize state
+
                 desiredState = ERetractPressurize;
+
                 OPEN_RETRACT_PRESSURE;
             }
         }
@@ -878,20 +904,63 @@ ISR(TIMER5_COMPA_vect)
 
         case ERetractPressurize:
         {
-            if ((s_hammerAngleCurrent >= 0 && s_hammerAngleCurrent <= k_minRetractAngle) || s_hammerSubStateDt > k_maxRetractDt)
+            if (s_hammerSubStateDt > s_maxRetractUnderPressureDt)
             {
-                s_retractStopTime = now;
-                s_retractStopAngle = s_hammerAngleCurrent;
+                //  Go to ERetractExpand state
 
+                desiredState = ERetractExpand;
+                s_retractExpandStartTime = now;
+                s_retractExpandStartAngle = s_hammerAngleCurrent;
+
+                CLOSE_RETRACT_PRESSURE;
+            }
+        }
+        break;
+
+        case ERetractExpand:
+        {
+            float currentForce = (s_hammerAngleCurrent / (s_hammerVelocityCurrent * s_hammerVelocityCurrent)) * 
+                log(s_hammerAngleCurrent / 0.0873f);
+            if (currentForce >= k_throwSideBreakingForce || s_hammerSubStateDt >= s_maxRetractBreakDt)
+            {
+                //  Go to ERetractExpand state
+
+                desiredState = ERetractBreak;
+                s_retractBreakStartTime = now;
+                s_retractBreakStartAngle = s_hammerAngleCurrent;
+
+                CLOSE_THROW_VENT;
+            }
+        }
+        break;
+
+        case ERetractBreak:
+        {
+            if (s_hammerAngleCurrent < s_minRetractAngle || s_hammerSubStateDt >= s_maxRetractBreakDt)
+            {
+                //  Go to ERetractExpand state
+
+                desiredState = ERetractSettle;
+                OPEN_THROW_VENT;
+            }
+        }
+        break;
+
+        case ERetractSettle:
+        {
+            if (s_hammerSubStateDt >= k_valveCloseDt)
+            {
                 //  Go to ERetractComplete state
 
                 desiredState = ERetractComplete;
+                s_retractStopTime = now;
+                s_retractStopAngle = s_hammerAngleCurrent;
 
-                CLOSE_RETRACT_PRESSURE;
                 OPEN_RETRACT_VENT;
 
                 s_swingComplete = true;
             }
+
         }
         break;
 

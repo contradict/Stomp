@@ -91,6 +91,13 @@ typedef CommandPacket<CMD_ID_LDDR, LeddarCommandInner> LeddarCommand;
 struct HammerCommandInner {
     int16_t selfRightIntensity;
     int16_t swingTelemetryFrequency;
+    int16_t maxThrowAngle;
+    int16_t minRetractAngle;
+    uint32_t maxThrowUnderPressureDt;
+    uint32_t maxThrowExpandDt;
+    uint32_t maxRetractUnderPressureDt;
+    uint32_t maxRetractExpandDt;
+    uint32_t maxRetractBreakDt;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_HMR, HammerCommandInner> HammerCommand;
 
@@ -220,7 +227,14 @@ void handleCommands(void)
             case CMD_ID_HMR:
                 hammer_cmd = (HammerCommand *)command_buffer;
                 Turret.SetHammerParameters(hammer_cmd->inner.selfRightIntensity,
-                                    hammer_cmd->inner.swingTelemetryFrequency);
+                                    hammer_cmd->inner.swingTelemetryFrequency,
+                                    hammer_cmd->inner.maxThrowAngle,
+                                    hammer_cmd->inner.minRetractAngle,
+                                    hammer_cmd->inner.maxThrowUnderPressureDt,
+                                    hammer_cmd->inner.maxThrowExpandDt,
+                                    hammer_cmd->inner.maxRetractUnderPressureDt,
+                                    hammer_cmd->inner.maxRetractExpandDt,
+                                    hammer_cmd->inner.maxRetractBreakDt);
                 break;
 
             case CMD_ID_TRT:

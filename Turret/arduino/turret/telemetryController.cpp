@@ -331,13 +331,19 @@ struct SwingTelemetryInner
     uint16_t sampleFrequency;
 
     uint32_t swingStartTime;
-    uint32_t swingStopTime;
+    uint16_t swingExpandStartTime;
+
     uint32_t retractStartTime;
+    uint32_t retractExpandStartTime; 
+    uint32_t retractBreakStartTime;
     uint32_t retractStopTime;
 
     uint16_t swingStartAngle;
+    uint16_t swingExpandStartAngle;
     uint16_t swingStopAngle;
     uint16_t retractStartAngle;
+    uint16_t retractExpandStartAngle;
+    uint16_t retractBreakStartAngle;
     uint16_t retractStopAngle;
 } __attribute__((packed));
 
@@ -348,14 +354,18 @@ bool TelemetryController::SendSwingTelem(
                     volatile uint16_t* p_angleData,
                     volatile uint8_t* p_throwPressureData,
                     volatile uint8_t* p_retractPressureData,
-                    uint16_t p_sampleFrequency,
-                    uint32_t p_swingStartTime,
+                    uint32_t p_sampleFrequency,
+                    uint32_t p_swingStartTime, 
                     uint16_t p_swingStartAngle,
-                    uint32_t p_swingStopTime,
-                    uint16_t p_swingStopAngle,
-                    uint32_t p_retractStartTime,
+                    uint32_t p_swingExpandStartTime, 
+                    uint16_t p_swingExpandStartAngle,
+                    uint32_t p_retractStartTime, 
                     uint16_t p_retractStartAngle,
-                    uint32_t p_retractStopTime,
+                    uint32_t p_retractExpandStartTime, 
+                    uint16_t p_retractExpandStartAngle,
+                    uint32_t p_retractBreakStartTime, 
+                    uint16_t p_retractBreakStartAngle,
+                    uint32_t p_retractStopTime, 
                     uint16_t p_retractStopAngle)
 {
     CHECK_ENABLED(TLM_ID_SWG);
@@ -367,10 +377,14 @@ bool TelemetryController::SendSwingTelem(
 
     tlm.inner.swingStartTime = p_swingStartTime;
     tlm.inner.swingStartAngle = p_swingStartAngle;
-    tlm.inner.swingStopTime = p_swingStopTime;
-    tlm.inner.swingStopAngle = p_swingStopAngle;
+    tlm.inner.swingExpandStartTime = p_swingExpandStartTime;
+    tlm.inner.swingExpandStartAngle = p_swingExpandStartAngle;
     tlm.inner.retractStartTime = p_retractStartTime;
     tlm.inner.retractStartAngle = p_retractStartAngle;
+    tlm.inner.retractExpandStartTime = p_retractExpandStartTime;
+    tlm.inner.retractExpandStartAngle = p_retractExpandStartAngle;
+    tlm.inner.retractBreakStartTime = p_retractBreakStartTime;
+    tlm.inner.retractBreakStartAngle = p_retractBreakStartAngle;
     tlm.inner.retractStopTime = p_retractStopTime;
     tlm.inner.retractStopAngle = p_retractStopAngle;
 

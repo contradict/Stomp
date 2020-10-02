@@ -92,15 +92,19 @@ public:
         volatile uint16_t* p_angleData,
         volatile uint8_t* p_throwPressureData,
         volatile uint8_t* p_retractPressureData,
-        uint16_t p_dataCollectFrequency,
-        uint32_t p_swingStartTime,
-        uint16_t p_swingStartAngle,
-        uint32_t p_swingStopTime,
-        uint16_t p_swingStopAngle,
-        uint32_t p_retractStartTime,
-        uint16_t p_retractStartAngle,
-        uint32_t p_retractStopTime,
-        uint16_t p_retractStopAngle);
+        uint32_t p_sampleFrequency,
+        uint32_t s_swingStartTime, 
+        uint16_t s_swingStartAngle,
+        uint32_t s_swingExpandStartTime, 
+        uint16_t s_swingExpandStartAngle,
+        uint32_t s_retractStartTime, 
+        uint16_t s_retractStartAngle,
+        uint32_t s_retractExpandStartTime, 
+        uint16_t s_retractExpandStartAngle,
+        uint32_t s_retractBreakStartTime, 
+        uint16_t s_retractBreakStartAngle,
+        uint32_t s_retractStopTime, 
+        uint16_t s_retractStopAngle);
 
     bool SendIMUTelem(int16_t (&p_a)[3], int16_t (&p_g)[3], int16_t p_t);
     bool SendORNTelem(bool p_stationary, uint8_t p_orientation, int32_t p_sumAngularRate, int16_t p_totalNorm, int16_t p_crossNorm);
