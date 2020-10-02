@@ -803,7 +803,7 @@ bool TelemetryController::xbeeSendMessage(const String& p_string)
 
     const char *c_str = p_string.c_str();
 
-    unsigned char pkt[1+k_maxDebugMessageLength+2]={0};
+    unsigned char pkt[1+k_maxDebugMessageLength+2];
 
     pkt[0] = TLM_ID_DBGM;
     size_t copied = 0;

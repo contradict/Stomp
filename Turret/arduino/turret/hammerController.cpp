@@ -557,19 +557,19 @@ static int32_t s_sensorAngleReadCount = 0;
 //  valve               state   pin     bit     PWM
 //  ------------------- ------- ------- ------- ------
 //  Throw Pressure      NC      6       H:3     OC4A
-//  Throw Vent          NO      7       H:4     OC4B
-//  Retract Pressure    NC      8       H:5     OC4C
+//  Retract Pressure    NC      7       H:4     OC4B
+//  Throw Vent          NO      8       H:5     OC4C
 //  Retract Vent        NO      9       H:6     OC2B
 //
 
 #define OPEN_THROW_PRESSURE { PORTH |= 1 << PORTH3; }
 #define CLOSE_THROW_PRESSURE { PORTH &= ~(1 << PORTH3); }
 
-#define OPEN_THROW_VENT { PORTH &= ~(1 << PORTH4); }
-#define CLOSE_THROW_VENT { PORTH |= 1 << PORTH4; }
+#define OPEN_THROW_VENT { PORTH &= ~(1 << PORTH5); }
+#define CLOSE_THROW_VENT { PORTH |= 1 << PORTH5; }
 
-#define OPEN_RETRACT_PRESSURE { PORTH |= 1 << PORTH5; }
-#define CLOSE_RETRACT_PRESSURE { PORTH &= ~(1 << PORTH5); } 
+#define OPEN_RETRACT_PRESSURE { PORTH |= 1 << PORTH4; }
+#define CLOSE_RETRACT_PRESSURE { PORTH &= ~(1 << PORTH4); } 
 
 #define OPEN_RETRACT_VENT { PORTH &= ~(1 << PORTH6); }
 #define CLOSE_RETRACT_VENT { PORTH |= 1 << PORTH6; }
@@ -794,9 +794,9 @@ ISR(ADC_vect)
             if (differential >= k_minExpectedHammerAngleDifferential && differential <= k_maxExpectedHammerAngleDifferential)
             {
                 //  Conversion of differential range into anggle range (as radians * 1000)
-                //  θ(differential) = (820 − differential) ∗ 37/5 + (820 − differential) ∗ 2/100
+                //  θ(differential) = (798 − differential) ∗ 37/5 + (798 − differential) ∗ 2/100
 
-                s_hammerAngleCurrent = (820 - differential) * 37/5 + (820 - differential) * 2/100;
+                s_hammerAngleCurrent = ((798 - differential) * 38) / 5 + ((798 - differential) * 9) / 100;
             }
 
             //  Now calculate velocity
