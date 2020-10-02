@@ -78,6 +78,17 @@ $$ 5.102e-3 \leq \frac{\theta}{\omega^2} \ln{\frac{\theta}{\theta_s}}$$
 
 ## Sensor calibration.
 
+### ADC Converter
+
+The ADC uses a $V_{ref}5V$ reference and makes a $n=10$ bit conversion. This means an ADC
+code of $c$ gives
+
+$$V(c) = \frac{c * V_{ref}}{2^n}=\frac{c * 5}{1024}$$
+
+A convenient scale for representing voltage in a 16bit signed value is $mV$,
+calculated as
+
+$$V(c) = c*4 + c*\frac{22}{25}$$
 
 ### Hammer Angle
 
@@ -89,11 +100,16 @@ at $\theta=\pi$.
 
 Symbolically
 
-$\theta(v) = \frac{v-v_{min}}{v_{max} - v_{min}} \pi$
+$$\theta(v) = \frac{v-v_{min}}{v_{max} - v_{min}} \pi$$
 
 With the values measured from our current assembly
 
-$\theta(v) = (4.004 - v) * 6.481$ 
+$$\theta(v) = (4.004 - v) * 6.481$$
+
+When stored as a 16-bit signed value as scaled from ADC counts, this can be
+scaled to miliradians
+
+$$\theta(c) = (820 - c) * 37 / 5 + (820-c)*2/100$$
 
 ### Pressure Sensors
 
@@ -113,3 +129,9 @@ $$P(v) = \frac{(v-v_{min})(P_{max} - P_{min})}{v_{max} - v_{min}} + P_{min}$$
 In $Pa$,
 
 $$P(v) = (v-0.5) * 8.618e5$$
+
+When stored in a 16 bit signed value, this can be scaled to $kPa$ as scaled from
+ADC counts
+
+$$P(c) = (c-102) * 24 / 5$$
+
