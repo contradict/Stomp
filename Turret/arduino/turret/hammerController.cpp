@@ -274,7 +274,7 @@ void HammerController::TriggerRetract()
     {
         return;
     }
-    
+
     setState(ERetract);
     setState(ERetractOnlyInterruptMode);
 }
@@ -371,6 +371,19 @@ void HammerController::setState(controllerState p_state)
         }
         break;
 
+        case ESafe:
+        case EDisabled:
+        {
+            digitalWrite(HAMMER_ENABLE_DO, LOW);
+        }
+        break;
+
+        case EReady:
+        {
+            digitalWrite(HAMMER_ENABLE_DO, HIGH);
+        }
+        break;
+
         case EThrow:
         {
             int32_t requestedIntensity = getHammerIntensity();
@@ -436,6 +449,9 @@ void HammerController::setState(controllerState p_state)
 void HammerController::init()
 {
     startSensorReadStateMachine();
+
+    digitalWrite(HAMMER_ENABLE_DO, LOW);
+    pinMode(HAMMER_ENABLE_DO, OUTPUT);
 
     digitalWrite(THROW_PRESSURE_VALVE_DO, LOW); 
     pinMode(THROW_PRESSURE_VALVE_DO, OUTPUT);

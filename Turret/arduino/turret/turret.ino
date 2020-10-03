@@ -43,6 +43,7 @@ volatile bool g_enabled = false;
 
 void safe()
 {
+    digitalWrite(HAMMER_ENABLE_DO, LOW);
     digitalWrite(THROW_PRESSURE_VALVE_DO, LOW);
     digitalWrite(THROW_VENT_VALVE_DO, LOW);
     digitalWrite(RETRACT_PRESSURE_VALVE_DO, LOW);
@@ -52,6 +53,7 @@ void safe()
     digitalWrite(PROPANE_LEFT_DO, LOW);
     digitalWrite(PROPANE_RIGTH_DO, LOW);
 
+    pinMode(HAMMER_ENABLE_DO, OUTPUT);
     pinMode(THROW_PRESSURE_VALVE_DO, OUTPUT);
     pinMode(THROW_VENT_VALVE_DO, OUTPUT);
     pinMode(RETRACT_PRESSURE_VALVE_DO, OUTPUT);
