@@ -18,9 +18,11 @@ uint16_t sbus_overrun;
 static uint16_t sbusChannels [17];  // could initialize this with failsafe values for extra safety
 static bool failsafe = true;
 static uint32_t last_parse_time = 0;
-static uint16_t bitfield;
 static uint16_t last_bitfield;
-static bool s_radioConnected = false;
+
+volatile bool sbus_weaponsEnabled;
+volatile static uint16_t bitfield;
+volatile static bool s_radioConnected = false;
 
 ISR(USART3_RX_vect)
 {
@@ -86,7 +88,9 @@ void updateSBus()
     processSBus();
  
     bool timeout = ((micros() - last_parse_time) > radio_lost_timeout);
+
     s_radioConnected = !(failsafe || timeout);
+    sbus_weaponsEnabled = (bitfield & WEAPONS_ENABLE_BIT) == WEAPONS_ENABLE_BIT;
 }
 
 bool isRadioConnected()

@@ -329,9 +329,10 @@ struct SwingTelemetryInner
 {
     uint16_t dataPointCount;
     uint16_t sampleFrequency;
+    uint32_t stopTimersTime;
 
     uint32_t swingStartTime;
-    uint16_t swingExpandStartTime;
+    uint32_t swingExpandStartTime;
 
     uint32_t retractStartTime;
     uint32_t retractExpandStartTime; 
@@ -340,7 +341,6 @@ struct SwingTelemetryInner
 
     uint16_t swingStartAngle;
     uint16_t swingExpandStartAngle;
-    uint16_t swingStopAngle;
     uint16_t retractStartAngle;
     uint16_t retractExpandStartAngle;
     uint16_t retractBreakStartAngle;
@@ -355,6 +355,8 @@ bool TelemetryController::SendSwingTelem(
                     volatile uint8_t* p_throwPressureData,
                     volatile uint8_t* p_retractPressureData,
                     uint32_t p_sampleFrequency,
+                    uint32_t p_stopTimersTime,
+
                     uint32_t p_swingStartTime, 
                     uint16_t p_swingStartAngle,
                     uint32_t p_swingExpandStartTime, 
@@ -368,12 +370,13 @@ bool TelemetryController::SendSwingTelem(
                     uint32_t p_retractStopTime, 
                     uint16_t p_retractStopAngle)
 {
-    CHECK_ENABLED(TLM_ID_SWG);
+    //CHECK_ENABLED(TLM_ID_SWG);
 
     SwingTelemetry tlm;
 
     tlm.inner.sampleFrequency = p_sampleFrequency;
     tlm.inner.dataPointCount = p_datapointsCollected;
+    tlm.inner.stopTimersTime = p_stopTimersTime;
 
     tlm.inner.swingStartTime = p_swingStartTime;
     tlm.inner.swingStartAngle = p_swingStartAngle;
@@ -398,7 +401,6 @@ bool TelemetryController::SendSwingTelem(
     }
 
     success &= write((uint8_t *)&tlm.terminator, sizeof(tlm.terminator));
-
     return success;
 }
 

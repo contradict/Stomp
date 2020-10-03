@@ -93,6 +93,7 @@ public:
         volatile uint8_t* p_throwPressureData,
         volatile uint8_t* p_retractPressureData,
         uint32_t p_sampleFrequency,
+        uint32_t p_stopTimersTime,
         uint32_t s_swingStartTime, 
         uint16_t s_swingStartAngle,
         uint32_t s_swingExpandStartTime, 

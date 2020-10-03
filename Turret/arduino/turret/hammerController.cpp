@@ -36,6 +36,8 @@
 //
 //  ====================================================================
 
+extern volatile bool sbus_weaponsEnabled;
+
 //  ====================================================================
 //
 //  File constants 
@@ -190,7 +192,7 @@ void HammerController::Update()
             {
                 if (s_swingComplete)
                 {
-                    Telem.LogMessage("Swing Complete");
+                    //Telem.LogMessage("Swing Complete");
                     setState(ESwingComplete);
                 }
             }
@@ -335,6 +337,7 @@ void HammerController::setState(controllerState p_state)
         {
             Turret.FlamePulseStop();
         }
+        break;
 
         default:
         break;
@@ -454,7 +457,7 @@ static const uint8_t k_valveCloseDt = 10;                          //  10 micros
 static const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
 
 static const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
-static const uint32_t k_subStateMachineUpdateFrequency = 50000;    //  50kHz or update every 20 microseconds
+static const uint32_t k_subStateMachineUpdateFrequency = 10000;    //  50kHz or update every 20 microseconds
                                                                    //  at 100kHz, serail communication to Robotek stoped working
 
 static const uint16_t k_telmSamplesMax = 256;
@@ -492,11 +495,11 @@ volatile static uint32_t s_retractBreakStartTime;
 volatile static uint32_t s_retractStopTime;
 
 volatile static uint16_t s_swingStartAngle;
-volatile static uint32_t s_swingExpandStartAngle;
+volatile static uint16_t s_swingExpandStartAngle;
 
 volatile static uint16_t s_retractStartAngle;
-volatile static uint32_t s_retractExpandStartAngle;
-volatile static uint32_t s_retractBreakStartAngle;
+volatile static uint16_t s_retractExpandStartAngle;
+volatile static uint16_t s_retractBreakStartAngle;
 volatile static uint16_t s_retractStopAngle;
 
 volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
@@ -725,6 +728,7 @@ void swingComplete()
         s_swingThrowPressureSamples,
         s_swingRetractPressureSamples,
         s_telemetryFrequency,
+        micros(),
         s_swingStartTime, s_swingStartAngle,
         s_swingExpandStartTime, s_swingExpandStartAngle,
         s_retractStartTime, s_retractStartAngle,
@@ -743,6 +747,9 @@ void swingComplete()
 
 ISR(ADC_vect)
 {
+    pinMode(11, OUTPUT);
+    digitalWrite(11, HIGH);
+
     uint32_t now = micros();
 
     //  Get ADC results (between 0 - 1024)
@@ -820,6 +827,8 @@ ISR(ADC_vect)
     //  Start next sesnor reads
 
     ADCSRA |= 0x01 << ADSC;
+
+    digitalWrite(11, LOW);
 }
 
 //  Interrupt Service Routine to collect telemetry, at defined frequency, durring a hammer throw and retract
@@ -840,138 +849,159 @@ ISR(TIMER4_COMPA_vect)
 
 ISR(TIMER5_COMPA_vect)
 {
+    pinMode(10, OUTPUT);
+    digitalWrite(10, HIGH);
+
     uint32_t now = micros();    
     s_hammerSubStateDt = now - s_hammerSubStateStart;
 
     hammerSubState desiredState = s_hammerSubState;
 
-    switch (s_hammerSubState)
+    if (!sbus_weaponsEnabled)
     {
-        case EThrowSetup:
+        //  SAFTY STATE, Bail if we lose IsWeaponsEnabled
+
+        CLOSE_RETRACT_PRESSURE;
+        OPEN_RETRACT_VENT;
+
+        CLOSE_THROW_PRESSURE;
+        OPEN_THROW_VENT;
+
+        s_hammerSubState = ERetractComplete;
+        s_swingComplete = true;
+    }
+    else
+    {
+        switch (s_hammerSubState)
         {
-            if (s_hammerSubStateDt >= k_valveCloseDt)
+            case EThrowSetup:
             {
-                //  Go to EThrowPressurize state
+                if (s_hammerSubStateDt >= k_valveCloseDt)
+                {
+                    //  Go to EThrowPressurize state
 
-                desiredState = EThrowPressurize;
-                OPEN_THROW_PRESSURE;
+                    desiredState = EThrowPressurize;
+                    OPEN_THROW_PRESSURE;
+                }
             }
-        }
-        break;
+            break;
 
-        case EThrowPressurize:
+            case EThrowPressurize:
+            {
+                if ((s_hammerAngleCurrent > s_hammerThrowAngle) || (s_hammerSubStateDt > s_maxThrowUnderPressureDt))
+                {
+                    //  Go to EThrowExpand state
+
+                    desiredState = EThrowExpand;
+                    s_swingExpandStartTime = now;
+                    s_swingExpandStartAngle = s_hammerAngleCurrent;
+
+                    CLOSE_THROW_PRESSURE;
+                }
+            }
+            break;
+
+            case EThrowExpand:
+            {
+                if (s_hammerAngleCurrent >= s_maxThrowAngle || s_hammerSubStateDt > s_maxThrowExpandDt)
+                {
+                    // Go to ERetractSetup state
+
+                    desiredState = ERetractSetup;
+                    s_retractStartTime = now;
+                    s_retractStartAngle = s_hammerAngleCurrent;
+
+                    OPEN_THROW_VENT;
+                }
+            }
+            break;
+
+            case ERetractSetup:
+            {
+                if (s_hammerSubStateDt >= k_valveCloseDt)
+                {
+                    //  Go to ERetractPressurize state
+
+                    desiredState = ERetractPressurize;
+
+                    OPEN_RETRACT_PRESSURE;
+                }
+            }
+            break;
+
+            case ERetractPressurize:
+            {
+                if (s_hammerSubStateDt > s_maxRetractUnderPressureDt)
+                {
+                    //  Go to ERetractExpand state
+
+                    desiredState = ERetractExpand;
+                    s_retractExpandStartTime = now;
+                    s_retractExpandStartAngle = s_hammerAngleCurrent;
+
+                    CLOSE_RETRACT_PRESSURE;
+                }
+            }
+            break;
+
+            case ERetractExpand:
+            {
+                float currentForce = (s_hammerAngleCurrent / (s_hammerVelocityCurrent * s_hammerVelocityCurrent)) * 
+                    log(s_hammerAngleCurrent / 0.0873f);
+                if (currentForce >= k_throwSideBreakingForce || s_hammerSubStateDt >= s_maxRetractBreakDt)
+                {
+                    //  Go to ERetractExpand state
+
+                    desiredState = ERetractBreak;
+                    s_retractBreakStartTime = now;
+                    s_retractBreakStartAngle = s_hammerAngleCurrent;
+
+                    CLOSE_THROW_VENT;
+                }
+            }
+            break;
+
+            case ERetractBreak:
+            {
+                if (s_hammerAngleCurrent < s_minRetractAngle || s_hammerSubStateDt >= s_maxRetractBreakDt)
+                {
+                    //  Go to ERetractExpand state
+
+                    desiredState = ERetractSettle;
+                    OPEN_THROW_VENT;
+                }
+            }
+            break;
+
+            case ERetractSettle:
+            {
+                if (s_hammerSubStateDt >= k_valveCloseDt)
+                {
+                    //  Go to ERetractComplete state
+
+                    desiredState = ERetractComplete;
+                    s_retractStopTime = now;
+                    s_retractStopAngle = s_hammerAngleCurrent;
+
+                    OPEN_RETRACT_VENT;
+
+                    s_swingComplete = true;
+                }
+
+            }
+            break;
+
+            default:
+            break;
+        }
+
+        if (desiredState != s_hammerSubState)
         {
-            if (s_hammerAngleCurrent > s_hammerThrowAngle || s_hammerSubStateDt > s_maxThrowUnderPressureDt)
-            {
-                //  Go to EThrowExpand state
-
-                desiredState = EThrowExpand;
-                s_swingExpandStartTime = now;
-                s_swingExpandStartAngle = s_hammerAngleCurrent;
-
-                CLOSE_THROW_PRESSURE;
-            }
+            s_hammerSubState = desiredState;
+            s_hammerSubStateStart = now;
         }
-        break;
-
-        case EThrowExpand:
-        {
-            if (s_hammerAngleCurrent >= s_maxThrowAngle || s_hammerSubStateDt > s_maxThrowExpandDt)
-            {
-                // Go to ERetractSetup state
-
-                desiredState = ERetractSetup;
-                s_retractStartTime = now;
-                s_retractStartAngle = s_hammerAngleCurrent;
-
-                OPEN_THROW_VENT;
-            }
-        }
-        break;
-
-        case ERetractSetup:
-        {
-            if (s_hammerSubStateDt >= k_valveCloseDt)
-            {
-                //  Go to ERetractPressurize state
-
-                desiredState = ERetractPressurize;
-
-                OPEN_RETRACT_PRESSURE;
-            }
-        }
-        break;
-
-        case ERetractPressurize:
-        {
-            if (s_hammerSubStateDt > s_maxRetractUnderPressureDt)
-            {
-                //  Go to ERetractExpand state
-
-                desiredState = ERetractExpand;
-                s_retractExpandStartTime = now;
-                s_retractExpandStartAngle = s_hammerAngleCurrent;
-
-                CLOSE_RETRACT_PRESSURE;
-            }
-        }
-        break;
-
-        case ERetractExpand:
-        {
-            float currentForce = (s_hammerAngleCurrent / (s_hammerVelocityCurrent * s_hammerVelocityCurrent)) * 
-                log(s_hammerAngleCurrent / 0.0873f);
-            if (currentForce >= k_throwSideBreakingForce || s_hammerSubStateDt >= s_maxRetractBreakDt)
-            {
-                //  Go to ERetractExpand state
-
-                desiredState = ERetractBreak;
-                s_retractBreakStartTime = now;
-                s_retractBreakStartAngle = s_hammerAngleCurrent;
-
-                CLOSE_THROW_VENT;
-            }
-        }
-        break;
-
-        case ERetractBreak:
-        {
-            if (s_hammerAngleCurrent < s_minRetractAngle || s_hammerSubStateDt >= s_maxRetractBreakDt)
-            {
-                //  Go to ERetractExpand state
-
-                desiredState = ERetractSettle;
-                OPEN_THROW_VENT;
-            }
-        }
-        break;
-
-        case ERetractSettle:
-        {
-            if (s_hammerSubStateDt >= k_valveCloseDt)
-            {
-                //  Go to ERetractComplete state
-
-                desiredState = ERetractComplete;
-                s_retractStopTime = now;
-                s_retractStopAngle = s_hammerAngleCurrent;
-
-                OPEN_RETRACT_VENT;
-
-                s_swingComplete = true;
-            }
-
-        }
-        break;
-
-        default:
-        break;
     }
 
-    if (desiredState != s_hammerSubState)
-    {
-        s_hammerSubState = desiredState;
-        s_hammerSubStateStart = now;
-    }
+    digitalWrite(10, LOW);
 }
 

@@ -119,7 +119,7 @@ private:
     const uint32_t k_swingTimeMaxDt = 1000000;
     const uint32_t k_swingUpdateDt = 1000;
 
-    const uint8_t k_throwIntensityToAngle[9] = { 3, 5, 10, 15, 20, 30, 40, 50, 65 };
+    const int16_t k_throwIntensityToAngle[9] = { 52, 87, 174, 261, 349, 30, 523, 872, 1134 };
 
     //  ====================================================================
     //
@@ -131,7 +131,7 @@ private:
     uint32_t m_lastUpdateTime;
     uint32_t m_stateStartTime;
 
-    uint8_t m_throwPressureAngle;
+    int16_t m_throwPressureAngle;
     
     Params m_params;
 };

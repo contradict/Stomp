@@ -276,6 +276,8 @@ int32_t TurretController::GetEstimatedSwingDuration()
     //  Given the 1 - 9 hammer throw intensities, return the 
     //  swing time in mircoseconds
 
+    //  BB MJS: NEED TO GET REAL HAMMER SWING TIMES
+    
     int32_t throwIntensity = Radio.GetHammerIntensity();
     return k_throwIntensityToSwingTime[throwIntensity];
 }
