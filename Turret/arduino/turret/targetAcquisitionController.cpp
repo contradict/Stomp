@@ -170,8 +170,6 @@ void TargetAcquisitionController::updateBestTarget()
 
     //  BB MJS: Debug Print Info for analysis.  Remove
     
-    bool validTarget = (m_pBestTarget != NULL);
-
     String minDetectionsString = "";
 
     for (uint8_t detectionIndex = 0; detectionIndex < LEDDAR_SEGMENTS; detectionIndex++) 
@@ -198,6 +196,9 @@ void TargetAcquisitionController::updateBestTarget()
     }
 
     /*
+    bool validTarget = (m_pBestTarget != NULL);
+
+
     Telem.LogMessage(String("target acquisition, ") + 
         String(m_lastUpdateTime) + String(", ") + 
         String(validTarget) + String(", ") +
