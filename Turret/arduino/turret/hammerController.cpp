@@ -534,8 +534,8 @@ volatile static uint16_t s_retractBreakStartAngle;
 volatile static uint16_t s_retractStopAngle;
 
 volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
-volatile static uint8_t s_swingThrowPressureSamples[k_telmSamplesMax];
-volatile static uint8_t s_swingRetractPressureSamples[k_telmSamplesMax];
+volatile static uint16_t s_swingThrowPressureSamples[k_telmSamplesMax];
+volatile static uint16_t s_swingRetractPressureSamples[k_telmSamplesMax];
 
 volatile static uint16_t s_swingTelemSamplesCount = 0;
 
