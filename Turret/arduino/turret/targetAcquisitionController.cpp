@@ -152,7 +152,7 @@ void TargetAcquisitionController::updateBestTarget()
     //  If not ready to get all the detections forom Leddar, just return
     //  we can pick them up next call
 
-    Telem.LogMessage("Buffer Detections: " + String(m_lastUpdateTime));
+    //Telem.LogMessage("Buffer Detections: " + String(m_lastUpdateTime));
     if (!bufferDetections())
     {
         return;
@@ -197,17 +197,19 @@ void TargetAcquisitionController::updateBestTarget()
         }        
     }
 
+    /*
     Telem.LogMessage(String("target acquisition, ") + 
         String(m_lastUpdateTime) + String(", ") + 
         String(validTarget) + String(", ") +
         String(m_possibleTargetsCount) + String(", ") +
         minDetectionsString +
         possibleTargetsString);
+    */
 
     //  Issue the next request for detections
     
     m_lastRequestDetectionsTime = m_lastUpdateTime;
-    Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
+    //Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
     requestDetections();
 }
 
@@ -406,7 +408,7 @@ void TargetAcquisitionController::setState(controllerState p_state)
         case EInit:
         {
             m_lastRequestDetectionsTime = m_lastUpdateTime;
-            Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
+            //Telem.LogMessage("Request Detections: " + String(m_lastUpdateTime));
             requestDetections();
         }
         break;
