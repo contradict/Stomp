@@ -237,6 +237,11 @@ bool HammerController::ReadyToSwing()
 
 void HammerController::TriggerSwing()
 {
+    if (m_state != EReady)
+    {
+        return;
+    }
+
     Telem.LogMessage("FIRE");
     setState(EThrow);
     setState(EFullCycleInterruptMode);
@@ -249,6 +254,11 @@ void HammerController::TriggerSwing()
 
 void HammerController::TriggerSelfRightSwing()
 {
+    if (m_state != EReady)
+    {
+        return;
+    }
+
     setState(EThrowSelfRight);
     setState(EFullCycleInterruptMode);
 }
@@ -260,6 +270,11 @@ void HammerController::TriggerSelfRightSwing()
 
 void HammerController::TriggerRetract()
 {
+    if (m_state != EReady)
+    {
+        return;
+    }
+    
     setState(ERetract);
     setState(ERetractOnlyInterruptMode);
 }
@@ -835,7 +850,7 @@ ISR(ADC_vect)
 
 ISR(TIMER4_COMPA_vect)
 {
-    if (s_hammerSubState != ERetractComplete)
+    if (s_swingTelemSamplesCount < k_telmSamplesMax - 1 && s_hammerSubState != ERetractComplete)
     {
         s_swingAngleSamples[s_swingTelemSamplesCount] = s_hammerAngleCurrent;
         s_swingThrowPressureSamples[s_swingTelemSamplesCount] = s_hammerThrowPressureCurrent;
