@@ -315,7 +315,8 @@ void TurretController::SetHammerParameters(uint32_t p_selfRightIntensity,
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,
         uint32_t p_maxRetractExpandDt,
-        uint32_t p_maxRetractBreakDt)
+        uint32_t p_maxRetractBreakDt,
+        int32_t p_velocityFilterCoefficient)
 {
     m_pHammerController->SetParams(p_selfRightIntensity, 
         p_swingTelemetryFrequency,
@@ -325,7 +326,8 @@ void TurretController::SetHammerParameters(uint32_t p_selfRightIntensity,
         p_maxThrowExpandDt,
         p_maxRetractUnderPressureDt,
         p_maxRetractExpandDt,
-        p_maxRetractBreakDt);
+        p_maxRetractBreakDt,
+        p_velocityFilterCoefficient);
 }
 
 void TurretController::SetIMUParameters(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,

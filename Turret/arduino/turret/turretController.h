@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 //  ====================================================================
 //
@@ -72,7 +73,8 @@ public:
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,
         uint32_t p_maxRetractExpandDt,
-        uint32_t p_maxRetractBreakDt);
+        uint32_t p_maxRetractBreakDt,
+        int32_t p_velocityFilterCoefficient);
     void SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed);
     void SetIMUParameters(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
         int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,
