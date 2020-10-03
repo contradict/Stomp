@@ -64,7 +64,8 @@ static struct HammerController::Params EEMEM s_savedParams =
     .maxThrowExpandDt = 1000000,
     .maxRetractUnderPressureDt = 1000000,
     .maxRetractExpandDt = 1000000,
-    .maxRetractBreakDt = 1000000
+    .maxRetractBreakDt = 1000000,
+    .velocityFilterCoefficient = 30,
 };
     
 static uint16_t s_telemetryFrequency;
@@ -78,6 +79,7 @@ volatile static int16_t s_hammerAngleCurrent = k_invalidHammerAngleRead;
 volatile static int16_t s_hammerAnglePrev = s_hammerAngleCurrent;
 volatile static int32_t s_hammerVelocityCurrent = 0;
 volatile static int32_t s_hammerAngleReadTimeLast = 0;
+volatile static int32_t s_hammerVelocityFilter = 0;
 
 volatile static int16_t s_hammerThrowPressureCurrent = k_invalidHammerThrowPressureRead;
 volatile static int16_t s_hammerRetractPressureCurrent = k_invalidHammerRetractPressureRead;
@@ -91,6 +93,7 @@ volatile static uint32_t s_maxThrowExpandDt;
 volatile static uint32_t s_maxRetractUnderPressureDt;
 volatile static uint32_t s_maxRetractExpandDt;
 volatile static uint32_t s_maxRetractBreakDt; 
+volatile static int32_t s_velocityFilterCoefficient;
 
 //  ====================================================================
 //
@@ -297,7 +300,8 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     uint32_t p_maxThrowExpandDt,
     uint32_t p_maxRetractUnderPressureDt,
     uint32_t p_maxRetractExpandDt,
-    uint32_t p_maxRetractBreakDt)
+    uint32_t p_maxRetractBreakDt,
+    int32_t p_velocityFilterCoefficent)
 {
     m_params.selfRightIntensity = p_selfRightIntensity;
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
@@ -310,6 +314,7 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     m_params.maxRetractUnderPressureDt = p_maxRetractUnderPressureDt;
     m_params.maxRetractExpandDt = p_maxRetractExpandDt;
     m_params.maxRetractBreakDt = p_maxRetractBreakDt;
+    m_params.velocityFilterCoefficient = p_velocityFilterCoefficent;
 
     saveParams();
 }
@@ -414,7 +419,8 @@ void HammerController::setState(controllerState p_state)
             s_maxThrowExpandDt = m_params.maxThrowExpandDt;
             s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
             s_maxRetractExpandDt = m_params.maxRetractExpandDt;
-            s_maxRetractBreakDt = m_params.maxRetractBreakDt; 
+            s_maxRetractBreakDt = m_params.maxRetractBreakDt;
+            s_velocityFilterCoefficient = m_params.velocityFilterCoefficient; 
 
             startFullCycleStateMachine();
         }
@@ -838,8 +844,18 @@ ISR(ADC_vect)
             }
 
             //  Now calculate velocity
-
-            s_hammerVelocityCurrent = (s_hammerAngleCurrent - s_hammerAnglePrev) / (now - s_hammerAngleReadTimeLast);
+            // v = a v + (1-a) dtheta / dt
+            // v = 0.997 * v + 0.003 1 / 0.000156
+            // store in microradians/s
+            // dt is in microseconds (multiply by 1e-6 to get s)
+            // dtheta is in milliradians (multiply by 1e3 to get microradians)
+            // a is multiplied buy 10000
+            // v = v * (10000 - a) / 10000 + a * (dtheta * 1000) / (dt * 1e-6) / 10000
+            // v = v * (10000 - a) / 10000 + a * dtheta * 100000 / dt
+            s_hammerVelocityFilter = s_hammerVelocityFilter * (10000l - s_velocityFilterCoefficient) / 10000l + 
+                                     s_velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 100000l /
+                                     (now - s_hammerAngleReadTimeLast);        
+            s_hammerVelocityCurrent = s_hammerVelocityFilter / 1000l;
             s_hammerAngleReadTimeLast = now;
 
             //  Set up next analog read
