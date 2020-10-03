@@ -116,9 +116,11 @@ TELEMETRY TURRET SNS LITTLE_ENDIAN "Sensor"
         UNITS "Degrees" "deg"
         POLY_READ_CONVERSION 0.0 0.0572958
     APPEND_ITEM THROW_PRESSURE 16 INT "Throw Pressure"
-        UNITS "Pounds per Square Inch" "PSI"
+        UNITS "Pounds per Square Inch" "PSIA"
+        POLY_READ_CONVERSION 0.0 0.1450
     APPEND_ITEM RETRACT_PRESSURE 16 INT "Retract Pressure"
-        UNITS "Pounds per Square Inch" "PSI"
+        UNITS "Pounds per Square Inch" "PSIA"
+        POLY_READ_CONVERSION 0.0 0.1450
 
 #
 #  SYS - System (Packet ID 11)
@@ -216,10 +218,14 @@ TELEMETRY TURRET SWING LITTLE_ENDIAN "Swing Data"
         UNITS "degrees" "deg"
     APPEND_ITEM RETRACT_STOP_ANGLE 16 UINT "Retract Stop Angle"
         UNITS "degrees" "deg"
-    APPEND_ARRAY_ITEM HAMMER_ANGLES 16 UINT 2048 "Hammer Angle data"
+    APPEND_ARRAY_ITEM HAMMER_ANGLES 16 UINT 4096 "Hammer Angle data"
         UNITS "Degrees" "deg"
-    APPEND_ARRAY_ITEM THROW_PRESSURES 8 INT 2048 "Throw Pressure data"
-        UNITS "Pounds per Square Inch" "PSI"
+    APPEND_ARRAY_ITEM THROW_PRESSURES 16 INT 4096 "Throw Pressure data"
+        UNITS "Pounds per Square Inch" "PSIA"
+        POLY_READ_CONVERSION 0.0 0.1450
+    APPEND_ARRAY_ITEM RETRACT_PRESSURES 16 INT 4096 "Retract Pressure data"
+        UNITS "Pounds per Square Inch" "PSIA"
+        POLY_READ_CONVERSION 0.0 0.1450
 
 #
 #  LIDAR - Lidar (Packet ID 15)
