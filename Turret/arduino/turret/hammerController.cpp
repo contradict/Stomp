@@ -494,7 +494,7 @@ static const uint8_t k_valveCloseDt = 10;                          //  10 micros
 static const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
 
 static const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
-static const uint32_t k_subStateMachineUpdateFrequency = 10000;    //  50kHz or update every 20 microseconds
+static const uint32_t k_subStateMachineUpdateFrequency = 10000;    //  10kHz
                                                                    //  at 100kHz, serail communication to Robotek stoped working
 
 static const uint16_t k_telmSamplesMax = 256;
