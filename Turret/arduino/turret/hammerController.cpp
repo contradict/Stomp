@@ -62,14 +62,14 @@ static struct HammerController::Params EEMEM s_savedParams =
     .swingTelemetryFrequency = 500,
     .maxThrowAngle = 210,
     .minRetractAngle = 5,
-    .emergencyBreakAngle = 1396,    //  80 degrees as milliradians
-    .throwSideBreakingForceTrigger = 0.005102f,
-    .breakStopAngle = 87.3f,
+    .emergencyBrakeAngle = 1396,    //  80 degrees as milliradians
+    .throwSideBrakingForceTrigger = 0.005102f,
+    .brakeStopAngle = 87.3f,
     .maxThrowUnderPressureDt = 750000,
     .maxThrowExpandDt = 1000000,
     .maxRetractUnderPressureDt = 1000000,
     .maxRetractExpandDt = 1000000,
-    .maxRetractBreakDt = 1000000,
+    .maxRetractBrakeDt = 1000000,
 };
     
 static uint16_t s_telemetryFrequency;
@@ -92,14 +92,14 @@ volatile static int16_t s_hammerThrowAngle = 0;
 
 volatile static int16_t s_maxThrowAngle;
 volatile static int16_t s_minRetractAngle;
-volatile static int16_t s_emergencyBreakAngle;
-volatile static float s_throwSideBreakingForceTrigger;
-volatile static float s_breakStopAngle;
+volatile static int16_t s_emergencyBrakeAngle;
+volatile static float s_throwSideBrakingForceTrigger;
+volatile static float s_brakeStopAngle;
 volatile static uint32_t s_maxThrowUnderPressureDt;
 volatile static uint32_t s_maxThrowExpandDt;
 volatile static uint32_t s_maxRetractUnderPressureDt;
 volatile static uint32_t s_maxRetractExpandDt;
-volatile static uint32_t s_maxRetractBreakDt; 
+volatile static uint32_t s_maxRetractBrakeDt;
 
 //  ====================================================================
 //
@@ -307,14 +307,14 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     uint32_t p_swingTelemetryFrequency,
     uint16_t p_maxThrowAngle,
     uint16_t p_minRetractAngle,
-    uint16_t p_emergencyBreakAngle,
-    float p_throwSideBreakingForceTrigger,
-    float p_breakStopAngle,
+    uint16_t p_emergencyBrakeAngle,
+    float p_throwSideBrakingForceTrigger,
+    float p_brakeStopAngle,
     uint32_t p_maxThrowUnderPressureDt,
     uint32_t p_maxThrowExpandDt,
     uint32_t p_maxRetractUnderPressureDt,
     uint32_t p_maxRetractExpandDt,
-    uint32_t p_maxRetractBreakDt)
+    uint32_t p_maxRetractBrakeDt)
 {
     m_params.selfRightIntensity = p_selfRightIntensity;
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
@@ -322,14 +322,14 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
     m_params.maxThrowAngle = p_maxThrowAngle;
     m_params.minRetractAngle = p_minRetractAngle;
-    m_params.emergencyBreakAngle = p_emergencyBreakAngle;
-    m_params.throwSideBreakingForceTrigger = p_throwSideBreakingForceTrigger;
-    m_params.breakStopAngle = p_breakStopAngle;
+    m_params.emergencyBrakeAngle = p_emergencyBrakeAngle;
+    m_params.throwSideBrakingForceTrigger = p_throwSideBrakingForceTrigger;
+    m_params.brakeStopAngle = p_brakeStopAngle;
     m_params.maxThrowUnderPressureDt = p_maxThrowUnderPressureDt;
     m_params.maxThrowExpandDt = p_maxThrowExpandDt;
     m_params.maxRetractUnderPressureDt = p_maxRetractUnderPressureDt;
     m_params.maxRetractExpandDt = p_maxRetractExpandDt;
-    m_params.maxRetractBreakDt = p_maxRetractBreakDt;
+    m_params.maxRetractBrakeDt = p_maxRetractBrakeDt;
 
     saveParams();
 }
@@ -439,15 +439,15 @@ void HammerController::setState(controllerState p_state)
             s_maxThrowAngle = m_params.maxThrowAngle;
             s_minRetractAngle = m_params.minRetractAngle;
 
-            s_emergencyBreakAngle = m_params.emergencyBreakAngle;
-            s_throwSideBreakingForceTrigger = m_params.throwSideBreakingForceTrigger;
-            s_breakStopAngle = m_params.breakStopAngle;
+            s_emergencyBrakeAngle = m_params.emergencyBrakeAngle;
+            s_throwSideBrakingForceTrigger = m_params.throwSideBrakingForceTrigger;
+            s_brakeStopAngle = m_params.brakeStopAngle;
 
             s_maxThrowUnderPressureDt = m_params.maxThrowUnderPressureDt;
             s_maxThrowExpandDt = m_params.maxThrowExpandDt;
             s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
             s_maxRetractExpandDt = m_params.maxRetractExpandDt;
-            s_maxRetractBreakDt = m_params.maxRetractBreakDt;
+            s_maxRetractBrakeDt = m_params.maxRetractBrakeDt;
 
             startFullCycleStateMachine();
         }
@@ -461,13 +461,13 @@ void HammerController::setState(controllerState p_state)
             s_telemetryFrequency = m_params.swingTelemetryFrequency;
             s_minRetractAngle = m_params.minRetractAngle;
 
-            s_emergencyBreakAngle = m_params.emergencyBreakAngle;
-            s_throwSideBreakingForceTrigger = m_params.throwSideBreakingForceTrigger;
-            s_breakStopAngle = m_params.breakStopAngle;
+            s_emergencyBrakeAngle = m_params.emergencyBrakeAngle;
+            s_throwSideBrakingForceTrigger = m_params.throwSideBrakingForceTrigger;
+            s_brakeStopAngle = m_params.brakeStopAngle;
 
             s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
             s_maxRetractExpandDt = m_params.maxRetractExpandDt;
-            s_maxRetractBreakDt = m_params.maxRetractBreakDt; 
+            s_maxRetractBrakeDt = m_params.maxRetractBrakeDt;
 
             startRetractOnlyStateMachine();
         }
@@ -521,7 +521,7 @@ void HammerController::saveParams()
 //
 //  ====================================================================
 
-static const float k_throwSideBreakingForce = 0.005102f;
+static const float k_throwSideBrakingForce = 0.005102f;
 static const uint8_t k_valveCloseDt = 10;                          //  10 microseconds
 static const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
 
@@ -560,7 +560,7 @@ volatile static uint32_t s_swingExpandStartTime;
 
 volatile static uint32_t s_retractStartTime;
 volatile static uint32_t s_retractExpandStartTime;
-volatile static uint32_t s_retractBreakStartTime;
+volatile static uint32_t s_retractBrakeStartTime;
 volatile static uint32_t s_retractStopTime;
 
 volatile static uint16_t s_swingStartAngle;
@@ -568,7 +568,7 @@ volatile static uint16_t s_swingExpandStartAngle;
 
 volatile static uint16_t s_retractStartAngle;
 volatile static uint16_t s_retractExpandStartAngle;
-volatile static uint16_t s_retractBreakStartAngle;
+volatile static uint16_t s_retractBrakeStartAngle;
 volatile static uint16_t s_retractStopAngle;
 
 volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
@@ -588,7 +588,7 @@ enum hammerSubState
     ERetractSetup,
     ERetractPressurize,
     ERetractExpand,
-    ERetractBreak,
+    ERetractBrake,
     ERetractSettle,
     ERetractComplete
 };
@@ -804,7 +804,7 @@ void swingComplete()
         s_swingExpandStartTime, s_swingExpandStartAngle,
         s_retractStartTime, s_retractStartAngle,
         s_retractExpandStartTime, s_retractExpandStartAngle,
-        s_retractBreakStartTime, s_retractBreakStartAngle,
+        s_retractBrakeStartTime, s_retractBrakeStartAngle,
         s_retractStopTime, s_retractStopAngle);
 }
 
@@ -1032,26 +1032,26 @@ ISR(TIMER5_COMPA_vect)
             case ERetractExpand:
             {
                 float currentForce = ((float)s_hammerAngleCurrent / ((float)s_hammerVelocityCurrent * (float)s_hammerVelocityCurrent)) *
-                    logf(s_hammerAngleCurrent / s_breakStopAngle);
+                    logf(s_hammerAngleCurrent / s_brakeStopAngle);
 
-                if (currentForce >= s_throwSideBreakingForceTrigger || 
-                    s_hammerAngleCurrent < s_emergencyBreakAngle ||
-                    s_hammerSubStateDt >= s_maxRetractBreakDt)
+                if (currentForce >= s_throwSideBrakingForceTrigger ||
+                    s_hammerAngleCurrent < s_emergencyBrakeAngle ||
+                    s_hammerSubStateDt >= s_maxRetractBrakeDt)
                 {
                     //  Go to ERetractExpand state
 
-                    desiredState = ERetractBreak;
-                    s_retractBreakStartTime = now;
-                    s_retractBreakStartAngle = s_hammerAngleCurrent;
+                    desiredState = ERetractBrake;
+                    s_retractBrakeStartTime = now;
+                    s_retractBrakeStartAngle = s_hammerAngleCurrent;
 
                     CLOSE_THROW_VENT;
                 }
             }
             break;
 
-            case ERetractBreak:
+            case ERetractBrake:
             {
-                if (s_hammerAngleCurrent < s_minRetractAngle || s_hammerSubStateDt >= s_maxRetractBreakDt)
+                if (s_hammerAngleCurrent < s_minRetractAngle || s_hammerSubStateDt >= s_maxRetractBrakeDt)
                 {
                     //  Go to ERetractExpand state
 

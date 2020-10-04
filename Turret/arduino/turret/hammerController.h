@@ -31,14 +31,14 @@ public:
         int16_t swingTelemetryFrequency;
         int16_t maxThrowAngle;
         int16_t minRetractAngle;
-        int16_t emergencyBreakAngle;
-        float throwSideBreakingForceTrigger;
-        float breakStopAngle;
+        int16_t emergencyBrakeAngle;
+        float throwSideBrakingForceTrigger;
+        float brakeStopAngle;
         uint32_t maxThrowUnderPressureDt;
         uint32_t maxThrowExpandDt;
         uint32_t maxRetractUnderPressureDt;
         uint32_t maxRetractExpandDt;
-        uint32_t maxRetractBreakDt;
+        uint32_t maxRetractBrakeDt;
     } __attribute__((packed));
 
     //  ====================================================================
@@ -67,14 +67,14 @@ public:
         uint32_t p_swingTelemetryFrequency,
         uint16_t p_maxThrowAngle,
         uint16_t p_minRetractAngle,
-        uint16_t p_emergencyBreakAngle,
-        float p_throwSideBreakingForceTrigger,
-        float p_breakStopAngle,
+        uint16_t p_emergencyBrakeAngle,
+        float p_throwSideBrakingForceTrigger,
+        float p_brakeStopAngle,
         uint32_t p_maxThrowUnderPressureDt,
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,
         uint32_t p_maxRetractExpandDt,
-        uint32_t p_maxRetractBreakDt);
+        uint32_t p_maxRetractBrakeDt);
 
     void RestoreParams();
 
