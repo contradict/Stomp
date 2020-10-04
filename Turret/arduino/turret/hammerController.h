@@ -36,7 +36,6 @@ public:
         uint32_t maxRetractUnderPressureDt;
         uint32_t maxRetractExpandDt;
         uint32_t maxRetractBreakDt;
-        int32_t velocityFilterCoefficient;
     } __attribute__((packed));
 
     //  ====================================================================

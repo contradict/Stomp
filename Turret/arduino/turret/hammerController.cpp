@@ -67,7 +67,6 @@ static struct HammerController::Params EEMEM s_savedParams =
     .maxRetractUnderPressureDt = 1000000,
     .maxRetractExpandDt = 1000000,
     .maxRetractBreakDt = 1000000,
-    .velocityFilterCoefficient = 30,
 };
     
 static uint16_t s_telemetryFrequency;
@@ -500,8 +499,8 @@ static const int32_t k_angleReadSwitchToPressureCount = 1;        //  1 Angle Re
 
 static const int16_t k_minValidHammerAngleDifferential = 120;
 static const int16_t k_maxValidHammerAngleDifferential = 920;
-static const int16_t k_minExpectedHammerAngleDifferential = 350;
-static const int16_t k_maxExpectedHammerAngleDifferential = 920;
+static const int16_t k_minExpectedHammerAngleDifferential = 102;
+static const int16_t k_maxExpectedHammerAngleDifferential = 922;
 
 static const int16_t k_minValidThrowPressureDifferential = 102;
 static const int16_t k_maxValidThrowPressureDifferential = 920;
@@ -862,7 +861,7 @@ ISR(ADC_vect)
 
             if (s_sensorAngleReadCount >= k_angleReadSwitchToPressureCount)
             {
-                s_sensorAngleReadCount = 0;                
+                s_sensorAngleReadCount = 0;
                 SELECT_THROW_PRESSURE_READ;
             }
         }
