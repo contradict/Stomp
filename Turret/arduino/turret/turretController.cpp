@@ -252,7 +252,7 @@ bool TurretController::IsNominalArmed()
 
 bool TurretController::IsSafeForFlameThrowers()
 {
-    return m_pHammerController->IsSafeForFlameThrowers();
+    return Radio.IsWeaponEnabled() && m_pHammerController->IsSafeForFlameThrowers();
 }
 
 int16_t TurretController::GetTurretRotationSpeed()

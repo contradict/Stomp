@@ -754,7 +754,7 @@ void startSensorReadStateMachine()
     pinMode(HAMMER_THROW_PRESSURE_AI, INPUT);
     pinMode(HAMMER_THROW_PRESSURE_AI, INPUT);
 
-    //  Enable ADC, ADC interruupts and set the prescaler to 64, not the default 128
+    //  Enable ADC, ADC interruupts and set the prescaler to 128
 
     ADCSRA = (0x01 << ADEN) | (0x01 << ADIE) | (0x01 << ADPS2) | (0x01 << ADPS1) | (0x01 << ADPS0);
     ADCSRB = 0x00;

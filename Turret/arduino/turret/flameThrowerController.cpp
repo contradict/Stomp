@@ -90,7 +90,7 @@ void FlameThrowerController::Update()
 
             case EReadyToFire:
             {
-                if (!Turret.IsSafeForFlameThrowers())
+                if (!Turret.IsSafeForFlameThrowers() || (!Radio.IsFlameRightOnEnabled() && !Radio.IsFlameRightPulseEnabled()))
                 {
                     setState(EDisabled);
                 }
@@ -243,12 +243,14 @@ void FlameThrowerController::setState(controllerState p_state)
         case EPulseFlameOn:
         {
             digitalWrite(PROPANE_LEFT_DO, HIGH);
+            digitalWrite(PROPANE_RIGTH_DO, HIGH);
         }
         break;
 
         case EManualFlameOn:
         {
             digitalWrite(PROPANE_LEFT_DO, HIGH);
+            digitalWrite(PROPANE_RIGTH_DO, HIGH);
         }
         break;
 
