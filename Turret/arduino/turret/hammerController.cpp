@@ -63,7 +63,7 @@ static struct HammerController::Params EEMEM s_savedParams =
     .maxThrowAngle = 210,
     .minRetractAngle = 5,
     .throwSideBreakingForceTrigger = 0.005102f,
-    .breakStopAngle = 0.0873f,
+    .breakStopAngle = 87.3f,
     .maxThrowUnderPressureDt = 750000,
     .maxThrowExpandDt = 1000000,
     .maxRetractUnderPressureDt = 1000000,
@@ -1026,8 +1026,8 @@ ISR(TIMER5_COMPA_vect)
             case ERetractExpand:
             {
                 float currentForce = ((float)s_hammerAngleCurrent / ((float)s_hammerVelocityCurrent * (float)s_hammerVelocityCurrent)) *
-                    logf(s_hammerAngleCurrent / 87.3f);
-                if (currentForce >= k_throwSideBreakingForce || s_hammerSubStateDt >= s_maxRetractBreakDt)
+                    logf(s_hammerAngleCurrent / s_breakStopAngle);
+                if (currentForce >= s_throwSideBreakingForceTrigger || s_hammerSubStateDt >= s_maxRetractBreakDt)
                 {
                     //  Go to ERetractExpand state
 
