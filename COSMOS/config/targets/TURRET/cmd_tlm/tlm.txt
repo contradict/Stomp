@@ -502,3 +502,11 @@ COMMAND TURRET TRT LITTLE_ENDIAN "Turret Parameters"
 COMMAND TURRET TROT LITTLE_ENDIAN "Turret Rotation Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 20 20 20 "Command ID which must be 20"
     APPEND_PARAMETER HMR_SR 32 INT 16 10000000 250 "Manual control overrides autoaim speed"
+
+#
+# SNSP - Sensor Parameters (Packed ID 21)
+#
+
+COMMAND TURRET SNSP LITTLE_ENDIAN "Sensor Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 21 21 21 "Command ID which must be 21"
+    APPEND_PARAMETER VFILT 32 INT 1 10000 30 "Hammer velocity filter coefficient"
