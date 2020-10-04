@@ -1009,8 +1009,8 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractExpand:
             {
-                float currentForce = (s_hammerAngleCurrent / (s_hammerVelocityCurrent * s_hammerVelocityCurrent)) * 
-                    log(s_hammerAngleCurrent / 0.0873f);
+                float currentForce = ((float)s_hammerAngleCurrent / ((float)s_hammerVelocityCurrent * (float)s_hammerVelocityCurrent)) *
+                    logf(s_hammerAngleCurrent / 87.3f);
                 if (currentForce >= k_throwSideBreakingForce || s_hammerSubStateDt >= s_maxRetractBreakDt)
                 {
                     //  Go to ERetractExpand state
