@@ -525,9 +525,8 @@ static const float k_throwSideBrakingForce = 0.005102f;
 static const uint8_t k_valveCloseDt = 10;                          //  10 microseconds
 static const uint8_t k_valveOpenDt = 10;                           //  10 microseconds
 
-static const uint32_t k_ATMega2560_ClockFrequency = F_CPU;         //  ATMega2560 is 16MHz
-static const uint32_t k_subStateMachineUpdateFrequency = 10000;    //  10kHz
-                                                                   //  at 100kHz, serail communication to Robotek stoped working
+static const uint32_t k_ATMega2560_ClockFrequency = 16000000L; //F_CPU;         //  ATMega2560 is 16MHz
+static const uint32_t k_subStateMachineUpdateFrequency = 2000;
 
 static const uint16_t k_telmSamplesMax = 256;
 static const int32_t k_angleReadSwitchToPressureCount = 1;        //  1 Angle Reads for each pressure read
@@ -668,19 +667,21 @@ void startTimers()
     TCCR4B |= 1 << WGM42;                   //  Set Counter4A to CTC mode
 
     TIMSK4 |= 1 << OCIE4A;                  //  Turn on interrupt bit in mask
-    OCR4A = timer4Count;                    //  Initialize the count to match
+    OCR4A = (uint16_t) timer4Count;                    //  Initialize the count to match
     TCNT5 = 0x0000;                         //  Clear the counter
 
     //  Setup timer 5A to interrupt at k_subStateMachineUpdateFrequency
 
     uint32_t timer5Count = (k_ATMega2560_ClockFrequency / k_subStateMachineUpdateFrequency);
 
+    // Telem.LogMessage("Interrupt count " + String(timer5Count));
+
     TCCR5A = 0;                             //  Clear control register A
     TCCR5B = 0;                             //  Clear control register B
     TCCR5B |= 1 << WGM52;                   //  Set Counter5A to CTC mode
 
     TIMSK5 |= 1 << OCIE5A;                  //  Turn on interrupt bit in mask
-    OCR5A = timer5Count;                    //  Initialize the count to match
+    OCR5A = (uint16_t) timer5Count;         //  Initialize the count to match
     TCNT5 = 0x0000;                         //  Clear the counter
 
     //  Start both timers and enable interrupts

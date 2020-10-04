@@ -144,7 +144,7 @@ void TargetAcquisitionController::updateBestTarget()
     if (m_lastUpdateTime - m_lastRequestDetectionsTime > k_leddarRequestMaxDt)
     {
         m_lastRequestDetectionsTime = m_lastUpdateTime;
-        Telem.LogMessage("TImeout Retry - Request Detections: " + String(m_lastUpdateTime));
+        //Telem.LogMessage("TImeout Retry - Request Detections: " + String(m_lastUpdateTime));
 
         requestDetections();
     }
