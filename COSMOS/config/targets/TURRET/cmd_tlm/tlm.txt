@@ -118,7 +118,7 @@ TELEMETRY TURRET SNS LITTLE_ENDIAN "Sensor"
 	FORMAT_STRING "%.6f"
     APPEND_ITEM VELOCITY 32 INT "Velocity"
         UNITS "Degrees / Second" "deg/sec"
-        POLY_READ_CONVERSION 0.0 0.00572958
+        POLY_READ_CONVERSION 0.0 0.0572958
 	FORMAT_STRING "%.6f"
     APPEND_ITEM THROW_PRESSURE 16 INT "Throw Pressure"
         UNITS "Pounds per Square Inch" "PSIA"
@@ -485,7 +485,6 @@ COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
     APPEND_PARAMETER HMR_RUP_DT 32 UINT 0 10000000 50000 "Hammer Retract Pressure Timeout"
     APPEND_PARAMETER HMR_RE_DT 32 UINT 0 10000000  500000 "Hammer Retract Expand Timeout"
     APPEND_PARAMETER HMR_RB_DT 32 UINT 0 10000000  500000 "Hammer Retract Break Timeout"
-    APPEND_PARAMETER VEL_FLT 32 INT 0 10000 30 "Hammer velocity filter coefficient"
 
 #
 #  TRT - Turret Parameters (Packet ID 19)
