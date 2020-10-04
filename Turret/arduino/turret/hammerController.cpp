@@ -329,7 +329,7 @@ void HammerController::RestoreParams()
 
 void HammerController::SendTelem()
 {
-    Telem.SendSensorTelem(s_hammerAngleCurrent, s_hammerVelocityCurrent, s_hammerThrowPressureCurrent, s_hammerRetractPressureCurrent);  
+    Telem.SendSensorTelem(s_hammerAngleCurrent, s_hammerVelocityCurrent, s_hammerThrowPressureCurrent, s_hammerRetractPressureCurrent);
 }
 
 //  ====================================================================
@@ -858,14 +858,17 @@ ISR(ADC_vect)
             // v = 0.997 * v + 0.003 1 / 0.000156
             // store in microradians/s
             // dt is in microseconds (multiply by 1e-6 to get s)
-            // dtheta is in milliradians (multiply by 1e3 to get microradians)
+            // dtheta is in milliradians, *10 for some fractional part
             // a is multiplied buy 10000
-            // v = v * (10000 - a) / 10000 + a * (dtheta * 1000) / (dt * 1e-6) / 10000
-            // v = v * (10000 - a) / 10000 + a * dtheta * 100000 / dt
+            // v = v * (10000 - a) / 10000 + a * (dtheta * 10) / (dt * 1e-6) / 10000
+            // v = v * (10000 - a) / 10000 + a * dtheta * 1000 / dt
             s_hammerVelocityFilter = s_hammerVelocityFilter * (10000l - sensor_parameters.velocityFilterCoefficient) / 10000l +
-                                     sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 100000l /
-                                     (now - s_hammerAngleReadTimeLast);
-            s_hammerVelocityCurrent = s_hammerVelocityFilter / 1000l;
+                                     sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 1000l /
+                                     ((int32_t)now - (int32_t)s_hammerAngleReadTimeLast);
+            //s_hammerVelocityFilter = sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 100000l;
+            ///
+            //                         (now - s_hammerAngleReadTimeLast);
+            s_hammerVelocityCurrent = s_hammerVelocityFilter / 10l;
             s_hammerAngleReadTimeLast = now;
 
             //  Set up next analog read
