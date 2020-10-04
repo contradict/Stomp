@@ -1033,10 +1033,10 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractExpand:
             {
-                float currentForce = ((float)s_hammerAngleCurrent / ((float)s_hammerVelocityCurrent * (float)s_hammerVelocityCurrent)) *
-                    logf(s_hammerAngleCurrent / s_brakeStopAngle);
+                float scaledHammerEnergy = s_throwSideBrakingForceTrigger * ((float)s_hammerVelocityCurrent * (float)s_hammerVelocityCurrent);
+                float scaledAvailableBrakeEnergy = (float)s_hammerAngleCurrent * logf((float)s_hammerAngleCurrent / s_brakeStopAngle);
 
-                if (currentForce >= s_throwSideBrakingForceTrigger ||
+                if (scaledHammerEnergy >= scaledAvailableBrakeEnergy  ||
                     s_hammerAngleCurrent < s_emergencyBrakeAngle ||
                     s_hammerSubStateDt >= s_maxRetractBrakeDt)
                 {
@@ -1049,7 +1049,7 @@ ISR(TIMER5_COMPA_vect)
                     CLOSE_THROW_VENT;
 
                     s_retractBrakeStartReason = 0;
-                    if(currentForce >= s_throwSideBrakingForceTrigger)
+                    if (scaledHammerEnergy >= scaledAvailableBrakeEnergy)
                     {
                         s_retractBrakeStartReason |= 1;
                     }

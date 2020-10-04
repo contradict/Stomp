@@ -23,8 +23,8 @@ Making a simplifying (and incorrect) assumption that the process is isothermal
 
 $$P(\theta) = \frac{P_{atm} V(\bar{\theta})}{V(\theta)}$$
 
-The volume of the throw cylinder is linear in throw angle with as the throw
-chain wraps around its sprocket at $p_r$.
+The volume of the throw cylinder is linear in throw angle as the throw chain
+wraps around its sprocket at $p_r$.
 
 $$V(\theta) = \pi r_{throw}^2 p_r \theta$$
 
@@ -47,10 +47,9 @@ $$E_{brake} = P_{atm} \pi r_{throw}^2 p_r \bar{\theta}
 Close the vent valve when the hammer energy becomes greater than the braking
 energy with a suitable stopping angle $\theta_s$.
 
-$$\frac{1}{2} I \omega^2 \leq E_{brake}$$
+$$\frac{1}{2} I \omega^2 \geq E_{brake}$$
 
-
-$$\frac{1}{2} I \omega^2 \leq P_{atm} \pi r_{throw}^2 p_r \theta
+$$\frac{1}{2} I \omega^2 \geq P_{atm} \pi r_{throw}^2 p_r \theta
 \ln{\frac{\theta}{\theta_s}}$$
 
 | Description                 | Parameter      | Value  | Units    |
@@ -65,8 +64,8 @@ $$\frac{1}{2} I \omega^2 \leq P_{atm} \pi r_{throw}^2 p_r \theta
 
 I think the efficient way to evaluate the braking condition is
 
-$$\frac{\frac{1}{2} I}{P_{atm} \pi r_{throw}^2 p_r } \leq
-\frac{\theta}{\omega^2} \ln{\frac{\theta}{\theta_s}}$$
+$$\frac{\frac{1}{2} I}{P_{atm} \pi r_{throw}^2 p_r } \omega^2 \geq
+\theta \ln{\frac{\theta}{\theta_s}}$$
 
 Checking units.
 
@@ -74,7 +73,7 @@ $$\frac{[kg][m]^2}{[kg][m]^{-1}[s]^{-2}[m]^2[m]} = [s]^2$$
 
 Numerically
 
-$$ 5.102e-3 \leq \frac{\theta}{\omega^2} \ln{\frac{\theta}{\theta_s}}$$
+$$ 5.102e-3 \omega^2 \geq \theta \ln{\frac{\theta}{\theta_s}}$$
 
 ## Sensor calibration.
 
