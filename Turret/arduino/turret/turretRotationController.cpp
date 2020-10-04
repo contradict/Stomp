@@ -102,7 +102,7 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (isManualTurretEnabled())
+                else if (isManualTurretEnabled() && isWeaponEnabled())
                 {
                     setState(EManualControl);
                 }
@@ -115,7 +115,7 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (!isManualTurretEnabled())
+                else if (!isManualTurretEnabled() || !isWeaponEnabled())
                 {
                     setState(EDisabled);
                 }
@@ -132,7 +132,7 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (!isManualTurretEnabled())
+                else if (!isManualTurretEnabled() || isWeaponEnabled())
                 {
                     setState(EDisabled);
                 }

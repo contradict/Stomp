@@ -354,6 +354,7 @@ typedef TelemetryPacket<TelemetryController::TLM_ID_SWG, SwingTelemetryInner> Sw
 bool TelemetryController::SendSwingTelem(
                     uint16_t p_datapointsCollected,
                     volatile uint16_t* p_angleData,
+                    volatile int32_t* p_velocityData,
                     volatile uint16_t* p_throwPressureData,
                     volatile uint16_t* p_retractPressureData,
                     uint32_t p_sampleFrequency,
@@ -398,6 +399,7 @@ bool TelemetryController::SendSwingTelem(
     if (success)
     {
         success &= enqueue((uint8_t *)p_angleData, sizeof(uint16_t) * 256);
+        success &= enqueue((uint8_t *)p_velocityData, sizeof(int32_t) * 256);
         success &= enqueue((uint8_t *)p_throwPressureData, sizeof(int16_t) * 256);
         success &= enqueue((uint8_t *)p_retractPressureData, sizeof(int16_t) * 256);
     }

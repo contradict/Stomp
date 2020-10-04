@@ -90,6 +90,7 @@ public:
     bool SendSwingTelem(
         uint16_t p_datapointsCollected,
         volatile uint16_t* p_angleData,
+        volatile int32_t* p_velocityData,
         volatile uint16_t* p_throwPressureData,
         volatile uint16_t* p_retractPressureData,
         uint32_t p_sampleFrequency,

@@ -59,7 +59,7 @@ static const int16_t k_invalidHammerRetractPressureRead = -1;
 static struct HammerController::Params EEMEM s_savedParams = 
 {
     .selfRightIntensity = 30,
-    .swingTelemetryFrequency = 100,
+    .swingTelemetryFrequency = 500,
     .maxThrowAngle = 210,
     .minRetractAngle = 5,
     .maxThrowUnderPressureDt = 750000,
@@ -550,6 +550,7 @@ volatile static uint16_t s_retractBreakStartAngle;
 volatile static uint16_t s_retractStopAngle;
 
 volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
+volatile static int32_t s_swingVelocitySamples[k_telmSamplesMax];
 volatile static uint16_t s_swingThrowPressureSamples[k_telmSamplesMax];
 volatile static uint16_t s_swingRetractPressureSamples[k_telmSamplesMax];
 
@@ -772,6 +773,7 @@ void swingComplete()
     Telem.SendSwingTelem(
         s_swingTelemSamplesCount, 
         s_swingAngleSamples,
+        s_swingVelocitySamples,
         s_swingThrowPressureSamples,
         s_swingRetractPressureSamples,
         s_telemetryFrequency,
@@ -898,6 +900,7 @@ ISR(TIMER4_COMPA_vect)
     if (s_swingTelemSamplesCount < k_telmSamplesMax - 1 && s_hammerSubState != ERetractComplete)
     {
         s_swingAngleSamples[s_swingTelemSamplesCount] = s_hammerAngleCurrent;
+        s_swingVelocitySamples[s_swingTelemSamplesCount] = s_hammerVelocityCurrent;
         s_swingThrowPressureSamples[s_swingTelemSamplesCount] = s_hammerThrowPressureCurrent;
         s_swingRetractPressureSamples[s_swingTelemSamplesCount] = s_hammerRetractPressureCurrent;
 
