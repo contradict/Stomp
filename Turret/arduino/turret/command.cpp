@@ -81,6 +81,8 @@ struct HammerCommandInner {
     int16_t swingTelemetryFrequency;
     int16_t maxThrowAngle;
     int16_t minRetractAngle;
+    float throwSideBreakingForceTrigger;
+    float breakStopAngle;
     uint32_t maxThrowUnderPressureDt;
     uint32_t maxThrowExpandDt;
     uint32_t maxRetractUnderPressureDt;
@@ -225,6 +227,8 @@ void handleCommands(void)
                                     hammer_cmd->inner.swingTelemetryFrequency,
                                     hammer_cmd->inner.maxThrowAngle,
                                     hammer_cmd->inner.minRetractAngle,
+                                    hammer_cmd->inner.throwSideBreakingForceTrigger,
+                                    hammer_cmd->inner.breakStopAngle,
                                     hammer_cmd->inner.maxThrowUnderPressureDt,
                                     hammer_cmd->inner.maxThrowExpandDt,
                                     hammer_cmd->inner.maxRetractUnderPressureDt,

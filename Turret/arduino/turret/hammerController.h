@@ -31,6 +31,8 @@ public:
         int16_t swingTelemetryFrequency;
         int16_t maxThrowAngle;
         int16_t minRetractAngle;
+        float throwSideBreakingForceTrigger;
+        float breakStopAngle;
         uint32_t maxThrowUnderPressureDt;
         uint32_t maxThrowExpandDt;
         uint32_t maxRetractUnderPressureDt;
@@ -64,6 +66,8 @@ public:
         uint32_t p_swingTelemetryFrequency,
         uint16_t p_maxThrowAngle,
         uint16_t p_minRetractAngle,
+        float p_throwSideBreakingForceTrigger,
+        float p_breakStopAngle,
         uint32_t p_maxThrowUnderPressureDt,
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,

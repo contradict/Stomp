@@ -50,7 +50,7 @@ public:
     bool IsNominal();
     bool IsNominalArmed();
     bool IsSafeForFlameThrowers();
-    
+
     int16_t GetTurretRotationSpeed();
     int16_t GetTurretAngle();
     
@@ -70,6 +70,8 @@ public:
         uint32_t p_swingTelemetryFrequency,
         uint16_t p_maxThrowAngle,
         uint16_t p_minRetractAngle,
+        float p_throwSideBreakingForceTrigger,
+        float p_breakStopAngle,       
         uint32_t p_maxThrowUnderPressureDt,
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,
