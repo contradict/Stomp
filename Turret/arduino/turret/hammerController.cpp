@@ -29,6 +29,8 @@
 
 #include "hammerController.h"
 
+#include "sensors.h"
+
 
 //  ====================================================================
 //
@@ -93,7 +95,6 @@ volatile static uint32_t s_maxThrowExpandDt;
 volatile static uint32_t s_maxRetractUnderPressureDt;
 volatile static uint32_t s_maxRetractExpandDt;
 volatile static uint32_t s_maxRetractBreakDt; 
-volatile static int32_t s_velocityFilterCoefficient;
 
 //  ====================================================================
 //
@@ -300,8 +301,7 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     uint32_t p_maxThrowExpandDt,
     uint32_t p_maxRetractUnderPressureDt,
     uint32_t p_maxRetractExpandDt,
-    uint32_t p_maxRetractBreakDt,
-    int32_t p_velocityFilterCoefficent)
+    uint32_t p_maxRetractBreakDt)
 {
     m_params.selfRightIntensity = p_selfRightIntensity;
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
@@ -314,7 +314,6 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     m_params.maxRetractUnderPressureDt = p_maxRetractUnderPressureDt;
     m_params.maxRetractExpandDt = p_maxRetractExpandDt;
     m_params.maxRetractBreakDt = p_maxRetractBreakDt;
-    m_params.velocityFilterCoefficient = p_velocityFilterCoefficent;
 
     saveParams();
 }
@@ -420,7 +419,6 @@ void HammerController::setState(controllerState p_state)
             s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
             s_maxRetractExpandDt = m_params.maxRetractExpandDt;
             s_maxRetractBreakDt = m_params.maxRetractBreakDt;
-            s_velocityFilterCoefficient = m_params.velocityFilterCoefficient; 
 
             startFullCycleStateMachine();
         }
@@ -792,7 +790,7 @@ ISR(ADC_vect)
     //  Get ADC results (between 0 - 1024)
 
     int16_t differential = ADCL | (ADCH << 8);
-    
+
     //  Need to keep track of which analog pin we are reading
 
     switch (s_sensorReadState)
@@ -826,7 +824,7 @@ ISR(ADC_vect)
             SELECT_HAMMER_ANGLE_READ;
         }
         break;
-        
+
         case EReadHammerAngle:
         {
             // calculate Hammer Angle
@@ -852,9 +850,9 @@ ISR(ADC_vect)
             // a is multiplied buy 10000
             // v = v * (10000 - a) / 10000 + a * (dtheta * 1000) / (dt * 1e-6) / 10000
             // v = v * (10000 - a) / 10000 + a * dtheta * 100000 / dt
-            s_hammerVelocityFilter = s_hammerVelocityFilter * (10000l - s_velocityFilterCoefficient) / 10000l + 
-                                     s_velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 100000l /
-                                     (now - s_hammerAngleReadTimeLast);        
+            s_hammerVelocityFilter = s_hammerVelocityFilter * (10000l - sensor_parameters.velocityFilterCoefficient) / 10000l +
+                                     sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 100000l /
+                                     (now - s_hammerAngleReadTimeLast);
             s_hammerVelocityCurrent = s_hammerVelocityFilter / 1000l;
             s_hammerAngleReadTimeLast = now;
 

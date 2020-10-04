@@ -3,21 +3,9 @@
 #include "telemetryController.h"
 #include "targetTrackingController.h"
 #include "turretController.h"
+#include "sensors.h"
 
 #define MAXIMUM_COMMAND_LENGTH 64
-enum Commands {
-    CMD_ID_TRATE = 10,
-    CMD_ID_TRKFLT = 11,
-    CMD_ID_OBJSEG = 12,
-    CMD_ID_AF = 13,
-    CMD_ID_AAIM = 14,
-    CMD_ID_IMUP = 15,
-    CMD_ID_LDDR = 17,
-    CMD_ID_HMR = 18,
-    CMD_ID_TRT = 19,
-    CMD_ID_TROT = 20
-};
-
 const uint16_t CMD_TERMINATOR=0x6666;
 
 template <uint8_t command_id, typename command_inner> struct CommandPacket{
@@ -112,13 +100,18 @@ struct TurretRotationCommandInner {
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_TROT, TurretRotationCommandInner> TurretRotationCommand;
 
+struct SensorParametersCommandInner {
+    int32_t velocityFilterCoefficient;
+} __attribute__((packed));
+typedef CommandPacket<CMD_ID_SNSP, SensorParametersCommandInner> SensorParametersCommand;
+
 static uint8_t command_buffer[MAXIMUM_COMMAND_LENGTH];
 static size_t command_length=0;
 static bool command_ready = false;
 uint16_t command_overrun = 0;
 uint16_t invalid_command = 0;
 uint16_t valid_command = 0;
-uint8_t last_command = 0;
+enum Commands last_command = CMD_UNKNOWN;
 
 void serialEvent(void) {
     while(DSerial.available()) {
@@ -152,10 +145,11 @@ void handleCommands(void)
     HammerCommand *hammer_cmd;
     TurretCommand *turretCmd;
     TurretRotationCommand *turretRotationCmd;
+    SensorParametersCommand *sensorParametersCommand;
 
     if(command_ready) 
     {
-        last_command = command_buffer[0];
+        last_command = (enum Commands)command_buffer[0];
         switch(last_command) 
         {
             case CMD_ID_TRATE:
@@ -235,8 +229,7 @@ void handleCommands(void)
                                     hammer_cmd->inner.maxThrowExpandDt,
                                     hammer_cmd->inner.maxRetractUnderPressureDt,
                                     hammer_cmd->inner.maxRetractExpandDt,
-                                    hammer_cmd->inner.maxRetractBreakDt,
-                                    hammer_cmd->inner.velocityFilterCoefficient);
+                                    hammer_cmd->inner.maxRetractBreakDt);
                 break;
 
             case CMD_ID_TRT:
@@ -247,6 +240,11 @@ void handleCommands(void)
             case CMD_ID_TROT:
                 turretRotationCmd = (TurretRotationCommand *)command_buffer;
                 Turret.SetTurretRotationParameters(turretRotationCmd->inner.manualControlOverideSpeed);
+                break;
+
+            case CMD_ID_SNSP:
+                sensorParametersCommand = (SensorParametersCommand *)command_buffer;
+                setSensorParameters(sensorParametersCommand->inner.velocityFilterCoefficient);
                 break;
 
             default:

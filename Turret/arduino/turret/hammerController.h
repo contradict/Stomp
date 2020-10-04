@@ -68,8 +68,7 @@ public:
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,
         uint32_t p_maxRetractExpandDt,
-        uint32_t p_maxRetractBreakDt,
-        int32_t p_velocityFilterCoefficient);
+        uint32_t p_maxRetractBreakDt);
 
     void RestoreParams();
 
