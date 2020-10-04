@@ -83,7 +83,7 @@ public:
         uint16_t p_commandOverrun, uint16_t p_invalidCommand,
         uint16_t p_validCommand);
 
-    bool SendSensorTelem(uint16_t p_angle, uint16_t p_throwPressure, uint16_t p_retractPressure);
+    bool SendSensorTelem(int16_t p_angle, int32_t p_velocity, int16_t p_throwPressure, int16_t p_retractPressure);
     bool SendSbusTelem(uint16_t p_cmdBitfield, int16_t p_hammerIntensity, int16_t p_hammerDistance, int16_t p_turretSpeed);
     bool SendLeddarTelem(const Detection (&p_detections)[LEDDAR_SEGMENTS], unsigned int count);
 

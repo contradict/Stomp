@@ -326,7 +326,7 @@ void HammerController::RestoreParams()
 
 void HammerController::SendTelem()
 {
-    Telem.SendSensorTelem(s_hammerAngleCurrent, s_hammerThrowPressureCurrent, s_hammerRetractPressureCurrent);  
+    Telem.SendSensorTelem(s_hammerAngleCurrent, s_hammerVelocityCurrent, s_hammerThrowPressureCurrent, s_hammerRetractPressureCurrent);  
 }
 
 //  ====================================================================

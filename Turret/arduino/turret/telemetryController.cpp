@@ -242,21 +242,23 @@ bool TelemetryController::SendSystemTelem(
 
 struct SensorTelemetryInner 
 {
-    uint16_t angle;
-    uint16_t throwPressure;
-    uint16_t retractPressure;
+    int16_t angle;
+    int32_t velocity;
+    int16_t throwPressure;
+    int16_t retractPressure;
 }
  __attribute__((packed));
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_SNS, SensorTelemetryInner> SensorTelemetry;
 
-bool TelemetryController::SendSensorTelem(uint16_t p_angle, uint16_t p_throwPressure, uint16_t p_retractPressure)
+bool TelemetryController::SendSensorTelem(int16_t p_angle, int32_t p_hammerVelocity, int16_t p_throwPressure, int16_t p_retractPressure)
 {
     CHECK_ENABLED(TLM_ID_SNS);
 
     SensorTelemetry tlm;
 
     tlm.inner.angle = p_angle;
+    tlm.inner.velocity = p_hammerVelocity;
     tlm.inner.throwPressure = p_throwPressure;
     tlm.inner.retractPressure = p_retractPressure;
 

@@ -115,12 +115,19 @@ TELEMETRY TURRET SNS LITTLE_ENDIAN "Sensor"
     APPEND_ITEM ANGLE 16 INT "Angle"
         UNITS "Degrees" "deg"
         POLY_READ_CONVERSION 0.0 0.0572958
+	FORMAT_STRING "%.6f"
+    APPEND_ITEM VELOCITY 16 INT "Velocity""
+        UNITS "Degrees" "deg"
+        POLY_READ_CONVERSION 0.0 0.0572958
+	FORMAT_STRING "%.6f"
     APPEND_ITEM THROW_PRESSURE 16 INT "Throw Pressure"
         UNITS "Pounds per Square Inch" "PSIA"
         POLY_READ_CONVERSION 0.0 0.1450
+	FORMAT_STRING "%.6f"
     APPEND_ITEM RETRACT_PRESSURE 16 INT "Retract Pressure"
         UNITS "Pounds per Square Inch" "PSIA"
         POLY_READ_CONVERSION 0.0 0.1450
+	FORMAT_STRING "%.6f"
 
 #
 #  SYS - System (Packet ID 11)
