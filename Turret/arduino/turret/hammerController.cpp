@@ -62,6 +62,7 @@ static struct HammerController::Params EEMEM s_savedParams =
     .swingTelemetryFrequency = 500,
     .maxThrowAngle = 210,
     .minRetractAngle = 5,
+    .emergencyBreakAngle = 1396,    //  80 degrees as milliradians
     .throwSideBreakingForceTrigger = 0.005102f,
     .breakStopAngle = 87.3f,
     .maxThrowUnderPressureDt = 750000,
@@ -91,6 +92,7 @@ volatile static int16_t s_hammerThrowAngle = 0;
 
 volatile static int16_t s_maxThrowAngle;
 volatile static int16_t s_minRetractAngle;
+volatile static int16_t s_emergencyBreakAngle;
 volatile static float s_throwSideBreakingForceTrigger;
 volatile static float s_breakStopAngle;
 volatile static uint32_t s_maxThrowUnderPressureDt;
@@ -305,6 +307,7 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     uint32_t p_swingTelemetryFrequency,
     uint16_t p_maxThrowAngle,
     uint16_t p_minRetractAngle,
+    uint16_t p_emergencyBreakAngle,
     float p_throwSideBreakingForceTrigger,
     float p_breakStopAngle,
     uint32_t p_maxThrowUnderPressureDt,
@@ -319,6 +322,7 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
     m_params.maxThrowAngle = p_maxThrowAngle;
     m_params.minRetractAngle = p_minRetractAngle;
+    m_params.emergencyBreakAngle = p_emergencyBreakAngle;
     m_params.throwSideBreakingForceTrigger = p_throwSideBreakingForceTrigger;
     m_params.breakStopAngle = p_breakStopAngle;
     m_params.maxThrowUnderPressureDt = p_maxThrowUnderPressureDt;
@@ -435,6 +439,7 @@ void HammerController::setState(controllerState p_state)
             s_maxThrowAngle = m_params.maxThrowAngle;
             s_minRetractAngle = m_params.minRetractAngle;
 
+            s_emergencyBreakAngle = m_params.emergencyBreakAngle;
             s_throwSideBreakingForceTrigger = m_params.throwSideBreakingForceTrigger;
             s_breakStopAngle = m_params.breakStopAngle;
 
@@ -456,6 +461,7 @@ void HammerController::setState(controllerState p_state)
             s_telemetryFrequency = m_params.swingTelemetryFrequency;
             s_minRetractAngle = m_params.minRetractAngle;
 
+            s_emergencyBreakAngle = m_params.emergencyBreakAngle;
             s_throwSideBreakingForceTrigger = m_params.throwSideBreakingForceTrigger;
             s_breakStopAngle = m_params.breakStopAngle;
 
@@ -1027,7 +1033,10 @@ ISR(TIMER5_COMPA_vect)
             {
                 float currentForce = ((float)s_hammerAngleCurrent / ((float)s_hammerVelocityCurrent * (float)s_hammerVelocityCurrent)) *
                     logf(s_hammerAngleCurrent / s_breakStopAngle);
-                if (currentForce >= s_throwSideBreakingForceTrigger || s_hammerSubStateDt >= s_maxRetractBreakDt)
+
+                if (currentForce >= s_throwSideBreakingForceTrigger || 
+                    s_hammerAngleCurrent < s_emergencyBreakAngle ||
+                    s_hammerSubStateDt >= s_maxRetractBreakDt)
                 {
                     //  Go to ERetractExpand state
 
