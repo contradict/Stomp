@@ -338,15 +338,16 @@ struct SwingTelemetryInner
 
     uint32_t retractStartTime;
     uint32_t retractExpandStartTime; 
-    uint32_t retractBreakStartTime;
+    uint32_t retractBrakeStartTime;
     uint32_t retractStopTime;
 
     uint16_t swingStartAngle;
     uint16_t swingExpandStartAngle;
     uint16_t retractStartAngle;
     uint16_t retractExpandStartAngle;
-    uint16_t retractBreakStartAngle;
+    uint16_t retractBrakeStartAngle;
     uint16_t retractStopAngle;
+    uint8_t retractBrakeStartReason;
 } __attribute__((packed));
 
 typedef TelemetryPacket<TelemetryController::TLM_ID_SWG, SwingTelemetryInner> SwingTelemetry;
@@ -368,8 +369,9 @@ bool TelemetryController::SendSwingTelem(
                     uint16_t p_retractStartAngle,
                     uint32_t p_retractExpandStartTime, 
                     uint16_t p_retractExpandStartAngle,
-                    uint32_t p_retractBreakStartTime, 
-                    uint16_t p_retractBreakStartAngle,
+                    uint32_t p_retractBrakeStartTime,
+                    uint16_t p_retractBrakeStartAngle,
+                    uint8_t p_retractBrakeStartReason,
                     uint32_t p_retractStopTime, 
                     uint16_t p_retractStopAngle)
 {
@@ -389,8 +391,9 @@ bool TelemetryController::SendSwingTelem(
     tlm.inner.retractStartAngle = p_retractStartAngle;
     tlm.inner.retractExpandStartTime = p_retractExpandStartTime;
     tlm.inner.retractExpandStartAngle = p_retractExpandStartAngle;
-    tlm.inner.retractBreakStartTime = p_retractBreakStartTime;
-    tlm.inner.retractBreakStartAngle = p_retractBreakStartAngle;
+    tlm.inner.retractBrakeStartTime = p_retractBrakeStartTime;
+    tlm.inner.retractBrakeStartAngle = p_retractBrakeStartAngle;
+    tlm.inner.retractBrakeStartReason = p_retractBrakeStartReason;
     tlm.inner.retractStopTime = p_retractStopTime;
     tlm.inner.retractStopAngle = p_retractStopAngle;
 

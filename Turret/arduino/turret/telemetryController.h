@@ -103,8 +103,9 @@ public:
         uint16_t s_retractStartAngle,
         uint32_t s_retractExpandStartTime, 
         uint16_t s_retractExpandStartAngle,
-        uint32_t s_retractBreakStartTime, 
-        uint16_t s_retractBreakStartAngle,
+        uint32_t s_retractBrakeStartTime,
+        uint16_t s_retractBrakeStartAngle,
+        uint8_t p_retractBrakeStartReason,
         uint32_t s_retractStopTime, 
         uint16_t s_retractStopAngle);
 

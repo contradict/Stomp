@@ -571,6 +571,8 @@ volatile static uint16_t s_retractExpandStartAngle;
 volatile static uint16_t s_retractBrakeStartAngle;
 volatile static uint16_t s_retractStopAngle;
 
+volatile uint8_t s_retractBrakeStartReason;
+
 volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
 volatile static int32_t s_swingVelocitySamples[k_telmSamplesMax];
 volatile static uint16_t s_swingThrowPressureSamples[k_telmSamplesMax];
@@ -804,7 +806,7 @@ void swingComplete()
         s_swingExpandStartTime, s_swingExpandStartAngle,
         s_retractStartTime, s_retractStartAngle,
         s_retractExpandStartTime, s_retractExpandStartAngle,
-        s_retractBrakeStartTime, s_retractBrakeStartAngle,
+        s_retractBrakeStartTime, s_retractBrakeStartAngle, s_retractBrakeStartReason,
         s_retractStopTime, s_retractStopAngle);
 }
 
@@ -937,7 +939,7 @@ ISR(TIMER5_COMPA_vect)
     pinMode(10, OUTPUT);
     digitalWrite(10, HIGH);
 
-    uint32_t now = micros();    
+    uint32_t now = micros();
     s_hammerSubStateDt = now - s_hammerSubStateStart;
 
     hammerSubState desiredState = s_hammerSubState;
@@ -1045,6 +1047,20 @@ ISR(TIMER5_COMPA_vect)
                     s_retractBrakeStartAngle = s_hammerAngleCurrent;
 
                     CLOSE_THROW_VENT;
+
+                    s_retractBrakeStartReason = 0;
+                    if(currentForce >= s_throwSideBrakingForceTrigger)
+                    {
+                        s_retractBrakeStartReason |= 1;
+                    }
+                    if(s_hammerAngleCurrent < s_emergencyBrakeAngle)
+                    {
+                        s_retractBrakeStartReason |= 2;
+                    }
+                    if(s_hammerSubStateDt >= s_maxRetractBrakeDt)
+                    {
+                        s_retractBrakeStartReason |= 4;
+                    }
                 }
             }
             break;
