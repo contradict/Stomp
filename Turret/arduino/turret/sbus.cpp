@@ -133,16 +133,6 @@ bool isFlameRightPulseEnabled()
     return s_radioConnected && (bitfield & FLAME_RIGHT_PULSE_BIT);
 }
 
-bool isFlameLeftOnEnabled()
-{
-    return s_radioConnected && (bitfield & FLAME_LEFT_CTRL_BIT);
-}
-
-bool isFlameLeftPulseEnabled()
-{
-    return s_radioConnected && (bitfield & FLAME_LEFT_PULSE_BIT);
-}
-
 bool hammerManualThrowAndRetract()
 {
     return isWeaponEnabled() && (bitfield & HAMMER_FIRE_BIT);
@@ -231,15 +221,6 @@ static uint16_t computeRCBitfield() {
   // Center position enables pulse mode
   if (sbusChannels[FLAME_RIGHT_CTRL] > FLAME_PULSE_THRESHOLD && sbusChannels[FLAME_RIGHT_CTRL] < FLAME_CTRL_THRESHOLD ){
     bitfield |= FLAME_RIGHT_PULSE_BIT;
-  }
-
-  // Full stick, flamethrower is on
-  if (sbusChannels[FLAME_LEFT_CTRL] > FLAME_CTRL_THRESHOLD){
-    bitfield |= FLAME_LEFT_CTRL_BIT;
-  }
-  // Center position enables pulse mode
-  if (sbusChannels[FLAME_LEFT_CTRL] > FLAME_PULSE_THRESHOLD && sbusChannels[FLAME_LEFT_CTRL] < FLAME_CTRL_THRESHOLD ){
-    bitfield |= FLAME_LEFT_PULSE_BIT;
   }
 
  if( sbusChannels[TURRET_CTL_MODE] > AUTO_AIM_THRESHOLD ){

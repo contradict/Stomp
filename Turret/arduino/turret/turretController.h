@@ -49,7 +49,8 @@ public:
 
     bool IsNominal();
     bool IsNominalArmed();
-
+    bool IsSafeForFlameThrowers();
+    
     int16_t GetTurretRotationSpeed();
     int16_t GetTurretAngle();
     

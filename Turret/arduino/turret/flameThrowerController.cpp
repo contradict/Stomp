@@ -81,7 +81,7 @@ void FlameThrowerController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (Radio.IsFlameRightOnEnabled() || Radio.IsFlameRightPulseEnabled())
+                else if (Turret.IsSafeForFlameThrowers() && (Radio.IsFlameRightOnEnabled() || Radio.IsFlameRightPulseEnabled()))
                 {
                     setState(EReadyToFire);
                 }
@@ -90,7 +90,11 @@ void FlameThrowerController::Update()
 
             case EReadyToFire:
             {
-                if (!Radio.IsNominal())
+                if (!Turret.IsSafeForFlameThrowers())
+                {
+                    setState(EDisabled);
+                }
+                else if (!Radio.IsNominal())
                 {
                     setState(ESafe);
                 }
@@ -103,6 +107,10 @@ void FlameThrowerController::Update()
 
             case EManualFlameOn:
             {
+                if (!Turret.IsSafeForFlameThrowers())
+                {
+                    setState(EDisabled);
+                }
                 if (!Radio.IsNominal())
                 {
                     setState(ESafe);
@@ -116,6 +124,10 @@ void FlameThrowerController::Update()
 
             case EPulseFlameOn:
             {
+                if (!Turret.IsSafeForFlameThrowers())
+                {
+                    setState(EDisabled);
+                }
                 if (!Radio.IsNominal())
                 {
                     setState(ESafe);
@@ -150,7 +162,7 @@ void FlameThrowerController::FlamePulseStart()
 
 void FlameThrowerController::FlamePulseStop()
 {
-    if (Radio.IsFlameRightPulseEnabled() || Radio.IsFlameLeftPulseEnabled())
+    if (Radio.IsFlameRightPulseEnabled())
     {
         setState(EReadyToFire);
     }

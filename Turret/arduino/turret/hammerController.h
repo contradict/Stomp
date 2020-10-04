@@ -52,6 +52,7 @@ public:
     void Safe();
     
     bool ReadyToSwing();
+    bool IsSafeForFlameThrowers();
 
     void TriggerSwing();
     void TriggerSelfRightSwing();

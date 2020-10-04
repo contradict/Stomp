@@ -250,6 +250,11 @@ bool TurretController::IsNominalArmed()
     return m_state == ENominalArmed;
 }
 
+bool TurretController::IsSafeForFlameThrowers()
+{
+    return m_pHammerController->IsSafeForFlameThrowers();
+}
+
 int16_t TurretController::GetTurretRotationSpeed()
 {
     return m_pIMUController->GetOmegaZ();

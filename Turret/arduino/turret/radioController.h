@@ -38,8 +38,6 @@ public:
     
     bool IsFlameRightOnEnabled();
     bool IsFlameRightPulseEnabled();
-    bool IsFlameLeftOnEnabled();
-    bool IsFlameLeftPulseEnabled();
 
     bool IsHammerSwingRequested();
     bool IsHammerRetractRequested();

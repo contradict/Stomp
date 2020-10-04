@@ -232,6 +232,11 @@ bool HammerController::ReadyToSwing()
     return m_state == EReady;
 }
 
+bool HammerController::IsSafeForFlameThrowers()
+{
+    return m_state == EReady;
+}
+
 //
 //  IMPORTANT: TriggerSwing, TriggerSelfRightSwing and Retract setup a secondary state
 //  machine that is driven using timmer interrupts.  The normal
@@ -380,6 +385,10 @@ void HammerController::setState(controllerState p_state)
         case EDisabled:
         {
             digitalWrite(HAMMER_ENABLE_DO, LOW);
+            digitalWrite(THROW_PRESSURE_VALVE_DO, LOW);
+            digitalWrite(THROW_VENT_VALVE_DO, LOW);
+            digitalWrite(RETRACT_PRESSURE_VALVE_DO, LOW);
+            digitalWrite(RETRACT_VENT_VALVE_DO, LOW);
         }
         break;
 
@@ -404,10 +413,14 @@ void HammerController::setState(controllerState p_state)
 
         case EFullCycleInterruptMode:
         {
-            if (Radio.IsFlameRightPulseEnabled() || Radio.IsFlameLeftPulseEnabled())
+            //  BB MJS: Disable for now
+            
+            /*
+            if (Radio.IsFlameRightPulseEnabled())
             {
                 Turret.FlamePulseStart();
             }
+            */
 
             //  Write information into shared variables
 

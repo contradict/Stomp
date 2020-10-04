@@ -122,16 +122,6 @@ bool RadioController::IsFlameRightPulseEnabled()
     return isFlameRightPulseEnabled();
 }
 
-bool RadioController::IsFlameLeftOnEnabled()
-{
-    return isFlameLeftOnEnabled();
-}
-
-bool RadioController::IsFlameLeftPulseEnabled()
-{
-    return isFlameLeftPulseEnabled();
-}
-
 bool RadioController::IsHammerSwingRequested()
 {
     return hammerManualThrowAndRetract();
