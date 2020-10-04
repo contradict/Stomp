@@ -5,6 +5,7 @@
 #include "radioController.h"
 #include "telemetryController.h"
 #include "targetTrackingController.h"
+#include "sensors.h"
 
 //  The global TurretController Instance
 //  
@@ -81,7 +82,7 @@ void setup()
     Turret.Init();
 
     //  Restore persistant memory parameters
-
+    restoreSensorParameters();
     Telem.RestoreParams();
     TargetTracking.RestoreParams();
     Turret.RestoreParams();

@@ -116,7 +116,7 @@ TELEMETRY TURRET SNS LITTLE_ENDIAN "Sensor"
         UNITS "Degrees" "deg"
         POLY_READ_CONVERSION 0.0 0.0572958
 	FORMAT_STRING "%.6f"
-    APPEND_ITEM VELOCITY 32 INT "Velocity""
+    APPEND_ITEM VELOCITY 32 INT "Velocity"
         UNITS "Degrees / Second" "deg/sec"
         POLY_READ_CONVERSION 0.0 0.00572958
 	FORMAT_STRING "%.6f"
@@ -502,3 +502,11 @@ COMMAND TURRET TRT LITTLE_ENDIAN "Turret Parameters"
 COMMAND TURRET TROT LITTLE_ENDIAN "Turret Rotation Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 20 20 20 "Command ID which must be 20"
     APPEND_PARAMETER HMR_SR 32 INT 16 10000000 250 "Manual control overrides autoaim speed"
+
+#
+# SNSP - Sensor Parameters (Packed ID 21)
+#
+
+COMMAND TURRET SNSP LITTLE_ENDIAN "Sensor Parameters"
+    APPEND_ID_PARAMETER CMDID 8 UINT 21 21 21 "Command ID which must be 21"
+    APPEND_PARAMETER VFILT 32 INT 1 10000 30 "Hammer velocity filter coefficient"
