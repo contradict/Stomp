@@ -107,6 +107,7 @@ typedef CommandPacket<CMD_ID_TROT, TurretRotationCommandInner> TurretRotationCom
 
 struct SensorParametersCommandInner {
     int32_t velocityFilterCoefficient;
+    int16_t maxHammerAngleSpike;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_SNSP, SensorParametersCommandInner> SensorParametersCommand;
 
@@ -255,7 +256,8 @@ void handleCommands(void)
 
             case CMD_ID_SNSP:
                 sensorParametersCommand = (SensorParametersCommand *)command_buffer;
-                setSensorParameters(sensorParametersCommand->inner.velocityFilterCoefficient);
+                setSensorParameters(sensorParametersCommand->inner.velocityFilterCoefficient,
+                                    sensorParametersCommand->inner.maxHammerAngleSpike);
                 break;
 
             default:

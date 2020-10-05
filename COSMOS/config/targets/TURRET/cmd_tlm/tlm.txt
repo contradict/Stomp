@@ -554,3 +554,4 @@ COMMAND TURRET TROT LITTLE_ENDIAN "Turret Rotation Parameters"
 COMMAND TURRET SNSP LITTLE_ENDIAN "Sensor Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 21 21 21 "Command ID which must be 21"
     APPEND_PARAMETER VFILT 32 INT 1 10000 200 "Hammer velocity filter coefficient"
+    APPEND_PARAMETER ASPIKE 16 INT 10 10000 100 "Hammer angle pike filter value

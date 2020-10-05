@@ -84,7 +84,6 @@ volatile static bool s_swingComplete;
 //  being accesses from an interrupt service routing
 
 volatile static int16_t s_hammerAngleCurrent = k_invalidHammerAngleRead;
-volatile static int16_t s_hammerAnglePrev = s_hammerAngleCurrent;
 volatile static int32_t s_hammerVelocityCurrent = 0;
 volatile static int32_t s_hammerAngleReadTimeLast = 0;
 volatile static int32_t s_hammerVelocityFilter = 0;
@@ -840,6 +839,9 @@ ISR(ADC_vect)
     pinMode(11, OUTPUT);
     digitalWrite(11, HIGH);
 
+    static int16_t s_hammerAngleNoiseFilter[2] = {0, 0};
+    static int16_t s_hammerAnglePrev = s_hammerAngleCurrent;
+
     uint32_t now = micros();
 
     //  Get ADC results (between 0 - 1024)
@@ -884,14 +886,24 @@ ISR(ADC_vect)
         {
             // calculate Hammer Angle
 
-            s_hammerAnglePrev = s_hammerAngleCurrent;
+            s_hammerAngleNoiseFilter[1] = s_hammerAngleNoiseFilter[0];
 
             if (differential >= k_minExpectedHammerAngleDifferential && differential <= k_maxExpectedHammerAngleDifferential)
             {
                 //  Conversion of differential range into anggle range (as radians * 1000)
                 //  θ(differential) = ((790 − differential) ∗ 38) / 5 + ((790 − differential) ∗ 9) / 100
 
-                s_hammerAngleCurrent = ((790 - differential) * 38) / 5 + ((790 - differential) * 9) / 100;
+                s_hammerAngleNoiseFilter[0] = ((790 - differential) * 38) / 5 + ((790 - differential) * 9) / 100;
+            }
+
+            if(abs(s_hammerAngleNoiseFilter[1] - s_hammerAngleNoiseFilter[0]) > sensor_parameters.maxHammerAngleSpike)
+            {
+                s_hammerAnglePrev = s_hammerAngleCurrent;
+            }
+            else
+            {
+                s_hammerAngleCurrent = s_hammerAngleNoiseFilter[0];
+                s_hammerAnglePrev = s_hammerAngleNoiseFilter[1];
             }
 
             //  Now calculate velocity
