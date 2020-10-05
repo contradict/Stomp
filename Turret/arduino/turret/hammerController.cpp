@@ -1034,14 +1034,19 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractExpand:
             {
+                /*
                 float scaledHammerEnergy = s_throwSideBrakingForceTrigger * ((float)s_hammerVelocityCurrent * (float)s_hammerVelocityCurrent);
                 float scaledAvailableBrakeEnergy = (float)s_hammerAngleCurrent * logf((float)s_hammerAngleCurrent / s_brakeStopAngle);
-
                 if (scaledHammerEnergy >= scaledAvailableBrakeEnergy  ||
                     s_hammerAngleCurrent < s_emergencyBrakeAngle ||
                     s_hammerSubStateDt >= s_maxRetractBrakeDt)
                 {
-                    //  Go to ERetractExpand state
+                */
+
+                if (s_hammerAngleCurrent < s_emergencyBrakeAngle ||
+                    s_hammerSubStateDt >= s_maxRetractBrakeDt)
+                {
+                    //  Go to ERetractBrake state
 
                     desiredState = ERetractBrake;
                     s_retractBrakeStartTime = now;
@@ -1050,10 +1055,14 @@ ISR(TIMER5_COMPA_vect)
                     CLOSE_THROW_VENT;
 
                     s_retractBrakeStartReason = 0;
+
+                    /*
                     if (scaledHammerEnergy >= scaledAvailableBrakeEnergy)
                     {
                         s_retractBrakeStartReason |= 1;
                     }
+                    */
+
                     if(s_hammerAngleCurrent < s_emergencyBrakeAngle)
                     {
                         s_retractBrakeStartReason |= 2;
@@ -1068,7 +1077,7 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractBrake:
             {
-                if (s_hammerAngleCurrent < s_minRetractAngle || s_hammerSubStateDt >= s_maxRetractBrakeDt)
+                if (s_hammerVelocityCurrent >= 0 /*s_minBreakExitVelocity*/ || s_hammerSubStateDt >= s_maxRetractBrakeDt)
                 {
                     //  Go to ERetractExpand state
 
@@ -1080,7 +1089,7 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractSettle:
             {
-                if (s_hammerSubStateDt >= k_valveCloseDt)
+                if (s_hammerAngleCurrent < s_minRetractAngle /*|| s_hammerSubStateDt >= s_maxRetractSettleDt*/)
                 {
                     //  Go to ERetractComplete state
 
