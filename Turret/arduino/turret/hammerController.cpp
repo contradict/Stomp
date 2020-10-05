@@ -886,8 +886,6 @@ ISR(ADC_vect)
 
             s_hammerAnglePrev = s_hammerAngleCurrent;
 
-            s_hammerAngleCurrent = k_invalidHammerAngleRead;
-
             if (differential >= k_minExpectedHammerAngleDifferential && differential <= k_maxExpectedHammerAngleDifferential)
             {
                 //  Conversion of differential range into anggle range (as radians * 1000)
