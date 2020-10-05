@@ -67,7 +67,7 @@ static struct HammerController::Params EEMEM s_savedParams =
     .brakeStopAngle = 87.3f,
     .maxThrowUnderPressureDt = 750000,
     .maxThrowExpandDt = 1000000,
-    .maxRetractUnderPressureDt = 1000000,
+    .maxRetractUnderPressureDt = 100000,
     .maxRetractExpandDt = 1000000,
     .maxRetractBrakeDt = 1000000,
     .maxRetractSettleDt = 500000,
@@ -1029,7 +1029,7 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractPressurize:
             {
-                if (s_hammerSubStateDt > s_maxRetractUnderPressureDt)
+                if (s_hammerRetractPressureCurrent > 20/*s_retractFillPressure*/ || s_hammerSubStateDt > s_maxRetractUnderPressureDt)
                 {
                     //  Go to ERetractExpand state
 
