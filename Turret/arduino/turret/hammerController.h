@@ -133,8 +133,6 @@ private:
     const uint32_t k_swingTimeMaxDt = 1000000;
     const uint32_t k_swingUpdateDt = 1000;
 
-    const int16_t k_throwIntensityToAngle[9] = { 52, 87, 174, 261, 349, 30, 523, 872, 1134 };
-
     //  ====================================================================
     //
     //  Private members

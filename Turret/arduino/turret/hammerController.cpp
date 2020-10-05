@@ -420,8 +420,7 @@ void HammerController::setState(controllerState p_state)
 
         case EThrow:
         {
-            int32_t requestedIntensity = getHammerIntensity();
-            m_throwPressureAngle = k_throwIntensityToAngle[requestedIntensity];
+            m_throwPressureAngle = ((int16_t)Radio.GetHammerIntensityAngle() * (int16_t)175) / (int16_t) 10;
         }
         break;
 
@@ -1035,7 +1034,9 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractPressurize:
             {
-                if (s_hammerRetractPressureCurrent > s_retractFillPressure || s_hammerSubStateDt > s_maxRetractUnderPressureDt)
+                if (s_hammerAngleCurrent < s_emergencyBrakeAngle ||
+                    s_hammerRetractPressureCurrent > s_retractFillPressure || 
+                    s_hammerSubStateDt > s_maxRetractUnderPressureDt)
                 {
                     //  Go to ERetractExpand state
 
