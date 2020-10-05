@@ -283,8 +283,7 @@ int32_t TurretController::GetEstimatedSwingDuration()
 
     //  BB MJS: NEED TO GET REAL HAMMER SWING TIMES
     
-    int32_t throwIntensity = Radio.GetHammerIntensity();
-    return k_throwIntensityToSwingTime[throwIntensity];
+    return Radio.GetSwingFillAngle();
 }
 
 void TurretController::FlamePulseStart()

@@ -137,21 +137,9 @@ int32_t RadioController::GetDesiredManualTurretSpeed()
     return getDesiredManualTurretSpeed();
 }
 
-int32_t RadioController::GetHammerIntensity()
+int16_t RadioController::GetSwingFillAngle()
 {
-    return getHammerIntensity();
-}
-
-int32_t RadioController::GetHammerIntensityAngle()
-{
-    int32_t hammerIntensity = GetHammerIntensity();
-
-    if (hammerIntensity < 0 || hammerIntensity >= 9)
-    {
-        return 0;
-    }
-    
-    return k_hammerIntensitiesAngle[hammerIntensity];
+    return getSwingFillAngle();
 }
 
 int32_t RadioController::GetHammerStrikeDistance()

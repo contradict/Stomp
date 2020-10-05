@@ -6,9 +6,9 @@ enum SBUSChannels {
     HAMMER_CTRL = 2,
     FLAME_RIGHT_CTRL = 3,
     AUTO_SELF_RIGHT = 4,
-    GENTLE_HAM_CTRL = 5,
-    INTENSITY = 6,
-    FLAME_LEFT_CTRL = 7,
+    INTENSITY = 5,
+    UNUSED_6 = 6,
+    UNUSED_7 = 7,
     RANGE = 8,
     TURRET_SPIN = 9,
     TURRET_CTL_MODE = 10
@@ -54,7 +54,7 @@ bool hammerManualThrowAndRetract();
 bool hammerManualRetractOnly();
 
 uint16_t getRange();
-uint16_t getHammerIntensity();
+int16_t getSwingFillAngle();
 int16_t getDesiredManualTurretSpeed();
 
 uint16_t getRcBitfield();

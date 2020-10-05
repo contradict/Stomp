@@ -420,7 +420,7 @@ void HammerController::setState(controllerState p_state)
 
         case EThrow:
         {
-            m_throwPressureAngle = ((int16_t)Radio.GetHammerIntensityAngle() * (int16_t)175) / (int16_t) 10;
+            m_throwPressureAngle = Radio.GetSwingFillAngle();
         }
         break;
 

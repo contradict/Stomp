@@ -178,6 +178,7 @@ TELEMETRY TURRET SBS LITTLE_ENDIAN "S.Bus"
     APPEND_ITEM PAD3 1 UINT
     APPEND_ITEM HMRI 16 INT "Hammer Intensity"
         UNITS "degrees" "deg"
+        POLY_READ_CONVERSION 0.0 0.05629
     APPEND_ITEM HMRD 16 INT "Hammer Distance"
         UNITS "milimeters" "mm"
     APPEND_ITEM TRTO 16 INT "Turret Angular Velocity"

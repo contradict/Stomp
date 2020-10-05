@@ -45,7 +45,6 @@ uint32_t g_loop_count;
 
 //  Keep track of radio communications status and state
 
-static int16_t s_hammerIntensity;
 static int16_t s_hammerDistance;
 static uint16_t s_currentRCBitfield;
 
@@ -134,7 +133,6 @@ static void updateRadio()
     updateSBus();
 
     s_currentRCBitfield = getRcBitfield();
-    s_hammerIntensity = getHammerIntensity();
     s_hammerDistance = getRange();
 }
 
@@ -163,7 +161,7 @@ void turretSendTelem()
 
     reset_loop_stats();
 
-    int16_t hammerIntensityAngle = Radio.GetHammerIntensityAngle();
+    int16_t hammerIntensityAngle = Radio.GetSwingFillAngle();
     int16_t hammerDistance = Radio.GetHammerStrikeDistance();
 
     Telem.SendSbusTelem(s_currentRCBitfield, hammerIntensityAngle, hammerDistance, Turret.GetTurretRotationSpeed());

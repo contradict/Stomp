@@ -261,18 +261,17 @@ uint16_t getRcBitfieldChanges() {
 }
 
 // WARNING - this function assumes that you have successfully received an SBUS packet!
-uint16_t getHammerIntensity(){
+int16_t getSwingFillAngle()
+{
   uint16_t channel_val;
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
       channel_val = sbusChannels[INTENSITY];
   }
 
   channel_val = constrain(channel_val, 172, 1811);
+  int16_t angle = 52 + (channel_val - 172) * 11 / 5;
 
-  // Taranis throttle has been tuned for linearity, 9 steps on throttle lines. intensity is 0-based, 0-8.
-
-  uint16_t intensity = constrain((channel_val - 172 + 102) / 205, 0, 8);
-  return intensity;
+  return angle;
 }
 
 int16_t getDesiredManualTurretSpeed()
