@@ -504,7 +504,7 @@ COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
     APPEND_PARAMETER HMR_MRA 16 INT 0 90 5 "Hammer Retract Min Angle"
         POLY_WRITE_CONVERSION 0.0 17.453
         UNITS "Degrees" "deg"
-    APPEND_PARAMETER HMR_EBA 16 INT 0 90 45 "Hammer Emergency Brake Angle"
+    APPEND_PARAMETER HMR_EBA 16 INT 0 90 55 "Hammer Emergency Brake Angle"
         POLY_WRITE_CONVERSION 0.0 17.453
         UNITS "Degrees" "deg"
     APPEND_PARAMETER HMR_BFRC 32 FLOAT 0.0 1.0 0.005102 "Hammer Brake Energy Trigger"
@@ -524,10 +524,10 @@ COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
         UNITS "microseconds" "us"
     APPEND_PARAMETER HMR_RET_STL_DT 32 UINT 0 10000000  500000 "Hammer Brake Settle Timeout"
         UNITS "microseconds" "us"
-    APPEND_PARAMETER HMR_BRK_EX_VEL 32 INT -300000 300000 0 "Hammer Brake Exit velocity"
+    APPEND_PARAMETER HMR_BRK_EX_VEL 32 INT -300000 300000 -250 "Hammer Brake Exit velocity"
         POLY_WRITE_CONVERSION 0.0 17.453
         UNITS "Degrees per second" "deg/s"
-    APPEND_PARAMETER HMR_RET_FILL_PRES 16 INT 0 200 55 "Hammer Retract Fill Pressure"
+    APPEND_PARAMETER HMR_RET_FILL_PRES 16 INT 0 200 65 "Hammer Retract Fill Pressure"
         UNITS "Pounds per Square Inch" "PSIA"
         POLY_WRITE_CONVERSION 0.0 6.895
 
@@ -553,4 +553,4 @@ COMMAND TURRET TROT LITTLE_ENDIAN "Turret Rotation Parameters"
 
 COMMAND TURRET SNSP LITTLE_ENDIAN "Sensor Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 21 21 21 "Command ID which must be 21"
-    APPEND_PARAMETER VFILT 32 INT 1 10000 100 "Hammer velocity filter coefficient"
+    APPEND_PARAMETER VFILT 32 INT 1 10000 200 "Hammer velocity filter coefficient"

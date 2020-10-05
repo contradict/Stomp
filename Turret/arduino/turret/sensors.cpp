@@ -5,7 +5,7 @@ struct SensorParameters sensor_parameters;
 
 static struct SensorParameters EEMEM saved_sensor_parameters = 
 {
-    .velocityFilterCoefficient = 100,
+    .velocityFilterCoefficient = 200,
 };
 
 void setSensorParameters(int32_t velocityFilterCoefficient)
