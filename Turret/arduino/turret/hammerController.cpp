@@ -623,6 +623,8 @@ static uint32_t s_hammerSubStateDt = 0;
 static sensorReadState s_sensorReadState;
 static int32_t s_sensorAngleReadCount = 0;
 
+static volatile bool s_requireVelocityFilter = false;
+
 //  ====================================================================
 //
 //  Macros
@@ -673,6 +675,8 @@ void startTimers()
 {
     noInterrupts();
 
+    s_requireVelocityFilter = true;
+
     //  Setup timer 4A to interrupt at s_telemetryFrequency
 
     uint32_t timer4Count = (k_ATMega2560_ClockFrequency / s_telemetryFrequency);
@@ -710,6 +714,8 @@ void startTimers()
 void stopTimers()
 {
     noInterrupts();
+
+    s_requireVelocityFilter = false;
 
     //  Turn off Timer 4
 
@@ -906,22 +912,30 @@ ISR(ADC_vect)
                 s_hammerAnglePrev = s_hammerAngleNoiseFilter[1];
             }
 
-            //  Now calculate velocity
-            // v = a v + (1-a) dtheta / dt
-            // v = 0.997 * v + 0.003 1 / 0.000156
-            // store in microradians/s
-            // dt is in microseconds (multiply by 1e-6 to get s)
-            // dtheta is in milliradians, *10 for some fractional part
-            // a is multiplied buy 10000
-            // v = v * (10000 - a) / 10000 + a * (dtheta * 10) / (dt * 1e-6) / 10000
-            // v = v * (10000 - a) / 10000 + a * dtheta * 1000 / dt
-            s_hammerVelocityFilter = s_hammerVelocityFilter * (10000l - sensor_parameters.velocityFilterCoefficient) / 10000l +
-                                     sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 1000l /
-                                     ((int32_t)now - (int32_t)s_hammerAngleReadTimeLast);
-            //s_hammerVelocityFilter = sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 100000l;
-            ///
-            //                         (now - s_hammerAngleReadTimeLast);
-            s_hammerVelocityCurrent = s_hammerVelocityFilter / 10l;
+            //  Only run velocity filter when swinging, becuase doing this work here, kills our ability
+            //  to get reliable Leddar results do to interrupts
+            
+            if (s_requireVelocityFilter)
+            {
+                //  Now calculate velocity
+                // v = a v + (1-a) dtheta / dt
+                // v = 0.997 * v + 0.003 1 / 0.000156
+                // store in microradians/s
+                // dt is in microseconds (multiply by 1e-6 to get s)
+                // dtheta is in milliradians, *10 for some fractional part
+                // a is multiplied buy 10000
+                // v = v * (10000 - a) / 10000 + a * (dtheta * 10) / (dt * 1e-6) / 10000
+                // v = v * (10000 - a) / 10000 + a * dtheta * 1000 / dt
+                s_hammerVelocityFilter = s_hammerVelocityFilter * (10000l - sensor_parameters.velocityFilterCoefficient) / 10000l +
+                                        sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 1000l /
+                                        ((int32_t)now - (int32_t)s_hammerAngleReadTimeLast);
+
+                //s_hammerVelocityFilter = sensor_parameters.velocityFilterCoefficient * ((int32_t)s_hammerAngleCurrent - (int32_t)s_hammerAnglePrev) * 100000l;
+                ///
+                //                         (now - s_hammerAngleReadTimeLast);
+                s_hammerVelocityCurrent = s_hammerVelocityFilter / 10l;
+            }
+
             s_hammerAngleReadTimeLast = now;
 
             //  Set up next analog read
