@@ -59,7 +59,7 @@ static const int16_t k_invalidHammerRetractPressureRead = -1;
 static struct HammerController::Params EEMEM s_savedParams = 
 {
     .selfRightIntensity = 30,
-    .swingTelemetryFrequency = 500,
+    .swingTelemetryFrequency = 400,
     .maxThrowAngle = 210,
     .minRetractAngle = 5,
     .emergencyBrakeAngle = 1396,               //  80 degrees as milliradians
@@ -935,16 +935,23 @@ ISR(ADC_vect)
 
 //  Interrupt Service Routine to collect telemetry, at defined frequency, durring a hammer throw and retract
 
+const uint8_t k_sampleRateDivisor=4;
+
 ISR(TIMER4_COMPA_vect)
 {
-    if (s_swingTelemSamplesCount < k_telmSamplesMax - 1 && s_hammerSubState != ERetractComplete)
+    static uint8_t divisor=k_sampleRateDivisor;
+    if(--divisor == 0)
     {
-        s_swingAngleSamples[s_swingTelemSamplesCount] = s_hammerAngleCurrent;
-        s_swingVelocitySamples[s_swingTelemSamplesCount] = s_hammerVelocityCurrent;
-        s_swingThrowPressureSamples[s_swingTelemSamplesCount] = s_hammerThrowPressureCurrent;
-        s_swingRetractPressureSamples[s_swingTelemSamplesCount] = s_hammerRetractPressureCurrent;
+        if (s_swingTelemSamplesCount < k_telmSamplesMax - 1 && s_hammerSubState != ERetractComplete)
+        {
+            s_swingAngleSamples[s_swingTelemSamplesCount] = s_hammerAngleCurrent;
+            s_swingVelocitySamples[s_swingTelemSamplesCount] = s_hammerVelocityCurrent;
+            s_swingThrowPressureSamples[s_swingTelemSamplesCount] = s_hammerThrowPressureCurrent;
+            s_swingRetractPressureSamples[s_swingTelemSamplesCount] = s_hammerRetractPressureCurrent;
 
-        s_swingTelemSamplesCount++;
+            s_swingTelemSamplesCount++;
+        }
+        divisor=k_sampleRateDivisor;
     }
 }
 

@@ -495,8 +495,9 @@ COMMAND TURRET LDDR LITTLE_ENDIAN "LEDDAR Parameters"
 COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
     APPEND_ID_PARAMETER CMDID 8 UINT 18 18 18 "Command ID which must be 18"
     APPEND_PARAMETER HMR_SR 16 INT 0 32767 30 "Self Right Hammer Intensity"
-    APPEND_PARAMETER HMR_TELF 16 INT 250 32767 500 "Swing Telemetry Data Collection Frequency"
+    APPEND_PARAMETER HMR_TELF 16 INT 63 32767 100 "Swing Telemetry Data Collection Frequency"
         UNITS "Hertz" "Hz"
+        POLY_WRITE_CONVERSION 0.0 4.0
     APPEND_PARAMETER HMR_MTA 16 INT 0 359 210 "Hammer Swing Max Angle"
         POLY_WRITE_CONVERSION 0.0 17.453
         UNITS "Degrees" "deg"
