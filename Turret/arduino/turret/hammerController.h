@@ -42,6 +42,7 @@ public:
         uint32_t maxRetractBrakeDt;
         uint32_t maxRetractSettleDt;
         int32_t minBrakeExitVelocity;
+        int16_t retractFillPressure;
     } __attribute__((packed));
 
     //  ====================================================================
@@ -55,7 +56,7 @@ public:
     void Init();
     void Update();
     void Safe();
-    
+
     bool ReadyToSwing();
     bool IsSafeForFlameThrowers();
 
@@ -79,7 +80,8 @@ public:
         uint32_t p_maxRetractExpandDt,
         uint32_t p_maxRetractBrakeDt,
         uint32_t p_maxRetractSettleDt,
-        int32_t p_minBrakeExitVelocity);
+        int32_t p_minBrakeExitVelocity,
+        int16_t retractFillPressure);
 
     void RestoreParams();
 
@@ -122,11 +124,11 @@ private:
     //  Private constants
     //
     //  ====================================================================
-    
+
 private:
 
     const uint32_t k_throwPressureAngleSelfRight = 30;
-    
+
     const uint32_t k_safeStateMinDt = 500000;
     const uint32_t k_swingTimeMaxDt = 1000000;
     const uint32_t k_swingUpdateDt = 1000;
