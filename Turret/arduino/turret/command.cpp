@@ -88,8 +88,10 @@ struct HammerCommandInner {
     uint32_t maxThrowExpandDt;
     uint32_t maxRetractUnderPressureDt;
     uint32_t maxRetractExpandDt;
-    uint32_t maxRetractBreakDt;
+    uint32_t maxRetractBrakeDt;
     int32_t velocityFilterCoefficient;
+    uint32_t maxRetractSettleDt;
+    int32_t minBrakeExitVelocity;
 } __attribute__((packed));
 typedef CommandPacket<CMD_ID_HMR, HammerCommandInner> HammerCommand;
 
@@ -235,7 +237,9 @@ void handleCommands(void)
                                     hammer_cmd->inner.maxThrowExpandDt,
                                     hammer_cmd->inner.maxRetractUnderPressureDt,
                                     hammer_cmd->inner.maxRetractExpandDt,
-                                    hammer_cmd->inner.maxRetractBreakDt);
+                                    hammer_cmd->inner.maxRetractBrakeDt,
+                                    hammer_cmd->inner.maxRetractSettleDt,
+                                    hammer_cmd->inner.minBrakeExitVelocity);
                 break;
 
             case CMD_ID_TRT:

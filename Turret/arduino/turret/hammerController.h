@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 //  ====================================================================
 //
@@ -39,6 +40,8 @@ public:
         uint32_t maxRetractUnderPressureDt;
         uint32_t maxRetractExpandDt;
         uint32_t maxRetractBrakeDt;
+        uint32_t maxRetractSettleDt;
+        int32_t minBrakeExitVelocity;
     } __attribute__((packed));
 
     //  ====================================================================
@@ -74,7 +77,9 @@ public:
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,
         uint32_t p_maxRetractExpandDt,
-        uint32_t p_maxRetractBrakeDt);
+        uint32_t p_maxRetractBrakeDt,
+        uint32_t p_maxRetractSettleDt,
+        int32_t p_minBrakeExitVelocity);
 
     void RestoreParams();
 

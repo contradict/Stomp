@@ -519,6 +519,11 @@ COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
         UNITS "microseconds" "us"
     APPEND_PARAMETER HMR_RB_DT 32 UINT 0 10000000  500000 "Hammer Retract Brake Timeout"
         UNITS "microseconds" "us"
+    APPEND_PARAMETER HMR_RET_STL_DT 32 UINT 0 10000000  500000 "Hammer Brake Settle Timeout"
+        UNITS "microseconds" "us"
+    APPEND_PARAMETER HMR_BRK_EX_VEL 32 INT -300000 300000 0 "Hammer Brake Exit velocity"
+        POLY_WRITE_CONVERSION 0.0 17.453
+        UNITS "Degrees per second" "deg/s"
 
 #
 #  TRT - Turret Parameters (Packet ID 19)
