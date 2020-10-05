@@ -79,7 +79,8 @@ public:
         uint32_t p_maxRetractExpandDt,
         uint32_t p_maxRetractBrakeDt,
         uint32_t p_maxRetractSettleDt,
-        int32_t p_minBrakeExitVelocity);
+        int32_t p_minBrakeExitVelocity,
+        int16_t retractFillPressure);
     void SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed);
     void SetIMUParameters(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
         int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,

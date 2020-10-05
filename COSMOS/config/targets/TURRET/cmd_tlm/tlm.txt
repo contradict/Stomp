@@ -524,6 +524,9 @@ COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
     APPEND_PARAMETER HMR_BRK_EX_VEL 32 INT -300000 300000 0 "Hammer Brake Exit velocity"
         POLY_WRITE_CONVERSION 0.0 17.453
         UNITS "Degrees per second" "deg/s"
+    APPEND_PARAMETER HMR_RET_FILL_PRES 16 INT 0 1000 200 "Hammer Retract Fill Pressure"
+        UNITS "Pounds per Square Inch" "PSIA"
+        POLY_WRITE_CONVERSION 0.0 0.1450
 
 #
 #  TRT - Turret Parameters (Packet ID 19)

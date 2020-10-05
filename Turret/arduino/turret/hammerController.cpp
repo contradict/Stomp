@@ -62,16 +62,17 @@ static struct HammerController::Params EEMEM s_savedParams =
     .swingTelemetryFrequency = 500,
     .maxThrowAngle = 210,
     .minRetractAngle = 5,
-    .emergencyBrakeAngle = 1396,    //  80 degrees as milliradians
-    .throwSideBrakingForceTrigger = 0.005102f,
-    .brakeStopAngle = 87.3f,
-    .maxThrowUnderPressureDt = 750000,
-    .maxThrowExpandDt = 1000000,
-    .maxRetractUnderPressureDt = 1000000,
-    .maxRetractExpandDt = 1000000,
-    .maxRetractBrakeDt = 1000000,
-    .maxRetractSettleDt = 500000,
-    .minBrakeExitVelocity = 0,
+    .emergencyBrakeAngle = 1396,               //  80 degrees as milliradians
+    .throwSideBrakingForceTrigger = 0.005102f, // s^2
+    .brakeStopAngle = 87.3f,                   // mrad
+    .maxThrowUnderPressureDt = 750000,         // us
+    .maxThrowExpandDt = 1000000,               // us
+    .maxRetractUnderPressureDt = 1000000,      // us
+    .maxRetractExpandDt = 1000000,             // us
+    .maxRetractBrakeDt = 1000000,              // us
+    .maxRetractSettleDt = 500000,              // us
+    .minBrakeExitVelocity = 0,                 //mrad/sec
+    .retractFillPressure = 200,                // kPa
 };
 
 static uint16_t s_telemetryFrequency;
@@ -104,6 +105,7 @@ volatile static uint32_t s_maxRetractExpandDt;
 volatile static uint32_t s_maxRetractBrakeDt;
 volatile static uint32_t s_maxRetractSettleDt;
 volatile static int32_t s_minBrakeExitVelocity;
+volatile static int32_t s_retractFillPressure;
 
 //  ====================================================================
 //
@@ -320,7 +322,8 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     uint32_t p_maxRetractExpandDt,
     uint32_t p_maxRetractBrakeDt,
     uint32_t p_maxRetractSettleDt,
-    int32_t p_minBrakeExitVelocity)
+    int32_t p_minBrakeExitVelocity,
+    int16_t p_retractFillPressure)
 {
     m_params.selfRightIntensity = p_selfRightIntensity;
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
@@ -336,6 +339,7 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     m_params.maxRetractBrakeDt = p_maxRetractBrakeDt;
     m_params.maxRetractSettleDt = p_maxRetractSettleDt;
     m_params.minBrakeExitVelocity = p_minBrakeExitVelocity;
+    m_params.retractFillPressure = p_retractFillPressure;
 
     saveParams();
 }
@@ -456,6 +460,7 @@ void HammerController::setState(controllerState p_state)
             s_maxRetractBrakeDt = m_params.maxRetractBrakeDt;
             s_maxRetractSettleDt = m_params.maxRetractSettleDt;
             s_minBrakeExitVelocity = m_params.minBrakeExitVelocity;
+            s_retractFillPressure =  m_params.retractFillPressure;
 
             startFullCycleStateMachine();
         }
