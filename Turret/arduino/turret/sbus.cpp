@@ -269,7 +269,7 @@ int16_t getSwingFillAngle()
   }
 
   channel_val = constrain(channel_val, 172, 1811);
-  int16_t angle = 52 + (channel_val - 172) * 11 / 5;
+  int16_t angle = 52 + (channel_val - 172) * 5 / 11;
 
   return angle;
 }
@@ -286,7 +286,7 @@ int16_t getDesiredManualTurretSpeed()
     //  Then map that to a turret speed, which is the value to write to the Robotec motor contoller (between -1000 and 1000)
 
     int16_t speed = constrain(channel_val, TURRET_SPEED_RC_MIN, TURRET_SPEED_RC_MAX);
-    speed = map(speed, TURRET_SPEED_RC_MIN, TURRET_SPEED_RC_MAX, TURRET_SPEED_ROBOTECT_MIN, TURRET_SPEED_ROBOTECT_MAX);
+    speed = map(speed, TURRET_SPEED_RC_MIN, TURRET_SPEED_RC_MAX, TURRET_SPEED_ROBOTECT_MAX, TURRET_SPEED_ROBOTECT_MIN);
     
     //  Have a dead zone in the middle
     if (speed > TURRET_SPEED_DEADZONE_MIN && speed < TURRET_SPEED_DEADZONE_MAX)
