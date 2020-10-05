@@ -11,7 +11,9 @@
                 "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/avr/include",
                 "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/lib/gcc/avr/5.4.0/include",
                 "/Applications/Arduino.app/Contents/Java/libraries/**",
-                "/Users/matt/Documents/Arduino/libraries/**"
+                "/Users/matt/Documents/Arduino/libraries/**",
+                "/Users/Matt/Library/Arduino15/packages/arduino/hardware/avr/1.8.2/**",
+                "/Users/Matt/Library/Arduino15/packages/arduino/tools/**"
             ],
             "defines": [],
             "macFrameworkPath": [
@@ -32,7 +34,8 @@
             "cppStandard": "c++17",
             "intelliSenseMode": "clang-x64",
             "forcedInclude": [
-                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/Arduino.h"
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/Arduino.h",
+                "/Users/Matt/Library/Arduino15/packages/arduino/hardware/avr/1.8.2/cores/arduino/Arduino.h"
             ]
         }
     ],
