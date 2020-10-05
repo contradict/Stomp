@@ -476,6 +476,8 @@ void HammerController::setState(controllerState p_state)
             s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
             s_maxRetractExpandDt = m_params.maxRetractExpandDt;
             s_maxRetractBrakeDt = m_params.maxRetractBrakeDt;
+            s_maxRetractSettleDt = m_params.maxRetractSettleDt;
+            s_minBrakeExitVelocity = m_params.minBrakeExitVelocity;
 
             startRetractOnlyStateMachine();
         }
@@ -1085,7 +1087,7 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractBrake:
             {
-                if (s_hammerVelocityCurrent >= 0 /*s_minBreakExitVelocity*/ || s_hammerSubStateDt >= s_maxRetractBrakeDt)
+                if (s_hammerVelocityCurrent >= s_minBrakeExitVelocity || s_hammerSubStateDt >= s_maxRetractBrakeDt)
                 {
                     //  Go to ERetractExpand state
 
@@ -1097,7 +1099,7 @@ ISR(TIMER5_COMPA_vect)
 
             case ERetractSettle:
             {
-                if (s_hammerAngleCurrent < s_minRetractAngle /*|| s_hammerSubStateDt >= s_maxRetractSettleDt*/)
+                if (s_hammerAngleCurrent < s_minRetractAngle || s_hammerSubStateDt >= s_maxRetractSettleDt)
                 {
                     //  Go to ERetractComplete state
 
