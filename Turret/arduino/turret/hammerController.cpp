@@ -60,18 +60,18 @@ static struct HammerController::Params EEMEM s_savedParams =
 {
     .selfRightIntensity = 30,
     .swingTelemetryFrequency = 400,
-    .maxThrowAngle = 3141,
+    .maxThrowAngle = 2966,
     .minRetractAngle = 87,
-    .emergencyBrakeAngle = 959,               //  55 degrees as milliradians
+    .emergencyBrakeAngle = 1221,               //  70 degrees as milliradians
     .throwSideBrakingForceTrigger = 0.005102f, // s^2
     .brakeStopAngle = 87.3f,                   // mrad
     .maxThrowUnderPressureDt = 750000,         // us
-    .maxThrowExpandDt = 1000000,               // us
+    .maxThrowExpandDt = 250000,                // us
     .maxRetractUnderPressureDt = 1000000,      // us
     .maxRetractExpandDt = 1000000,             // us
     .maxRetractBrakeDt = 1000000,              // us
     .maxRetractSettleDt = 500000,              // us
-    .minBrakeExitVelocity = -4363,                 //mrad/sec
+    .minBrakeExitVelocity = -3490,             //mrad/sec
     .retractFillPressure = 448,                // kPa
 };
 
