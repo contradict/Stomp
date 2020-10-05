@@ -70,8 +70,10 @@ static struct HammerController::Params EEMEM s_savedParams =
     .maxRetractUnderPressureDt = 1000000,
     .maxRetractExpandDt = 1000000,
     .maxRetractBrakeDt = 1000000,
+    .maxRetractSettleDt = 500000,
+    .minBrakeExitVelocity = 0,
 };
-    
+
 static uint16_t s_telemetryFrequency;
 
 volatile static bool s_swingComplete;
@@ -100,6 +102,8 @@ volatile static uint32_t s_maxThrowExpandDt;
 volatile static uint32_t s_maxRetractUnderPressureDt;
 volatile static uint32_t s_maxRetractExpandDt;
 volatile static uint32_t s_maxRetractBrakeDt;
+volatile static uint32_t s_maxRetractSettleDt;
+volatile static int32_t s_minBrakeExitVelocity;
 
 //  ====================================================================
 //
@@ -218,7 +222,7 @@ void HammerController::Update()
         }
 
         //  No more state changes, move on
-        
+
         if (m_state == prevState)
         {
             break;
@@ -314,10 +318,10 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     uint32_t p_maxThrowExpandDt,
     uint32_t p_maxRetractUnderPressureDt,
     uint32_t p_maxRetractExpandDt,
-    uint32_t p_maxRetractBrakeDt)
+    uint32_t p_maxRetractBrakeDt,
+    uint32_t p_maxRetractSettleDt,
+    int32_t p_minBrakeExitVelocity)
 {
-    m_params.selfRightIntensity = p_selfRightIntensity;
-    m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
     m_params.selfRightIntensity = p_selfRightIntensity;
     m_params.swingTelemetryFrequency = p_swingTelemetryFrequency;
     m_params.maxThrowAngle = p_maxThrowAngle;
@@ -330,6 +334,8 @@ void HammerController::SetParams(uint32_t p_selfRightIntensity,
     m_params.maxRetractUnderPressureDt = p_maxRetractUnderPressureDt;
     m_params.maxRetractExpandDt = p_maxRetractExpandDt;
     m_params.maxRetractBrakeDt = p_maxRetractBrakeDt;
+    m_params.maxRetractSettleDt = p_maxRetractSettleDt;
+    m_params.minBrakeExitVelocity = p_minBrakeExitVelocity;
 
     saveParams();
 }
@@ -414,7 +420,7 @@ void HammerController::setState(controllerState p_state)
             m_throwPressureAngle = k_throwIntensityToAngle[requestedIntensity];
         }
         break;
-        
+
         case EThrowSelfRight:
         {
             m_throwPressureAngle = m_params.selfRightIntensity;
@@ -424,7 +430,7 @@ void HammerController::setState(controllerState p_state)
         case EFullCycleInterruptMode:
         {
             //  BB MJS: Disable for now
-            
+
             /*
             if (Radio.IsFlameRightPulseEnabled())
             {
@@ -448,6 +454,8 @@ void HammerController::setState(controllerState p_state)
             s_maxRetractUnderPressureDt = m_params.maxRetractUnderPressureDt;
             s_maxRetractExpandDt = m_params.maxRetractExpandDt;
             s_maxRetractBrakeDt = m_params.maxRetractBrakeDt;
+            s_maxRetractSettleDt = m_params.maxRetractSettleDt;
+            s_minBrakeExitVelocity = m_params.minBrakeExitVelocity;
 
             startFullCycleStateMachine();
         }
@@ -766,10 +774,10 @@ void startRetractOnlyStateMachine()
 
     //  open throw vent
     digitalWrite(THROW_VENT_VALVE_DO, LOW); 
-    
+
     //  close retract vent
     digitalWrite(RETRACT_VENT_VALVE_DO, HIGH); 
-    
+
     clearPWMForDigitalWrites();
     startTimers();
 }

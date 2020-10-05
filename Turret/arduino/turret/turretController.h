@@ -72,12 +72,14 @@ public:
         uint16_t p_minRetractAngle,
         uint16_t p_emergencyBreakAngle,
         float p_throwSideBreakingForceTrigger,
-        float p_breakStopAngle,       
+        float p_breakStopAngle,
         uint32_t p_maxThrowUnderPressureDt,
         uint32_t p_maxThrowExpandDt,
         uint32_t p_maxRetractUnderPressureDt,
         uint32_t p_maxRetractExpandDt,
-        uint32_t p_maxRetractBreakDt);
+        uint32_t p_maxRetractBrakeDt,
+        uint32_t p_maxRetractSettleDt,
+        int32_t p_minBrakeExitVelocity);
     void SetTurretRotationParameters(uint32_t p_manualControlOverideSpeed);
     void SetIMUParameters(int8_t p_dlpf, int32_t p_imuPeriod, int32_t p_stationaryThreshold,
         int16_t p_uprightCross, int16_t p_minValidCross, int16_t p_maxValidCross,
