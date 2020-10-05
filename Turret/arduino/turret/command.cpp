@@ -89,7 +89,6 @@ struct HammerCommandInner {
     uint32_t maxRetractUnderPressureDt;
     uint32_t maxRetractExpandDt;
     uint32_t maxRetractBrakeDt;
-    int32_t velocityFilterCoefficient;
     uint32_t maxRetractSettleDt;
     int32_t minBrakeExitVelocity;
     int16_t retractFillPressure;

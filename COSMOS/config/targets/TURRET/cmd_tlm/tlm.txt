@@ -200,7 +200,7 @@ TELEMETRY TURRET SWING LITTLE_ENDIAN "Swing Data"
     APPEND_ID_ITEM PKTID 8 UINT 14 "Packet ID which must be 14"
     APPEND_ITEM PT 16 UINT "Number of points collected"
     APPEND_ITEM TIMESTEP 16 UINT "Data sampling frequency"
-        UNITS "microseconds" "us"
+        UNITS "Hertz" "Hz"
     APPEND_ITEM STOP_TIMERS_TIME 32 UINT "Stop Timers Time"
         UNITS "microseconds" "us"
     APPEND_ITEM SWING_START_TIME 32 UINT "Swing Start Time"
@@ -233,7 +233,9 @@ TELEMETRY TURRET SWING LITTLE_ENDIAN "Swing Data"
     APPEND_ITEM RETRACT_STOP_ANGLE 16 UINT "Retract Stop Angle"
         UNITS "degrees" "deg"
         POLY_READ_CONVERSION 0.0 0.0572958
-    APPEND_ITEM PADBITS 5 UINT "Padding"
+    APPEND_ITEM PADBITS 3 UINT "Padding"
+    APPEND_ITEM RETRACT_BRAKE_STOP_VELOCITY 1 UINT "Brake Stop Time"
+    APPEND_ITEM RETRACT_BRAKE_STOP_VELOCITY 1 UINT "Brake Stop Velocity"
     APPEND_ITEM RETRACT_BRAKE_START_REASON_TIME 1 UINT "Brake Start Time"
     APPEND_ITEM RETRACT_BRAKE_START_REASON_ANGLE 1 UINT "Brake Start Angle"
     APPEND_ITEM RETRACT_BRAKE_START_REASON_ENERGY 1 UINT "Brake Start Energy"
@@ -524,9 +526,9 @@ COMMAND TURRET HMR LITTLE_ENDIAN "HAMMER Parameters"
     APPEND_PARAMETER HMR_BRK_EX_VEL 32 INT -300000 300000 0 "Hammer Brake Exit velocity"
         POLY_WRITE_CONVERSION 0.0 17.453
         UNITS "Degrees per second" "deg/s"
-    APPEND_PARAMETER HMR_RET_FILL_PRES 16 INT 0 1000 200 "Hammer Retract Fill Pressure"
+    APPEND_PARAMETER HMR_RET_FILL_PRES 16 INT 0 200 30 "Hammer Retract Fill Pressure"
         UNITS "Pounds per Square Inch" "PSIA"
-        POLY_WRITE_CONVERSION 0.0 0.1450
+        POLY_WRITE_CONVERSION 0.0 6.895
 
 #
 #  TRT - Turret Parameters (Packet ID 19)

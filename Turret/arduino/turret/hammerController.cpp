@@ -585,7 +585,7 @@ volatile static uint16_t s_retractExpandStartAngle;
 volatile static uint16_t s_retractBrakeStartAngle;
 volatile static uint16_t s_retractStopAngle;
 
-volatile uint8_t s_retractBrakeStartReason;
+volatile uint8_t s_retractBrakeReason;
 
 volatile static uint16_t s_swingAngleSamples[k_telmSamplesMax];
 volatile static int32_t s_swingVelocitySamples[k_telmSamplesMax];
@@ -822,7 +822,7 @@ void swingComplete()
         s_swingExpandStartTime, s_swingExpandStartAngle,
         s_retractStartTime, s_retractStartAngle,
         s_retractExpandStartTime, s_retractExpandStartAngle,
-        s_retractBrakeStartTime, s_retractBrakeStartAngle, s_retractBrakeStartReason,
+        s_retractBrakeStartTime, s_retractBrakeStartAngle, s_retractBrakeReason,
         s_retractStopTime, s_retractStopAngle);
 }
 
@@ -1071,7 +1071,7 @@ ISR(TIMER5_COMPA_vect)
 
                     CLOSE_THROW_VENT;
 
-                    s_retractBrakeStartReason = 0;
+                    s_retractBrakeReason = 0;
 
                     /*
                     if (scaledHammerEnergy >= scaledAvailableBrakeEnergy)
@@ -1082,11 +1082,11 @@ ISR(TIMER5_COMPA_vect)
 
                     if(s_hammerAngleCurrent < s_emergencyBrakeAngle)
                     {
-                        s_retractBrakeStartReason |= 2;
+                        s_retractBrakeReason |= 2;
                     }
                     if(s_hammerSubStateDt >= s_maxRetractBrakeDt)
                     {
-                        s_retractBrakeStartReason |= 4;
+                        s_retractBrakeReason |= 4;
                     }
                 }
             }
@@ -1100,6 +1100,15 @@ ISR(TIMER5_COMPA_vect)
 
                     desiredState = ERetractSettle;
                     OPEN_THROW_VENT;
+
+                    if (s_hammerVelocityCurrent >= s_minBrakeExitVelocity )
+                    {
+                        s_retractBrakeReason |= 8;
+                    }
+                    if( s_hammerSubStateDt >= s_maxRetractBrakeDt)
+                    {
+                        s_retractBrakeReason |= 16;
+                    }
                 }
             }
             break;
