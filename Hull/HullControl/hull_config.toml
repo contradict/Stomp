@@ -120,8 +120,8 @@ minimum=[ 0.198, -0.070, -0.215]
 maximum=[ 0.198,  0.070, -0.185]
 r_inner=0.170
 r_outer=0.235
-swing_angle_min=-1.181
-swing_angle_max= 1.181
+swing_angle_min=-0.392
+swing_angle_max= 0.392
 
 direction_swap_phase=[0.3, 0.8]
 direction_swap_tolerance=0.01
@@ -144,6 +144,8 @@ minimum=[0.198, -0.070, -0.215]
 maximum=[0.198,  0.070, -0.185]
 r_inner=0.170
 r_outer=0.235
+swing_angle_min=-0.392
+swing_angle_max= 0.392
 
 direction_swap_phase=[0.42, 0.92]
 direction_swap_tolerance=0.01
