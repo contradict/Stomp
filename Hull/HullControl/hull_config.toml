@@ -38,7 +38,7 @@ FeedbackLowpass=0
 [robot.legs.joint_gain.Lift]
 ProportionalGain=12
 DerivativeGain=0
-ForceDamping=20
+ForceDamping=15
 FeedbackLowpass=0
 
 [[robot.legs.description]]
