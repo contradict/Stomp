@@ -353,9 +353,9 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
 {
     float target = st->desired_ride_height + st->ride_height_scale * extra;
     float mean_error = 0;
+    bool down[st->nlegs];
     if(st->valid_measurements)
     {
-        bool down[st->nlegs];
         int ndown=0;
         for(int l=0; l<st->nlegs; l++)
         {
@@ -389,7 +389,9 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
     }
     for(int l=0; l<st->nlegs; l++)
     {
-        height_offset[l] = st->ride_height_scale * extra + st->ride_height_integrator[l] * igain + mean_error * pgain;
+        height_offset[l] = st->ride_height_scale * extra;
+        if(down[l])
+            height_offset[l] += st->ride_height_integrator[l] * igain + mean_error * pgain;
     }
     if(sclog4c_level <= SL4C_FINE)
     {
