@@ -395,11 +395,11 @@ static bool servo_ride_height(struct leg_thread_state* st, float extra, float *h
     {
         char message[256];
         int nchar;
-        nchar = snprintf(message, sizeof(message), "i: %6.3f p: %6.3f o: [", igain, pgain);
+        nchar = snprintf(message, sizeof(message), "i: %6.3f p: %6.3f i: [", igain, pgain);
         for(int l=0; l<st->nlegs; l++)
         {
             nchar += snprintf(message + nchar, sizeof(message) - nchar, "%5.3f%s",
-                    height_offset[l], l<st->nlegs-1 ? ", " : "]");
+                    st->ride_height_integrator[l], l<st->nlegs-1 ? ", " : "]");
         }
         logm(SL4C_FINE, "%s", message);
     }
