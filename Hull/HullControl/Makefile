@@ -139,4 +139,11 @@ sclog4c/src/libsclog4c.a: sclog4c/src/sclog4c.c
 lcmspy: stomp.jar
 	CLASSPATH=`pwd`/stomp.jar lcm-spy
 
+imu_srcs=src/imu/spidevlib.c src/imu/imu.c
+imu_hdrs=src/imu/spidevlib.h
+imu_objs=$(imu_srcs:.c=.o)
+
+imu: $(imu_objs) $(imu_hdrs)
+	$(CC) $(imu_objs) -o $@
+
 .PHONY: all clean libs targets lcmspy
