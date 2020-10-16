@@ -1,8 +1,8 @@
-# Stomp - Software for the Pneumatic Legged Robot "Chomp"
+# Software for the Pneumatic Legged Robot "Chomp"
 
 This repository contains the control software for Chomp the BattleBot.
-Presently, Chomp has two entirely separate systems the Hull and the Turret. Each
-is entirely self-contained with its own power and control systems. A rough
+Presently, Chomp has two separate systems the Hull and the Turret. Each is
+entirely self-contained with its own power and control systems. A rough
 [schematic](SystemBlockDiagrams) of the Hull is available.
 
 ## Hull
