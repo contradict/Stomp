@@ -177,6 +177,37 @@ The <code>Update()</code> will first do any update calculations needed to detect
 
 # Controller Pattern #
 
+# LEDDAR Processing Overview #
+
+The [LEDDAR M16](https://leddartech.com/lidar/m16-multi-segment-sensor-module/)
+produces 16 range measurements spread over a 48° horizontal by 3° vertical fan.
+It is possible for each measurement to return multiple reflections, we accept
+the one closest to the robot in each segment. The list of measurements is scanned,
+looking for features that project radially inwards toward the robot, with some
+careful handling of [edge
+cases](https://github.com/contradict/Stomp/blob/f4baf6cf64f448c69cff76d400e4cbb2790b86ec/Turret/arduino/turret/targetAcquisitionController.cpp#L225).
+These segmentations are then compared to the current state of an
+[$\alpha-\beta$](https://en.wikipedia.org/wiki/Alpha_beta_filter)
+[filter](https://github.com/contradict/Stomp/blob/master/Turret/arduino/turret/targetTrackingController.cpp)
+and the closest one is used to update the filter state. The rules around
+initialization and target loss are fiddly, but seem to cope with occasional
+sensor noise relatively well.
+
+The tracked target is the used for two tasks. The first is keeping the turret
+pointed at the tracked
+[target](controlle://github.com/contradict/Stomp/blob/master/Turret/arduino/turret/autoAimController.cpp).
+This uses a PID loop providing a velocity command to the turret rotation motor
+to keep the tracked target at the center of the field of view.
+
+If auto-swing is enabled, the tracked target is also used to predict when to
+fire the
+[hammer](https://github.com/contradict/Stomp/blob/master/Turret/arduino/turret/autoFireController.cpp)
+Using the IMU measured rotation speed of the turret and the estimated velocity
+of the target, the position of the target relative to the turret is estimated at
+a time in the future corresponding to the hammer swing duration. If the hammer
+and the target are expected to arrive at the sample place and time, the hammer
+is automatically triggered.
+
 # Notes about changes to original Chomp code #
 
 Files that were just removed because they were no longer necessary
