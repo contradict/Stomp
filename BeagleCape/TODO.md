@@ -7,10 +7,6 @@ in.
 
   * The `COMMUP/DOWN` line from the leg boards was connected to `P9.09`, which
     turns out to be the power button. I disconnected that for now.
-
-  * `uart6` is connected to the WiFi/Bluetooth module on board, using it
-    requires disabling WiFi. It would be nice to use a different UART for the
-    control radio.  The RX and TX pins were also swapped.
     
   * Resistors:  If possible, no resistor smaller than 0603, any user installable
      jump resistor should be at least 0804, preferably 1206 if possible.
