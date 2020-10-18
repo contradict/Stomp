@@ -10,3 +10,8 @@ in.
     
   * Resistors:  If possible, no resistor smaller than 0603, any user installable
      jump resistor should be at least 0804, preferably 1206 if possible.
+     
+  * PWM?:  Put as many of the FET control inputs on header pins that can be
+      connected to the PRU IO pins.  This might allow us to do clever peak
+      and hold schemes with the big solenoids, or use the battery to run the
+      ignitors with a 50% duty cycle.
