@@ -10,5 +10,3 @@ in.
     
   * Resistors:  If possible, no resistor smaller than 0603, any user installable
      jump resistor should be at least 0804, preferably 1206 if possible.
-
-  * Update Rx/Tx on control radio? (Confirm with Russell/Jascha)
