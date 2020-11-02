@@ -15,3 +15,5 @@ in.
       connected to the PRU IO pins.  This might allow us to do clever peak
       and hold schemes with the big solenoids, or use the battery to run the
       ignitors with a 50% duty cycle.
+
+  * Check all LED direction to make sure they are installed correctly (per Russel in slack on 10/31/20 the high current outputs appear to be soldered on backwards).
