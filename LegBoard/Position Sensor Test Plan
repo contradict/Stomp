@@ -1,0 +1,22 @@
+ ** Test
+ * Test Setup
+ * Pass Criteria
+
+ ** Voice coil interference 
+ * Set up a voice coil near the sensor and blah blah
+ * Noise introduced into system must be less than blah blah?
+ 
+ ** Resolution & Accuracy test
+ * Move a target by X" across the range of the sensor.
+ * Reported position update within Y" of all positions over the range of the sensor.
+ 
+ ** Speed test
+ * Confirm 
+ 
+ ** Hysteresis?
+ 
+ ** Temperature?
+ 
+ ** Vibration?
+ 
+ ** Shock?
