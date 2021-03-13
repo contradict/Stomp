@@ -11,7 +11,7 @@
 #include "sclog4c/sclog4c.h"
 
 #include "lcm/stomp_control_radio.h"
-#include "lcm/stomp_turret_control.h"
+#include "lcm/stomp_turret_telemetry.h"
 
 int main(int argc, char **argv)
 {

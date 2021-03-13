@@ -70,11 +70,12 @@ libs: $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELIB)
 clean:
 	rm -f $(turret_control_objs)
 	rm -f $(sensors_control_objs)
-	rm -f turret_control sensors_control sbus_radio telemetry fake_sbus_radio
+	rm -f turret_control sensors_control sbus_radio telemetry fake_sbus_radio test_telem
 	rm -f $(MESSAGELIB)
 	rm -f $(sbus_radio_objs)
 	rm -f $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o
 	rm -f $(telemetry_objs)
+	rm -f $(telem_test_objs) 
 	rm -fr inc/lcm src/lcm
 	rm -fr $(COMMON_MODULES_DIR)/inc/lcm $(COMMON_MODULES_DIR)/src/lcm
 	$(MAKE) -C $(TOML_DIR) clean
@@ -104,7 +105,7 @@ fake_sbus_radio: $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o $(MESSAG
 telemetry: $(telemetry_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
-test_telem: $(telem_test_objs) 
+test_telem: $(telem_test_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
 .SECONDARY: $(message_srcs)

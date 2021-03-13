@@ -11,11 +11,26 @@
 #include "lcm_channels.h"
 #include "sbus_channels.h"
 #include "lcm/stomp_control_radio.h"
-#include "lcm/stomp_telemetry_leg.h"
 #include "sclog4c/sclog4c.h"
 
+#if HULL
+#include "lcm/stomp_telemetry_leg.h"
+#endif
+
+#if TURRET
+#include "lcm/stomp_turret_telemetry.h"
+#include "lcm/stomp_sensors_control.h"
+#endif
+
 const int gnrl_period_msec = 200;  //general packet send period
+
+#if HULL
 const int leg_period_msec = 200; //leg packet send period
+#endif
+
+#if TURRET
+const int turret_period_msec = 200; //turret packet send period
+#endif
 
 int time_diff_msec(struct timeval t0, struct timeval t1)
 {
@@ -40,6 +55,8 @@ static void sbus_handler(const lcm_recv_buf_t *rbuf, const char *channel,
     {
     }
 }
+
+#if HULL
 
 int8_t m_to_int(float value){
     return (int8_t) value;
@@ -89,6 +106,59 @@ static void leg_handler(const lcm_recv_buf_t *rbuf, const char *channel,
     }
 }
 
+#endif
+
+#if TURRET
+
+static void turret_telemetry_handler(const lcm_recv_buf_t *rbuf, const char *channel,
+                       const stomp_turret_telemetry *msg, void *user)
+{
+    static struct timeval now;
+    static struct timeval last_send_time;
+
+    gettimeofday(&now, 0);
+    int millis = time_diff_msec(last_send_time, now);
+    logm(SL4C_DEBUG, "%d msec since last %s msg received", millis, channel);
+
+    if (millis > turret_period_msec) //prepare and send COSMOS msg
+    {
+        gettimeofday(&last_send_time, 0);
+        struct turret_gnrl_cosmos cosmos_msg;
+        logm(SL4C_DEBUG, "Sending COSMOS Turret General packet");
+
+        cosmos_msg.turret_state = msg->turret_state;
+
+        telem_publish(TURRET_GNRL, (char *)&cosmos_msg, sizeof(cosmos_msg));
+    }
+}
+
+static void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *channel,
+                       const stomp_sensors_control *msg, void *user)
+{
+    static struct timeval now;
+    static struct timeval last_send_time;
+
+    gettimeofday(&now, 0);
+    int millis = time_diff_msec(last_send_time, now);
+    logm(SL4C_DEBUG, "%d msec since last %s msg received", millis, channel);
+
+    if (millis > turret_period_msec) //prepare and send COSMOS msg
+    {
+        gettimeofday(&last_send_time, 0);
+        struct turret_sensors_cosmos cosmos_msg;
+        logm(SL4C_DEBUG, "Sending COSMOS Turret Sensors packet");
+
+        cosmos_msg.hammer_angle = msg->hammer_angle;
+        cosmos_msg.turret_angle = msg->turret_angle;
+        cosmos_msg.throw_pressure = msg->throw_pressure;
+        cosmos_msg.retract_pressure = msg->retract_pressure;
+
+        telem_publish(TURRET_SNS, (char *)&cosmos_msg, sizeof(cosmos_msg));
+    }
+}
+
+#endif
+
 int main(int argc, char **argv)
 {
     sclog4c_level = SL4C_FATAL; //default logging, fatal errors only
@@ -113,7 +183,15 @@ int main(int argc, char **argv)
     }
 
     stomp_control_radio_subscribe(lcm, SBUS_RADIO_COMMAND, &sbus_handler, NULL);
+
+#if HULL
     stomp_telemetry_leg_subscribe(lcm, LEG_TELEMETRY, &leg_handler, NULL);
+#endif
+
+#if TURRET
+    stomp_turret_telemetry_subscribe(lcm, TURRET_TELEMETRY, &turret_telemetry_handler, NULL);
+    stomp_sensors_control_subscribe(lcm, SENSORS_CONTROL, &turret_sensors_control_handler, NULL);
+#endif
 
     while (1)
     {

@@ -19,6 +19,8 @@ typedef enum msg_id {
     GNRL,
     LEGSTAT,
     TANK_PSI,
+    TURRET_GNRL,
+    TURRET_SNS,
     HIGHEST_ID
 } msg_id;
 // Our msg_id has to be safely castable to a uint8_t
@@ -51,3 +53,15 @@ struct legs_cosmos {
 struct tank_psi {
     uint32_t psi;
 } __attribute__((__packed__));
+
+struct turret_gnrl_cosmos {
+    uint8_t turret_state;
+} __attribute__((__packed__));
+
+struct turret_sensors_cosmos {
+    float hammer_angle;
+    float turret_angle;
+    float throw_pressure;
+    float retract_pressure;
+} __attribute__((__packed__));
+
