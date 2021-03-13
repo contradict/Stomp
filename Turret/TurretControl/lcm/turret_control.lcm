@@ -1,0 +1,6 @@
+package stomp;
+
+struct turret_control
+{
+    int32_t turret_state;
+}

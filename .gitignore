@@ -5,3 +5,4 @@ scratch
 *.*-bak
 *.bck
 scratch
+*.o
