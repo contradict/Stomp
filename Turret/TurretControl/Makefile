@@ -34,8 +34,13 @@ sensors_control_objs=$(sensors_control_srcs:.c=.o)
 sbus_radio_srcs=$(shell find $(COMMON_MODULES_DIR)/src/sbus_radio/*.c)
 sbus_radio_objs=$(sbus_radio_srcs:.c=.o)
 
-telemetry_srcs=$(shell find $(COMMON_MODULES_DIR)/src/telemetry/*.c)
+#telemetry_srcs=$(shell find $(COMMON_MODULES_DIR)/src/telemetry/*.c)
+
+telemetry_srcs= $(COMMON_MODULES_DIR)/src/telemetry/rfd900x.c $(COMMON_MODULES_DIR)/src/telemetry/telemetry.c $(COMMON_MODULES_DIR)/src/telemetry/main.c
 telemetry_objs=$(telemetry_srcs:.c=.o)
+
+telem_test_srcs= $(COMMON_MODULES_DIR)/src/telemetry/rfd900x.c $(COMMON_MODULES_DIR)/src/telemetry/telemetry.c $(COMMON_MODULES_DIR)/src/telemetry/test_telem.c
+telem_test_objs=$(telem_test_srcs:.c=.o)
 
 TOML_DIR=../../Common/external/tomlc99
 TOMLC99_CFLAGS=-I $(TOML_DIR)
@@ -98,6 +103,9 @@ fake_sbus_radio: $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o $(MESSAG
 
 telemetry: $(telemetry_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+
+test_telem: $(telem_test_objs) 
+	gcc $^ -o $@ $(LDFLAGS)
 
 .SECONDARY: $(message_srcs)
 
