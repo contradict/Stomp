@@ -85,13 +85,13 @@ turret_control: $(turret_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB) $(TOML
 	gcc $^ -o $@ $(LDFLAGS)
 
 turret_control_cap: turret_control
-	sudo setcap "cap_sys_nice=ep" turret_control
+	sudo setcap "cap_sys_nice=ep" ./turret_control
 
 sensors_control: $(sensors_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
 sensors_control_cap: sensor_control
-	sudo setcap "cap_sys_nice=ep" sensors_control
+	sudo setcap "cap_sys_nice=ep" ./sensors_control
 
 $(MESSAGELIB): $(message_objs)
 	ar rcs $@ $^

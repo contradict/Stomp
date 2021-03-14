@@ -3,7 +3,6 @@
 #include "sclog4c/sclog4c.h"
 
 #include "lcm_channels.h"
-#include "lcm_channels.h"
 #include "sbus_channels.h"
 #include "leg_control/lcm_handlers.h"
 #include "leg_control/leg_thread.h"

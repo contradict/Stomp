@@ -99,7 +99,7 @@ leg_control: $(leg_control_objs) ../Common/modbus_device.o $(MESSAGELIB) $(RINGB
 	gcc $^ -o $@ $(LDFLAGS)
 
 leg_control_cap: leg_control
-	sudo setcap "cap_sys_nice=ep" leg_control
+	sudo setcap "cap_sys_nice=ep" ./leg_control
 
 lissajou: CFLAGS+= -I ../../LegBoard/Firmware/inc/export
 lissajou: LDFLAGS+= $(MODBUS_LDFLAGS)
