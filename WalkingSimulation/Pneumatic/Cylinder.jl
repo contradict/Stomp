@@ -1,4 +1,6 @@
 using DifferentialEquations, CSV, Unitful, Parameters, RecursiveArrayTools
+using Plots, UnitfulRecipes
+using Optim
 
 const γ = 1.4 # = cₚ / cᵥ for air
 
@@ -14,9 +16,9 @@ const Patmospheric = 101325u"Pa"  # Pa
     C::SonicConductance = 4.1e-8u"s*m^4/kg"
     ρ₀::Unitful.Density = 1.185u"kg/m^3"
     T₀::Unitful.Temperature = 273.15u"K"
-    bₗₐₘ::Float64 = 0.999
-    bcᵣ::Float64 = 0.35
-    m::Float64 = 0.5
+    bₗₐₘ::Real = 0.999
+    bcᵣ::Real = 0.35
+    m::Real = 0.5
 end
 
 function (v::ISO6358Valve)(pᵢₙ, Tᵢₙ, pₒᵤₜ)
@@ -70,27 +72,17 @@ function valveFlow(command, P, T, f, Pin, Tin, fin, Patm, Tatm, fatm, Amax, db, 
     a = valveArea(command, 1.0, db)
     Pv, Tv, Fv = ifelse(command<0, (Patm, Tatm, fatm), (Pin, Tin, fin))
     dir, Pu, Pd, Tu, ff = ifelse((P < Pv), (1, Pv, P, Tv, Fv), (-1, P, Pv, T, f))
-    #@show Pu Tu Pd
     dir * ff * a * valve(Pu, Tu, Pd)
 end
 
 # https://www.researchgate.net/publication/238185949_Heat_transfer_evaluation_of_industrial_pneumatic_cylinders
 function cylinder!(du, u, p, t)
 
-    L, Apiston, Cpiston, r, Vdb, Amax, Cd, Tamb, λ, Mass, Tin, σs, σd, vmin, Pin, Patm, Tatm, tpulse, dpulse, apulse, valve = p
+    L, Apiston, Cpiston, r, Vdb, Amax, Tamb, λ, Mass, Tin, σs, σd, vmin, Pin, Patm, Tatm, command, valve = p
     x, v, Pb, Tb, Pr, Tr = u
 
     # force on base - force on rod face of piston - force on rod end
     force = Pb * Apiston - Pr * r * Apiston - Apiston * (1-r) * Patm
-
-    # A control pulse to make things move
-    if tpulse<=t<tpulse+dpulse
-        pulse = apulse
-    elseif tpulse+dpulse<=t<tpulse+2*dpulse
-        pulse = -apulse
-    else
-        pulse = 0
-    end
 
     # static friction below vmin, columb friction above
     if abs(v) < vmin
@@ -99,7 +91,7 @@ function cylinder!(du, u, p, t)
             du[2] = zero(du[2])
         else
             du[1] = v
-            du[2] = (force - σd * sign(force)) / Mass
+            du[2] = (force - σd * sign(v)) / Mass
         end
     else
         du[1] = v
@@ -111,22 +103,22 @@ function cylinder!(du, u, p, t)
     dVpiston = Apiston * v
     # Eqn 1 at base side of piston
     du[3] = (-γ * Pb / Vpiston * dVpiston +
-              γ * Rₛ / Vpiston * valveFlow(pulse, Pb, Tb, Tb, Pin, Tin, Tin, Patm, Tatm, Tatm, Amax, Vdb, valve) +
+              γ * Rₛ / Vpiston * valveFlow(command, Pb, Tb, Tb, Pin, Tin, Tin, Patm, Tatm, Tatm, Amax, Vdb, valve) +
               (γ - 1) / Vpiston * λ * (x * Cpiston) * (Tamb - Tb))
     # Eqn 2 at base side of piston
     du[4] = (Tb / Vpiston * dVpiston * (1 - γ) +
-             Rₛ * Tb / Vpiston / Pb * valveFlow(pulse, Pb, Tr, Tr*(γ-1), Pin, Tin, (γ*Tin - Tr), Patm, Tatm, (γ*Tatm-Tr), Amax, Vdb, valve) +
+             Rₛ * Tb / Vpiston / Pb * valveFlow(command, Pb, Tr, Tr*(γ-1), Pin, Tin, (γ*Tin - Tr), Patm, Tatm, (γ*Tatm-Tr), Amax, Vdb, valve) +
              (γ - 1) * Tb / Pb / Vpiston * λ * (x * Cpiston) * (Tamb - Tb))
 
     Vrod = Apiston * r * (L - x)
     dVrod = Apiston * r * -v
     # Eqn 1 at rod side of piston
     du[5] = (-γ * Pr / Vrod * dVrod +
-              γ * Rₛ / Vrod * valveFlow(-pulse, Pr, Tr, Tr, Pin, Tin, Tin, Patm, Tatm, Tatm, Amax, Vdb, valve) +
+              γ * Rₛ / Vrod * valveFlow(-command, Pr, Tr, Tr, Pin, Tin, Tin, Patm, Tatm, Tatm, Amax, Vdb, valve) +
               (γ - 1) / Vrod * λ * ((L-x) * Cpiston) * (Tamb - Tr))
     # Eqn 2 at rod side of piston
     du[6] = (Tr / Vrod * dVrod * (1 - γ) +
-             Rₛ * Tr / Vrod / Pr * valveFlow(-pulse, Pr, Tr, Tr*(γ-1), Pin, Tin, (γ*Tin - Tr), Patm, Tatm, (γ*Tatm - Tr), Amax, Vdb, valve) +
+             Rₛ * Tr / Vrod / Pr * valveFlow(-command, Pr, Tr, Tr*(γ-1), Pin, Tin, (γ*Tin - Tr), Patm, Tatm, (γ*Tatm - Tr), Amax, Vdb, valve) +
              (γ - 1) * Tr / Pr / Vrod * λ * ((L-x) * Cpiston) * (Tamb - Tr))
     du
 end
@@ -139,29 +131,26 @@ function makeProblem()
     rod_r = 0.8    # unitless area ratio of piston to rod
     L = 0.10u"m"       # m cylinder length
 
-    p = (
+    p = [
         L,                #L        m
         Ap,               #Apiston  m^2
         π * 2 * Rp,       #Cpiston  m
         rod_r,            #r
         0.07,             #Vdb      unitless command deadband
         25e-6u"m^2",      #Amax     m^2
-        0.796,            #Cd       Valve coefficient
         Ta,               #Tamb     K
-        0.0u"W/K/m^2",              #λ        heat transfer coefficient
-        0.10u"kg",        #Mass     kg piston + rod + load mass
+        0.0u"W/K/m^2",    #λ        heat transfer coefficient
+        1.00u"kg",        #Mass     kg piston + rod + load mass
         273.0u"K",        #Tin      K valve inlet temperature
-        0.01u"kg*m/s^2",  #σs       kg m / s^2 static friction
-        0.001u"kg*m/s^2", #σd       kg m / s^2 dynamic friction
+        10.0u"kg*m/s^2",  #σs       kg m / s^2 static friction
+        1.0u"kg*m/s^2",   #σd       kg m / s^2 dynamic friction
         0.001u"m/s",      #vmin     m/s minimum speed for static friction
         900e3u"Pa",       #Pin      Pa ≈ ~135psia valve inlet pressure
         Pa,               #Patm     Pa
         300.0u"K",        #Tatm     K
-        0.1u"s",          #tpulse   s pulse start time
-        0.05u"s",          #dpulse   s pulse duration
-        0.1,              #apulse   unitless valve command, pulse amplitude
+        0.0,              #valve command value
         ISO6358Valve(),
-    )
+    ]
 
     u0 = ArrayPartition(
         [L / 2],     # x   m
@@ -177,10 +166,36 @@ function makeProblem()
     ODEProblem(cylinder!, u0, tspan, p)
 end
 
-function solveProblem(prob)
-    solve(prob, Tsit5(), d_discontinuities=[0.1u"s", 0.2u"s", 0.3u"s"])
+struct Pulse
+    start::Unitful.Time
+    duration::Unitful.Time
+    amplitude::Float64
 end
 
+function condition(p::Pulse)
+    pulse_condition(u, t, integrator) = ustrip((t-p.start)*(t-p.start-p.duration)*(t-p.start-2*p.duration))
+end
+
+function affect(p::Pulse)
+    function pulse_affect!(integrator)
+        integrator.p[17] = if p.start <= integrator.t < p.start + p.duration
+            p.amplitude
+        elseif p.start + p.duration <= integrator.t < p.start + 2 * p.duration
+            -p.amplitude
+        else
+            0.0
+        end
+    end
+end
+
+discontinuities(p::Pulse) = [p.start, p.start+p.duration, p.start+2*p.duration]
+
+callback(p::Pulse) = PresetTimeCallback(discontinuities(pulse), affect(p))
+
+function solveProblem(prob, pulse)
+    cb = callback(pulse)
+    solve(prob, d_discontinuities=discontinuities(pulse), callback=cb)
+end
 
 function stepProblem(prob, u, t; dt=1e-3u"s")
     du = zero(u/oneunit(t))
@@ -210,15 +225,24 @@ end
 function fitValveParameters(commandfile, flowfile)
     aperture = CSV.File(commandfile, header=[:command, :fraction])
     flow = CSV.File(flowfile, header=1:2)
-    PSIAtoPA=6894.76
-    SCFMtokgs=4.9e-4
-    function loss(a, db, cd)
-        for inlet_pressure in 20:20:200
-            outlet_pressure = CSV.getcolumn(flow, Symbol("OutletPressure_$(inlet_pressure)psia")) |> skipmissing |> collect
-            outlet_pressure *= PSIAtoPA
-            outlet_flow = CSV.getcolumn(flow, Symbol("Flow_$(inlet_pressure)psia")) |> skipmissing |> collect
-            outlet_flow *= SCFMtokgs
-            valveFlow()
+    PSIAtoPA=6894.76u"Pa"
+    SCFMtokgs=4.9e-4u"kg/s"
+    valid_inlet_pressure = 20:20:200
+    outlet_pressure = Dict(
+        inlet_pressure=>CSV.getcolumn(flow, Symbol("OutletPressure_$(inlet_pressure)psia")) |> skipmissing |> collect
+        for inlet_pressure in valid_inlet_pressure)
+    outlet_flow = Dict(
+        inlet_pressure=>CSV.getcolumn(flow, Symbol("Flow_$(inlet_pressure)psia")) |> skipmissing |> collect
+        for inlet_pressure in valid_inlet_pressure)
+    function loss(params)
+        C = params[1]
+        valve = ISO6358Valve(;C=C*1e-8u"s*m^4/kg")
+        sum(valid_inlet_pressure) do inlet_pressure
+            pᵢ = inlet_pressure*PSIAtoPA
+            Tᵢ = 300.0u"K"
+            sum(((SCFMtokgs .* outlet_flow[inlet_pressure] .- valve.(pᵢ, Tᵢ, PSIAtoPA .* outlet_pressure[inlet_pressure])).^2)/1u"kg^2/s^2")
         end
     end
+    loss(4.1)
+    optimize(loss, [4.1], BFGS())
 end

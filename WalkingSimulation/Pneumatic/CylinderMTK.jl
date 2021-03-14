@@ -208,7 +208,7 @@ function fitValveParameters(commandfile, flowfile)
             outlet_pressure *= PSIAtoPA
             outlet_flow = CSV.getcolumn(flow, Symbol("Flow_$(inlet_pressure)psia")) |> skipmissing |> collect
             outlet_flow *= SCFMtokgs
-            valveFlow()
+            # valveFlow(command, P, T, f, Pin, Tin, fin, Patm, Tatm, fatm, Cd, Amax, db)
         end
     end
 end
