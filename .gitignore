@@ -5,3 +5,5 @@ scratch
 *.*-bak
 *.bck
 scratch
+*.o
+Turret/arduino/build

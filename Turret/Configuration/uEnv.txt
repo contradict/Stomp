@@ -1,0 +1,21 @@
+#Docs: http://elinux.org/Beagleboard:U-boot_partitioning_layout_2.0
+
+uname_r=4.14.108-ti-r136
+#uuid=
+#dtb=
+cmdline=coherent_pool=1M net.ifnames=0 rng_core.default_quality=100 quiet
+
+#In the event of edid real failures, uncomment this next line:
+#cmdline=coherent_pool=1M net.ifnames=0 rng_core.default_quality=100 quiet video=HDMI-A-1:1024x768@60e
+
+#Use an overlayfs on top of a read-only root filesystem:
+#cmdline=coherent_pool=1M net.ifnames=0 rng_core.default_quality=100 quiet overlayroot=tmpfs
+
+##enable Generic eMMC Flasher:
+#cmdline=init=/opt/scripts/tools/eMMC/init-eMMC-flasher-v3-no-eeprom.sh
+
+enable_uboot_overlays=1
+uboot_overlay_addr0=/lib/firmware/BBAI-SPI3-ADC-IMU.dtb
+uboot_overlay_addr1=/lib/firmware/BBAI-UART10.dtb
+uboot_overlay_addr2=/lib/firmware/BBAI-UART3.dtb
+uboot_overlay_addr3=/lib/firmware/BBAI-UART5.dtb

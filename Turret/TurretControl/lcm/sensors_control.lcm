@@ -1,0 +1,9 @@
+package stomp;
+
+struct sensors_control
+{
+    float hammer_angle;
+    float turret_angle;
+    float throw_pressure;
+    float retract_pressure;
+}
