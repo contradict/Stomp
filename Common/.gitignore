@@ -1,0 +1,4 @@
+modules/src/lcm
+modules/inc/lcm
+*.o
+.*.sw?

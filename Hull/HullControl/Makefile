@@ -83,7 +83,7 @@ clean:
 	rm -f LegModes.pdf
 	rm -f src/leg_control/*.o
 	rm -f src/leg_control/test/*.o
-	rm -f leg_control sbus_radio telemetry fake_sbus_radio test_telem
+	rm -f leg_control sbus_radio telemetry fake_sbus_radio test_gain_set test_telem
 	rm -f $(MESSAGELIB)
 	rm -f $(sbus_radio_objs)
 	rm -f $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o
@@ -127,9 +127,6 @@ telemetry: $(telemetry_objs) $(MESSAGELIB)
 
 test_telem: $(telem_test_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
-
-$(MESSAGELIB): $(message_objs)
-	ar rcs $@ $^
 
 .SECONDARY: $(message_srcs)
 
