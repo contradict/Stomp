@@ -13,22 +13,22 @@
 #include "lcm/stomp_control_radio.h"
 #include "sclog4c/sclog4c.h"
 
-#if HULL
+#ifdef HULL
 #include "lcm/stomp_telemetry_leg.h"
 #endif
 
-#if TURRET
+#ifdef TURRET
 #include "lcm/stomp_turret_telemetry.h"
 #include "lcm/stomp_sensors_control.h"
 #endif
 
 const int gnrl_period_msec = 200;  //general packet send period
 
-#if HULL
+#ifdef HULL
 const int leg_period_msec = 200; //leg packet send period
 #endif
 
-#if TURRET
+#ifdef TURRET
 const int turret_period_msec = 200; //turret packet send period
 #endif
 
@@ -56,7 +56,7 @@ static void sbus_handler(const lcm_recv_buf_t *rbuf, const char *channel,
     }
 }
 
-#if HULL
+#ifdef HULL
 
 int8_t m_to_int(float value){
     return (int8_t) value;
@@ -108,7 +108,7 @@ static void leg_handler(const lcm_recv_buf_t *rbuf, const char *channel,
 
 #endif
 
-#if TURRET
+#ifdef TURRET
 
 static void turret_telemetry_handler(const lcm_recv_buf_t *rbuf, const char *channel,
                        const stomp_turret_telemetry *msg, void *user)
@@ -184,11 +184,11 @@ int main(int argc, char **argv)
 
     stomp_control_radio_subscribe(lcm, SBUS_RADIO_COMMAND, &sbus_handler, NULL);
 
-#if HULL
+#ifdef HULL
     stomp_telemetry_leg_subscribe(lcm, LEG_TELEMETRY, &leg_handler, NULL);
 #endif
 
-#if TURRET
+#ifdef TURRET
     stomp_turret_telemetry_subscribe(lcm, TURRET_TELEMETRY, &turret_telemetry_handler, NULL);
     stomp_sensors_control_subscribe(lcm, SENSORS_CONTROL, &turret_sensors_control_handler, NULL);
 #endif
