@@ -170,11 +170,11 @@ int main(int argc, char **argv)
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
                 num_bytes = read(hammer_angle_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_DEBUG, "read hammer_angle_fd returned %d bytes", num_bytes);
+                logm(SL4C_FINE, "read hammer_angle_fd returned %d bytes", num_bytes);
                 lseek(hammer_angle_fd, 0, SEEK_SET);
 
                 int32_t hammer_angle_raw = atoi(read_buff);
-                logm(SL4C_DEBUG, "hammer angle raw = %d", hammer_angle_raw);
+                logm(SL4C_FINE, "hammer angle raw = %d", hammer_angle_raw);
 
                 lcm_msg.hammer_angle_valid = 1;
                 lcm_msg.hammer_angle = process_raw_hammer_angle(hammer_angle_raw);
@@ -186,11 +186,11 @@ int main(int argc, char **argv)
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
                 num_bytes = read(turret_angle_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_DEBUG, "read turret_angle_fd returned %d bytes", num_bytes);
+                logm(SL4C_FINE, "read turret_angle_fd returned %d bytes", num_bytes);
                 lseek(turret_angle_fd, 0, SEEK_SET);
 
                 int32_t turret_angle_raw = atoi(read_buff);
-                logm(SL4C_DEBUG, "turret angle raw = %d", turret_angle_raw);
+                logm(SL4C_FINE, "turret angle raw = %d", turret_angle_raw);
 
                 lcm_msg.turret_angle_valid = 1;
                 lcm_msg.turret_angle = process_raw_turret_angle(turret_angle_raw);
@@ -202,11 +202,11 @@ int main(int argc, char **argv)
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
                 num_bytes = read(throw_pressure_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_DEBUG, "read throw_pressure_fd returned %d bytes", num_bytes);
+                logm(SL4C_FINE, "read throw_pressure_fd returned %d bytes", num_bytes);
                 lseek(throw_pressure_fd, 0, SEEK_SET);
 
                 int32_t throw_pressure_raw = atoi(read_buff);
-                logm(SL4C_DEBUG, "throw pressure raw = %d", throw_pressure_raw);
+                logm(SL4C_FINE, "throw pressure raw = %d", throw_pressure_raw);
 
                 lcm_msg.throw_pressure_valid = 1;
                 lcm_msg.throw_pressure = process_raw_throw_pressure(throw_pressure_raw);
@@ -218,11 +218,11 @@ int main(int argc, char **argv)
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
                 num_bytes = read(retract_pressure_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_DEBUG, "read retract_pressure_fd returned %d bytes", num_bytes);
+                logm(SL4C_FINE, "read retract_pressure_fd returned %d bytes", num_bytes);
                 lseek(retract_pressure_fd, 0, SEEK_SET);
 
                 int32_t retract_pressure_raw = atoi(read_buff);
-                logm(SL4C_DEBUG, "retract pressure raw = %d", retract_pressure_raw);
+                logm(SL4C_FINE, "retract pressure raw = %d", retract_pressure_raw);
 
                 lcm_msg.retract_pressure_valid = 1;
                 lcm_msg.retract_pressure = process_raw_retract_pressure(retract_pressure_raw);
