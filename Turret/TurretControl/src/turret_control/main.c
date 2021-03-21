@@ -3,15 +3,14 @@
 #include <getopt.h>
 #include <string.h>
 #include <sys/select.h>
-
-#include "turret_control.h"
-
 #include <lcm/lcm.h>
 
 #include "sclog4c/sclog4c.h"
 
 #include "lcm/stomp_control_radio.h"
 #include "lcm/stomp_turret_telemetry.h"
+
+#include "turret_control/turret_control.h"
 
 int main(int argc, char **argv)
 {

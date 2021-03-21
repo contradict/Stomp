@@ -2,6 +2,10 @@ package stomp;
 
 struct sensors_control
 {
+    int8_t hammer_angle_valid;
+    int8_t turret_angle_valid;
+    int8_t throw_pressure_valid;
+    int8_t retract_pressure_valid;
     float hammer_angle;
     float turret_angle;
     float throw_pressure;
