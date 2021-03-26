@@ -85,6 +85,7 @@ clean:
 	rm -f $(telem_test_objs) 
 	rm -fr inc/lcm src/lcm
 	rm -fr $(COMMON_MODULES_DIR)/inc/lcm $(COMMON_MODULES_DIR)/src/lcm
+	$(MAKE) -C src/hammer_control clean
 	$(MAKE) -C $(TOML_DIR) clean
 	$(MAKE) -C $(SCLOG4C_DIR) clean
 

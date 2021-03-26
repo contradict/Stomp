@@ -22,7 +22,6 @@ volatile register uint32_t __R31;
 // -----------------------------------------------------------------------------
 
 static const uint32_t k_message_buffer_max_len = 496;
-static const uint32_t k_message_delay_dt_max = 1000000;
 static const uint32_t k_message_recv_delay_dt_max = 500000;
 
 // The PRU-ICSS system events used for RPMsg are defined in the Linux 
@@ -75,7 +74,6 @@ static char s_recv_message_buffer[496];
 static uint16_t s_rpmsg_arm_addr;
 static uint16_t s_rpmsg_pru_addr;
 
-static uint32_t s_message_last_send_time;
 static uint32_t s_message_last_recv_time;
 
 static uint8_t s_comms_connected;
@@ -353,6 +351,14 @@ void set_state(enum state new_state)
 
 void recv_sync_message(char *sens_message_buffer)
 {
+    // turn off all LED
+                
+    __R30 &= ~(k_pr1_pru1_gpo5);
+    __R30 &= ~(k_pr1_pru1_gpo9);
+    __R30 &= ~(k_pr1_pru1_gpo18);
+
+    // Mark that we got this message
+    
     s_sync_message_received = 1;
 }
 
@@ -421,7 +427,6 @@ void send_comm_message(uint32_t message_num_total, uint32_t message_num_sensors)
     // send the message out
     
     pru_rpmsg_send(&s_transport, s_rpmsg_pru_addr, s_rpmsg_arm_addr, s_send_message_buffer, k_message_buffer_max_len);
-    s_message_last_send_time = pru_time_gettime();
 }
 
 void send_swng_message()
@@ -457,7 +462,6 @@ void send_swng_message()
     // send the message out
     
     pru_rpmsg_send(&s_transport, s_rpmsg_pru_addr, s_rpmsg_arm_addr, s_send_message_buffer, k_message_buffer_max_len);
-    s_message_last_send_time = pru_time_gettime();
 }
 
 int8_t check_for_arm_sync()
@@ -535,7 +539,6 @@ void init_rpmsg()
 
     // init message send time
 
-    s_message_last_send_time = pru_time_gettime();
     report_comms_down();
     
     s_sync_message_received = 0;
@@ -590,7 +593,7 @@ void report_comms_down()
 
 int8_t is_comms_connected()
 {
-    s_comms_connected;
+    return s_comms_connected;
 }
 
 int8_t is_weapon_armed()
