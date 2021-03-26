@@ -21,6 +21,34 @@
 #include "sensors_control/throw_pressure_sensor.h"
 #include "sensors_control/retract_pressure_sensor.h"
 
+// -----------------------------------------------------------------------------
+// file scope consts
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// file scope statics
+// -----------------------------------------------------------------------------
+
+static lcm_t *s_lcm;
+
+static int s_hammer_angle_fd = -1;
+static int s_turret_angle_fd = -1;
+static int s_throw_pressure_fd = -1;
+static int s_retract_pressure_fd = -1;
+static int s_max_fd = -1;
+
+
+// -----------------------------------------------------------------------------
+//  forward decl of internal methods
+// -----------------------------------------------------------------------------
+
+static void init_lcm();
+static void init_sensors();
+
+// -----------------------------------------------------------------------------
+// main
+// -----------------------------------------------------------------------------
+
 int main(int argc, char **argv)
 {
     // parse command line
@@ -37,111 +65,17 @@ int main(int argc, char **argv)
         }
     }
 
-    // create lcm 
-
-    stomp_sensors_control lcm_msg;
-
-    lcm_t *lcm = lcm_create(NULL);
-    if(!lcm)
-    {
-        logm(SL4C_FATAL, "Failed to initialize LCM.\n");
-        exit(2);
-    }
-
-    // open each of the analog devices
-    // 
-    // need to keep track of the higest fd for use in select call
-
-    int max_fd = -1;
-    int hammer_angle_fd = -1;
-    
-    if (is_hammer_angle_sensor_present())
-    {
-        hammer_angle_fd = open(get_hammer_angle_sensor_device(), O_RDONLY);
-
-        if (hammer_angle_fd < 0)
-        {
-            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
-            return 1;
-        } 
-
-        if (hammer_angle_fd > max_fd)
-        {
-            max_fd = hammer_angle_fd;
-        }
-    }
-
-    int turret_angle_fd = -1;
-
-    if (is_turret_angle_sensor_present())
-    {
-        turret_angle_fd = open(get_hammer_angle_sensor_device(), O_RDONLY);
-
-        if (turret_angle_fd < 0)
-        {
-            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
-            return 1;
-        } 
-    
-        if (turret_angle_fd > max_fd)
-        {
-            max_fd = turret_angle_fd;
-        }
-    }
-
-    int throw_pressure_fd = -1;
-
-    if (is_throw_pressure_sensor_present())
-    {
-        throw_pressure_fd = open(get_throw_pressure_sensor_device(), O_RDONLY);
-    
-        if (throw_pressure_fd < 0)
-        {
-            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
-            return 1;
-        } 
-    
-        if (throw_pressure_fd > max_fd)
-        {
-            max_fd = throw_pressure_fd;
-        }
-    }
-
-    int retract_pressure_fd = -1;
-
-    if (is_retract_pressure_sensor_present())
-    {
-        retract_pressure_fd = open(get_retract_pressure_sensor_device(), O_RDONLY);
-
-        if (retract_pressure_fd < 0)
-        {
-            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
-            return 1;
-        } 
-    
-        if (retract_pressure_fd > max_fd)
-        {
-            max_fd = retract_pressure_fd;
-        }
-    }
-
-    //  select takes highest fd + 1 so increment max_fd
-
-    if (max_fd < 0)
-    {
-        logm(SL4C_FATAL, "Error: could not open any sensor devices");
-        return 1;
-    } 
-
-    max_fd++;
+    init_lcm();
+    init_sensors();
 
     // Read Sensor Inputs, process, and then publish to LCM
 
-    fd_set fds;
     int select_status;
     struct timeval timeout = { 0, 10000 };
     char read_buff[256];
     int num_bytes;
+
+    stomp_sensors_control lcm_msg;
 
     while(true)
     {
@@ -154,24 +88,25 @@ int main(int argc, char **argv)
         lcm_msg.retract_pressure = 0;
         lcm_msg.retract_pressure_valid = 0;
 
+        fd_set fds;
         FD_ZERO(&fds);
-        if (hammer_angle_fd >= 0) FD_SET(hammer_angle_fd, &fds);
-        if (turret_angle_fd >= 0) FD_SET(turret_angle_fd, &fds);
-        if (throw_pressure_fd >= 0) FD_SET(throw_pressure_fd, &fds);
-        if (retract_pressure_fd >= 0) FD_SET(retract_pressure_fd, &fds);
+        if (s_hammer_angle_fd >= 0) FD_SET(s_hammer_angle_fd, &fds);
+        if (s_turret_angle_fd >= 0) FD_SET(s_turret_angle_fd, &fds);
+        if (s_throw_pressure_fd >= 0) FD_SET(s_throw_pressure_fd, &fds);
+        if (s_retract_pressure_fd >= 0) FD_SET(s_retract_pressure_fd, &fds);
 
-        select_status = select(max_fd, &fds, NULL, NULL, &timeout);
+        select_status = select(s_max_fd, &fds, NULL, NULL, &timeout);
 
         if (select_status > 0)
         {
             // read and process hammer angle
 
-            if (FD_ISSET(hammer_angle_fd, &fds))
+            if (FD_ISSET(s_hammer_angle_fd, &fds))
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
-                num_bytes = read(hammer_angle_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_FINE, "read hammer_angle_fd returned %d bytes", num_bytes);
-                lseek(hammer_angle_fd, 0, SEEK_SET);
+                num_bytes = read(s_hammer_angle_fd, &read_buff, sizeof(read_buff));
+                logm(SL4C_FINE, "read s_hammer_angle_fd returned %d bytes", num_bytes);
+                lseek(s_hammer_angle_fd, 0, SEEK_SET);
 
                 int32_t hammer_angle_raw = atoi(read_buff);
                 logm(SL4C_FINE, "hammer angle raw = %d", hammer_angle_raw);
@@ -182,12 +117,12 @@ int main(int argc, char **argv)
 
             // read and process turret angle
             
-            if (FD_ISSET(turret_angle_fd, &fds))
+            if (FD_ISSET(s_turret_angle_fd, &fds))
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
-                num_bytes = read(turret_angle_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_FINE, "read turret_angle_fd returned %d bytes", num_bytes);
-                lseek(turret_angle_fd, 0, SEEK_SET);
+                num_bytes = read(s_turret_angle_fd, &read_buff, sizeof(read_buff));
+                logm(SL4C_FINE, "read s_turret_angle_fd returned %d bytes", num_bytes);
+                lseek(s_turret_angle_fd, 0, SEEK_SET);
 
                 int32_t turret_angle_raw = atoi(read_buff);
                 logm(SL4C_FINE, "turret angle raw = %d", turret_angle_raw);
@@ -198,12 +133,12 @@ int main(int argc, char **argv)
 
             // read and process throw pressure
             
-            if (FD_ISSET(throw_pressure_fd, &fds))
+            if (FD_ISSET(s_throw_pressure_fd, &fds))
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
-                num_bytes = read(throw_pressure_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_FINE, "read throw_pressure_fd returned %d bytes", num_bytes);
-                lseek(throw_pressure_fd, 0, SEEK_SET);
+                num_bytes = read(s_throw_pressure_fd, &read_buff, sizeof(read_buff));
+                logm(SL4C_FINE, "read s_throw_pressure_fd returned %d bytes", num_bytes);
+                lseek(s_throw_pressure_fd, 0, SEEK_SET);
 
                 int32_t throw_pressure_raw = atoi(read_buff);
                 logm(SL4C_FINE, "throw pressure raw = %d", throw_pressure_raw);
@@ -214,12 +149,12 @@ int main(int argc, char **argv)
 
             // read and process retract pressure
             
-            if (FD_ISSET(retract_pressure_fd, &fds))
+            if (FD_ISSET(s_retract_pressure_fd, &fds))
             {
                 memset(&read_buff, '\0', sizeof(read_buff));
-                num_bytes = read(retract_pressure_fd, &read_buff, sizeof(read_buff));
-                logm(SL4C_FINE, "read retract_pressure_fd returned %d bytes", num_bytes);
-                lseek(retract_pressure_fd, 0, SEEK_SET);
+                num_bytes = read(s_retract_pressure_fd, &read_buff, sizeof(read_buff));
+                logm(SL4C_FINE, "read s_retract_pressure_fd returned %d bytes", num_bytes);
+                lseek(s_retract_pressure_fd, 0, SEEK_SET);
 
                 int32_t retract_pressure_raw = atoi(read_buff);
                 logm(SL4C_FINE, "retract pressure raw = %d", retract_pressure_raw);
@@ -239,9 +174,104 @@ int main(int argc, char **argv)
             lcm_msg.retract_pressure_valid,
             lcm_msg.retract_pressure);
 
-        stomp_sensors_control_publish(lcm, SENSORS_CONTROL, &lcm_msg);
+        stomp_sensors_control_publish(s_lcm, SENSORS_CONTROL, &lcm_msg);
     }
 
-    lcm_destroy(lcm);
+    lcm_destroy(s_lcm);
     return 0;
 }
+
+void init_lcm()
+{
+    // create lcm 
+
+    s_lcm = lcm_create(NULL);
+
+    if(!s_lcm)
+    {
+        logm(SL4C_FATAL, "Failed to initialize LCM.\n");
+        exit(2);
+    }
+}
+
+void init_sensors()
+{
+    // open each of the analog devices
+    // 
+    // need to keep track of the higest fd for use in select call
+
+    if (is_hammer_angle_sensor_present())
+    {
+        s_hammer_angle_fd = open(get_hammer_angle_sensor_device(), O_RDONLY);
+
+        if (s_hammer_angle_fd < 0)
+        {
+            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
+            exit(2);
+        } 
+
+        if (s_hammer_angle_fd > s_max_fd)
+        {
+            s_max_fd = s_hammer_angle_fd;
+        }
+    }
+
+    if (is_turret_angle_sensor_present())
+    {
+        s_turret_angle_fd = open(get_hammer_angle_sensor_device(), O_RDONLY);
+
+        if (s_turret_angle_fd < 0)
+        {
+            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
+            exit(2);
+        } 
+    
+        if (s_turret_angle_fd > s_max_fd)
+        {
+            s_max_fd = s_turret_angle_fd;
+        }
+    }
+
+    if (is_throw_pressure_sensor_present())
+    {
+        s_throw_pressure_fd = open(get_throw_pressure_sensor_device(), O_RDONLY);
+    
+        if (s_throw_pressure_fd < 0)
+        {
+            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
+            exit(2);
+        } 
+    
+        if (s_throw_pressure_fd > s_max_fd)
+        {
+            s_max_fd = s_throw_pressure_fd;
+        }
+    }
+
+    if (is_retract_pressure_sensor_present())
+    {
+        s_retract_pressure_fd = open(get_retract_pressure_sensor_device(), O_RDONLY);
+
+        if (s_retract_pressure_fd < 0)
+        {
+            logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
+            exit(2);
+        } 
+    
+        if (s_retract_pressure_fd > s_max_fd)
+        {
+            s_max_fd = s_retract_pressure_fd;
+        }
+    }
+
+    //  select takes highest fd + 1 so increment s_max_fd
+
+    if (s_max_fd < 0)
+    {
+        logm(SL4C_FATAL, "Error: could not open any sensor devices");
+        exit(2);
+    } 
+
+    s_max_fd++;
+}
+

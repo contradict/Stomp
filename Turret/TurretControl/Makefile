@@ -31,6 +31,9 @@ turret_control_objs=$(turret_control_srcs:.c=.o)
 sensors_control_srcs=$(shell find src/sensors_control/*.c)
 sensors_control_objs=$(sensors_control_srcs:.c=.o)
 
+lcm_rpmsg_bridge_srcs=$(shell find src/lcm_rpmsg_bridge/*.c)
+lcm_rpmsg_bridge_objs=$(lcm_rpmsg_bridge_srcs:.c=.o)
+
 sbus_radio_srcs=$(shell find $(COMMON_MODULES_DIR)/src/sbus_radio/*.c)
 sbus_radio_objs=$(sbus_radio_srcs:.c=.o)
 
@@ -61,16 +64,20 @@ turret_control: CFLAGS+= $(TOMLC99_CFLAGS)
 fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
 fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
 
-all: libs targets
+all: pru_targets libs targets
 
-targets: turret_control sensors_control sbus_radio telemetry
+targets: turret_control sensors_control lcm_rpmsg_bridge sbus_radio telemetry
+
+pru_targets:
+	@$(MAKE) -C "src/hammer_control"
 
 libs: $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELIB)
 
 clean:
 	rm -f $(turret_control_objs)
 	rm -f $(sensors_control_objs)
-	rm -f turret_control sensors_control sbus_radio telemetry fake_sbus_radio test_telem
+	rm -f $(lcm_rpmsg_bridge_objs)
+	rm -f turret_control sensors_control lcm_rpmsg_bridge sbus_radio telemetry fake_sbus_radio test_telem
 	rm -f $(MESSAGELIB)
 	rm -f $(sbus_radio_objs)
 	rm -f $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o
@@ -92,6 +99,12 @@ sensors_control: $(sensors_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 
 sensors_control_cap: sensor_control
 	sudo setcap "cap_sys_nice=ep" ./sensors_control
+
+lcm_rpmsg_bridge: $(lcm_rpmsg_bridge_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
+	gcc $^ -o $@ $(LDFLAGS)
+
+lcm_rpmsg_bridge_cap: lcm_rpmsg_bridge
+	sudo setcap "cap_sys_nice=ep" ./lcm_rpmsg_bridge
 
 $(MESSAGELIB): $(message_objs)
 	ar rcs $@ $^
