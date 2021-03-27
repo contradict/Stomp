@@ -5,6 +5,7 @@ inc/lcm
 /turret_control
 /sensors_control
 /sbus_radio
+/lcm_rpmsg_bridge
 /telemetry
 /test_telem
 /fake_sbus_radio

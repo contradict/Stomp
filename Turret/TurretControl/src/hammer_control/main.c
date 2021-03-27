@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <pru_cfg.h>
+#include <pru_ecap.h>
 #include <pru_intc.h>
 #include <rsc_types.h>
 #include <pru_rpmsg.h>
@@ -32,6 +33,8 @@ static const uint32_t k_message_recv_delay_dt_max = 500000;
 
 static const uint32_t k_pru_to_host_event = 18;
 static const uint32_t k_pru_from_host_event = 19;
+
+static const uint32_t k_heartbeat_dt = 500000;
 
 //  The output pins used to communicate status via connected LEDs
 
@@ -76,6 +79,8 @@ static uint16_t s_rpmsg_pru_addr;
 
 static uint32_t s_message_last_recv_time;
 
+static uint32_t s_heartbeat_start_time;
+
 static uint8_t s_comms_connected;
 static uint8_t s_sync_message_received;
 static uint8_t s_exit_message_received;
@@ -86,12 +91,15 @@ static uint8_t s_exit_message_received;
 
 void init_syscfg();
 void init_intc();
+void init_ecap();
 void init_rpmsg();
 void init_gpio();
+void init_heartbeat();
 
 void update();
 void update_hammer();
 void update_comms();
+void update_heartbeat();
 
 void set_state(enum state);
 
@@ -204,6 +212,7 @@ void update()
     
     update_hammer();
     update_comms();
+    update_heartbeat();
 }
 
 // -----------------------------------------------------------------------------
@@ -223,10 +232,9 @@ void update_comms()
     //  Check to see if we have an rpmsg.  Keep track of how long it has been
     //  and if we wait too long, then consider comms down
 
-
     if (__R31 & k_pru_from_host_event)
     {
-        // Clear the host interrupt envent
+        // Clear the host interrupt event
 
         CT_INTC.SICR_bit.STATUS_CLR_INDEX = k_pru_from_host_event;
 
@@ -262,7 +270,10 @@ void update_comms()
 
         // Send out a comms telemetry message
         
-        send_comm_message(message_num_total, message_num_sensors);
+        if (message_num_total > 0)
+        {
+            send_comm_message(message_num_total, message_num_sensors);
+        }
     }
     else
     {
@@ -273,6 +284,30 @@ void update_comms()
         if (current_time - s_message_last_recv_time > k_message_recv_delay_dt_max)
         {
             report_comms_down();
+        }
+    }
+}
+
+void update_heartbeat()
+{
+    if (s_state == sync || s_state == init)
+    {
+        return;
+    }
+
+    uint32_t time = pru_time_gettime();
+
+    if (time - s_heartbeat_start_time > k_heartbeat_dt)
+    {
+        s_heartbeat_start_time = time;
+
+        if (__R30 & k_pr1_pru1_gpo9)
+        {
+            __R30 &= ~(k_pr1_pru1_gpo9);
+        }
+        else
+        {
+            __R30 |= k_pr1_pru1_gpo9;
         }
     }
 }
@@ -325,8 +360,10 @@ void set_state(enum state new_state)
                 
                 init_syscfg();
                 init_intc();
+                init_ecap();
                 init_rpmsg();
                 init_gpio();
+                init_heartbeat();
             }
             break;
 
@@ -351,14 +388,6 @@ void set_state(enum state new_state)
 
 void recv_sync_message(char *sens_message_buffer)
 {
-    // turn off all LED
-                
-    __R30 &= ~(k_pr1_pru1_gpo5);
-    __R30 &= ~(k_pr1_pru1_gpo9);
-    __R30 &= ~(k_pr1_pru1_gpo18);
-
-    // Mark that we got this message
-    
     s_sync_message_received = 1;
 }
 
@@ -369,15 +398,24 @@ void recv_exit_message(char *sens_message_buffer)
 
 void recv_sens_message(char *sens_message_buffer)
 {
+    // Output sensor value on APWN pin
+
+    static uint32_t period = 0x00000000;
+    
+    CT_ECAP.CAP1 = period;
+    CT_ECAP.CAP2 = period / 2;
+
+    period += 10000;
+
     //  toggle the sensor values received led
     
-    if (__R30 & k_pr1_pru1_gpo9)
+    if (__R30 & k_pr1_pru1_gpo5)
     {
-        __R30 &= ~(k_pr1_pru1_gpo9);
+        __R30 &= ~(k_pr1_pru1_gpo5);
     }
     else
     {
-        __R30 |= k_pr1_pru1_gpo9;
+        __R30 |= k_pr1_pru1_gpo5;
     }
 }
 
@@ -504,6 +542,42 @@ void init_intc()
     CT_INTC.SICR_bit.STATUS_CLR_INDEX = k_pru_from_host_event;
 }
 
+void init_ecap()
+{
+    // Setup eCap for APWM output instead of capture input
+    
+    // ECAP Control Register 1
+    // Clear, which gets us everything we need
+    CT_ECAP.ECCTL1 = 0x00000000;
+
+    // ECAP Control Register 2
+    // reset, which gets us most of the setting we want
+    CT_ECAP.ECCTL2 = 0x00000000;
+
+    // Most important, set CAPTURE / APWM to APWM analog output
+    CT_ECAP.ECCTL2_bit.CAPAPWM = 0x1;
+
+    // Free running TSCNT
+    CT_ECAP.ECCTL2_bit.TSCNTSTP = 0x1;
+
+    // need to set the mux mode of the pad register to select the pru eCap mode.
+    // registers are named after muxmode 0.  This is the register name to our
+    // usage mapping
+    //
+    // ctrl_core_pad_vin2a_d2 in muxmod 11 = pr1_ecap0_ecap_capin_apwm_o;
+    //
+
+    uint32_t *ctrl_core_pad_pr1_ecap0_ecap_capin_apwm_o = (uint32_t *)0x4A003570;
+    uint32_t *ctrl_core_pad_vin2a_d19 = (uint32_t *)0x4A0035B4;
+
+    uint32_t pad_cfg_ecap = 0x0001000B; // no pull up / pull down and mode 11 (B)
+    uint32_t pad_cfg_disabled = 0x0001000F; // Driver off
+
+    //  Setup header pin P8.15 correctly for eCap input
+    (*ctrl_core_pad_vin2a_d19) = pad_cfg_disabled;
+    (*ctrl_core_pad_pr1_ecap0_ecap_capin_apwm_o) = pad_cfg_ecap;
+}
+
 void init_rpmsg()
 {
     volatile uint8_t *status;
@@ -575,6 +649,11 @@ void init_gpio()
     __R30 &= ~(k_pr1_pru1_gpo5);
     __R30 &= ~(k_pr1_pru1_gpo9);
     __R30 &= ~(k_pr1_pru1_gpo18);
+}
+
+void init_heartbeat()
+{
+    s_heartbeat_start_time = pru_time_gettime();
 }
 
 // -----------------------------------------------------------------------------

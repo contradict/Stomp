@@ -155,12 +155,29 @@ int main(int argc, char **argv)
 void termination_handler (int signum)
 {
     shutdown();
+
+    logm(SL4C_DEBUG, "exit from signal handler");
     exit(2);
 } 
 
 void shutdown()
 {
+    logm(SL4C_DEBUG, "Shutdown lcm_rpmsg_bridge");
     lcm_destroy(s_lcm);
+
+    logm(SL4C_DEBUG, "tell PRU to exit");
+    write(s_rpmsg_fd, "EXIT", 4);
+    
+    logm(SL4C_DEBUG, "Read all rpmsg");
+
+    int32_t bytes_read = 0;
+    do
+    {
+        bytes_read = read(s_rpmsg_fd, s_message_buffer, k_message_buff_len);
+        logm(SL4C_DEBUG, "shutdown: drop rpmsg - %s", s_message_buffer);
+    } while (bytes_read <= 0);
+
+    close(s_rpmsg_fd);
 }
 
 // -----------------------------------------------------------------------------
@@ -325,6 +342,15 @@ static void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const cha
 
     // send the message down to the PRU
 
+    last_msg = now;
+
+    if (write(s_rpmsg_fd, "SENS", 4) < 0)
+    {
+        logm(SL4C_ERROR, "Could not send pru sens message. Error %i from write(): %s", errno, strerror(errno));
+    }
+
+    //  debug output
+    
     logm(SL4C_DEBUG, "\nSENSOR_CONTROL packet:\n\thammer_angle_valid: %d\n\thammer_angle = %f\n\tturret_angle_valid: %d\n\tturret_angle = %f\n\tthrow_pressure_valid: %d\n\tthrow_pressure = %f\n\tretract_pressure_valid: %d\n\tretract_pressure = %f",
         lcm_msg->hammer_angle_valid,
         lcm_msg->hammer_angle,
@@ -334,8 +360,6 @@ static void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const cha
         lcm_msg->throw_pressure,
         lcm_msg->retract_pressure_valid,
         lcm_msg->retract_pressure);
-
-    last_msg = now;
 }
 
 

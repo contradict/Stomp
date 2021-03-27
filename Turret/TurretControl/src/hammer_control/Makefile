@@ -4,6 +4,7 @@ CHIP = am57xx
 CHIP_REV = am572x_2_0
 
 PRU_CGT =/usr/lib/ti/pru-software-support-package
+PRU_CGT_CUSTOM = ../../../../BeagleBoneAI/pru-software-support-package
 
 TURRET_DIR = ../..
 
@@ -14,7 +15,7 @@ COMMON_SRCS = $(COMMON_OUT_DIR)/pru_time.c $(COMMON_OUT_DIR)/pru_util.c
 COMMON_OBJS = $(COMMON_SRCS:.c=.o)
 
 LIBS =--library=$(PRU_CGT)/lib/rpmsg_lib.lib
-INCLUDE = --include_path=$(PRU_CGT)/include --include_path=$(PRU_CGT)/include/$(CHIP_REV) --include_path=$(TURRET_DIR)/inc --include_path=$(COMMON_DIR)/inc/pru
+INCLUDE = --include_path=$(PRU_CGT)/include --include_path=$(PRU_CGT_CUSTOM)/include/$(CHIP_REV) --include_path=$(PRU_CGT)/include/$(CHIP_REV) --include_path=$(TURRET_DIR)/inc --include_path=$(COMMON_DIR)/inc/pru 
 
 STACK_SIZE = 0x100
 HEAP_SIZE = 0x100
