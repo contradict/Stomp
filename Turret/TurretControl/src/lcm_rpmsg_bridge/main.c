@@ -56,7 +56,7 @@ static void init_rpmsg();
 
 static void rpmsg_handle(char *message);
 
-static void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *channel,
+static void stomp_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *channel,
                        const stomp_sensors_control *lcm_msg, void *user);
 
 static void shutdown();
@@ -209,7 +209,7 @@ void init_lcm()
 
     // subscribe to the lcm messages we will bridge to an RPMsg
 
-    stomp_sensors_control_subscribe(s_lcm, SENSORS_CONTROL, &turret_sensors_control_handler, NULL);
+    stomp_sensors_control_subscribe(s_lcm, SENSORS_CONTROL, &stomp_sensors_control_handler, NULL);
 }
 
 void init_pru()
@@ -323,13 +323,14 @@ void init_rpmsg()
 
 void rpmsg_handle(char *message)
 {
+    logm(SLC4C_INFO, "PRU Message: %s", message);
 }
 
 // -----------------------------------------------------------------------------
 // lcm message handlers
 // -----------------------------------------------------------------------------
 
-static void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *channel,
+static void stomp_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *channel,
                        const stomp_sensors_control *lcm_msg, void *user)
 {
     static struct timeval now;
@@ -339,27 +340,30 @@ static void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const cha
     double microsec = ((now.tv_sec - last_msg.tv_sec) / 1000000.0f) + (now.tv_usec - last_msg.tv_usec);
 
     logm(SL4C_FINE, "%s msg received, dt = %f", channel, microsec);
+    last_msg = now;
 
     // send the message down to the PRU
 
-    last_msg = now;
+    char sensors_message_buff[k_message_buff_len];
 
-    if (write(s_rpmsg_fd, "SENS", 4) < 0)
+    sprintf(sensors_message_buff, "SENS:HA:%d:%d:TA:%d:%dTP:%d:RP:%d\n",
+        (int32_t)lcm_msg->hammer_angle,
+        (int32_t)lcm_msg->hammer_velocity,
+        (int32_t)lcm_msg->turret_angle,
+        (int32_t)lcm_msg->turret_velocity,
+        (int32_t)lcm_msg->throw_pressure,
+        (int32_t)lcm_msg->retract_pressure);
+
+    logm(SL4C_DEBUG, "RPMSG: %s", sensors_message_buff);
+
+    if (strlen(sensors_message_buff) >= k_message_buff_len)
+    {
+        logm(SL4C_FATAL, "Message will not fit in maximum RPMsg message size");
+        return;
+    }
+
+    if (write(s_rpmsg_fd, sensors_message_buff, strlen(sensors_message_buff)) < 0)
     {
         logm(SL4C_ERROR, "Could not send pru sens message. Error %i from write(): %s", errno, strerror(errno));
     }
-
-    //  debug output
-    
-    logm(SL4C_DEBUG, "\nSENSOR_CONTROL packet:\n\thammer_angle_valid: %d\n\thammer_angle = %f\n\tturret_angle_valid: %d\n\tturret_angle = %f\n\tthrow_pressure_valid: %d\n\tthrow_pressure = %f\n\tretract_pressure_valid: %d\n\tretract_pressure = %f",
-        lcm_msg->hammer_angle_valid,
-        lcm_msg->hammer_angle,
-        lcm_msg->turret_angle_valid,
-        lcm_msg->turret_angle,
-        lcm_msg->throw_pressure_valid,
-        lcm_msg->throw_pressure,
-        lcm_msg->retract_pressure_valid,
-        lcm_msg->retract_pressure);
 }
-
-

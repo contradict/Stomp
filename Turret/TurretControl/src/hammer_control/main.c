@@ -1,4 +1,17 @@
+//
+// OUTPUT
+//
+// BBAI Header Pin P8.14 - PRU Heartbeat
+// BBAI Header Pin P8.16 - unused
+// BBAI Header Pin P8.18 - sensor message received
+//
+// BBAI Header Pin P8.15 - PRU 1 eCap PWM output
+// 
+// INPUT
+//
+
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -398,14 +411,79 @@ void recv_exit_message(char *sens_message_buffer)
 
 void recv_sens_message(char *sens_message_buffer)
 {
+    int32_t hammer_angle;
+    int32_t hammer_velocity;
+    int32_t turret_angle;
+    int32_t turret_velocity;
+    int32_t throw_pressure;
+    int32_t retract_pressure;
+
+    static int32_t num = 1000000;
+
+    // parse the sensor message
+    
+    char* token = strtok(sens_message_buffer, ":");
+
+    // confirm it is SENS message
+    
+    //if (strcmp(token, k_message_type_sens) != 0)
+    if (strncmp(token, k_message_type_sens, k_message_type_strlen) != 0)
+    {
+        return;
+    }
+
+    token = strtok(NULL, ":");
+    hammer_angle = num;
+
+    int found_hammer_angle = 0;
+
+    while (token != NULL)
+    {
+        if (strcmp(token, "HA") == 0)
+        {
+            hammer_angle = num;
+            found_hammer_angle = 1;
+
+            /*
+            num += 500000;
+
+            if (num > 10000000)
+            {
+                num = 1000000;
+            }
+            */
+
+            strtok(NULL, ":");
+            strtok(NULL, ":");
+        }
+        else if (strcmp(token, "TA") == 0)
+        {
+            strtok(NULL, ":");
+            strtok(NULL, ":");
+        }
+        else if (strcmp(token, "TP") == 0)
+        {
+            strtok(NULL, ":");
+        }
+        else if (strcmp(token, "RP") == 0)
+        {
+            strtok(NULL, ":");
+        }
+
+        token = strtok(NULL, ":");
+    }
+
+    if (found_hammer_angle == 0)
+    {
+        return;
+    }
+
     // Output sensor value on APWN pin
 
-    static uint32_t period = 0x00000000;
+    uint32_t period = hammer_angle;
     
     CT_ECAP.CAP1 = period;
     CT_ECAP.CAP2 = period / 2;
-
-    period += 10000;
 
     //  toggle the sensor values received led
     

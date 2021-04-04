@@ -37,7 +37,6 @@ static int s_throw_pressure_fd = -1;
 static int s_retract_pressure_fd = -1;
 static int s_max_fd = -1;
 
-
 // -----------------------------------------------------------------------------
 //  forward decl of internal methods
 // -----------------------------------------------------------------------------
@@ -79,14 +78,12 @@ int main(int argc, char **argv)
 
     while(true)
     {
-        lcm_msg.hammer_angle = 0;
-        lcm_msg.hammer_angle_valid = 0;
-        lcm_msg.turret_angle = 0;
-        lcm_msg.turret_angle_valid = 0;
-        lcm_msg.throw_pressure = 0;
-        lcm_msg.throw_pressure_valid = 0;
-        lcm_msg.retract_pressure = 0;
-        lcm_msg.retract_pressure_valid = 0;
+        lcm_msg.hammer_angle = get_hammer_angle();
+        lcm_msg.hammer_velocity = get_hammer_velocity();
+        lcm_msg.turret_angle = get_turret_angle();
+        lcm_msg.turret_velocity = get_turret_velocity();
+        lcm_msg.throw_pressure = get_throw_pressure();
+        lcm_msg.retract_pressure = get_retract_pressure();
 
         fd_set fds;
         FD_ZERO(&fds);
@@ -111,8 +108,8 @@ int main(int argc, char **argv)
                 int32_t hammer_angle_raw = atoi(read_buff);
                 logm(SL4C_FINE, "hammer angle raw = %d", hammer_angle_raw);
 
-                lcm_msg.hammer_angle_valid = 1;
-                lcm_msg.hammer_angle = process_raw_hammer_angle(hammer_angle_raw);
+                lcm_msg.hammer_angle = calculate_hammer_angle(hammer_angle_raw);
+                lcm_msg.hammer_velocity = calculate_hammer_velocity(lcm_msg.hammer_angle);
             }
 
             // read and process turret angle
@@ -127,8 +124,8 @@ int main(int argc, char **argv)
                 int32_t turret_angle_raw = atoi(read_buff);
                 logm(SL4C_FINE, "turret angle raw = %d", turret_angle_raw);
 
-                lcm_msg.turret_angle_valid = 1;
-                lcm_msg.turret_angle = process_raw_turret_angle(turret_angle_raw);
+                lcm_msg.turret_angle = calculate_turret_angle(turret_angle_raw);
+                lcm_msg.turret_velocity = calculate_turret_velocity(lcm_msg.turret_angle);
             }
 
             // read and process throw pressure
@@ -143,8 +140,7 @@ int main(int argc, char **argv)
                 int32_t throw_pressure_raw = atoi(read_buff);
                 logm(SL4C_FINE, "throw pressure raw = %d", throw_pressure_raw);
 
-                lcm_msg.throw_pressure_valid = 1;
-                lcm_msg.throw_pressure = process_raw_throw_pressure(throw_pressure_raw);
+                lcm_msg.throw_pressure = calculate_throw_pressure(throw_pressure_raw);
             }
 
             // read and process retract pressure
@@ -159,19 +155,16 @@ int main(int argc, char **argv)
                 int32_t retract_pressure_raw = atoi(read_buff);
                 logm(SL4C_FINE, "retract pressure raw = %d", retract_pressure_raw);
 
-                lcm_msg.retract_pressure_valid = 1;
-                lcm_msg.retract_pressure = process_raw_retract_pressure(retract_pressure_raw);
+                lcm_msg.retract_pressure = calculate_retract_pressure(retract_pressure_raw);
             }
         }
 
-        logm(SL4C_INFO, "\nSENSOR_CONTROL packet:\n\thammer_angle_valid: %d\n\thammer_angle = %f\n\tturret_angle_valid: %d\n\tturret_angle = %f\n\tthrow_pressure_valid: %d\n\tthrow_pressure = %f\n\tretract_pressure_valid: %d\n\tretract_pressure = %f",
-            lcm_msg.hammer_angle_valid,
+        logm(SL4C_INFO, "\nSENSOR_CONTROL packet:\n\thammer_angle = %f\n\thammer_velocity = %f\n\tturret_angle = %f\n\tturret_velocity = %f\n\tthrow_pressure = %f\n\tretract_pressure = %f",
             lcm_msg.hammer_angle,
-            lcm_msg.turret_angle_valid,
+            lcm_msg.hammer_velocity,
             lcm_msg.turret_angle,
-            lcm_msg.throw_pressure_valid,
+            lcm_msg.turret_velocity,
             lcm_msg.throw_pressure,
-            lcm_msg.retract_pressure_valid,
             lcm_msg.retract_pressure);
 
         stomp_sensors_control_publish(s_lcm, SENSORS_CONTROL, &lcm_msg);
