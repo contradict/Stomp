@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sched.h>
 #include <getopt.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -66,6 +67,20 @@ int main(int argc, char **argv)
 
     init_lcm();
     init_sensors();
+
+    // Set our priority and scheduling algoritm.  Must be very aggressive to be able to
+    // read analog inputs as quickly as possible
+
+    struct sched_param sched = {
+        .sched_priority = 10
+    };
+
+    if(sched_setscheduler(0, SCHED_FIFO, &sched) != 0)
+    {
+        perror("Unable to set scheduler");
+        logm(SL4C_FATAL, "Try:\nsudo setcap \"cap_sys_nice=ep\" %s\n", argv[0]);
+        return 0;
+    }
 
     // Read Sensor Inputs, process, and then publish to LCM
 

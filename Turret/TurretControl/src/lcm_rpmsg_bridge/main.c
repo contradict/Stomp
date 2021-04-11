@@ -36,11 +36,18 @@ static const char* k_pru_firmware = "am57xx-pru1_1-hammer_control";
 
 static const uint32_t k_message_buff_len = 512;
 
+static int k_message_type_strlen = 4;
+static char* k_message_type_sync = "SYNC";
+static char* k_message_type_exit = "EXIT";
+static char* k_message_type_logm = "LOGM";
+
 // -----------------------------------------------------------------------------
 // file scope statics
 // -----------------------------------------------------------------------------
 
 static lcm_t *s_lcm;
+static stomp_sensors_control_subscription_t* s_stomp_sensors_subscription;
+
 static int s_rpmsg_fd;
 
 static char s_message_buffer[512];
@@ -162,20 +169,16 @@ void termination_handler (int signum)
 
 void shutdown()
 {
+    // Shutdown LCM
+    
     logm(SL4C_DEBUG, "Shutdown lcm_rpmsg_bridge");
+    stomp_sensors_control_unsubscribe(s_lcm, s_stomp_sensors_subscription);
     lcm_destroy(s_lcm);
 
-    logm(SL4C_DEBUG, "tell PRU to exit");
-    write(s_rpmsg_fd, "EXIT", 4);
+    // Shutdown RPMSG
     
-    logm(SL4C_DEBUG, "Read all rpmsg");
-
-    int32_t bytes_read = 0;
-    do
-    {
-        bytes_read = read(s_rpmsg_fd, s_message_buffer, k_message_buff_len);
-        logm(SL4C_DEBUG, "shutdown: drop rpmsg - %s", s_message_buffer);
-    } while (bytes_read <= 0);
+    logm(SL4C_DEBUG, "tell PRU to exit");
+    write(s_rpmsg_fd, k_message_type_exit, k_message_type_strlen);
 
     close(s_rpmsg_fd);
 }
@@ -209,7 +212,7 @@ void init_lcm()
 
     // subscribe to the lcm messages we will bridge to an RPMsg
 
-    stomp_sensors_control_subscribe(s_lcm, SENSORS_CONTROL, &stomp_sensors_control_handler, NULL);
+    s_stomp_sensors_subscription = stomp_sensors_control_subscribe(s_lcm, SENSORS_CONTROL, &stomp_sensors_control_handler, NULL);
 }
 
 void init_pru()
@@ -287,7 +290,6 @@ void init_pru()
     close(pru_rproc_device_state_fd);
 
     // pause for 2 seconds before continuing
-
     usleep(2000000);
 }
 
@@ -309,7 +311,7 @@ void init_rpmsg()
 
     logm(SL4C_FINE, "Send 'SYNC' message to PRU");
 
-    if (write(s_rpmsg_fd, "SYNC", 9) < 0)
+    if (write(s_rpmsg_fd, k_message_type_sync, k_message_type_strlen) < 0)
     {
         logm(SL4C_FATAL, "Could not send pru sync message. Error %i from write(): %s", errno, strerror(errno));
         exit(2);
@@ -323,7 +325,32 @@ void init_rpmsg()
 
 void rpmsg_handle(char *message)
 {
-    logm(SLC4C_INFO, "PRU Message: %s", message);
+    char* current_char = message;
+
+    // pull out the timestamp
+    
+    char* timestamp = current_char;
+
+    while (*current_char != ':' && *current_char != 0) { current_char++; }
+    *current_char = 0;
+    current_char++;
+
+    // pull out the message type
+    
+    char* message_type = current_char;
+
+    while (*current_char != ':' && *current_char != 0) { current_char++; }
+    *current_char = 0;
+    current_char++;
+
+    // pull out the message body
+    
+    char* body = current_char;
+
+    if (strncmp(message_type, k_message_type_logm, k_message_type_strlen) == 0)
+    {
+        logm(SL4C_INFO, "%s - %s", timestamp, body);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -346,7 +373,7 @@ static void stomp_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char
 
     char sensors_message_buff[k_message_buff_len];
 
-    sprintf(sensors_message_buff, "SENS:HA:%d:%d:TA:%d:%dTP:%d:RP:%d\n",
+    sprintf(sensors_message_buff, "SENS:HA:%d:%d:TA:%d:%d:TP:%d:RP:%d\n",
         (int32_t)lcm_msg->hammer_angle,
         (int32_t)lcm_msg->hammer_velocity,
         (int32_t)lcm_msg->turret_angle,
@@ -354,7 +381,7 @@ static void stomp_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char
         (int32_t)lcm_msg->throw_pressure,
         (int32_t)lcm_msg->retract_pressure);
 
-    logm(SL4C_DEBUG, "RPMSG: %s", sensors_message_buff);
+    logm(SL4C_DEBUG, "SEND RPMSG: %s", sensors_message_buff);
 
     if (strlen(sensors_message_buff) >= k_message_buff_len)
     {

@@ -28,6 +28,8 @@
 
 #include "hammer_control/hammer_control.h"
 
+#define LOGGING_ENABLED 0
+
 volatile register uint32_t __R30;
 volatile register uint32_t __R31;
 
@@ -56,10 +58,12 @@ static const uint32_t k_pr1_pru1_gpo9  = 0x1 << 9;     // BBAI Header Pin P8.14
 static const uint32_t k_pr1_pru1_gpo18 = 0x1 << 18;    // BBAI Header Pin P8.16
 
 static int k_message_type_strlen = 4;
-static char* k_message_type_comm = "COMM";
 static char* k_message_type_exit = "EXIT";
 static char* k_message_type_sync = "SYNC";
 static char* k_message_type_sens = "SENS";
+static char* k_message_type_logm = "LOGM";
+
+static char s_log_message_buffer[512];
 
 // -----------------------------------------------------------------------------
 // states
@@ -125,11 +129,13 @@ int8_t is_weapon_armed();
 void recv_sync_message(char *sync_message_buffer);
 void recv_exit_message(char *exit_message_buffer);
 void recv_sens_message(char *sens_message_buffer);
-void send_comm_message(uint32_t message_num_total, uint32_t message_num_sensors);
+
 void send_swng_message();
+void send_log_message(char *message);
 
 int8_t check_for_arm_sync();
 int8_t check_for_arm_exit();
+
 
 // -----------------------------------------------------------------------------
 //  Main
@@ -247,6 +253,9 @@ void update_comms()
 
     if (__R31 & k_pru_from_host_event)
     {
+        // TODO: Investigate - Seems this was being executed, even if there was not something
+        // sent down (no host interrupt
+        //
         // Clear the host interrupt event
 
         CT_INTC.SICR_bit.STATUS_CLR_INDEX = k_pru_from_host_event;
@@ -254,17 +263,12 @@ void update_comms()
         // Go through all the messages queued
         
         uint16_t message_len;
-        uint32_t message_num_total = 0;
-        uint32_t message_num_sensors = 0;
 
         while (pru_rpmsg_receive(&s_transport, &s_rpmsg_arm_addr, &s_rpmsg_pru_addr, s_recv_message_buffer, &message_len) == PRU_RPMSG_SUCCESS) 
         {
-            message_num_total++;
-
             if (strncmp(s_recv_message_buffer, k_message_type_sens, k_message_type_strlen) == 0)
             {
                 recv_sens_message(s_recv_message_buffer);
-                message_num_sensors++;
             }
             else if (strncmp(s_recv_message_buffer, k_message_type_sync, k_message_type_strlen) == 0)
             {
@@ -280,13 +284,6 @@ void update_comms()
         
         s_message_last_recv_time = pru_time_gettime();
         report_comms_up();
-
-        // Send out a comms telemetry message
-        
-        if (message_num_total > 0)
-        {
-            send_comm_message(message_num_total, message_num_sensors);
-        }
     }
     else
     {
@@ -418,72 +415,52 @@ void recv_sens_message(char *sens_message_buffer)
     int32_t throw_pressure;
     int32_t retract_pressure;
 
-    static int32_t num = 1000000;
-
     // parse the sensor message
     
     char* token = strtok(sens_message_buffer, ":");
 
     // confirm it is SENS message
-    
-    //if (strcmp(token, k_message_type_sens) != 0)
+
     if (strncmp(token, k_message_type_sens, k_message_type_strlen) != 0)
     {
         return;
     }
 
     token = strtok(NULL, ":");
-    hammer_angle = num;
-
-    int found_hammer_angle = 0;
 
     while (token != NULL)
     {
         if (strcmp(token, "HA") == 0)
         {
-            hammer_angle = num;
-            found_hammer_angle = 1;
-
-            /*
-            num += 500000;
-
-            if (num > 10000000)
-            {
-                num = 1000000;
-            }
-            */
-
-            strtok(NULL, ":");
-            strtok(NULL, ":");
+            hammer_angle = atoi(strtok(NULL, ":"));
+            hammer_velocity = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "TA") == 0)
         {
-            strtok(NULL, ":");
-            strtok(NULL, ":");
+            turret_angle = atoi(strtok(NULL, ":"));
+            turret_velocity = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "TP") == 0)
         {
-            strtok(NULL, ":");
+            throw_pressure = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "RP") == 0)
         {
-            strtok(NULL, ":");
+            retract_pressure = atoi(strtok(NULL, ":"));
         }
 
         token = strtok(NULL, ":");
     }
-
-    if (found_hammer_angle == 0)
-    {
-        return;
-    }
-
+    
+    
     // Output sensor value on APWN pin
 
+    /*
     uint32_t period = hammer_angle;
     
-    CT_ECAP.CAP1 = period;
-    CT_ECAP.CAP2 = period / 2;
+    CT_ECAP.CAP3 = period * 1000;
+    CT_ECAP.CAP4 = period * 500;
+    */
 
     //  toggle the sensor values received led
     
@@ -495,58 +472,55 @@ void recv_sens_message(char *sens_message_buffer)
     {
         __R30 |= k_pr1_pru1_gpo5;
     }
-}
 
-void send_comm_message(uint32_t message_num_total, uint32_t message_num_sensors)
-{
-    uint32_t timestamp = pru_time_gettime() - s_state_start_time;
-
-    char* message = s_send_message_buffer;
-
-    // insert message type
-
-    memcpy(message, k_message_type_comm, k_message_type_strlen);
-
-    message += k_message_type_strlen;
-    *message = ':';
-    message++;
-
-    // insert timestamp
+    // send a debug message back to ARM so we can debug what is going
+    // on here
     
-    char* timestamp_string = pru_util_itoa(timestamp, 10);
-    int timestamp_string_len = strlen(timestamp_string);
-    memcpy(message, timestamp_string, timestamp_string_len);
+#if LOGGING_ENABLED
 
-    message += timestamp_string_len;
-    *message = ':';
-    message++;
+    char* debug_message = s_log_message_buffer;
+    char* number_string;
+    int number_string_len;
 
-    // insert telemetry data
-    
-    char* total_messages_string = pru_util_itoa(message_num_total, 10);
-    int total_messages_string_len = strlen(total_messages_string);
-    memcpy(message, total_messages_string, total_messages_string_len);
+    memset(debug_message, 0, 512);
 
-    message += total_messages_string_len;
-    *message = ':';
-    message++;
+    memcpy(debug_message, "parsed sens message: ", 21); 
+    debug_message += 21;
 
-    char* sensors_messages_string = pru_util_itoa(message_num_sensors, 10);
-    int sensors_messages_string_len = strlen(sensors_messages_string);
-    memcpy(message, sensors_messages_string, sensors_messages_string_len);
+    memcpy(debug_message, "HA=", 3); 
+    debug_message += 3;
 
-    message += sensors_messages_string_len;
-    *message = '\n';
-    message++;
-    *message = 0;
+    number_string = pru_util_itoa(hammer_angle, 10);
+    number_string_len = strlen(number_string);
 
-    // send the message out
-    
-    pru_rpmsg_send(&s_transport, s_rpmsg_pru_addr, s_rpmsg_arm_addr, s_send_message_buffer, k_message_buffer_max_len);
+    memcpy(debug_message, number_string, number_string_len);
+    debug_message += number_string_len;
+
+    memcpy(debug_message, " PRD=", 5); 
+    debug_message += 5;
+
+    number_string = pru_util_itoa(period, 10);
+    number_string_len = strlen(number_string);
+
+    memcpy(debug_message, number_string, number_string_len);
+    debug_message += number_string_len;
+
+    *debug_message = '\n';
+    debug_message++;
+    *debug_message = 0;
+
+    send_log_message(s_log_message_buffer);
+
+#endif
 }
 
 void send_swng_message()
 {
+    if (s_state == sync || s_state == init)
+    {
+        return;
+    }
+
     uint32_t timestamp = pru_time_gettime() - s_state_start_time;
 
     // Can't use sprintf beacuse it doesn't fit in PRU memory
@@ -579,6 +553,47 @@ void send_swng_message()
     
     pru_rpmsg_send(&s_transport, s_rpmsg_pru_addr, s_rpmsg_arm_addr, s_send_message_buffer, k_message_buffer_max_len);
 }
+
+void send_log_message(char *log_message)
+{
+    /*
+    if (s_state == sync || s_state == init)
+    {
+        return;
+    }
+    */
+
+    uint32_t timestamp = pru_time_gettime() - s_state_start_time;
+
+    if (strlen(log_message) >= (k_message_buffer_max_len-20))
+    {
+        return;
+    }
+
+    char* message = s_send_message_buffer;
+
+    char* timestamp_string = pru_util_itoa(timestamp, 10);
+    int timestamp_string_len = strlen(timestamp_string);
+    memcpy(message, timestamp_string, timestamp_string_len);
+
+    message += timestamp_string_len;
+    *message = ':';
+    message++;
+
+    memcpy(message, k_message_type_logm, k_message_type_strlen);
+    message += k_message_type_strlen;
+    *message = ':';
+    message++;
+
+    memcpy(message, log_message, strlen(log_message));
+    message += strlen(log_message);
+    *message = '\n';
+    message++;
+    *message = 0;
+
+    pru_rpmsg_send(&s_transport, s_rpmsg_pru_addr, s_rpmsg_arm_addr, s_send_message_buffer, k_message_buffer_max_len);
+}
+
 
 int8_t check_for_arm_sync()
 {
@@ -635,8 +650,16 @@ void init_ecap()
     // Most important, set CAPTURE / APWM to APWM analog output
     CT_ECAP.ECCTL2_bit.CAPAPWM = 0x1;
 
+    // TSCNT == PRD sync
+    CT_ECAP.ECCTL2_bit.SYNCO_SEL = 0x1;
+
     // Free running TSCNT
     CT_ECAP.ECCTL2_bit.TSCNTSTP = 0x1;
+
+    // Initialize an initial period
+
+    CT_ECAP.CAP1 = 20000; 
+    CT_ECAP.CAP2 = 10000;
 
     // need to set the mux mode of the pad register to select the pru eCap mode.
     // registers are named after muxmode 0.  This is the register name to our
