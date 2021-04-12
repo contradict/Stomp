@@ -166,12 +166,12 @@ void termination_handler (int signum)
     float ave_ms = s_ms_total / s_reads_total;
 
     printf("\nReading %d analog devices\n\n", s_num_devices);
-    printf("Alalog device 1 bytes read = %d\n", s_analog_01_bytes_read);
-    printf("Alalog device 1 selects = %d\n", s_analog_01_selects);
-    printf("Alalog device 2 bytes read = %d\n", s_analog_02_bytes_read);
-    printf("Alalog device 2 selects = %d\n", s_analog_02_selects);
-    printf("Alalog device 3 bytes read = %d\n", s_analog_03_bytes_read);
-    printf("Alalog device 3 selects = %d\n\n", s_analog_03_selects);
+    printf("Analog device 1 bytes read = %d\n", s_analog_01_bytes_read);
+    printf("Analog device 1 selects = %d\n", s_analog_01_selects);
+    printf("Analog device 2 bytes read = %d\n", s_analog_02_bytes_read);
+    printf("Analog device 2 selects = %d\n", s_analog_02_selects);
+    printf("Analog device 3 bytes read = %d\n", s_analog_03_bytes_read);
+    printf("Analog device 3 selects = %d\n\n", s_analog_03_selects);
     printf("Average MS per analog read: %f\n", ave_ms);
     exit(2);
 } 

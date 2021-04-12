@@ -37,7 +37,7 @@ char* pru_util_itoa(int32_t val, uint32_t base)
         val /= base;
         i--;
     }
-    while (val > 0);
+    while (val > 0 && i >= 0);
 
     if (negative)
     {
