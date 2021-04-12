@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sched.h>
 #include <getopt.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -8,6 +7,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <lcm/lcm.h>
 
 #include "sclog4c/sclog4c.h"
@@ -45,6 +45,12 @@ static int s_max_fd = -1;
 static void init_lcm();
 static void init_sensors();
 
+
+int time_diff_msec(struct timeval t0, struct timeval t1)
+{
+    return (t1.tv_sec - t0.tv_sec)*1000 + (t1.tv_usec - t0.tv_usec)/1000;
+}
+
 // -----------------------------------------------------------------------------
 // main
 // -----------------------------------------------------------------------------
@@ -68,20 +74,6 @@ int main(int argc, char **argv)
     init_lcm();
     init_sensors();
 
-    // Set our priority and scheduling algoritm.  Must be very aggressive to be able to
-    // read analog inputs as quickly as possible
-
-    struct sched_param sched = {
-        .sched_priority = 10
-    };
-
-    if(sched_setscheduler(0, SCHED_FIFO, &sched) != 0)
-    {
-        perror("Unable to set scheduler");
-        logm(SL4C_FATAL, "Try:\nsudo setcap \"cap_sys_nice=ep\" %s\n", argv[0]);
-        return 0;
-    }
-
     // Read Sensor Inputs, process, and then publish to LCM
 
     int select_status;
@@ -93,6 +85,14 @@ int main(int argc, char **argv)
 
     while(true)
     {
+        static struct timeval now;
+        static struct timeval last_send_time;
+
+        gettimeofday(&now, 0);
+        int millis = time_diff_msec(last_send_time, now);
+        logm(SL4C_INFO, "%d msec since last analog read", millis);
+        last_send_time = now;
+
         lcm_msg.hammer_angle = get_hammer_angle();
         lcm_msg.hammer_velocity = get_hammer_velocity();
         lcm_msg.turret_angle = get_turret_angle();
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
             }
         }
 
-        logm(SL4C_INFO, "\nSENSOR_CONTROL packet:\n\thammer_angle = %f\n\thammer_velocity = %f\n\tturret_angle = %f\n\tturret_velocity = %f\n\tthrow_pressure = %f\n\tretract_pressure = %f",
+        logm(SL4C_DEBUG, "\nSENSOR_CONTROL packet:\n\thammer_angle = %f\n\thammer_velocity = %f\n\tturret_angle = %f\n\tturret_velocity = %f\n\tthrow_pressure = %f\n\tretract_pressure = %f",
             lcm_msg.hammer_angle,
             lcm_msg.hammer_velocity,
             lcm_msg.turret_angle,

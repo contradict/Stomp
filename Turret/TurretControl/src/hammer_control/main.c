@@ -452,7 +452,6 @@ void recv_sens_message(char *sens_message_buffer)
         token = strtok(NULL, ":");
     }
     
-    
     // Output sensor value on APWN pin
 
     /*

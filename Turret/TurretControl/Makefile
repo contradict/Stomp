@@ -31,6 +31,9 @@ turret_control_objs=$(turret_control_srcs:.c=.o)
 sensors_control_srcs=$(shell find src/sensors_control/*.c)
 sensors_control_objs=$(sensors_control_srcs:.c=.o)
 
+sensors_speed_test_srcs=$(shell find src/sensors_speed_test/*.c)
+sensors_speed_test_objs=$(sensors_speed_test_srcs:.c=.o)
+
 lcm_rpmsg_bridge_srcs=$(shell find src/lcm_rpmsg_bridge/*.c)
 lcm_rpmsg_bridge_objs=$(lcm_rpmsg_bridge_srcs:.c=.o)
 
@@ -98,8 +101,14 @@ turret_control_cap: turret_control
 sensors_control: $(sensors_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
-sensors_control_cap: sensor_control
+sensors_control_cap: sensors_control
 	sudo setcap "cap_sys_nice=ep" ./sensors_control
+
+sensors_speed_test: $(sensors_speed_test_objs) 
+	gcc $^ -o $@ $(LDFLAGS)
+
+sensors_speed_test_cap: sensors_speed_test
+	sudo setcap "cap_sys_nice=ep" ./sensors_speed_test
 
 lcm_rpmsg_bridge: $(lcm_rpmsg_bridge_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
