@@ -1,0 +1,15 @@
+[Unit]
+Description=The control radio listener process
+After=network-online.target
+Requires=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment="LCM_DEFAULT_URL=udpm://239.255.76.67:7667?ttl=1"
+WorkingDirectory=/home/chomp/src/Stomp/Hull/HullControl
+ExecStart=/home/chomp/src/Stomp/Hull/HullControl/sbus_radio
+Restart=always
+
+[Install]
+WantedBy=stomp.target

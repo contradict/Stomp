@@ -20,14 +20,15 @@ int ping_leg(modbus_t *ctx, uint8_t address)
         return data == PING_KEY;
 }
 
-int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*pgain)[3], const float (*dgain)[3], const float (*damping)[3])
+int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*pgain)[3], const float (*dgain)[3], const float (*damping)[3], const float (*feedback_lowpass)[3])
 {
     int ret=0, err;
-    uint16_t pgain_value, dgain_value, damping_value;
+    uint16_t pgain_value, dgain_value, damping_value, lp;
     modbus_set_slave(ctx, address);
     pgain_value = 10.0f * (*pgain)[JOINT_CURL];
     dgain_value = 10.0f * (*dgain)[JOINT_CURL];
     damping_value = 10.0f * (*damping)[JOINT_CURL];
+    lp = 10.0f * (*feedback_lowpass)[JOINT_CURL];
     err = modbus_write_registers(ctx, CURL_BASE + HProportionalGain, 1, &pgain_value);
     if(err == -1)
     {
@@ -46,9 +47,17 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*pgain)[3], con
         logm(SL4C_ERROR, "Could not set Curl damping: %s", modbus_strerror(errno));
         ret = err;
     }
+    err = modbus_write_registers(ctx, CURL_BASE + HFeedbackLowpass, 1, &lp);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Could not set Curl feedback lowpass: %s", modbus_strerror(errno));
+        ret = err;
+    }
+
     pgain_value = 10.0f * (*pgain)[JOINT_SWING];
     dgain_value = 10.0f * (*dgain)[JOINT_SWING];
     damping_value = 10.0f * (*damping)[JOINT_SWING];
+    lp = 10.0f * (*feedback_lowpass)[JOINT_SWING];
     err = modbus_write_registers(ctx, SWING_BASE + HProportionalGain, 1, &pgain_value);
     if(err == -1)
     {
@@ -67,9 +76,17 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*pgain)[3], con
         logm(SL4C_ERROR, "Could not set Swing damping: %s", modbus_strerror(errno));
         ret = err;
     }
+    err = modbus_write_registers(ctx, SWING_BASE + HFeedbackLowpass, 1, &lp);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Could not set Swing feedback lowpass: %s", modbus_strerror(errno));
+        ret = err;
+    }
+
     pgain_value = 10.0f * (*pgain)[JOINT_LIFT];
     dgain_value = 10.0f * (*dgain)[JOINT_LIFT];
     damping_value = 10.0f * (*damping)[JOINT_LIFT];
+    lp = 10.0f * (*feedback_lowpass)[JOINT_LIFT];
     err = modbus_write_registers(ctx, LIFT_BASE + HProportionalGain, 1, &pgain_value);
     if(err == -1)
     {
@@ -88,6 +105,13 @@ int set_servo_gains(modbus_t *ctx, uint8_t address, const float (*pgain)[3], con
         logm(SL4C_ERROR, "Could not set Lift damping: %s", modbus_strerror(errno));
         ret = err;
     }
+    err = modbus_write_registers(ctx, LIFT_BASE + HFeedbackLowpass, 1, &lp);
+    if(err == -1)
+    {
+        logm(SL4C_ERROR, "Could not set Lift feedback lowpass: %s", modbus_strerror(errno));
+        ret = err;
+    }
+
     return ret;
 }
 
@@ -102,7 +126,7 @@ int get_toe_feedback(modbus_t *ctx, uint8_t address, float (*toe_position)[3], f
         for(int i=0;i<3;i++)
             (*toe_position)[i] = ((int16_t *)toe_value)[i] / 1e4f;
         for(int i=3;i<9;i++)
-            (*cylinder_pressure)[i-3] = toe_value[i] / 100.0f;
+            (*cylinder_pressure)[i-3] = toe_value[i] / 25.6f;
     }
     return err == -1 ? -1 : 0;
 }

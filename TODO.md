@@ -2,8 +2,6 @@
 
 ## System startup
 
-  * Start sbus_radio on system boot
-  * Start leg_control on system boot
   * Start telemetry on system boot
 
 ## Servo tuning while walking
@@ -59,9 +57,6 @@ firmware. For now, see Hull/Test/modbus_ui.c
       angle limits.
     * At least three legs on the ground, not all on the same side of the robot
     * maintain specified velocity
-  * Write ripple gait
-  * Write wave gait.
-  * Crabbing
 
 ## Telemetry
   * Radio works, `/dev/tty.mikrobus1`, 115200
@@ -69,16 +64,17 @@ firmware. For now, see Hull/Test/modbus_ui.c
   * Get telemetry branch merged!
 
 ## Pressure ADC
-  * Uses a Mikro ADC-Click
-  * Pins and driver enabled by [overlay](https://github.com/contradict/BeagleBoard-DeviceTrees/blob/v4.19.x-ti/src/arm/BBAI-SPI3-ADC-IMU.dts)
-  * Pins show correct data on oscilloscope, zeros always arrive in software.
-  * Wrong config on MISO?
-  * Not actually the correct driver?
-  * Reading the wrong file?
+  * Uses internal ADC, depending on wiring read from
+    /sys/bus/iio/devices/iio:device1/in_voltageN_raw
+    to sample value.
+  * read
+    /sys/bus/iio/devices/iio:device1/in_voltage_scale
+    for a scale to convert the raw value to voltage
 
 ## IMU
   * Pins enabled by [overlay](https://github.com/contradict/BeagleBoard-DeviceTrees/blob/v4.19.x-ti/src/arm/BBAI-SPI3-ADC-IMU.dts)
-  * Untested
+  * No signals verified with scope, no response from device. Sent message to
+    Yost through website contact form, also no response.
 
 ## WiFi
   * hostapd configured /etc/hostapd.conf, SSID ChompTheBattlebot
@@ -89,12 +85,7 @@ firmware. For now, see Hull/Test/modbus_ui.c
 
 # Leg Board
 
-## Feedback lowpass filter
-  * implement filter
-  * Add modbus message to set filter coefficients.
-
 ## Optimize kinematics
-  * Scaling calculation can be partially done at startup.
   * Complex results usually just use real part, don't compute complex part
   * Would DH parameters be better?
 

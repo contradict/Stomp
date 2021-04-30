@@ -1,0 +1,9 @@
+TITLE "Chomp RF Telemetry"
+INTERFACE XBEE serial_interface.rb /dev/ttyUSB0 /dev/ttyUSB0 57600 NONE 1 1.0 nil TERMINATED 0x6666 0x6666 true 0 nil false
+    TARGET TURRET
+    DONT_CONNECT
+    DONT_RECONNECT
+INTERFACE RFD900X serial_interface.rb /dev/ttyFTDI1 /dev/ttyFTDI1 115200 NONE 1 1.0 nil TERMINATED 0x6666 0x6666 true 0 nil false
+    TARGET HULL
+    DONT_CONNECT
+    DONT_RECONNECT

@@ -77,12 +77,14 @@ const int16_t sensor_param_min[NUM_SENSOR_PARAMS] = {
 const int16_t sensor_param_max[NUM_SENSOR_PARAMS] = {
     5100, 5100, M_PI*1000, M_PI*1000, 12000, 12000};
 
-#define NUM_SERVO_PARAMS 14
+#define NUM_SERVO_PARAMS 15
 
 struct ServoContext
 {
     bool stoponerror;
     uint16_t params[3][NUM_SERVO_PARAMS];
+    int16_t base_pressure[3];
+    int16_t rod_pressure[3];
     int16_t measured[3];
     int joint;
     int param;
@@ -100,25 +102,35 @@ struct ServoContext
 };
 
 const char *servo_param_names[NUM_SERVO_PARAMS + 2] = {
-       " P",    " D",   " F",     " O",    " A",
-       " C",    "MN",    "MX",
-       "RU",    "RD",   "DB",     "DI",    " V", "CM", "sf", "sa"};
+    " P",    " D",    " F",     " O",
+    " A",    " C",    "MN",     "MX",
+    "RU",    "RD",    "DB",     "DI",    " V",
+    " W",    "CM",    "sf",    "sa"};
 const char *servo_param_formats[NUM_SERVO_PARAMS + 2] = {
-    "%6.1f", "%6.1f", "%6.1f", "%6.1f", "%6.4f",
-    "%6.4f", "%6.1f", "%6.1f", "%6.1f", "%6.1f",
-    "%6.1f", "%6.1f", "%6.1f", "%6.2f", "%6.1f", "%6.1f"};
+    "%6.1f", "%6.1f", "%6.1f", "%6.1f",
+    "%6.4f", "%6.4f", "%6.1f", "%6.1f",
+    "%6.1f", "%6.1f", "%6.1f", "%6.1f", "%6.1f",
+    "%6.1f", "%6.1f", "%6.2f", "%6.1f"};
 uint16_t servo_param_register[NUM_SERVO_PARAMS] = {
-    HProportionalGain, HDerivativeGain, HForceDamping, HOffset, HAreaRatio,
-    HCylinderBore, HMinimumPosition, HMaximumPosition, HRampUp, HRampDown,
-    HDeadBand, HDitherAmplitude, HValveOffset, HCachedDigitalCommand};
+    HProportionalGain, HDerivativeGain, HForceDamping, HOffset,
+    HAreaRatio, HCylinderBore, HMinimumPosition, HMaximumPosition,
+    HRampUp, HRampDown, HDeadBand, HDitherAmplitude, HValveOffset,
+    HFeedbackLowpass, HCachedDigitalCommand};
 const float servo_param_scale[NUM_SERVO_PARAMS] = {
-      10.0f,   10.0f,   10.0f,   10.0f,32767.0f,
-    1024.0f,   10.0f,   10.0f,   10.0f,   10.0f,
-      10.0f,   10.0f,   10.0f,   40.95f};
+      10.0f,   10.0f,   10.0f,   10.0f,
+      32767.0f, 1024.0f, 10.0f,  10.0f,
+      10.0f,   10.0f, 10.0f,   10.0f,   10.0f,
+      10.0f, 40.95f};
 const int16_t param_max[NUM_SERVO_PARAMS] = {
-       1000,   1000,     1000,    1000,   32767,
-      32767,    1000,    1000,    1000,    1000,
-       1000,    1000,    1000,    4095};
+       1000,   1000,     1000,    1000,
+       32767, 32767,     1000,    1000,
+       1000,    1000,    1000,    1000,  5000,
+       5000,   4095};
+
+const int FB_LP=13;
+const int SERVO_MEAS=14;
+const int SIGGEN_FREQ=15;
+const int SIGGEN_AMPL=16;
 
 struct PositionContext {
     float step;
@@ -552,7 +564,14 @@ void servo_init(modbus_t *mctx, void *sctx)
         showerror(&sc->error[j], "Initial Command Read failed", err, NULL);
         if(err != -1)
         {
-            sc->params[j][13] = data[0];
+            sc->params[j][SERVO_MEAS] = data[0];
+        }
+        err = modbus_read_registers(
+                mctx, joint[j]+HFeedbackLowpass, 1, data);
+        showerror(&sc->error[j], "Initial Lowpass Read failed", err, NULL);
+        if(err != -1)
+        {
+            sc->params[j][FB_LP] = data[0];
         }
     }
     modbus_set_response_timeout(mctx, sto_sec, sto_usec);
@@ -593,10 +612,10 @@ int step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
         while(sc->siggen_phase > 2.0f * M_PI) sc->siggen_phase -= 2.0f * M_PI;
         if(sc->siggen_start || (fabs(sc->measured[sc->joint] - sc->siggen_signal) < 100))
         {
-            sc->params[sc->joint][13] = sc->siggen_signal;
+            sc->params[sc->joint][SERVO_MEAS] = sc->siggen_signal;
             err = modbus_write_register(
                 mctx, joint[sc->joint] + HDigitalCommand,
-                sc->params[sc->joint][13]);
+                sc->params[sc->joint][SERVO_MEAS]);
             showerror(&sc->error[sc->joint], "siggen set failed", err, NULL);
             sc->siggen_start = true;
         }
@@ -607,8 +626,10 @@ int step_signal_generator(modbus_t *mctx, struct ServoContext *sc)
 
 void servo_display(modbus_t *mctx, void *sctx)
 {
+    const int SERVO_ROWS=7;
+    const int SERVO_COL_SPACE=12;
     struct ServoContext *sc = (struct ServoContext *)sctx;
-    uint16_t data[1];
+    uint16_t data[3];
     int err;
     struct timeval before, after;
 
@@ -623,13 +644,15 @@ void servo_display(modbus_t *mctx, void *sctx)
         if(!sc->stoponerror | !anyerr)
         {
             gettimeofday(&before, NULL);
-            err = modbus_read_input_registers(mctx, joint[j]+ICachedFeedbackPosition, 1, data);
+            err = modbus_read_input_registers(mctx, joint[j]+ICachedBaseEndPressure, 3, data);
             gettimeofday(&after, NULL);
             timersub(&after, &before, &after);
             showerror(&sc->error[j], "Read feedback failed", err, &after);
             if(err != -1)
             {
-                sc->measured[j] = data[0];
+                sc->base_pressure[j] = data[0];
+                sc->rod_pressure[j] = data[1];
+                sc->measured[j] = data[2];
             }
             else
             {
@@ -643,20 +666,20 @@ void servo_display(modbus_t *mctx, void *sctx)
                 anyerr = (-1 == step_signal_generator(mctx, sc));
             }
         }
-        move(4 + 4 * j + 0, 2);
+        move(4 + SERVO_ROWS * j + 0, 2);
         clrtoeol();
         if(sc->joint == j)
             attron(A_BOLD);
         printw("%s(%c)", joint_name[j], sc->isinit[j]?'t':'f');
         attroff(A_BOLD);
         if(j == sc->joint)
-            input_display(4 + 4 * j + 0, 2 + 9, &sc->input);
-        error_display(4 + 4 * j + 0, 2 + 15, &sc->error[j]);
-        move(4 + 4 * j + 1, 2);
+            input_display(4 + SERVO_ROWS * j + 0, 2 + 9, &sc->input);
+        error_display(4 + SERVO_ROWS * j + 0, 2 + 15, &sc->error[j]);
+        move(4 + SERVO_ROWS * j + 1, 2);
         clrtoeol();
-        for(int p=0;p<7;p++)
+        for(int p=0;p<4;p++)
         {
-            move(4 + 4 * j + 1, 2 + 10 * p); 
+            move(4 + SERVO_ROWS * j + 1, 2 + SERVO_COL_SPACE * p);
             if(sc->joint == j && sc->param == p)
             {
                 attron(A_BOLD);
@@ -668,11 +691,11 @@ void servo_display(modbus_t *mctx, void *sctx)
             }
             printw(servo_param_formats[p], sc->params[j][p] / servo_param_scale[p]);
         }
-        move(4 + 4 * j + 2, 2);
+        move(4 + SERVO_ROWS * j + 2, 2);
         clrtoeol();
-        for(int p=7;p<14;p++)
+        for(int p=4;p<8;p++)
         {
-            move(4 + 4 * j + 2, 2 + 10 * (p - 7));
+            move(4 + SERVO_ROWS * j + 2, 2 + SERVO_COL_SPACE * (p - 4));
             if(sc->joint == j && sc->param == p)
             {
                 attron(A_BOLD);
@@ -684,13 +707,43 @@ void servo_display(modbus_t *mctx, void *sctx)
             }
             printw(servo_param_formats[p], sc->params[j][p] / servo_param_scale[p]);
         }
-        move(4 + 4 * j + 3, 2);
+        move(4 + SERVO_ROWS * j + 3, 2);
         clrtoeol();
+        for(int p=8;p<13;p++)
+        {
+            move(4 + SERVO_ROWS * j + 3, 2 + SERVO_COL_SPACE * (p - 8));
+            if(sc->joint == j && sc->param == p)
+            {
+                attron(A_BOLD);
+            }
+            printw("%s:", servo_param_names[p]);
+            if(sc->joint == j && sc->param == p)
+            {
+                attroff(A_BOLD);
+            }
+            printw(servo_param_formats[p], sc->params[j][p] / servo_param_scale[p]);
+        }
+        move(4 + SERVO_ROWS * j + 4, 2);
+        clrtoeol();
+        for(int p=13;p<NUM_SERVO_PARAMS;p++)
+        {
+            move(4 + SERVO_ROWS * j + 4, 2 + SERVO_COL_SPACE * (p - 13));
+            if(sc->joint == j && sc->param == p)
+            {
+                attron(A_BOLD);
+            }
+            printw("%s:", servo_param_names[p]);
+            if(sc->joint == j && sc->param == p)
+            {
+                attroff(A_BOLD);
+            }
+            printw(servo_param_formats[p], sc->params[j][p] / servo_param_scale[p]);
+        }
         if(sc->siggen_enable && j == sc->joint)
         {
             for(int p=NUM_SERVO_PARAMS;p<NUM_SERVO_PARAMS + 2; p++)
             {
-                move(4 + 4 * j + 3, 2 + 10 * (p - NUM_SERVO_PARAMS));
+                move(4 + SERVO_ROWS * j + 4, 2 + SERVO_COL_SPACE * (2 + p - NUM_SERVO_PARAMS));
                 if(sc->param == p)
                 {
                     attron(A_BOLD);
@@ -707,21 +760,25 @@ void servo_display(modbus_t *mctx, void *sctx)
                         break;
                 }
             }
-            move(4 + 4 * j + 3, 2 + 10 * 2);
+            move(4 + SERVO_ROWS * j + 4, 2 + SERVO_COL_SPACE * 4);
             printw("ph:%6.1f", sc->siggen_phase);
-            move(4 + 4 * j + 3, 2 + 10 * 3);
+            move(4 + SERVO_ROWS * j + 4, 2 + SERVO_COL_SPACE * 5);
             printw("ss:%6.1f", sc->siggen_signal / 40.95);
             
         }
-        move(4 + 4 * j + 3, 2 + 6*10);
-        printw("m:%6.1f", sc->measured[j] / 40.95f);
+        move(4 + SERVO_ROWS * j + 5, 2 + 1*SERVO_COL_SPACE);
+        clrtoeol();
+        printw(" m:%6.1f b:%6.1f r:%6.1f",
+                sc->measured[j] / 40.95f, sc->base_pressure[j]/25.8f, sc->rod_pressure[j]/25.8f);
     }
-    if(sc->param < 7)
-        move(4 + 4*sc->joint + 1, 2 + 10*sc->param);
-    else if(sc->param < NUM_SERVO_PARAMS)
-        move(4 + 4*sc->joint + 2, 2 + 10*(sc->param - 7));
+    if(sc->param < 4)
+        move(4 + SERVO_ROWS*sc->joint + 1, 2 + SERVO_COL_SPACE*sc->param);
+    else if(sc->param < 8)
+        move(4 + SERVO_ROWS*sc->joint + 2, 2 + SERVO_COL_SPACE*(sc->param - 4));
+    else if(sc->param < 13)
+        move(4 + SERVO_ROWS*sc->joint + 3, 2 + SERVO_COL_SPACE*(sc->param - 8));
     else
-        move(4 + 4*sc->joint + 3, 2 + 10*(sc->param - NUM_SERVO_PARAMS));
+        move(4 + SERVO_ROWS*sc->joint + 4, 2 + SERVO_COL_SPACE*(sc->param - 13));
 }
 
 void set_param(modbus_t *mctx, struct ServoContext *sc, float value)
@@ -745,11 +802,11 @@ void set_param(modbus_t *mctx, struct ServoContext *sc, float value)
         {
             case 0:
                 sc->siggen_frequency = value;
-                sc->siggen_frequency = CLIP(sc->siggen_frequency, 0.0f, 5.0f);
+                sc->siggen_frequency = CLIP(sc->siggen_frequency, 0.0f, 10.0f);
                 break;
             case 1:
                 sc->siggen_amplitude = value;
-                sc->siggen_amplitude = CLIP(sc->siggen_amplitude, 0.0f, 100.0f);
+                sc->siggen_amplitude = CLIP(sc->siggen_amplitude, 0.0f, 50.0f);
                 break;
         }
     }

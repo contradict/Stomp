@@ -60,7 +60,6 @@ struct EnfieldContext
     enum EnfieldThreadState loopstate;
     enum EnfieldUpdateWhichRead UpdateWhichRead;
     uint32_t last_update;
-    uint32_t last_request;
     UART_HandleTypeDef *uart;
     osThreadId thread;
     bool initialized;
@@ -305,7 +304,6 @@ void Enfield_Thread(const void *arg)
     st->recoveryCount = 0;
     st->initialized = false;
     st->last_update = 0;
-    st->last_request = 0;
     uint16_t read_data, write_data;
     int errs[4] = {0,0,0,0};
     uint32_t now, wait;
@@ -339,6 +337,7 @@ void Enfield_Thread(const void *arg)
                 }
                 else
                 {
+                    st->last_update = xTaskGetTickCount();
                     st->state = StWaitRequest;
                     st->loopstate = StStartRecovery;
                 }
@@ -353,6 +352,7 @@ void Enfield_Thread(const void *arg)
                 }
                 else
                 {
+                    st->last_update = xTaskGetTickCount();
                     st->state = StWaitRequest;
                     st->loopstate = StStartRecovery;
                 }
@@ -371,6 +371,7 @@ void Enfield_Thread(const void *arg)
                 }
                 else
                 {
+                    st->last_update = xTaskGetTickCount();
                     st->state = StWaitRequest;
                     st->loopstate = StStartRecovery;
                 }
@@ -441,8 +442,7 @@ void Enfield_Thread(const void *arg)
                 }
                 else if(evt.status == osEventMail)
                 {
-                    if((now - st->last_update) < 2 ||
-                       (now - st->last_request) < 2)
+                    if((now - st->last_update) < 2)
                     {
                         osDelay(2);
                     }
@@ -462,7 +462,7 @@ void Enfield_Thread(const void *arg)
                         osMailFree(st->commandQ, st->req);
                         st->state = st->loopstate;
                     }
-                    st->last_request = xTaskGetTickCount();
+                    st->last_update = xTaskGetTickCount();
                 }
                 break;
             case StExecuteRequest:

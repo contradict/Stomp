@@ -1,0 +1,59 @@
+
+####################################
+#
+#  HULL Telemetry Definitions
+#
+####################################
+
+#
+#  GNRL - General robot health (Packet ID 1)
+#
+
+TELEMETRY HULL GNRL LITTLE_ENDIAN "General"
+    APPEND_ID_ITEM PKTID 8 UINT 1 "Packet ID which must be 1"
+    APPEND_ITEM TANK_PSI 8 UINT "Tank Pressure"
+        UNITS "Pounds per Square Inch" "PSI"
+    APPEND_ITEM RAIL_PSI 8 UINT "Rail Pressure"
+        UNITS "Pounds per Square Inch" "PSI"
+    APPEND_ITEM SBUS_FAILSAFE 1 UINT "S.bus Failsafe"
+    APPEND_ITEM SBUS_NO_DATA 1 UINT "S.bus No Data"
+    APPEND_ITEM PAD2 1 UINT "PAD"
+    APPEND_ITEM PAD3 1 UINT "PAD"
+    APPEND_ITEM PAD4 1 UINT "PAD"
+    APPEND_ITEM PAD5 1 UINT "PAD"
+    APPEND_ITEM PAD6 1 UINT "PAD"
+    APPEND_ITEM PAD7 1 UINT "PAD"
+
+#
+#  LEGSTAT - Leg status  (Packet ID 2)
+#
+
+TELEMETRY HULL LEGSTAT LITTLE_ENDIAN "Leg Status"
+    APPEND_ID_ITEM PKTID 8 UINT 2 "Packet ID which must be 2"
+    APPEND_ARRAY_ITEM CURL_BASE_PSI 8 INT 48 "Curl Base Pressures"
+        UNITS "Pounds per Square Inch" "psi"
+    APPEND_ARRAY_ITEM CURL_ROD_PSI 8 INT 48 "Curl Rod Pressures"
+        UNITS "Pounds per Square Inch" "psi"
+    APPEND_ARRAY_ITEM SWING_BASE_PSI 8 INT 48 "Swing Base Pressures"
+        UNITS "Pounds per Square Inch" "psi"
+    APPEND_ARRAY_ITEM SWING_ROD_PSI 8 INT 48 "Swing Rod Pressures"
+        UNITS "Pounds per Square Inch" "psi"
+    APPEND_ARRAY_ITEM LIFT_SWING_BASE_PSI 8 INT 48 "Lift Base Pressures"
+        UNITS "Pounds per Square Inch" "psi"
+    APPEND_ARRAY_ITEM LIFT_ROD_PSI 8 INT 48 "Lift Rod Pressures"
+        UNITS "Pounds per Square Inch" "psi"
+    APPEND_ARRAY_ITEM TOE_POS_X 8 INT 48 "Toe X Positions"
+        UNITS "Millimeters" "mm"
+    APPEND_ARRAY_ITEM TOE_CMD_X 8 INT 48 "Toe X Commands"
+        UNITS "Millimeters" "mm"
+    APPEND_ARRAY_ITEM TOE_POS_Y 8 INT 48 "Toe Y Positions"
+        UNITS "Millimeters" "mm"
+    APPEND_ARRAY_ITEM TOE_CMD_Y 8 INT 48 "Toe Y Commands"
+        UNITS "Millimeters" "mm"
+    APPEND_ARRAY_ITEM TOE_POS_Z 8 INT 48 "Toe Z Positions"
+        UNITS "Millimeters" "mm"
+    APPEND_ARRAY_ITEM TOE_CMD_Z 8 INT 48 "Toe Z Commands"
+        UNITS "Millimeters" "mm"
+    APPEND_ITEM OBSERVED_PERIOD 8 UINT "Observed Period"
+        UNITS "Milliseconds" "ms"
+
