@@ -12,6 +12,7 @@ valve_change_dt = 10
 max_throw_pressure_dt = 750000      # us
 max_throw_expand_dt = 250000        # us
 max_retract_pressure_dt = 1000000   # us
-max_retract_expand_dt = 1000000     # us
-max_retract_break_dt = 1000000      # us
-max_retract_settle_dt = 500000      # us
+max_retract_expand_dt = 1000000     # us
+max_retract_break_dt = 1000000      # us
+max_retract_settle_dt = 500000      # us
+

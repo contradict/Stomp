@@ -1,13 +1,29 @@
 //
-// OUTPUT
+// This program runs on the PRU.  It initializes everything and then
+// waits around to receive messages from the ARM processor.  This
+// program also calls the hammer controller update method.
+//
+// Key Messages
+//
+// SENS - A message from the Sensor Controller.  Contains hammer and
+//        turret angles and velocities as well as throw and retract
+//        pressure reading.  Also contains hammer energy calculations
+//        performed on ARM, derived from sensor readings.
+//
+// CONF - A message from either the Turret Controller or the Telemetry
+//        Controller, initializing or updating global configuration
+//        values used in controlling the hammer state machine
+//
+// FIRE - Fire the hammer message
+//
+// Output Pins
 //
 // BBAI Header Pin P8.14 - PRU Heartbeat
 // BBAI Header Pin P8.16 - unused
 // BBAI Header Pin P8.18 - sensor message received
-//
 // BBAI Header Pin P8.15 - PRU 1 eCap PWM output
 // 
-// INPUT
+// Input Pins
 //
 
 #include <stdint.h>
@@ -61,9 +77,12 @@ static int k_message_type_strlen = 4;
 static char* k_message_type_exit = "EXIT";
 static char* k_message_type_sync = "SYNC";
 static char* k_message_type_sens = "SENS";
+static char* k_message_type_conf = "CONF";
 static char* k_message_type_logm = "LOGM";
 
+#if LOGGING_ENABLED
 static char s_log_message_buffer[512];
+#endif
 
 // -----------------------------------------------------------------------------
 // states
@@ -98,7 +117,8 @@ static uint32_t s_message_last_recv_time;
 
 static uint32_t s_heartbeat_start_time;
 
-static uint8_t s_comms_connected;
+static uint8_t s_comms_connected = 0;
+static uint8_t s_radio_weapon_enabled = 0;
 static uint8_t s_sync_message_received;
 static uint8_t s_exit_message_received;
 
@@ -124,10 +144,11 @@ void report_comms_up();
 void report_comms_down();
 
 int8_t is_comms_connected();
-int8_t is_weapon_armed();
+int8_t is_weapon_enabled();
 
 void recv_sync_message(char *sync_message_buffer);
 void recv_exit_message(char *exit_message_buffer);
+void recv_conf_message(char *conf_message_buffer);
 void recv_sens_message(char *sens_message_buffer);
 
 void send_swng_message();
@@ -196,7 +217,7 @@ void update()
 
             case armed:
                 {
-                    if (!is_comms_connected() || !is_weapon_armed())
+                    if (!is_comms_connected() || !is_weapon_enabled())
                     {
                         set_state(safe);
                     }
@@ -209,7 +230,7 @@ void update()
 
             case active:
                 {
-                    if (!is_comms_connected() || !is_weapon_armed())
+                    if (!is_comms_connected() || !is_weapon_enabled())
                     {
                         set_state(safe);
                     }
@@ -266,7 +287,11 @@ void update_comms()
 
         while (pru_rpmsg_receive(&s_transport, &s_rpmsg_arm_addr, &s_rpmsg_pru_addr, s_recv_message_buffer, &message_len) == PRU_RPMSG_SUCCESS) 
         {
-            if (strncmp(s_recv_message_buffer, k_message_type_sens, k_message_type_strlen) == 0)
+            if (strncmp(s_recv_message_buffer, k_message_type_conf, k_message_type_strlen) == 0)
+            {
+                recv_conf_message(s_recv_message_buffer);
+            }
+            else if (strncmp(s_recv_message_buffer, k_message_type_sens, k_message_type_strlen) == 0)
             {
                 recv_sens_message(s_recv_message_buffer);
             }
@@ -374,6 +399,8 @@ void set_state(enum state new_state)
                 init_rpmsg();
                 init_gpio();
                 init_heartbeat();
+
+                hammer_control_init();
             }
             break;
 
@@ -406,15 +433,27 @@ void recv_exit_message(char *sens_message_buffer)
     s_exit_message_received = 1;
 }
 
+void recv_conf_message(char *conf_message_buffer)
+{
+    g_max_throw_angle = 0;
+    g_min_retract_angle = 0;
+    g_retract_fill_pressure = 0;
+    g_brake_exit_velocity = 0;
+    g_emergency_brake_angle = 0;
+    g_valve_change_dt = 0;
+
+    g_max_throw_pressure_dt = 0;
+    g_max_throw_expand_dt = 0;
+    g_max_retract_pressure_dt = 0;
+    g_max_retract_expand_dt = 0;
+    g_max_retract_break_dt = 0;
+    g_max_retract_settle_dt = 0;
+
+    hammer_control_config_update();
+}
+
 void recv_sens_message(char *sens_message_buffer)
 {
-    int32_t hammer_angle;
-    int32_t hammer_velocity;
-    int32_t turret_angle;
-    int32_t turret_velocity;
-    int32_t throw_pressure;
-    int32_t retract_pressure;
-
     // parse the sensor message
     
     char* token = strtok(sens_message_buffer, ":");
@@ -432,30 +471,35 @@ void recv_sens_message(char *sens_message_buffer)
     {
         if (strcmp(token, "HA") == 0)
         {
-            hammer_angle = atoi(strtok(NULL, ":"));
-            hammer_velocity = atoi(strtok(NULL, ":"));
+            g_hammer_angle = atoi(strtok(NULL, ":"));
+            g_hammer_velocity = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "TA") == 0)
         {
-            turret_angle = atoi(strtok(NULL, ":"));
-            turret_velocity = atoi(strtok(NULL, ":"));
+            g_turret_angle = atoi(strtok(NULL, ":"));
+            g_turret_velocity = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "TP") == 0)
         {
-            throw_pressure = atoi(strtok(NULL, ":"));
+            g_throw_pressure = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "RP") == 0)
         {
-            retract_pressure = atoi(strtok(NULL, ":"));
+            g_retract_pressure = atoi(strtok(NULL, ":"));
         }
 
         token = strtok(NULL, ":");
     }
     
+    // TODO: Add these variables to the message 
+   
+    g_hammer_energy = 0;
+    g_available_break_energy = 0;
+
     // Output sensor value on APWN pin
 
     /*
-    uint32_t period = hammer_angle;
+    uint32_t period = g_hammer_angle;
     
     CT_ECAP.CAP3 = period * 1000;
     CT_ECAP.CAP4 = period * 500;
@@ -489,7 +533,7 @@ void recv_sens_message(char *sens_message_buffer)
     memcpy(debug_message, "HA=", 3); 
     debug_message += 3;
 
-    number_string = pru_util_itoa(hammer_angle, 10);
+    number_string = pru_util_itoa(g_hammer_angle, 10);
     number_string_len = strlen(number_string);
 
     memcpy(debug_message, number_string, number_string_len);
@@ -775,7 +819,7 @@ int8_t is_comms_connected()
     return s_comms_connected;
 }
 
-int8_t is_weapon_armed()
+int8_t is_weapon_enabled()
 {
-    return 1;
+    return s_radio_weapon_enabled;
 }

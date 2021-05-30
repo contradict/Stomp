@@ -120,7 +120,7 @@ digraph HammerController
                 <td port="in" border="1">TP:C <font color='red'>TV:O</font><br/>RP:C RV:C</td>
             </tr>
             <tr>
-                <td port="out" border="1">hammer_angle &lt; min_retract_angle ||<br/>state_dt &ge; max_retract_settle_dt</td>
+                <td port="out" border="1">hammer_angle &le; min_retract_angle ||<br/>state_dt &ge; max_retract_settle_dt</td>
             </tr>
         </table>>
     ];
