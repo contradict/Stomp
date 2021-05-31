@@ -1,4 +1,4 @@
-PROJ_NAME = hammer_control
+PROJ_NAME = hammer_control_pru
 
 CHIP = am57xx
 CHIP_REV = am572x_2_0

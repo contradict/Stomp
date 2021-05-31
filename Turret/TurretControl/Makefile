@@ -1,5 +1,6 @@
 BOT=TURRET
 
+BIN_DIR=./bin
 COMMON_MODULES_DIR=../../Common/modules
 
 LCM_LOCAL_DIR=lcm
@@ -34,8 +35,8 @@ sensors_control_objs=$(sensors_control_srcs:.c=.o)
 sensors_speed_test_srcs=$(shell find src/sensors_speed_test/*.c)
 sensors_speed_test_objs=$(sensors_speed_test_srcs:.c=.o)
 
-lcm_rpmsg_bridge_srcs=$(shell find src/lcm_rpmsg_bridge/*.c)
-lcm_rpmsg_bridge_objs=$(lcm_rpmsg_bridge_srcs:.c=.o)
+hammer_control_arm_srcs=$(shell find src/hammer_control_arm/*.c)
+hammer_control_arm_objs=$(hammer_control_arm_srcs:.c=.o)
 
 sbus_radio_srcs=$(shell find $(COMMON_MODULES_DIR)/src/sbus_radio/*.c)
 sbus_radio_objs=$(sbus_radio_srcs:.c=.o)
@@ -62,25 +63,32 @@ NCURSES_LDFLAGS=$(shell pkg-config --libs ncurses)
 CFLAGS=-g3 -std=gnu11 -I inc -I $(COMMON_MODULES_DIR)/inc -Wall -D$(BOT) $(LCM_CFLAGS) $(SCLOG4C_CFLAGS)
 LDFLAGS=-lm $(LCM_LDFLAGS) $(SCLOG4C_STATICLIB)
 
-turret_control: CFLAGS+= $(TOMLC99_CFLAGS)
+$(BIN_DIR)/turret_control: CFLAGS+= $(TOMLC99_CFLAGS)
+$(BIN_DIR)/hammer_control_arm: CFLAGS+= $(TOMLC99_CFLAGS)
 
-fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
-fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
+$(BIN_DIR)/fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
+$(BIN_DIR)/fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
 
 all: pru_targets libs targets
 
-targets: turret_control sensors_control lcm_rpmsg_bridge sbus_radio telemetry
+targets: $(BIN_DIR)/turret_control $(BIN_DIR)/sensors_control $(BIN_DIR)/hammer_control_arm $(BIN_DIR)/sbus_radio $(BIN_DIR)/telemetry
 
 pru_targets:
-	@$(MAKE) -C "src/hammer_control"
+	@$(MAKE) -C "src/hammer_control_pru"
 
 libs: $(TOMLC99_STATICLIB) $(SCLOG4C_STATICLIB) $(MESSAGELIB)
 
 clean:
 	rm -f $(turret_control_objs)
 	rm -f $(sensors_control_objs)
-	rm -f $(lcm_rpmsg_bridge_objs)
-	rm -f turret_control sensors_control lcm_rpmsg_bridge sbus_radio telemetry fake_sbus_radio test_telem
+	rm -f $(hammer_control_arm_objs)
+	rm -f $(BIN_DIR)/turret_control 
+	rm -f $(BIN_DIR)/sensors_control 
+	rm -f $(BIN_DIR)/hammer_control_arm 
+	rm -f $(BIN_DIR)/sbus_radio 
+	rm -f $(BIN_DIR)/telemetry 
+	rm -f $(BIN_DIR)/fake_sbus_radio 
+	rm -f $(BIN_DIR)/test_telem
 	rm -f $(MESSAGELIB)
 	rm -f $(sbus_radio_objs)
 	rm -f $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o
@@ -88,47 +96,47 @@ clean:
 	rm -f $(telem_test_objs) 
 	rm -fr inc/lcm src/lcm
 	rm -fr $(COMMON_MODULES_DIR)/inc/lcm $(COMMON_MODULES_DIR)/src/lcm
-	$(MAKE) -C src/hammer_control clean
+	$(MAKE) -C src/hammer_control_pru clean
 	$(MAKE) -C $(TOML_DIR) clean
 	$(MAKE) -C $(SCLOG4C_DIR) clean
 
-turret_control: $(turret_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB) $(TOMLC99_STATICLIB)
+$(BIN_DIR)/turret_control: $(turret_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB) $(TOMLC99_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
-turret_control_cap: turret_control
-	sudo setcap "cap_sys_nice=ep" ./turret_control
+turret_control_cap: $(BIN_DIR)/turret_control
+	sudo setcap "cap_sys_nice=ep" $(BIN_DIR)/turret_control
 
-sensors_control: $(sensors_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
+$(BIN_DIR)/sensors_control: $(sensors_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
-sensors_control_cap: sensors_control
-	sudo setcap "cap_sys_nice=ep" ./sensors_control
+sensors_control_cap: $(BIN_DIR)/sensors_control
+	sudo setcap "cap_sys_nice=ep" $(BIN_DIR)/sensors_control
 
-sensors_speed_test: $(sensors_speed_test_objs) 
+$(BIN_DIR)/sensors_speed_test: $(sensors_speed_test_objs) 
 	gcc $^ -o $@ $(LDFLAGS)
 
-sensors_speed_test_cap: sensors_speed_test
-	sudo setcap "cap_sys_nice=ep" ./sensors_speed_test
+sensors_speed_test_cap: $(BIN_DIR)/sensors_speed_test
+	sudo setcap "cap_sys_nice=ep" $(BIN_DIR)/sensors_speed_test
 
-lcm_rpmsg_bridge: $(lcm_rpmsg_bridge_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
+$(BIN_DIR)/hammer_control_arm: $(hammer_control_arm_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB) $(TOMLC99_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
-lcm_rpmsg_bridge_cap: lcm_rpmsg_bridge
-	sudo setcap "cap_sys_nice=ep" ./lcm_rpmsg_bridge
+hammer_control_arm_cap: $(BIN_DIR)/hammer_control_arm
+	sudo setcap "cap_sys_nice=ep" $(BIN_DIR)/hammer_control_arm
 
 $(MESSAGELIB): $(message_objs)
 	ar rcs $@ $^
 
-sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
+$(BIN_DIR)/sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
 	gcc $(COMMON_MODULES_DIR)/src/sbus_radio/main.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
-fake_sbus_radio: $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o $(MESSAGELIB)
+$(BIN_DIR)/fake_sbus_radio: $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
-telemetry: $(telemetry_objs) $(MESSAGELIB)
+$(BIN_DIR)/telemetry: $(telemetry_objs) $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
-test_telem: $(telem_test_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
+$(BIN_DIR)/test_telem: $(telem_test_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
 .SECONDARY: $(message_srcs)

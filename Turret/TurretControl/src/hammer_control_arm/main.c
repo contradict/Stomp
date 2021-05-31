@@ -17,13 +17,21 @@
 #include <sys/stat.h>
 #include <signal.h>
 
+#include "toml.h"
 #include "sclog4c/sclog4c.h"
 
 #include "lcm_channels.h"
 #include "lcm/stomp_control_radio.h"
 #include "lcm/stomp_sensors_control.h"
 
-#include "lcm_rpmsg_bridge/lcm_rpmsg_bridge.h"
+#include "hammer_control_arm/toml_utils.h"
+#include "hammer_control_arm/hammer_control_arm.h"
+
+// -----------------------------------------------------------------------------
+// globals
+// -----------------------------------------------------------------------------
+
+struct pru_config g_pru_config;
 
 // -----------------------------------------------------------------------------
 // file scope consts
@@ -75,13 +83,18 @@ static void shutdown();
 
 int main(int argc, char **argv)
 {
-    // parse command line
+    char *config_filename = "../hammer_config.toml";
+
+    // Parse command line
     
     int opt;
-    while((opt = getopt(argc, argv, "d:")) != -1)
+    while((opt = getopt(argc, argv, "c:d:")) != -1)
     {
         switch(opt)
         {
+            case 'c':
+                config_filename = strdup(optarg);
+                break;
             case 'd':
                 sclog4c_level = atoi(optarg);
                 logm(SL4C_FATAL, "Log level set to %d.", sclog4c_level);
@@ -89,6 +102,49 @@ int main(int argc, char **argv)
         }
     }
 
+    // Read TOML config file
+    
+    FILE* fp;
+    char errbuf[200];
+    if (0 == (fp = fopen(config_filename, "r")))
+    {
+        snprintf(errbuf, sizeof(errbuf),"Unable to open config file %s:", config_filename);
+        perror(errbuf);
+        exit(1);
+    }
+
+    toml_table_t *toml_full_config = toml_parse_file(fp, errbuf, sizeof(errbuf));
+
+    if (0 == toml_full_config)
+    {
+        logm(SL4C_FATAL, "Unable to parse %s: %s\n", config_filename, errbuf);
+        exit(1);
+    }
+
+    toml_table_t *toml_hammer_config = toml_table_in(toml_full_config, "hammer_config");
+
+    if (0 == toml_hammer_config)
+    {
+        logm(SL4C_FATAL, "No table 'hammer_config' in config.\n");
+        exit(1);
+    }
+
+    toml_table_t *toml_pru_config = toml_table_in(toml_hammer_config, "pru_config");
+
+    if (0 == toml_pru_config)
+    {
+        logm(SL4C_FATAL, "No table 'pru_config' in config.\n");
+        exit(1);
+    }
+
+    if (parse_toml_pru_config(toml_pru_config) !=0)
+    {
+        logm(SL4C_FATAL, "could not parse pru_config message.\n");
+        exit(1);
+    }
+
+    // Init all systems
+    
     init_sig_handlers();
     init_lcm();
 
@@ -111,7 +167,7 @@ int main(int argc, char **argv)
     }
     */
 
-    //  select needs highest fd + 1.  Calculate that here
+    //  Select needs highest fd + 1.  Calculate that here
     
     int max_fd;
 
@@ -188,7 +244,7 @@ void shutdown()
 {
     // Shutdown LCM
     
-    logm(SL4C_DEBUG, "Shutdown lcm_rpmsg_bridge");
+    logm(SL4C_DEBUG, "Shutdown hammer_control_arm");
     stomp_sensors_control_unsubscribe(s_lcm, s_stomp_sensors_subscription);
     lcm_destroy(s_lcm);
 

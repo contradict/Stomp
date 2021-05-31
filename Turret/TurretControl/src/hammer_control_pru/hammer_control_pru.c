@@ -15,7 +15,7 @@
 #include "pru_util.h"
 #include "pru_time.h"
 
-#include "hammer_control/hammer_control.h"
+#include "hammer_control_pru/hammer_control_pru.h"
 
 // -----------------------------------------------------------------------------
 // global variables
@@ -41,19 +41,19 @@ int32_t g_desired_throw_angle;
 // config values, filled in from a CONF message from ARM
 // in message handlling in main.c
 
-int32_t g_max_throw_angle;
-int32_t g_min_retract_angle;
-int32_t g_retract_fill_pressure;
-int32_t g_brake_exit_velocity;
-int32_t g_emergency_brake_angle;
-int32_t g_valve_change_dt;
+int64_t g_max_throw_angle;
+int64_t g_min_retract_angle;
+int64_t g_retract_fill_pressure;
+int64_t g_brake_exit_velocity;
+int64_t g_emergency_brake_angle;
+int64_t g_valve_change_dt;
 
-int32_t g_max_throw_pressure_dt;
-int32_t g_max_throw_expand_dt;
-int32_t g_max_retract_pressure_dt;
-int32_t g_max_retract_expand_dt;
-int32_t g_max_retract_break_dt;
-int32_t g_max_retract_settle_dt;
+int64_t g_max_throw_pressure_dt;
+int64_t g_max_throw_expand_dt;
+int64_t g_max_retract_pressure_dt;
+int64_t g_max_retract_expand_dt;
+int64_t g_max_retract_break_dt;
+int64_t g_max_retract_settle_dt;
 
 // -----------------------------------------------------------------------------
 // file scope consts

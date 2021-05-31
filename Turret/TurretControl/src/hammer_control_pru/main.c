@@ -42,7 +42,7 @@
 
 #include "resource_table_1.h"
 
-#include "hammer_control/hammer_control.h"
+#include "hammer_control_pru/hammer_control_pru.h"
 
 #define LOGGING_ENABLED 0
 

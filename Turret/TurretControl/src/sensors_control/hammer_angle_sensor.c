@@ -63,7 +63,6 @@ float get_hammer_velocity()
 
 float calculate_hammer_angle(int32_t raw_sensor_value)
 {
-    /*
     float sensor_value_at_min_angle = (k_measured_voltage_at_min_angle * 4096.0f) / k_reference_voltage;
     float sensor_value_at_max_angle = (k_measured_voltage_at_max_angle * 4096.0f) / k_reference_voltage;
 
@@ -74,11 +73,8 @@ float calculate_hammer_angle(int32_t raw_sensor_value)
 
     s_hammer_angle = lerp(k_min_angle_rad, k_max_angle_rad, t);
 
-
     logm(SL4C_DEBUG, "Hammer Angle = %f", s_hammer_angle);
-    */
 
-    s_hammer_angle = (float)raw_sensor_value + 1;
     return s_hammer_angle;
 }
 
