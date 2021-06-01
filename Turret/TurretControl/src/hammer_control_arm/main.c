@@ -389,6 +389,41 @@ void init_rpmsg()
         logm(SL4C_FATAL, "Could not send pru sync message. Error %i from write(): %s", errno, strerror(errno));
         exit(2);
     }
+
+    // Send the first CONF message, with the values from the TOML file
+
+    char config_message_buff[k_message_buff_len];
+
+    sprintf(config_message_buff, "CONF:TA:%d:RA:%d:RFP:%d:BEV:%d:EBA:%d:VCDT:%d:TPDT:%d:TEDT:%d:RPDT:%d:REDT:%d:RBDT:%d:RSDT:%d\n",
+        (int32_t)g_pru_config.max_throw_angle,
+        (int32_t)g_pru_config.min_retract_angle,
+        (int32_t)g_pru_config.min_retract_fill_pressure,
+        (int32_t)g_pru_config.break_exit_velocity,
+        (int32_t)g_pru_config.emergency_break_angle,
+        (int32_t)g_pru_config.valve_change_dt,
+        (int32_t)g_pru_config.max_throw_pressure_dt,
+        (int32_t)g_pru_config.max_throw_expand_dt,
+        (int32_t)g_pru_config.max_retract_pressure_dt,
+        (int32_t)g_pru_config.max_retract_expand_dt,
+        (int32_t)g_pru_config.max_retract_break_dt,
+        (int32_t)g_pru_config.max_retract_settle_dt
+    );
+
+    logm(SL4C_DEBUG, "SEND RPMSG: %s", config_message_buff);
+
+    // BB MJS: Ensure we don't overflow the buffer, this check is too late
+
+    if (strlen(config_message_buff) >= k_message_buff_len)
+    {
+        logm(SL4C_FATAL, "Message will not fit in maximum RPMsg message size");
+        return;
+    }
+
+    if (write(s_rpmsg_fd, config_message_buff, strlen(config_message_buff)) < 0)
+    {
+        logm(SL4C_ERROR, "Could not send pru sens message. Error %i from write(): %s", errno, strerror(errno));
+    }
+
 }
 
 // -----------------------------------------------------------------------------

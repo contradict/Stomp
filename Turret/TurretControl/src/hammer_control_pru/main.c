@@ -435,19 +435,69 @@ void recv_exit_message(char *sens_message_buffer)
 
 void recv_conf_message(char *conf_message_buffer)
 {
-    g_max_throw_angle = 0;
-    g_min_retract_angle = 0;
-    g_retract_fill_pressure = 0;
-    g_brake_exit_velocity = 0;
-    g_emergency_brake_angle = 0;
-    g_valve_change_dt = 0;
+    // parse the conf message
+    
+    char* token = strtok(conf_message_buffer, ":");
 
-    g_max_throw_pressure_dt = 0;
-    g_max_throw_expand_dt = 0;
-    g_max_retract_pressure_dt = 0;
-    g_max_retract_expand_dt = 0;
-    g_max_retract_break_dt = 0;
-    g_max_retract_settle_dt = 0;
+    // confirm it is CONF message
+
+    if (strncmp(token, k_message_type_conf, k_message_type_strlen) != 0)
+    {
+        return;
+    }
+
+    while (token != NULL)
+    {
+        if (strcmp(token, "TA") == 0)
+        {
+            g_max_throw_angle = atoi(strtok(NULL, ":"));
+        }
+        else if (strcmp(token, "RA") == 0)
+	{
+            g_min_retract_angle = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "RFP") == 0)
+	{
+    	    g_retract_fill_pressure = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "BEV") == 0)
+	{
+            g_brake_exit_velocity = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "EBA") == 0)
+	{
+            g_emergency_brake_angle = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "VCDT") == 0)
+	{
+            g_valve_change_dt = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "TPDT") == 0)
+	{
+            g_max_throw_pressure_dt = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "RPDT") == 0)
+	{
+            g_max_throw_expand_dt = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "TEDT") == 0)
+            g_max_retract_pressure_dt = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "REDT") == 0)
+	{
+            g_max_retract_expand_dt = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "RBDT") == 0)
+	{
+            g_max_retract_break_dt = atoi(strtok(NULL, ":"));
+	}
+        else if (strcmp(token, "RSDT") == 0)
+	{
+            g_max_retract_settle_dt = atoi(strtok(NULL, ":"));
+	}
+
+        token = strtok(NULL, ":");
+    }
 
     hammer_control_config_update();
 }
