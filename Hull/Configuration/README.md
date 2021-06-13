@@ -91,14 +91,11 @@ IMU. This should use your developer account.
     git checkout -b chomp
     make
 
-Creates the files
+This command creates the file
 
-    src/arm/BBAI-SPI3-ADC-IMU.dtb
-    src/arm/BBAI-UART10.dtb
-    src/arm/BBAI-UART3.dtb
-    src/arm/BBAI-UART5.dtb
+    src/arm/BBAI-chompcape.dtb
 
-Need to copy the files to `/lib/firmware/`
+Need to copy the file to `/lib/firmware/`
 
     sudo cp src/arm/BBAI-*.dtb /lib/firmware
 
