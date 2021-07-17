@@ -1,7 +1,7 @@
 ******************************************************************************
                      PRU Linker Unix v2.1.5                    
 ******************************************************************************
->> Linked Mon May 31 18:23:45 2021
+>> Linked Sat Jul 17 00:57:05 2021
 
 OUTPUT FILE NAME:   <out/hammer_control_pru>
 ENTRY POINT SYMBOL: "_c_int00_noinit_noargs_noexit"  address: 00000000
@@ -12,10 +12,10 @@ MEMORY CONFIGURATION
          name            origin    length      used     unused   attr    fill
 ----------------------  --------  ---------  --------  --------  ----  --------
 PAGE 0:
-  PRU_IMEM              00000000   00003000  0000135c  00001ca4  RWIX
+  PRU_IMEM              00000000   00003000  000017ac  00001854  RWIX
 
 PAGE 1:
-  PRU_DMEM_0_1          00000000   00002000  000007a7  00001859  RWIX
+  PRU_DMEM_0_1          00000000   00002000  000007d7  00001829  RWIX
   PRU_DMEM_1_0          00002000   00002000  00000000  00002000  RWIX
 
 PAGE 2:
@@ -60,53 +60,53 @@ section   page    origin      length       input sections
 *          0    00000000    00000014     
                   00000000    00000014     rtspruv3_le.lib : boot_special.obj (.text:_c_int00_noinit_noargs_noexit)
 
-.text      0    00000014    00001348     
-                  00000014    000003a8     hammer_control_pru.o (.text:hammer_control_update)
-                  000003bc    000001b4     main.o (.text:recv_sens_message)
-                  00000570    00000190     main.o (.text:update_comms)
-                  00000700    00000114     rtspruv3_le.lib : divu_c.obj (.text:__pruabi_divu)
-                  00000814    000000d8     rpmsg_lib.lib : pru_rpmsg.object (.text:pru_rpmsg_send)
-                  000008ec    000000c4                   : pru_rpmsg.object (.text:pru_rpmsg_receive)
-                  000009b0    000000b0     main.o (.text:update)
-                  00000a60    00000094     rtspruv3_le.lib : strtok.obj (.text:strtok)
-                  00000af4    00000090     pru_time.o (.text:pru_time_update)
-                  00000b84    00000090     main.o (.text:set_state)
-                  00000c14    0000008c     main.o (.text:init_rpmsg)
-                  00000ca0    0000007c     rtspruv3_le.lib : atoi.obj (.text:atoi)
-                  00000d1c    0000007c     main.o (.text:recv_conf_message)
-                  00000d98    0000006c     main.o (.text:init_ecap)
-                  00000e04    00000060     rpmsg_lib.lib : pru_rpmsg.object (.text:pru_rpmsg_init)
-                  00000e64    00000060                   : pru_virtqueue.object (.text:pru_virtqueue_get_avail_buf)
-                  00000ec4    00000060                   : pru_virtqueue.object (.text:pru_virtqueue_init)
-                  00000f24    00000060     main.o (.text:update_heartbeat)
-                  00000f84    0000005c     rpmsg_lib.lib : pru_rpmsg.object (.text:pru_rpmsg_channel)
-                  00000fe0    0000005c                   : pru_virtqueue.object (.text:pru_virtqueue_add_used_buf)
-                  0000103c    0000004c     pru_time.o (.text:pru_time_init)
-                  00001088    00000044     rtspruv3_le.lib : strspn.obj (.text:strspn)
-                  000010cc    00000034                     : memcpy.obj (.text)
-                  00001100    00000034                     : strcspn.obj (.text:strcspn)
-                  00001134    00000030     hammer_control_pru.o (.text:hammer_control_set_state)
-                  00001164    00000028     hammer_control_pru.o (.text:hammer_control_config_update)
-                  0000118c    00000028     hammer_control_pru.o (.text:hammer_control_init)
-                  000011b4    00000028     main.o (.text:init_gpio)
-                  000011dc    00000028     rpmsg_lib.lib : pru_virtqueue.object (.text:pru_virtqueue_kick)
-                  00001204    00000024     main.o (.text:init_intc)
-                  00001228    00000024     main.o (.text:main)
-                  0000124c    00000024     main.o (.text:update_hammer)
-                  00001270    00000020     main.o (.text:init_heartbeat)
-                  00001290    00000018     main.o (.text:check_for_arm_exit)
-                  000012a8    00000018     main.o (.text:check_for_arm_sync)
-                  000012c0    00000018     hammer_control_pru.o (.text:hammer_control_is_swing_complete)
-                  000012d8    00000010     main.o (.text:init_syscfg)
-                  000012e8    00000010     main.o (.text:recv_exit_message)
-                  000012f8    00000010     main.o (.text:recv_sync_message)
-                  00001308    00000010     main.o (.text:report_comms_down)
-                  00001318    00000010     main.o (.text:report_comms_up)
-                  00001328    0000000c     main.o (.text:is_comms_connected)
-                  00001334    0000000c     main.o (.text:is_weapon_enabled)
-                  00001340    0000000c     pru_time.o (.text:pru_time_gettime)
-                  0000134c    00000008     rtspruv3_le.lib : exit.obj (.text:abort)
-                  00001354    00000008                     : exit.obj (.text:loader_exit)
+.text      0    00000014    00001798     
+                  00000014    000004c8     main.o (.text:recv_conf_message)
+                  000004dc    000003a8     hammer_control_pru.o (.text:hammer_control_update)
+                  00000884    000001b4     main.o (.text:recv_sens_message)
+                  00000a38    00000194     main.o (.text:update_comms)
+                  00000bcc    00000114     rtspruv3_le.lib : divu_c.obj (.text:__pruabi_divu)
+                  00000ce0    000000d8     rpmsg_lib.lib : pru_rpmsg.object (.text:pru_rpmsg_send)
+                  00000db8    000000c4                   : pru_rpmsg.object (.text:pru_rpmsg_receive)
+                  00000e7c    000000b0     main.o (.text:update)
+                  00000f2c    00000094     rtspruv3_le.lib : strtok.obj (.text:strtok)
+                  00000fc0    00000090     pru_time.o (.text:pru_time_update)
+                  00001050    00000090     main.o (.text:set_state)
+                  000010e0    0000008c     main.o (.text:init_rpmsg)
+                  0000116c    0000007c     rtspruv3_le.lib : atoi.obj (.text:atoi)
+                  000011e8    0000006c     main.o (.text:init_ecap)
+                  00001254    00000060     rpmsg_lib.lib : pru_rpmsg.object (.text:pru_rpmsg_init)
+                  000012b4    00000060                   : pru_virtqueue.object (.text:pru_virtqueue_get_avail_buf)
+                  00001314    00000060                   : pru_virtqueue.object (.text:pru_virtqueue_init)
+                  00001374    00000060     main.o (.text:update_heartbeat)
+                  000013d4    0000005c     rpmsg_lib.lib : pru_rpmsg.object (.text:pru_rpmsg_channel)
+                  00001430    0000005c                   : pru_virtqueue.object (.text:pru_virtqueue_add_used_buf)
+                  0000148c    0000004c     pru_time.o (.text:pru_time_init)
+                  000014d8    00000044     rtspruv3_le.lib : strspn.obj (.text:strspn)
+                  0000151c    00000034                     : memcpy.obj (.text)
+                  00001550    00000034                     : strcspn.obj (.text:strcspn)
+                  00001584    00000030     hammer_control_pru.o (.text:hammer_control_set_state)
+                  000015b4    00000028     hammer_control_pru.o (.text:hammer_control_config_update)
+                  000015dc    00000028     hammer_control_pru.o (.text:hammer_control_init)
+                  00001604    00000028     main.o (.text:init_gpio)
+                  0000162c    00000028     rpmsg_lib.lib : pru_virtqueue.object (.text:pru_virtqueue_kick)
+                  00001654    00000024     main.o (.text:init_intc)
+                  00001678    00000024     main.o (.text:main)
+                  0000169c    00000024     main.o (.text:update_hammer)
+                  000016c0    00000020     main.o (.text:init_heartbeat)
+                  000016e0    00000018     main.o (.text:check_for_arm_exit)
+                  000016f8    00000018     main.o (.text:check_for_arm_sync)
+                  00001710    00000018     hammer_control_pru.o (.text:hammer_control_is_swing_complete)
+                  00001728    00000010     main.o (.text:init_syscfg)
+                  00001738    00000010     main.o (.text:recv_exit_message)
+                  00001748    00000010     main.o (.text:recv_sync_message)
+                  00001758    00000010     main.o (.text:report_comms_down)
+                  00001768    00000010     main.o (.text:report_comms_up)
+                  00001778    0000000c     main.o (.text:is_comms_connected)
+                  00001784    0000000c     main.o (.text:is_weapon_enabled)
+                  00001790    0000000c     pru_time.o (.text:pru_time_gettime)
+                  0000179c    00000008     rtspruv3_le.lib : exit.obj (.text:abort)
+                  000017a4    00000008                     : exit.obj (.text:loader_exit)
 
 .bss       1    00000000    000004c3     UNINITIALIZED
                   00000000    000001f0     (.common:s_recv_message_buffer)
@@ -154,10 +154,10 @@ section   page    origin      length       input sections
                   000005c4    00000004     rtspruv3_le.lib : boot.obj (.stack)
                   000005c8    000000fc     --HOLE--
 
-.data      1    00000784    0000001f     
-                  00000784    0000001a     main.o (.data)
-                  0000079e    00000004     main.o (.data:pru_intc_map)
-                  000007a2    00000001     hammer_control_pru.o (.data)
+.data      1    000007b4    0000001f     
+                  000007b4    0000001a     main.o (.data)
+                  000007ce    00000004     main.o (.data:pru_intc_map)
+                  000007d2    00000001     hammer_control_pru.o (.data)
 
 .cinit     1    00000000    00000000     UNINITIALIZED
 
@@ -165,11 +165,11 @@ section   page    origin      length       input sections
 *          1    000006c4    0000007c     
                   000006c4    0000007c     main.o (.resource_table:retain)
 
-.rodata    1    00000740    00000044     
-                  00000740    00000044     main.o (.rodata:.string)
+.rodata    1    00000740    00000074     
+                  00000740    00000074     main.o (.rodata:.string)
 
-.fardata   1    000007a3    00000004     
-                  000007a3    00000004     rtspruv3_le.lib : strtok.obj (.fardata)
+.fardata   1    000007d3    00000004     
+                  000007d3    00000004     rtspruv3_le.lib : strtok.obj (.fardata)
 
 .creg.PRU_INTC.noload.near 
 *          2    00020000    00000000     NOLOAD SECTION
@@ -227,7 +227,7 @@ GLOBAL SYMBOLS: SORTED ALPHABETICALLY BY Name
 
 page  address   name                            
 ----  -------   ----                            
-0     00001354  C$$EXIT                         
+0     000017a4  C$$EXIT                         
 2     00026000  CT_CFG                          
 2     00030000  CT_ECAP                         
 2     00020000  CT_INTC                         
@@ -299,15 +299,15 @@ abs   00000009  __PRU_CREG_RSVD9
 abs   00000100  __TI_STACK_SIZE                 
 abs   ffffffff  __binit__                       
 abs   ffffffff  __c_args__                      
-0     00000700  __pruabi_divu                   
+0     00000bcc  __pruabi_divu                   
 0     00000000  _c_int00_noinit_noargs_noexit   
 1     000004c3  _ctypes_                        
 1     000005c4  _stack                          
-0     0000134c  abort                           
-0     00000ca0  atoi                            
+0     0000179c  abort                           
+0     0000116c  atoi                            
 abs   ffffffff  binit                           
-0     00001290  check_for_arm_exit              
-0     000012a8  check_for_arm_sync              
+0     000016e0  check_for_arm_exit              
+0     000016f8  check_for_arm_sync              
 1     0000047c  g_available_break_energy        
 1     0000041c  g_brake_exit_velocity           
 1     00000480  g_desired_throw_angle           
@@ -329,48 +329,48 @@ abs   ffffffff  binit
 1     00000498  g_turret_angle                  
 1     0000049c  g_turret_velocity               
 1     00000474  g_valve_change_dt               
-0     00001164  hammer_control_config_update    
-0     0000118c  hammer_control_init             
-0     000012c0  hammer_control_is_swing_complete
-0     00001134  hammer_control_set_state        
-0     00000014  hammer_control_update           
-0     00000d98  init_ecap                       
-0     000011b4  init_gpio                       
-0     00001270  init_heartbeat                  
-0     00001204  init_intc                       
-0     00000c14  init_rpmsg                      
-0     000012d8  init_syscfg                     
-0     00001328  is_comms_connected              
-0     00001334  is_weapon_enabled               
-0     00001228  main                            
-0     000010cc  memcpy                          
-1     0000079e  pru_intc_map                    
-0     00000f84  pru_rpmsg_channel               
-0     00000e04  pru_rpmsg_init                  
-0     000008ec  pru_rpmsg_receive               
-0     00000814  pru_rpmsg_send                  
-0     00001340  pru_time_gettime                
-0     0000103c  pru_time_init                   
-0     00000af4  pru_time_update                 
-0     00000fe0  pru_virtqueue_add_used_buf      
-0     00000e64  pru_virtqueue_get_avail_buf     
-0     00000ec4  pru_virtqueue_init              
-0     000011dc  pru_virtqueue_kick              
-0     00000d1c  recv_conf_message               
-0     000012e8  recv_exit_message               
-0     000003bc  recv_sens_message               
-0     000012f8  recv_sync_message               
-0     00001308  report_comms_down               
-0     00001318  report_comms_up                 
+0     000015b4  hammer_control_config_update    
+0     000015dc  hammer_control_init             
+0     00001710  hammer_control_is_swing_complete
+0     00001584  hammer_control_set_state        
+0     000004dc  hammer_control_update           
+0     000011e8  init_ecap                       
+0     00001604  init_gpio                       
+0     000016c0  init_heartbeat                  
+0     00001654  init_intc                       
+0     000010e0  init_rpmsg                      
+0     00001728  init_syscfg                     
+0     00001778  is_comms_connected              
+0     00001784  is_weapon_enabled               
+0     00001678  main                            
+0     0000151c  memcpy                          
+1     000007ce  pru_intc_map                    
+0     000013d4  pru_rpmsg_channel               
+0     00001254  pru_rpmsg_init                  
+0     00000db8  pru_rpmsg_receive               
+0     00000ce0  pru_rpmsg_send                  
+0     00001790  pru_time_gettime                
+0     0000148c  pru_time_init                   
+0     00000fc0  pru_time_update                 
+0     00001430  pru_virtqueue_add_used_buf      
+0     000012b4  pru_virtqueue_get_avail_buf     
+0     00001314  pru_virtqueue_init              
+0     0000162c  pru_virtqueue_kick              
+0     00000014  recv_conf_message               
+0     00001738  recv_exit_message               
+0     00000884  recv_sens_message               
+0     00001748  recv_sync_message               
+0     00001758  report_comms_down               
+0     00001768  report_comms_up                 
 1     000006c4  resourceTable                   
-0     00000b84  set_state                       
-0     00001100  strcspn                         
-0     00001088  strspn                          
-0     00000a60  strtok                          
-0     000009b0  update                          
-0     00000570  update_comms                    
-0     0000124c  update_hammer                   
-0     00000f24  update_heartbeat                
+0     00001050  set_state                       
+0     00001550  strcspn                         
+0     000014d8  strspn                          
+0     00000f2c  strtok                          
+0     00000e7c  update                          
+0     00000a38  update_comms                    
+0     0000169c  update_hammer                   
+0     00001374  update_heartbeat                
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -378,52 +378,52 @@ GLOBAL SYMBOLS: SORTED BY Symbol Address
 page  address   name                            
 ----  -------   ----                            
 0     00000000  _c_int00_noinit_noargs_noexit   
-0     00000014  hammer_control_update           
-0     000003bc  recv_sens_message               
-0     00000570  update_comms                    
-0     00000700  __pruabi_divu                   
-0     00000814  pru_rpmsg_send                  
-0     000008ec  pru_rpmsg_receive               
-0     000009b0  update                          
-0     00000a60  strtok                          
-0     00000af4  pru_time_update                 
-0     00000b84  set_state                       
-0     00000c14  init_rpmsg                      
-0     00000ca0  atoi                            
-0     00000d1c  recv_conf_message               
-0     00000d98  init_ecap                       
-0     00000e04  pru_rpmsg_init                  
-0     00000e64  pru_virtqueue_get_avail_buf     
-0     00000ec4  pru_virtqueue_init              
-0     00000f24  update_heartbeat                
-0     00000f84  pru_rpmsg_channel               
-0     00000fe0  pru_virtqueue_add_used_buf      
-0     0000103c  pru_time_init                   
-0     00001088  strspn                          
-0     000010cc  memcpy                          
-0     00001100  strcspn                         
-0     00001134  hammer_control_set_state        
-0     00001164  hammer_control_config_update    
-0     0000118c  hammer_control_init             
-0     000011b4  init_gpio                       
-0     000011dc  pru_virtqueue_kick              
-0     00001204  init_intc                       
-0     00001228  main                            
-0     0000124c  update_hammer                   
-0     00001270  init_heartbeat                  
-0     00001290  check_for_arm_exit              
-0     000012a8  check_for_arm_sync              
-0     000012c0  hammer_control_is_swing_complete
-0     000012d8  init_syscfg                     
-0     000012e8  recv_exit_message               
-0     000012f8  recv_sync_message               
-0     00001308  report_comms_down               
-0     00001318  report_comms_up                 
-0     00001328  is_comms_connected              
-0     00001334  is_weapon_enabled               
-0     00001340  pru_time_gettime                
-0     0000134c  abort                           
-0     00001354  C$$EXIT                         
+0     00000014  recv_conf_message               
+0     000004dc  hammer_control_update           
+0     00000884  recv_sens_message               
+0     00000a38  update_comms                    
+0     00000bcc  __pruabi_divu                   
+0     00000ce0  pru_rpmsg_send                  
+0     00000db8  pru_rpmsg_receive               
+0     00000e7c  update                          
+0     00000f2c  strtok                          
+0     00000fc0  pru_time_update                 
+0     00001050  set_state                       
+0     000010e0  init_rpmsg                      
+0     0000116c  atoi                            
+0     000011e8  init_ecap                       
+0     00001254  pru_rpmsg_init                  
+0     000012b4  pru_virtqueue_get_avail_buf     
+0     00001314  pru_virtqueue_init              
+0     00001374  update_heartbeat                
+0     000013d4  pru_rpmsg_channel               
+0     00001430  pru_virtqueue_add_used_buf      
+0     0000148c  pru_time_init                   
+0     000014d8  strspn                          
+0     0000151c  memcpy                          
+0     00001550  strcspn                         
+0     00001584  hammer_control_set_state        
+0     000015b4  hammer_control_config_update    
+0     000015dc  hammer_control_init             
+0     00001604  init_gpio                       
+0     0000162c  pru_virtqueue_kick              
+0     00001654  init_intc                       
+0     00001678  main                            
+0     0000169c  update_hammer                   
+0     000016c0  init_heartbeat                  
+0     000016e0  check_for_arm_exit              
+0     000016f8  check_for_arm_sync              
+0     00001710  hammer_control_is_swing_complete
+0     00001728  init_syscfg                     
+0     00001738  recv_exit_message               
+0     00001748  recv_sync_message               
+0     00001758  report_comms_down               
+0     00001768  report_comms_up                 
+0     00001778  is_comms_connected              
+0     00001784  is_weapon_enabled               
+0     00001790  pru_time_gettime                
+0     0000179c  abort                           
+0     000017a4  C$$EXIT                         
 1     0000041c  g_brake_exit_velocity           
 1     00000424  g_emergency_brake_angle         
 1     0000042c  g_max_retract_break_dt          
@@ -449,7 +449,7 @@ page  address   name
 1     000005c4  _stack                          
 1     000006c4  __TI_STACK_END                  
 1     000006c4  resourceTable                   
-1     0000079e  pru_intc_map                    
+1     000007ce  pru_intc_map                    
 2     00020000  CT_INTC                         
 2     00026000  CT_CFG                          
 2     00030000  CT_ECAP                         

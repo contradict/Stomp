@@ -481,6 +481,7 @@ void recv_conf_message(char *conf_message_buffer)
             g_max_throw_expand_dt = atoi(strtok(NULL, ":"));
 	}
         else if (strcmp(token, "TEDT") == 0)
+        {
             g_max_retract_pressure_dt = atoi(strtok(NULL, ":"));
 	}
         else if (strcmp(token, "REDT") == 0)

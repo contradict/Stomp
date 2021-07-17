@@ -14,77 +14,14 @@
 static stomp_control_radio_subscription_t * s_control_radio_subscription;
 
 // -----------------------------------------------------------------------------
-// Stomp Control Radio LCM Handlers
+//  forward decl of internal methods
 // -----------------------------------------------------------------------------
 
-static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, const stomp_control_radio *msg, void *user)
-{
-    (void)rbuf;
-    (void)channel;
+static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, const stomp_control_radio *msg, void *user);
 
-    /*
-    switch(msg->toggle[HULL_MOTION_SEL])
-    {
-        case STOMP_CONTROL_RADIO_OFF:
-            params->motion = MOTION_MODE_STEERING;
-            params->angular_velocity = msg->axis[HULL_OMEGA_Z];
-            break;
-        case STOMP_CONTROL_RADIO_CENTER:
-            params->motion = MOTION_MODE_TRANSLATING;
-            params->right_velocity = msg->axis[HULL_VELOCITY_Y];
-            break;
-        case STOMP_CONTROL_RADIO_ON:
-            params->motion = MOTION_MODE_DRIVING;
-            params->right_velocity = msg->axis[HULL_VELOCITY_Y];
-            params->angular_velocity = msg->axis[HULL_OMEGA_Z_D];
-            break;
-    }
-
-    params->forward_velocity = msg->axis[HULL_VELOCITY_X];
-    params->ride_height = msg->axis[HULL_RIDE_HEIGHT];
-    params->left = msg->axis[HULL_LS];
-    params->right = msg->axis[HULL_RS];
-
-    switch(msg->toggle[HULL_MODE])
-    {
-        case STOMP_CONTROL_RADIO_ON:
-            params->lock = LOCK_LOCK;
-            break;
-        case STOMP_CONTROL_RADIO_OFF:
-            params->lock = LOCK_FREE;
-            break;
-    }
-
-    switch(msg->toggle[HULL_ENABLE])
-    {
-        case STOMP_CONTROL_RADIO_ON:
-            params->enable = ENABLE_WALK;
-            break;
-        case STOMP_CONTROL_RADIO_OFF:
-            params->enable = ENABLE_DISABLE;
-            break;
-    }
-
-    switch(msg->toggle[HULL_GAIT])
-    {
-        case STOMP_CONTROL_RADIO_ON:
-            params->gait_selection = 2;
-            break;
-        case STOMP_CONTROL_RADIO_CENTER:
-            params->gait_selection = 1;
-            break;
-        case STOMP_CONTROL_RADIO_OFF:
-            params->gait_selection = 0;
-            break;
-    }
-
-    if(msg->failsafe || msg->no_data)
-    {
-        params->enable = ENABLE_DISABLE;
-        params->lock = LOCK_FREE;
-    }
-    */
-}
+// -----------------------------------------------------------------------------
+// Stomp Control Radio LCM Handlers
+// -----------------------------------------------------------------------------
 
 int control_radio_init()
 {
@@ -96,6 +33,81 @@ int control_radio_init()
     }
 
     return 0;
+}
+
+static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, const stomp_control_radio *msg, void *user)
+{
+    (void)rbuf;
+    (void)channel;
+
+
+    //  Invalid or empty message go to safe mode
+    
+    if(msg->failsafe || msg->no_data)
+    {
+        logm(SL4C_FINE, "Received Invalid Radio Message\n");
+
+        g_radio_control_parameters.enable = TURRET_DISABLED;
+        g_radio_control_parameters.hammer_trigger = HAMMER_SAFE;
+        return;
+    }
+
+    logm(SL4C_FINE, "Received Valid Radio Message\n");
+
+    //  Grab the intensities from the axis
+    
+    g_radio_control_parameters.rotation_intensity = msg->axis[TURRET_ROTATION_INTENSITY];
+    g_radio_control_parameters.throw_intensity = msg->axis[TURRET_THROW_INTENSITY];
+    g_radio_control_parameters.retract_intensity = msg->axis[TURRET_RETRACT_INTENSITY];
+
+    //  Turret Enable
+    
+    switch (msg->toggle[TURRET_ENABLE])
+    {
+        case STOMP_CONTROL_RADIO_ON:
+            g_radio_control_parameters.enable = TURRET_ENABLED;
+            break;
+
+        default:
+            g_radio_control_parameters.enable = TURRET_DISABLED;
+            break;
+    }
+
+    //  Throw or Retract the hammer.  A bit strange because we are using an axis rather
+    //  than a toggle for throw / safe / retract
+    
+    // TODO: MJS GET THE VALUE RANGE
+    /*
+    if (msg->axis[TURRET_HAMMER_TRIGGER] < -80)
+    {
+        g_radio_control_parameters.hammer_trigger = HAMMER_TRIGGER_FIRE;
+    }
+    else if (msg->axis[TURRET_HAMMER_TRIGGER] < )
+    {
+        g_radio_control_parameters.hammer_trigger = HAMMER_TRIGGER_RETRACT;
+    }
+    else
+    {
+        g_radio_control_parameters.hammer_trigger = HAMMER_SAFE
+    }
+    */
+
+    // Turret rotation mode 
+
+    switch(msg->toggle[TURRET_ROTATION_MODE])
+    {
+        case STOMP_CONTROL_RADIO_OFF:
+            g_radio_control_parameters.rotation_mode = ROTATION_MODE_DISABLED;
+            break;
+
+        case STOMP_CONTROL_RADIO_CENTER:
+            g_radio_control_parameters.rotation_mode = ROTATION_MODE_MANUAL;
+            break;
+
+        case STOMP_CONTROL_RADIO_ON:
+            g_radio_control_parameters.rotation_mode = ROTATION_MODE_AUTO;
+            break;
+    }
 }
 
 int control_radio_shutdown()

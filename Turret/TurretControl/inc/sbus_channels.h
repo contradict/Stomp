@@ -1,24 +1,26 @@
 #ifndef SBUS_CHANNELS_H
 #define SBUS_CHANNELS_H
 
-/*
-#define HULL_RIDE_HEIGHT 0
-#define HULL_OMEGA_Z     1
-#define HULL_VELOCITY_Y  1
-#define HULL_VELOCITY_X  2
-#define HULL_OMEGA_Z_D   3   // RUD
-#define HULL_S1          4   // S1
-#define HULL_S2          5
-#define HULL_LS          6
-#define HULL_RS          7
-#define HULL_ENABLE      0   // SF
-#define HULL_MODE        1   // SE
-#define HULL_GAIT        2   // SA
-#define HULL_SB          3
-#define HULL_SC          4
-#define HULL_SD          5
-#define HULL_MOTION_SEL  6   // SG
-#define HULL_SH          7
-*/
+// AXIS
+
+#define TURRET_THR                0   // THR - Left Stick Up/Down
+#define TURRET_AIL                1   // AIL - Right Stick Left/Right
+#define TURRET_HAMMER_TRIGGER     2   // ELE - Right Stick Up/Down
+#define TURRET_ROTATION_INTENSITY 3   // RUD - Left Stick Left/Right
+#define TURRET_RETRACT_INTENSITY  4   // S1
+#define TURRET_THROW_INTENSITY    5   // S2
+#define TURRET_LS                 6   // LS
+#define TURRET_RS                 7   // RS
+
+// TOGGLE 
+
+#define TURRET_SA                 0   // SA
+#define TURRET_SB                 1   // SB
+#define TURRET_SC                 2   // SC
+#define TURRET_SD                 3   // SD
+#define TURRET_ROTATION_MODE      4   // SE
+#define TURRET_ENABLE             5   // SF
+#define TURRET_SG                 6   // SG
+#define TURRET_SH                 7   // SH
 
 #endif

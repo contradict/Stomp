@@ -107,10 +107,14 @@ void display_message(stomp_control_radio *sbus_msg, int row, int col)
         if(row==0 && col == i)
             attron(A_BOLD);
         printw(" %3s", stomp_control_radio_toggle_str(sbus_msg->toggle[i]));
+
+#ifdef HULL
         if(i==HULL_ENABLE)
             mvprintw(TOGGLE_ROW + 1, STARTCOL + 7*i, " %s", (sbus_msg->toggle[i]==STOMP_CONTROL_RADIO_ON) ? "walk" : "dis");
         else if(i==HULL_MODE)
             mvprintw(TOGGLE_ROW + 1, STARTCOL + 7*i, " %s", (sbus_msg->toggle[i]==STOMP_CONTROL_RADIO_ON) ? "lock" : "free");
+#endif
+
         attroff(A_BOLD);
     }
     move(AXIS_ROW, STARTCOL);
@@ -124,10 +128,14 @@ void display_message(stomp_control_radio *sbus_msg, int row, int col)
             printw("****** ");
         else
             printw("%6.3f ", sbus_msg->axis[i]);
+
+#ifdef HULL
         if(i==HULL_VELOCITY_X)
             mvprintw(AXIS_ROW + 1, STARTCOL + 7*i, " %s", "vel x");
         else if(i==HULL_OMEGA_Z)
             mvprintw(AXIS_ROW + 1, STARTCOL + 7*i, " %s", "omg z");
+#endif
+
         attroff(A_BOLD);
     }
     move(6, 6);

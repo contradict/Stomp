@@ -45,7 +45,6 @@ static int s_max_fd = -1;
 static void init_lcm();
 static void init_sensors();
 
-
 int time_diff_msec(struct timeval t0, struct timeval t1)
 {
     return (t1.tv_sec - t0.tv_sec)*1000 + (t1.tv_usec - t0.tv_usec)/1000;
