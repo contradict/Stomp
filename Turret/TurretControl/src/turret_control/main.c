@@ -67,6 +67,8 @@ void set_turret_rotation_state(enum turret_rotation_state state);
 void message_hammer_throw();
 void message_hammer_retract();
 
+void print_radio_control_parameters();
+
 // -----------------------------------------------------------------------------
 // main
 // -----------------------------------------------------------------------------
@@ -138,6 +140,10 @@ void update()
              lcm_handle(g_lcm);
         }
     }
+
+    // Debug output the controller state, as we understand it.
+
+    print_radio_control_parameters();
 
     // Update state machines
     
@@ -423,3 +429,13 @@ void message_hammer_retract()
 {
 }
 
+void print_radio_control_parameters()
+{
+    logm(SL4C_INFO, "Radio Control Parameters:\n\tEnabled: %s\n\tRot Mode: %s\n\tRot Intensity: %d\n\tHammer Trigger:%s\n\tThrow Intensity: %d\n\tRetract Intensity: %d\n",
+            g_radio_control_parameters.enable == TURRET_ENABLED ? "TURRET_ENABLED" : "TURRET_DISABLED",
+            g_radio_control_parameters.rotation_mode == ROTATION_MODE_DISABLED ? "ROTATION_MODE_DISABLED" : g_radio_control_parameters.rotation_mode == ROTATION_MODE_MANUAL ? "ROTATION_MODE_MANUAL" : "ROTATION_MODE_AUTO",
+            g_radio_control_parameters.rotation_intensity,
+            g_radio_control_parameters.hammer_trigger == HAMMER_SAFE ? "HAMMER_SAFE" : g_radio_control_parameters.hammer_trigger == HAMMER_TRIGGER_THROW ? "HAMMER_TRIGGER_THROW" : "HAMMER_TRIGGER_RETRACT",
+            g_radio_control_parameters.throw_intensity,
+            g_radio_control_parameters.retract_intensity);
+}
