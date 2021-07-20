@@ -172,7 +172,7 @@ void update()
         }
     }
 
-    // Trigger hammer throw / retract
+    // Trigger hammer throw / retract ONLY in active (non-safe) state
 
     if (s_turret_state == TURRET_ACTIVE)
     {
@@ -431,7 +431,7 @@ void message_hammer_retract()
 
 void print_radio_control_parameters()
 {
-    logm(SL4C_INFO, "Radio Control Parameters:\n\tEnabled: %s\n\tRot Mode: %s\n\tRot Intensity: %d\n\tHammer Trigger:%s\n\tThrow Intensity: %d\n\tRetract Intensity: %d\n",
+    logm(SL4C_INFO, "Radio Control Parameters:\n\tEnabled: %s\n\tRot Mode: %s\n\tRot Intensity: %f\n\tHammer Trigger:%s\n\tThrow Intensity: %f\n\tRetract Intensity: %f\n",
             g_radio_control_parameters.enable == TURRET_ENABLED ? "TURRET_ENABLED" : "TURRET_DISABLED",
             g_radio_control_parameters.rotation_mode == ROTATION_MODE_DISABLED ? "ROTATION_MODE_DISABLED" : g_radio_control_parameters.rotation_mode == ROTATION_MODE_MANUAL ? "ROTATION_MODE_MANUAL" : "ROTATION_MODE_AUTO",
             g_radio_control_parameters.rotation_intensity,

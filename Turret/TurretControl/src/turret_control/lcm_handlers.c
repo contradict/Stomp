@@ -8,6 +8,13 @@
 #include "turret_control/lcm_handlers.h"
 
 // -----------------------------------------------------------------------------
+// file scope consts
+// -----------------------------------------------------------------------------
+
+static const float k_hammer_throw_threshold = 0.8f;
+static const float k_hammer_retract_threshold = -0.8f;
+
+// -----------------------------------------------------------------------------
 // file scope statics
 // -----------------------------------------------------------------------------
 
@@ -57,8 +64,8 @@ static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channe
     //  Grab the intensities from the axis
     
     g_radio_control_parameters.rotation_intensity = msg->axis[TURRET_ROTATION_INTENSITY];
-    g_radio_control_parameters.throw_intensity = msg->axis[TURRET_THROW_INTENSITY];
-    g_radio_control_parameters.retract_intensity = msg->axis[TURRET_RETRACT_INTENSITY];
+    g_radio_control_parameters.throw_intensity = (msg->axis[TURRET_THROW_INTENSITY] + 1.0f) / 2.0f;
+    g_radio_control_parameters.retract_intensity = (msg->axis[TURRET_RETRACT_INTENSITY] + 1.0f) / 2.0f;
 
     //  Turret Enable
     
@@ -76,21 +83,18 @@ static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channe
     //  Throw or Retract the hammer.  A bit strange because we are using an axis rather
     //  than a toggle for throw / safe / retract
     
-    // TODO: MJS GET THE VALUE RANGE
-    /*
-    if (msg->axis[TURRET_HAMMER_TRIGGER] < -80)
+    if (msg->axis[TURRET_HAMMER_TRIGGER] >= k_hammer_throw_threshold)
     {
-        g_radio_control_parameters.hammer_trigger = HAMMER_TRIGGER_FIRE;
+        g_radio_control_parameters.hammer_trigger = HAMMER_TRIGGER_THROW;
     }
-    else if (msg->axis[TURRET_HAMMER_TRIGGER] < )
+    else if (msg->axis[TURRET_HAMMER_TRIGGER] <= k_hammer_retract_threshold)
     {
         g_radio_control_parameters.hammer_trigger = HAMMER_TRIGGER_RETRACT;
     }
     else
     {
-        g_radio_control_parameters.hammer_trigger = HAMMER_SAFE
+        g_radio_control_parameters.hammer_trigger = HAMMER_SAFE;
     }
-    */
 
     // Turret rotation mode 
 

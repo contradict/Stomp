@@ -31,9 +31,9 @@ enum hammer_control_trigger
 
 struct radio_control_parameters_t
 {
-    int32_t rotation_intensity;
-    int32_t throw_intensity;
-    int32_t retract_intensity;
+    float rotation_intensity;
+    float throw_intensity;
+    float retract_intensity;
 
     enum turret_enable enable;
     enum turret_rotation_mode rotation_mode;
