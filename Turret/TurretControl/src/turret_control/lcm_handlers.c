@@ -2,7 +2,6 @@
 
 #include "sclog4c/sclog4c.h"
 
-#include "lcm_channels.h"
 #include "sbus_channels.h"
 #include "turret_control/turret_control.h"
 #include "turret_control/lcm_handlers.h"

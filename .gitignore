@@ -8,4 +8,4 @@ scratch
 *.o
 Turret/TurretControl/bin/*
 Turret/arduino/build
-Turret/TurretControl/src/hammer_control/out/*
+Turret/TurretControl/src/hammer_control_pru/out/*

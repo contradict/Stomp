@@ -45,3 +45,10 @@ struct radio_control_parameters_t
 extern lcm_t *g_lcm;
 extern struct radio_control_parameters_t g_radio_control_parameters;
 
+// Extens for all the LCM Channels so they can be used by other (than main.c) files.
+
+extern const char* SBUS_RADIO_COMMAND;
+extern const char* SENSORS_CONTROL;
+extern const char* TURRET_TELEMETRY;
+extern const char* HAMMER_CONFIG;
+extern const char* HAMMER_TRIGGER;

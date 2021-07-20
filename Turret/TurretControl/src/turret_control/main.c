@@ -7,7 +7,9 @@
 
 #include "sclog4c/sclog4c.h"
 
+#include "lcm_channels.h"
 #include "lcm/stomp_control_radio.h"
+#include "lcm/stomp_hammer_trigger.h"
 #include "lcm/stomp_turret_telemetry.h"
 
 #include "turret_control/turret_control.h"
@@ -423,10 +425,24 @@ void init()
 
 void message_hammer_throw()
 {
+    stomp_hammer_trigger lcm_msg;
+
+    lcm_msg.trigger_type = STOMP_HAMMER_TRIGGER_THROW_RETRACT;
+    lcm_msg.throw_intensity = g_radio_control_parameters.throw_intensity;
+    lcm_msg.retract_intensity = g_radio_control_parameters.retract_intensity;
+
+    stomp_hammer_trigger_publish(g_lcm, HAMMER_TRIGGER, &lcm_msg);
 }
 
 void message_hammer_retract()
 {
+    stomp_hammer_trigger lcm_msg;
+
+    lcm_msg.trigger_type = STOMP_HAMMER_TRIGGER_RETRACT_ONLY;
+    lcm_msg.throw_intensity = g_radio_control_parameters.throw_intensity;
+    lcm_msg.retract_intensity = g_radio_control_parameters.retract_intensity;
+
+    stomp_hammer_trigger_publish(g_lcm, HAMMER_TRIGGER, &lcm_msg);
 }
 
 void print_radio_control_parameters()
