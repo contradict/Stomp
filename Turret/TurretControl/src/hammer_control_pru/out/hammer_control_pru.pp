@@ -1,9 +1,0 @@
-out/hammer_control_pru.o: hammer_control_pru.c
-out/hammer_control_pru.o: /usr/share/ti/cgt-pru/include/stdint.h
-out/hammer_control_pru.o: /usr/share/ti/cgt-pru/include/stdio.h
-out/hammer_control_pru.o: /usr/share/ti/cgt-pru/include/linkage.h
-out/hammer_control_pru.o: /usr/share/ti/cgt-pru/include/stdarg.h
-out/hammer_control_pru.o: /usr/share/ti/cgt-pru/include/string.h
-out/hammer_control_pru.o: ../../../Common/inc/pru/pru_util.h
-out/hammer_control_pru.o: ../../../Common/inc/pru/pru_time.h
-out/hammer_control_pru.o: ../../inc/hammer_control_pru/hammer_control_pru.h
