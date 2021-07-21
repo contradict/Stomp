@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 
     // Shutdown
 
-    control_radio_shutdown();
+    control_radio_handler_shutdown();
     lcm_destroy(g_lcm);
 
     return 0;
@@ -420,7 +420,7 @@ void init()
     // Setup LCM Handlers
     //
 
-    control_radio_init();
+    control_radio_handler_init();
 }
 
 void message_hammer_throw()

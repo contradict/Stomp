@@ -29,7 +29,7 @@ static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channe
 // Stomp Control Radio LCM Handlers
 // -----------------------------------------------------------------------------
 
-int control_radio_init()
+int control_radio_handler_init()
 {
     s_control_radio_subscription = stomp_control_radio_subscribe(g_lcm, SBUS_RADIO_COMMAND, &control_radio_handler, NULL);
 
@@ -38,6 +38,12 @@ int control_radio_init()
         return -1;
     }
 
+    return 0;
+}
+
+int control_radio_handler_shutdown()
+{
+    stomp_control_radio_unsubscribe(g_lcm, s_control_radio_subscription);
     return 0;
 }
 
@@ -113,9 +119,4 @@ static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channe
     }
 }
 
-int control_radio_shutdown()
-{
-    stomp_control_radio_unsubscribe(g_lcm, s_control_radio_subscription);
-    return 0;
-}
 
