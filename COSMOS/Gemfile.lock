@@ -42,7 +42,7 @@ GEM
     qtbindings (4.8.6.5)
     rack (2.2.3)
     rake (13.0.1)
-    rdoc (6.2.1)
+    rdoc (6.3.2)
     ruby-termios (1.0.2)
     rubyzip (1.3.0)
     snmp (1.3.2)
