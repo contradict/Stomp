@@ -9,6 +9,8 @@
 
 #include "kinematics.h"
 
+#include "linearize_feedback.h"
+
 static uint16_t scratchpad = 0x55;
 
 static const uint8_t EnfieldHoldingRegister[] = {
@@ -16,28 +18,88 @@ static const uint8_t EnfieldHoldingRegister[] = {
 
 struct MODBUS_HoldingRegister modbus_holding_registers[] = {
     {
-        .address = 0x40,
+        .address = HMODBUSAddress,
+        .context = (void *)0,
+        .read = MODBUS_GetAddress,
+        .write = MODBUS_SetAddress,
+    },
+    {
+        .address = ToeXPosition,
         .context = (void *)0,
         .read = Kinematics_ReadToePosition,
         .write = Kinematics_WriteToePosition,
     },
     {
-        .address = 0x41,
+        .address = ToeYPosition,
         .context = (void *)1,
         .read = Kinematics_ReadToePosition,
         .write = Kinematics_WriteToePosition,
     },
     {
-        .address = 0x42,
+        .address = ToeZPosition,
         .context = (void *)2,
         .read = Kinematics_ReadToePosition,
         .write = Kinematics_WriteToePosition,
+    },
+    {
+        .address = JointAngleCurl,
+        .context = (void *)0,
+        .read = Kinematics_ReadJointAngle,
+        .write = Kinematics_WriteJointAngle,
+    },
+    {
+        .address = JointAngleSwing,
+        .context = (void *)1,
+        .read = Kinematics_ReadJointAngle,
+        .write = Kinematics_WriteJointAngle,
+    },
+    {
+        .address = JointAngleLift,
+        .context = (void *)2,
+        .read = Kinematics_ReadJointAngle,
+        .write = Kinematics_WriteJointAngle,
     },
     {
         .address = 0x55,
         .context = (void *)&scratchpad,
         .read = return_context,
         .write = save_to_context
+    },
+    {
+        .address = CURL_BASE + HSensorVmin,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorVmin,
+        .write = Linearize_SetSensorVmin,
+    },
+    {
+        .address = CURL_BASE + HSensorVmax,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorVmax,
+        .write = Linearize_SetSensorVmax,
+    },
+    {
+        .address = CURL_BASE + HSensorThetamin,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorThetamin,
+        .write = Linearize_SetSensorThetamin,
+    },
+    {
+        .address = CURL_BASE + HSensorThetamax,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetSensorThetamax,
+        .write = Linearize_SetSensorThetamax,
+    },
+    {
+        .address = CURL_BASE + HCylinderLengthMin,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetCylinderLengthMin,
+        .write = Linearize_SetCylinderLengthMin,
+    },
+    {
+        .address = CURL_BASE + HCylinderLengthMax,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetCylinderLengthMax,
+        .write = Linearize_SetCylinderLengthMax,
     },
     {
         .address = CURL_BASE + HProportionalGain,
@@ -130,6 +192,48 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .write = Enfield_WriteDigitalCommand
     },
     {
+        .address = CURL_BASE + HFeedbackLowpass,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_GetFeedbackLowpass,
+        .write = Linearize_SetFeedbackLowpass
+    },
+    {
+        .address = SWING_BASE + HSensorVmin,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetSensorVmin,
+        .write = Linearize_SetSensorVmin,
+    },
+    {
+        .address = SWING_BASE + HSensorVmax,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetSensorVmax,
+        .write = Linearize_SetSensorVmax,
+    },
+    {
+        .address = SWING_BASE + HSensorThetamin,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetSensorThetamin,
+        .write = Linearize_SetSensorThetamin,
+    },
+    {
+        .address = SWING_BASE + HSensorThetamax,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetSensorThetamax,
+        .write = Linearize_SetSensorThetamax,
+    },
+    {
+        .address = SWING_BASE + HCylinderLengthMin,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetCylinderLengthMin,
+        .write = Linearize_SetCylinderLengthMin,
+    },
+    {
+        .address = SWING_BASE + HCylinderLengthMax,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetCylinderLengthMax,
+        .write = Linearize_SetCylinderLengthMax,
+    },
+    {
         .address = SWING_BASE + HProportionalGain,
         .context = (void *)ENFIELD_CONTEXT_VALUE(JOINT_SWING, SetProportionalGain, ReadProportionalGain),
         .read = MODBUS_ReadEnfieldHoldingRegister,
@@ -220,6 +324,48 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .write = Enfield_WriteDigitalCommand
     },
     {
+        .address = SWING_BASE + HFeedbackLowpass,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_GetFeedbackLowpass,
+        .write = Linearize_SetFeedbackLowpass
+    },
+    {
+        .address = LIFT_BASE + HSensorVmin,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetSensorVmin,
+        .write = Linearize_SetSensorVmin,
+    },
+    {
+        .address = LIFT_BASE + HSensorVmax,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetSensorVmax,
+        .write = Linearize_SetSensorVmax,
+    },
+    {
+        .address = LIFT_BASE + HSensorThetamin,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetSensorThetamin,
+        .write = Linearize_SetSensorThetamin,
+    },
+    {
+        .address = LIFT_BASE + HSensorThetamax,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetSensorThetamax,
+        .write = Linearize_SetSensorThetamax,
+    },
+    {
+        .address = LIFT_BASE + HCylinderLengthMin,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetCylinderLengthMin,
+        .write = Linearize_SetCylinderLengthMin,
+    },
+    {
+        .address = LIFT_BASE + HCylinderLengthMax,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetCylinderLengthMax,
+        .write = Linearize_SetCylinderLengthMax,
+    },
+    {
         .address = LIFT_BASE + HProportionalGain,
         .context = (void *)ENFIELD_CONTEXT_VALUE(JOINT_LIFT, SetProportionalGain, ReadProportionalGain),
         .read = MODBUS_ReadEnfieldHoldingRegister,
@@ -308,7 +454,13 @@ struct MODBUS_HoldingRegister modbus_holding_registers[] = {
         .context = (void *)JOINT_LIFT,
         .read = Enfield_ReadDigitalCommand,
         .write = Enfield_WriteDigitalCommand
-    }, 
+    },
+    {
+        .address = LIFT_BASE + HFeedbackLowpass,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_GetFeedbackLowpass,
+        .write = Linearize_SetFeedbackLowpass
+    },
     {
         .address = 0,
         .context = 0,

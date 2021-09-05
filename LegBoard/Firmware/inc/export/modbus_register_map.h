@@ -6,6 +6,9 @@
 #define SWING_BASE ((JOINT_SWING + 1) * 0x100)
 #define LIFT_BASE ((JOINT_LIFT + 1) * 0x100)
 
+#define HMODBUSAddress 0x10
+#define CSaveConstants 0x10
+
 enum CoilOffset {
     CFeedbackPolarity = 0x20,
     CPortConnection = 0x21,
@@ -35,9 +38,27 @@ enum InputRegisterOffset {
     IFirmwareVersionA = 0x3a,
     IFirmwareRevLow = 0x3b,
     IFirmwareRevHigh = 0x3c,
+    IFeedbackToePositionX = 0x80,
+    IFeedbackToePositionY = 0x81,
+    IFeedbackToePositionZ = 0x82,
+    IFeedbackBaseEndPressureCurl = 0x83,
+    IFeedbackRodEndPressureCurl = 0x84,
+    IFeedbackBaseEndPressureSwing = 0x85,
+    IFeedbackRodEndPressureSwing = 0x86,
+    IFeedbackBaseEndPressureLift = 0x87,
+    IFeedbackRodEndPressureLift = 0x88,
+    IFeedbackJointAngleCurl = 0x89,
+    IFeedbackJointAngleSwing = 0x8A,
+    IFeedbackJointAngleLift = 0x8B,
 };
 
 enum HoldingRegisterOffset {
+    HSensorVmin = 0x10,
+    HSensorVmax = 0x11,
+    HSensorThetamin = 0x12,
+    HSensorThetamax = 0x13,
+    HCylinderLengthMin = 0x14,
+    HCylinderLengthMax = 0x15,
     HProportionalGain = 0x30,
     HDerivativeGain = 0x31,
     HForceDamping = 0x32,
@@ -53,11 +74,14 @@ enum HoldingRegisterOffset {
     HValveOffset = 0x3c,
     HDigitalCommand = 0x3d,
     HCachedDigitalCommand = 0x3e,
+    HFeedbackLowpass = 0x80,
 };
 
 enum LegCommands {
-    SetToeX = 0x40,
-    SetToeY = 0x41,
-    SetToeZ = 0x42, // Causes write to servos
+    ToeXPosition = 0x40,
+    ToeYPosition = 0x41,
+    ToeZPosition = 0x42, // Causes write to servos
+    JointAngleCurl = 0x43,
+    JointAngleSwing = 0x44,
+    JointAngleLift = 0x45, // Causes write to servos
 };
-

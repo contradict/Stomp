@@ -43,13 +43,13 @@ MEMORY
 {
     RAM (xrw)           : ORIGIN = 0x20000000, LENGTH = 256K
 
-    FLASH_LOW (rx)      : ORIGIN = 0x8000000, LENGTH = 16K
-    FLASH_RESERVED (rw) : ORIGIN = 0x8004000, LENGTH = 16K
-    FLASH (rx)          : ORIGIN = 0x8008000, LENGTH = 480K
+    FLASH_SECTOR_0 (rx) : ORIGIN = 0x8000000, LENGTH = 16K
+    FLASH_SECTOR_1 (rw) : ORIGIN = 0x8004000, LENGTH = 16K
+    FLASH_SECTOR_2_7 (rx) : ORIGIN = 0x8008000, LENGTH = 480K
 
-    FLASH_LOW_ITCM (rx)      : ORIGIN = 0x00200000, LENGTH = 16K
-    FLASH_RESERVED_ITCM (rw) : ORIGIN = 0x00204000, LENGTH = 16K
-    FLASH_ITCM (rw)          : ORIGIN = 0x00208000, LENGTH = 480K
+    FLASH_SECTOR_0_ITCM (rx) : ORIGIN = 0x00200000, LENGTH = 16K
+    FLASH_SECTOR_1_ITCM (rw) : ORIGIN = 0x00204000, LENGTH = 16K
+    FLASH_SECTOR_2_7_ITCM (rw) : ORIGIN = 0x00208000, LENGTH = 480K
 }
 
 /* Define output sections */
@@ -61,7 +61,7 @@ SECTIONS
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH_LOW_ITCM AT> FLASH_LOW
+  } >FLASH_SECTOR_0_ITCM AT> FLASH_SECTOR_0
 
   /* The program code and other data goes into FLASH */
   .text :
@@ -78,7 +78,7 @@ SECTIONS
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbols at end of code */
-  } >FLASH_ITCM AT> FLASH
+  } >FLASH_SECTOR_2_7_ITCM AT> FLASH_SECTOR_2_7
 
   /* Constant data goes into FLASH */
   .rodata :
@@ -88,35 +88,35 @@ SECTIONS
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     KEEP (*(.rodata.uxTopUsedPriority .rodata.uxTopUsedPriority.*))
     . = ALIGN(4);
-  } >FLASH_LOW_ITCM AT> FLASH_LOW
+  } >FLASH_SECTOR_0_ITCM AT> FLASH_SECTOR_0
 
-  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH_LOW
+  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH_SECTOR_0
   .ARM : {
     __exidx_start = .;
     *(.ARM.exidx*)
     __exidx_end = .;
-  } >FLASH_LOW_ITCM AT> FLASH_LOW
+  } >FLASH_SECTOR_0_ITCM AT> FLASH_SECTOR_0
 
   .preinit_array     :
   {
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-  } >FLASH_LOW_ITCM AT> FLASH_LOW
+  } >FLASH_SECTOR_0_ITCM AT> FLASH_SECTOR_0
   .init_array :
   {
     PROVIDE_HIDDEN (__init_array_start = .);
     KEEP (*(SORT(.init_array.*)))
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
-  } >FLASH_LOW_ITCM AT> FLASH_LOW
+  } >FLASH_SECTOR_0_ITCM AT> FLASH_SECTOR_0
   .fini_array :
   {
     PROVIDE_HIDDEN (__fini_array_start = .);
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
-  } >FLASH_LOW_ITCM AT> FLASH_LOW
+  } >FLASH_SECTOR_0_ITCM AT> FLASH_SECTOR_0
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
@@ -130,7 +130,7 @@ SECTIONS
     *(.data*)          /* .data* sections */
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >RAM AT> FLASH_LOW
+  } >RAM AT> FLASH_SECTOR_0
 
   .storage :
   {
@@ -140,7 +140,7 @@ SECTIONS
       *(.storage*)
       . = ALIGN(4);
       _estdata = .;
-  } >RAM AT> FLASH_RESERVED
+  } >RAM AT> FLASH_SECTOR_1
 
   _ldstdata = LOADADDR(.storage);
 

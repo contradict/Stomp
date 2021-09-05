@@ -1,0 +1,15 @@
+src/lcm
+inc/lcm
+*.o
+.*.sw?
+/leg_control
+/sbus_radio
+/java
+stomp.jar
+/telemetry
+/test_telem
+/test_gain_set
+/fake_sbus_radio
+/LegModes.pdf
+/lissajou
+/imu

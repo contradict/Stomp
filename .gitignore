@@ -4,6 +4,8 @@ scratch
 .ipynb_checkpoints
 *.*-bak
 *.bck
-Turret/arduino/build*
-Turret/arduino/turret/build*
-Turret/arduino/turret/*.map
+scratch
+*.o
+Turret/TurretControl/bin/*
+Turret/arduino/build
+Turret/TurretControl/src/hammer_control_pru/out/*

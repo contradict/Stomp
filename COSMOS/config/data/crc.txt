@@ -5,7 +5,7 @@ USER_MODIFIED
 "config/system/system.txt" 0x4CCC3DEB
 "config/tools/tlm_grapher/leddar.txt" 0x50EDFA84
 "config/tools/tlm_grapher/tlm_grapher.txt" 0xDAD4AFF4
-"config/tools/cmd_tlm_server/chomp_rf.txt" 0x4E07C64D
+"config/tools/cmd_tlm_server/chomp_rf.txt" 0x7FDFBB00
 "config/tools/data_viewer/data_viewer.txt" 0xD2CCE221
 "config/tools/tlm_viewer/tlm_viewer.txt" 0x4F2E5197
 "config/tools/limits_monitor/README.txt" 0x93B2C07E

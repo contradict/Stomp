@@ -12,3 +12,5 @@
 * I would like to have some testpoints
     * 4 microprocessor pins brought to plated holes
     * 6 LED controller pins brought to plated holes
+* Power control of the Enfields would be very nice, individual would be best,
+  but if it had to be all of them at once I could work with that.

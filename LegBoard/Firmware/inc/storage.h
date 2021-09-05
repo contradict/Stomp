@@ -2,4 +2,6 @@
 
 void Storage_Init(void);
 
-void Storage_Save(void);
+int Storage_Save(void *, bool);
+
+int Storage_IsSaved(void *, bool *);

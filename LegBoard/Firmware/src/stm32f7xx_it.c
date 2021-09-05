@@ -160,12 +160,12 @@ void SysTick_Handler(void)
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32f7xx.s).                                               */
 /******************************************************************************/
+#ifdef STM32F7xx_Nucleo_144
 void EXTI15_10_IRQHandler(void)
 {
-#ifdef STM32F7xx_Nucleo_144
   HAL_GPIO_EXTI_IRQHandler(USER_BUTTON_PIN);
-#endif
 }
+#endif
 
 
 /**
@@ -210,6 +210,16 @@ void LED_I2C_ER_IRQHandler(void)
 void MODBUS_UART_IRQHandler(void)
 {
     HAL_UART_IRQHandler(&modbus_uart);
+}
+
+void MODBUS_DMA_TX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmatx);
+}
+
+void MODBUS_DMA_RX_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(modbus_uart.hdmarx);
 }
 
 void CURL_UART_IRQHandler(void)

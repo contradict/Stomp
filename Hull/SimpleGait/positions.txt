@@ -1,0 +1,7 @@
+               X     Y     Z
+Forward down  10.1,  4.0, -7.3
+Backward down 10.1, -4.0, -7.3
+Backward up   10.1, -4.0, -4.7
+Forward up    10.1,  4.0, -4.7
+
+All centered  10.5, 0.15, -5.9

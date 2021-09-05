@@ -1,0 +1,9 @@
+package stomp;
+
+struct modbus {
+    int8_t address;
+    int8_t command;
+    int16_t offset;
+    int16_t length;
+    int16_t data[length];
+}

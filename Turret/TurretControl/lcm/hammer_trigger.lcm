@@ -1,0 +1,10 @@
+package stomp;
+
+struct hammer_trigger
+{
+    const int8_t THROW_RETRACT=0, RETRACT_ONLY=1;
+    int8_t trigger_type;
+
+    float throw_intensity;
+    float retract_intensity;
+}

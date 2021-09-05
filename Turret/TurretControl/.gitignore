@@ -1,0 +1,11 @@
+src/lcm
+inc/lcm
+*.o
+.*.sw?
+/turret_control
+/sensors_control
+/sbus_radio
+/lcm_rpmsg_bridge
+/telemetry
+/test_telem
+/fake_sbus_radio

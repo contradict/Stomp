@@ -1,0 +1,244 @@
+Altium Designer Pick and Place Locations
+C:\Stomp\BeagleCape\Project Outputs for BeagleCape\Pick Place for Main.txt
+
+========================================================================================================================
+File Design Information:
+
+Date:       04/09/20
+Time:       15:01
+Revision:   Not in VersionControl
+Variant:    No variations
+Units used: mil
+
+Designator   Comment                   Layer       Footprint              Center-X(mil) Center-Y(mil) Rotation Description                                                
+TP28         Socket                    TopLayer    5006                   4720.000      170.000       90       Socket                                                     
+TP27         Socket                    TopLayer    5006                   3420.000      2720.000      90       Socket                                                     
+TP26         Socket                    TopLayer    5006                   3610.000      145.000       90       Socket                                                     
+TP25         Socket                    TopLayer    5006                   330.000       2400.000      90       Socket                                                     
+TP24         Socket                    TopLayer    5006                   3775.000      145.000       90       Socket                                                     
+TP23         Socket                    TopLayer    5006                   3625.000      2720.000      90       Socket                                                     
+TP19         Socket                    TopLayer    5006                   3165.000      415.000       90       Socket                                                     
+TP18         Socket                    TopLayer    5006                   280.000       965.000       90       Socket                                                     
+TP17         Socket                    TopLayer    5006                   1165.000      1855.000      90       Socket                                                     
+TP16         Socket                    TopLayer    5006                   2015.000      140.000       90       Socket                                                     
+TP15         Socket                    TopLayer    5006                   2480.000      895.000       90       Socket                                                     
+TP14         Socket                    TopLayer    5006                   2320.000      140.000       90       Socket                                                     
+TP13         Socket                    TopLayer    5006                   118.000       590.000       90       Socket                                                     
+TP12         Socket                    TopLayer    5006                   2167.500      140.000       90       Socket                                                     
+TP11         Socket                    TopLayer    5006                   278.000       590.000       0        Socket                                                     
+TP10         Socket                    TopLayer    5006                   1710.000      140.000       90       Socket                                                     
+TP9          Socket                    TopLayer    5006                   125.000       2400.000      0        Socket                                                     
+TP8          Socket                    TopLayer    5006                   1862.500      140.000       0        Socket                                                     
+TP7          Socket                    TopLayer    5006                   120.000       965.000       0        Socket                                                     
+TP6          Socket                    TopLayer    5006                   278.000       776.500       0        Socket                                                     
+TP5          Socket                    TopLayer    5006                   118.000       776.500       0        Socket                                                     
+TP4          Socket                    TopLayer    5006                   2930.000      140.000       0        Socket                                                     
+TP3          Socket                    TopLayer    5006                   2472.500      140.000       0        Socket                                                     
+TP2          Socket                    TopLayer    5006                   2625.000      140.000       0        Socket                                                     
+TP1          Socket                    TopLayer    5006                   2777.500      140.000       0        Socket                                                     
+J1_FET8      "Jumper Block"            TopLayer    JUMPER_BLOCK           3390.000      985.000       360      ""                                                         
+FET10        043650-0220               TopLayer    43650-0220             3620.000      545.000       270      "Header, 2-Pin"                                            
+FET9         043650-0220               TopLayer    43650-0220             4520.000      545.000       270      "Header, 2-Pin"                                            
+FET8         043650-0220               TopLayer    43650-0220             3620.000      995.000       270      "Header, 2-Pin"                                            
+FET7         043650-0220               TopLayer    43650-0220             4520.000      995.000       270      "Header, 2-Pin"                                            
+FET6         043650-0220               TopLayer    43650-0220             3620.000      1445.000      270      "Header, 2-Pin"                                            
+FET5         043650-0220               TopLayer    43650-0220             4520.000      1445.000      270      "Header, 2-Pin"                                            
+FET4         043650-0220               TopLayer    43650-0220             3620.000      1895.000      270      "Header, 2-Pin"                                            
+FET3         043650-0220               TopLayer    43650-0220             4520.000      1895.000      270      "Header, 2-Pin"                                            
+FET2         043650-0220               TopLayer    43650-0220             3620.000      2345.000      270      "Header, 2-Pin"                                            
+J1_FET10     "Jumper Block"            TopLayer    JUMPER_BLOCK           3390.000      535.000       360      ""                                                         
+J1_FET9      "Jumper Block"            TopLayer    JUMPER_BLOCK           4290.000      535.000       360      ""                                                         
+J1_FET7      "Jumper Block"            TopLayer    JUMPER_BLOCK           4290.000      985.000       360      ""                                                         
+J1_FET6      "Jumper Block"            TopLayer    JUMPER_BLOCK           3390.000      1435.000      360      ""                                                         
+J1_FET5      "Jumper Block"            TopLayer    JUMPER_BLOCK           4290.000      1435.000      360      ""                                                         
+J1_FET4      "Jumper Block"            TopLayer    JUMPER_BLOCK           3390.000      1885.000      360      ""                                                         
+J1_FET3      "Jumper Block"            TopLayer    JUMPER_BLOCK           4290.000      1885.000      360      ""                                                         
+J1_FET1      "Jumper Block"            TopLayer    JUMPER_BLOCK           4290.000      2335.000      360      ""                                                         
+J6           "Jumper Block"            TopLayer    JUMPER_BLOCK           3050.000      900.000       360      ""                                                         
+U9           LMZM23601                 TopLayer    MODULE_LMZM23600V3SILT 3055.000      1265.000      90       ""                                                         
+R38          Res1                      TopLayer    0402                   3150.000      1305.315      270      Resistor                                                   
+R37          Res1                      TopLayer    0402                   3185.000      1305.000      90       Resistor                                                   
+R36_FET10    Res1                      TopLayer    0402                   3955.000      410.000       270      Resistor                                                   
+R36_FET9     Res1                      TopLayer    0402                   4855.000      410.000       270      Resistor                                                   
+R36_FET8     Res1                      TopLayer    0402                   3955.000      860.000       270      Resistor                                                   
+R36_FET7     Res1                      TopLayer    0402                   4855.000      860.000       270      Resistor                                                   
+R36_FET6     Res1                      TopLayer    0402                   3955.000      1310.000      270      Resistor                                                   
+R36_FET5     Res1                      TopLayer    0402                   4855.000      1310.000      270      Resistor                                                   
+R36_FET4     Res1                      TopLayer    0402                   3955.000      1760.000      270      Resistor                                                   
+R36_FET3     Res1                      TopLayer    0402                   4855.000      1760.000      270      Resistor                                                   
+R36_FET2     Res1                      TopLayer    0402                   3955.000      2210.000      270      Resistor                                                   
+D4_FET10     LED0                      TopLayer    THRMC0603X33N          4100.000      405.394       270      "Typical INFRARED GaAs LED"                                
+D4_FET9      LED0                      TopLayer    THRMC0603X33N          5000.000      405.394       270      "Typical INFRARED GaAs LED"                                
+D4_FET8      LED0                      TopLayer    THRMC0603X33N          4100.000      855.394       270      "Typical INFRARED GaAs LED"                                
+D4_FET7      LED0                      TopLayer    THRMC0603X33N          5000.000      855.394       270      "Typical INFRARED GaAs LED"                                
+D4_FET6      LED0                      TopLayer    THRMC0603X33N          4100.000      1305.394      270      "Typical INFRARED GaAs LED"                                
+D4_FET5      LED0                      TopLayer    THRMC0603X33N          5000.000      1305.394      270      "Typical INFRARED GaAs LED"                                
+D4_FET4      LED0                      TopLayer    THRMC0603X33N          4100.000      1755.394      270      "Typical INFRARED GaAs LED"                                
+D4_FET3      LED0                      TopLayer    THRMC0603X33N          5000.000      1755.394      270      "Typical INFRARED GaAs LED"                                
+D4_FET2      LED0                      TopLayer    THRMC0603X33N          4100.000      2205.394      270      "Typical INFRARED GaAs LED"                                
+C15          Cap                       TopLayer    CAPC3216X180N          3040.000      1405.000      360      Capacitor                                                  
+C10          Cap                       TopLayer    CAPC3216X180N          3040.000      1110.000      360      Capacitor                                                  
+U6           M74VHC1GT14DFT2G          TopLayer    SOT65P210X110-5N       1530.000      860.000       0        ""                                                         
+R36_FET1     Res1                      TopLayer    0402                   4855.000      2210.000      270      Resistor                                                   
+R35          Res1                      TopLayer    0402                   3055.000      2085.000      90       Resistor                                                   
+R34          Res1                      TopLayer    0402                   3055.000      1900.000      90       Resistor                                                   
+R33          Res1                      TopLayer    0402                   3055.000      1560.000      90       Resistor                                                   
+R32          Res1                      TopLayer    0402                   3055.000      1730.000      90       Resistor                                                   
+PWR2         206832-0202               TopLayer    206832-0202            4210.000      100.000       90       "Header, 2-Pin"                                            
+D8           LED0                      TopLayer    THRMC0603X33N          2995.000      2084.606      270      "Typical INFRARED GaAs LED"                                
+D7           LED0                      TopLayer    THRMC0603X33N          2990.000      1909.869      270      "Typical INFRARED GaAs LED"                                
+D6           LED0                      TopLayer    THRMC0603X33N          2990.000      1735.131      270      "Typical INFRARED GaAs LED"                                
+D5           LED0                      TopLayer    THRMC0603X33N          2990.000      1560.394      270      "Typical INFRARED GaAs LED"                                
+D4_FET1      LED0                      TopLayer    THRMC0603X33N          5000.000      2205.394      270      "Typical INFRARED GaAs LED"                                
+U4           "Archer M+"               TopLayer    Archer_M+              1610.000      1485.000      90       ""                                                         
+R24          Res1                      TopLayer    0402                   1570.315      1160.000      360      Resistor                                                   
+R23          Res1                      TopLayer    0402                   1665.000      865.000       270      Resistor                                                   
+R21          Res1                      TopLayer    0402                   1570.315      1125.000      360      Resistor                                                   
+R20          Res1                      TopLayer    0402                   1570.315      1090.000      360      Resistor                                                   
+R19          Res1                      TopLayer    0402                   1630.000      865.000       90       Resistor                                                   
+Q3           SSM3J338R                 TopLayer    SOT95P237X112-3N       1445.000      1085.000      0        "P-Channel Power MOSFET"                                   
+Q2           SSM3K339R,LF              TopLayer    SOT95P237X112-3N       1610.000      995.000       180      "N-Channel MOSFET"                                         
+C12          Cap                       TopLayer    CAPC3216X180N          1250.000      855.000       90       Capacitor                                                  
+C11          Cap                       TopLayer    RESC3116X65N           1350.000      855.000       90       Capacitor                                                  
+P8           "MALE HEADER 2x23"        BottomLayer 95278-101B46LF         1869.000      2400.000      0        "CONN HEADER FMAL 46PS.1" DL GOLD"                         
+P9           "MALE HEADER 2x23"        BottomLayer 95278-101B46LF         1869.000      500.000       0        "CONN HEADER FMAL 46PS.1" DL GOLD"                         
+A0           043650-0320               TopLayer    43650-0320             445.000       2700.000      180      "Header, 3-Pin"                                            
+A1           043650-0320               TopLayer    43650-0320             1010.000      2700.000      180      "Header, 3-Pin"                                            
+A2           043650-0320               TopLayer    43650-0320             1575.000      2700.000      180      "Header, 3-Pin"                                            
+A3           043650-0320               TopLayer    43650-0320             2140.000      2700.000      180      "Header, 3-Pin"                                            
+C1           Cap                       TopLayer    RESC3116X65N           1225.000      2175.000      180      Capacitor                                                  
+C2           Cap                       TopLayer    CAPC3216X180N          1225.000      2075.000      180      Capacitor                                                  
+C3           Cap                       TopLayer    RESC3116X65N           725.000       730.000       270      Capacitor                                                  
+C4           Cap                       TopLayer    CAPC3216X180N          625.000       730.000       270      Capacitor                                                  
+C5           Cap                       TopLayer    RESC3116X65N           2465.000      685.000       90       Capacitor                                                  
+C6           Cap                       TopLayer    CAPC3216X180N          2565.000      685.000       90       Capacitor                                                  
+C7           Cap                       TopLayer    RESC3116X65N           1615.000      610.000       90       Capacitor                                                  
+C8           Cap                       TopLayer    CAPC3216X180N          1500.000      755.000       360      Capacitor                                                  
+C9           Cap                       TopLayer    CAPC3216X180N          2600.000      1000.000      90       Capacitor                                                  
+C13_FET1     Cap                       BottomLayer RESC3116X65N           4820.000      2222.008      360      Capacitor                                                  
+C13_FET2     Cap                       BottomLayer RESC3116X65N           3920.000      2222.008      360      Capacitor                                                  
+C13_FET3     Cap                       BottomLayer RESC3116X65N           4820.000      1772.008      360      Capacitor                                                  
+C13_FET4     Cap                       BottomLayer RESC3116X65N           3920.000      1772.008      360      Capacitor                                                  
+C13_FET5     Cap                       BottomLayer RESC3116X65N           4820.000      1322.008      360      Capacitor                                                  
+C13_FET6     Cap                       BottomLayer RESC3116X65N           3920.000      1322.008      360      Capacitor                                                  
+C13_FET7     Cap                       BottomLayer RESC3116X65N           4820.000      872.008       360      Capacitor                                                  
+C13_FET8     Cap                       BottomLayer RESC3116X65N           3920.000      872.008       360      Capacitor                                                  
+C13_FET9     Cap                       BottomLayer RESC3116X65N           4820.000      422.008       360      Capacitor                                                  
+C13_FET10    Cap                       BottomLayer RESC3116X65N           3920.000      422.008       360      Capacitor                                                  
+C14_FET1     Cap                       BottomLayer CAPC3216X180N          4820.000      2120.000      360      Capacitor                                                  
+C14_FET2     Cap                       BottomLayer CAPC3216X180N          3920.000      2120.000      360      Capacitor                                                  
+C14_FET3     Cap                       BottomLayer CAPC3216X180N          4820.000      1670.000      360      Capacitor                                                  
+C14_FET4     Cap                       BottomLayer CAPC3216X180N          3920.000      1670.000      360      Capacitor                                                  
+C14_FET5     Cap                       BottomLayer CAPC3216X180N          4820.000      1220.000      360      Capacitor                                                  
+C14_FET6     Cap                       BottomLayer CAPC3216X180N          3920.000      1220.000      360      Capacitor                                                  
+C14_FET7     Cap                       BottomLayer CAPC3216X180N          4820.000      770.000       360      Capacitor                                                  
+C14_FET8     Cap                       BottomLayer CAPC3216X180N          3925.000      770.000       360      Capacitor                                                  
+C14_FET9     Cap                       BottomLayer CAPC3216X180N          4820.000      320.000       360      Capacitor                                                  
+C14_FET10    Cap                       BottomLayer CAPC3216X180N          3920.000      320.000       360      Capacitor                                                  
+D1_FET1      Schottky                  BottomLayer V2PM12HM3/H            4445.000      2330.394      90       TVS                                                        
+D1_FET2      Schottky                  BottomLayer V2PM12HM3/H            3525.000      2317.401      90       TVS                                                        
+D1_FET3      Schottky                  BottomLayer V2PM12HM3/H            4445.000      1880.394      90       TVS                                                        
+D1_FET4      Schottky                  BottomLayer V2PM12HM3/H            3530.000      1877.401      90       TVS                                                        
+D1_FET5      Schottky                  BottomLayer V2PM12HM3/H            4445.000      1430.394      90       TVS                                                        
+D1_FET6      Schottky                  BottomLayer V2PM12HM3/H            3545.000      1430.394      90       TVS                                                        
+D1_FET7      Schottky                  BottomLayer V2PM12HM3/H            4445.000      980.394       90       TVS                                                        
+D1_FET8      Schottky                  BottomLayer V2PM12HM3/H            3540.000      982.598       90       TVS                                                        
+D1_FET9      Schottky                  BottomLayer V2PM12HM3/H            4445.000      530.394       90       TVS                                                        
+D1_FET10     Schottky                  BottomLayer V2PM12HM3/H            3540.000      532.598       90       TVS                                                        
+D3_FET1      13V                       TopLayer    THRMC0603X33N          4920.000      2204.606      90       TVS                                                        
+D3_FET2      13V                       TopLayer    THRMC0603X33N          4020.000      2204.606      90       TVS                                                        
+D3_FET3      13V                       TopLayer    THRMC0603X33N          4920.000      1754.606      90       TVS                                                        
+D3_FET4      13V                       TopLayer    THRMC0603X33N          4020.000      1754.606      90       TVS                                                        
+D3_FET5      13V                       TopLayer    THRMC0603X33N          4920.000      1304.606      90       TVS                                                        
+D3_FET6      13V                       TopLayer    THRMC0603X33N          4020.000      1304.606      90       TVS                                                        
+D3_FET7      13V                       TopLayer    THRMC0603X33N          4920.000      854.606       90       TVS                                                        
+D3_FET8      13V                       TopLayer    THRMC0603X33N          4020.000      854.606       90       TVS                                                        
+D3_FET9      13V                       TopLayer    THRMC0603X33N          4920.000      404.606       90       TVS                                                        
+D3_FET10     13V                       TopLayer    THRMC0603X33N          4020.000      404.606       90       TVS                                                        
+Q1_FET1      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    4890.000      2385.039      0        "N-Channel MOSFET"                                         
+Q1_FET2      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    3990.000      2385.039      0        "N-Channel MOSFET"                                         
+Q1_FET3      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    4890.000      1935.039      0        "N-Channel MOSFET"                                         
+Q1_FET4      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    3990.000      1935.039      0        "N-Channel MOSFET"                                         
+Q1_FET5      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    4890.000      1485.039      0        "N-Channel MOSFET"                                         
+Q1_FET6      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    3990.000      1485.039      0        "N-Channel MOSFET"                                         
+Q1_FET7      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    4890.000      1035.039      0        "N-Channel MOSFET"                                         
+Q1_FET8      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    3990.000      1035.039      360      "N-Channel MOSFET"                                         
+Q1_FET9      PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    4890.000      585.039       0        "N-Channel MOSFET"                                         
+Q1_FET10     PSMN011-100YSFX           TopLayer    DPAK127P_600X120-5N    3990.000      585.039       0        "N-Channel MOSFET"                                         
+R6           Res1                      TopLayer    0402                   965.000       560.000       180      Resistor                                                   
+R7           Res1                      TopLayer    0402                   1195.315      515.000       360      Resistor                                                   
+R8           Res1                      TopLayer    0402                   1195.000      485.000       180      Resistor                                                   
+R9           Res1                      TopLayer    0402                   1195.000      550.000       180      Resistor                                                   
+R10          Res1                      TopLayer    0402                   1195.000      585.000       360      Resistor                                                   
+R11          Res1                      TopLayer    0402                   2670.000      450.000       270      Resistor                                                   
+R12          Res1                      TopLayer    0402                   2520.000      450.000       270      Resistor                                                   
+R13          Res1                      TopLayer    0402                   2490.000      450.000       270      Resistor                                                   
+R14          Res1                      TopLayer    0402                   2700.000      450.000       270      Resistor                                                   
+R15          Res1                      TopLayer    0402                   2640.000      450.000       90       Resistor                                                   
+R16          Res1                      TopLayer    0402                   2550.000      450.000       90       Resistor                                                   
+R17          Res1                      TopLayer    0402                   2580.000      450.000       90       Resistor                                                   
+R18          Res1                      TopLayer    0402                   2610.000      450.000       90       Resistor                                                   
+R22_FET1     Res1                      TopLayer    0402                   5025.000      2315.000      90       Resistor                                                   
+R22_FET2     Res1                      TopLayer    0402                   4125.000      2315.000      90       Resistor                                                   
+R22_FET3     Res1                      TopLayer    0402                   5025.000      1865.000      90       Resistor                                                   
+R22_FET4     Res1                      TopLayer    0402                   4125.000      1865.000      90       Resistor                                                   
+R22_FET5     Res1                      TopLayer    0402                   5025.000      1415.000      90       Resistor                                                   
+R22_FET6     Res1                      TopLayer    0402                   4125.000      1415.000      90       Resistor                                                   
+R22_FET7     Res1                      TopLayer    0402                   5025.000      965.000       90       Resistor                                                   
+R22_FET8     Res1                      TopLayer    0402                   4125.000      965.000       90       Resistor                                                   
+R22_FET9     Res1                      TopLayer    0402                   5025.000      515.000       90       Resistor                                                   
+R22_FET10    Res1                      TopLayer    0402                   4125.000      515.000       90       Resistor                                                   
+U8           MCP6284-E/SL              TopLayer    SOIC127P600X175-14N    1115.000      2406.653      90       "General Purpose Amplifier 4 Circuit Rail-to-Rail 14-SOIC" 
+U1           SN75HVD12DR               TopLayer    SOIC127P599X175-8N     930.000       690.000       180      ""                                                         
+U2           "Yost Lab 3 Space Sensor" TopLayer    Yost_3_Space_Sensor    2100.000      779.980       270      ""                                                         
+U3           SN65HVD251DRG4            TopLayer    SOIC127P599X175-8N     1395.000      590.000       180      ""                                                         
+U5_FET1      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     4825.000      2387.008      360      ""                                                         
+U5_FET2      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     3925.000      2387.008      360      ""                                                         
+U5_FET3      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     4825.000      1937.008      360      ""                                                         
+U5_FET4      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     3925.000      1937.008      360      ""                                                         
+U5_FET5      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     4825.000      1487.008      360      ""                                                         
+U5_FET6      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     3925.000      1487.008      360      ""                                                         
+U5_FET7      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     4825.000      1037.008      360      ""                                                         
+U5_FET8      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     3925.000      1037.008      360      ""                                                         
+U5_FET9      SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     4825.000      587.008       360      ""                                                         
+U5_FET10     SI8261AAC-C-ISR           BottomLayer SOIC127P599X175-8N     3925.000      587.008       360      ""                                                         
+R25          Res1                      BottomLayer 0402                   1130.000      260.000       270      Resistor                                                   
+R27          Res1                      TopLayer    0402                   2805.000      755.000       360      Resistor                                                   
+R28          Res1                      TopLayer    0402                   2725.315      755.000       360      Resistor                                                   
+R29          Res1                      TopLayer    0402                   2805.000      720.000       180      Resistor                                                   
+R30          Res1                      TopLayer    0402                   2725.000      720.000       180      Resistor                                                   
+R31          Res1                      TopLayer    0402                   2740.315      1115.000      360      Resistor                                                   
+U7           CAT24C256WI-GT3           TopLayer    SOIC127P599X175-8N     2760.000      945.000       90       ""                                                         
+L1           Inductor                  TopLayer    0402-A                 2999.685      2215.000      360      Inductor                                                   
+5V           043650-0220               TopLayer    43650-0220             420.000       2125.000      180      "Header, 2-Pin"                                            
+PWR1         206832-0202               TopLayer    206832-0202            3975.000      2700.000      90       "Header, 2-Pin"                                            
+RS485        43045-0426                TopLayer    43045-0426             889.000       230.472       0        "Header, 2-Pin, Dual row"                                  
+FAN          043650-0220               TopLayer    43650-0220             1515.000      1995.000      90       "Header, 2-Pin"                                            
+TelemRadio   43045-0426                TopLayer    43045-0426             1370.000      230.472       0        "Header, 2-Pin, Dual row"                                  
+Vbat         206832-0202               TopLayer    206832-0202            3275.000      100.000       270      "Header, 2-Pin"                                            
+CommsDisable "Header 2"                TopLayer    HDR1X2                 1235.000      1065.000      90       "Header, 2-Pin"                                            
+D9           "Bidirectional 5V"        BottomLayer THRMC0603X33N          850.394       75.000        180      TVS                                                        
+D11          "Bidirectional 3.3V"      BottomLayer THRMC0603X33N          705.394       100.000       180      TVS                                                        
+D12          "Bidirectional 5V"        BottomLayer THRMC0603X33N          385.394       2630.000      180      TVS                                                        
+D13          "Bidirectional 5V"        BottomLayer THRMC0603X33N          950.394       2630.000      180      TVS                                                        
+D14          "Bidirectional 5V"        BottomLayer THRMC0603X33N          1515.394      2630.000      180      TVS                                                        
+D15          "Bidirectional 5V"        BottomLayer THRMC0603X33N          2069.606      2630.000      180      TVS                                                        
+D16          "Bidirectional 5V"        BottomLayer THRMC0603X33N          1300.000      1060.394      270      TVS                                                        
+D17          "Bidirectional 3.3V"      BottomLayer THRMC0603X33N          1404.606      85.000        360      TVS                                                        
+D18          "Bidirectional 3.3V"      BottomLayer THRMC0603X33N          1294.606      85.000        180      TVS                                                        
+D19          "Bidirectional 5V"        BottomLayer THRMC0603X33N          460.394       345.000       180      TVS                                                        
+D20          "Bidirectional 5V"        BottomLayer THRMC0603X33N          350.394       345.000       360      TVS                                                        
+J1_FET2      "Jumper Block"            TopLayer    JUMPER_BLOCK           3390.000      2335.000      360      ""                                                         
+FET1         043650-0220               TopLayer    43650-0220             4520.000      2345.000      270      "Header, 2-Pin"                                            
+R1_FET1      Res1                      BottomLayer 0402                   4719.685      2515.000      360      Resistor                                                   
+R1_FET2      Res1                      BottomLayer 0402                   3740.000      2345.000      270      Resistor                                                   
+R1_FET3      Res1                      BottomLayer 0402                   4950.000      2080.000      270      Resistor                                                   
+R1_FET4      Res1                      BottomLayer 0402                   3720.000      1910.000      270      Resistor                                                   
+R1_FET5      Res1                      BottomLayer 0402                   4640.000      1440.000      90       Resistor                                                   
+R1_FET6      Res1                      BottomLayer 0402                   3715.000      1465.000      270      Resistor                                                   
+R1_FET7      Res1                      BottomLayer 0402                   4640.000      995.000       90       Resistor                                                   
+R1_FET8      Res1                      BottomLayer 0402                   3740.000      995.000       270      Resistor                                                   
+R1_FET9      Res1                      BottomLayer 0402                   4640.000      540.000       90       Resistor                                                   
+R1_FET10     Res1                      BottomLayer 0402                   3740.000      539.685       90       Resistor                                                   
+BMS          43045-0426                TopLayer    43045-0426             408.500       230.472       0        "Header, 2-Pin, Dual row"                                  
+D10          "Bidirectional 5V"        BottomLayer THRMC0603X33N          949.606       75.000        180      TVS                                                        

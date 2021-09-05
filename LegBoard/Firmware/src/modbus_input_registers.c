@@ -6,6 +6,7 @@
 
 #include "linearize_feedback.h"
 #include "enfield.h"
+#include "kinematics.h"
 
 static uint16_t scratchpad = 0x55;
 
@@ -285,6 +286,68 @@ const struct MODBUS_InputRegister modbus_input_registers[] = {
         .context = ENFIELD_CONTEXT_VALUE(JOINT_LIFT, -1, ReadFirmwareRevHigh),
         .read = MODBUS_ReadEnfieldHoldingRegister
     },
+
+    {
+        .address = IFeedbackToePositionX,
+        .context = (void *)0,
+        .read = Kinematics_ReadToePosition,
+    },
+    {
+        .address = IFeedbackToePositionY,
+        .context = (void *)1,
+        .read = Kinematics_ReadToePosition,
+    },
+    {
+        .address = IFeedbackToePositionZ,
+        .context = (void *)2,
+        .read = Kinematics_ReadToePosition,
+    },
+    {
+        .address = IFeedbackBaseEndPressureCurl,
+        .context = (void *)JOINT_CURL,
+        .read = Enfield_ReadBaseEndPresure,
+    },
+    {
+        .address = IFeedbackRodEndPressureCurl,
+        .context = (void *)JOINT_CURL,
+        .read = Enfield_ReadRodEndPresure,
+    },
+    {
+        .address = IFeedbackBaseEndPressureSwing,
+        .context = (void *)JOINT_SWING,
+        .read = Enfield_ReadBaseEndPresure,
+    },
+    {
+        .address = IFeedbackRodEndPressureSwing,
+        .context = (void *)JOINT_SWING,
+        .read = Enfield_ReadRodEndPresure,
+    },
+    {
+        .address = IFeedbackBaseEndPressureLift,
+        .context = (void *)JOINT_LIFT,
+        .read = Enfield_ReadBaseEndPresure,
+    },
+    {
+        .address = IFeedbackRodEndPressureLift,
+        .context = (void *)JOINT_LIFT,
+        .read = Enfield_ReadRodEndPresure,
+    },
+    {
+        .address = IFeedbackJointAngleCurl,
+        .context = (void *)JOINT_CURL,
+        .read = Linearize_ReadAngle,
+    },
+    {
+        .address = IFeedbackJointAngleSwing,
+        .context = (void *)JOINT_SWING,
+        .read = Linearize_ReadAngle,
+    },
+    {
+        .address = IFeedbackJointAngleLift,
+        .context = (void *)JOINT_LIFT,
+        .read = Linearize_ReadAngle,
+    },
+
     {
         .address = 0,
         .context = 0,

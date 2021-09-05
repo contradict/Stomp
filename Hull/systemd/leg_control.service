@@ -1,0 +1,15 @@
+[Unit]
+Description=The leg driver
+After=sbus_radio.service
+Requires=sbus_radio.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment="LCM_DEFAULT_URL=udpm://239.255.76.67:7667?ttl=1"
+WorkingDirectory=/home/chomp/src/Stomp/Hull/HullControl
+ExecStart=/home/chomp/src/Stomp/Hull/HullControl/leg_control -d 700 -r 15 -t 50 -f 100
+Restart=always
+
+[Install]
+WantedBy=stomp.target

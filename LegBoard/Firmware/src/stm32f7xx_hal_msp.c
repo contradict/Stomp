@@ -241,12 +241,15 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
 
 void HAL_UART_MspInit_modbus(UART_HandleTypeDef *huart)
 {
-    (void)huart;
+    static DMA_HandleTypeDef tx_dma;
+    static DMA_HandleTypeDef rx_dma;
     GPIO_InitTypeDef GPIO_InitStruct;
 
     MODBUS_UART_GPIO_CLK_ENABLE();
 
     MODBUS_UART_CLK_ENABLE();
+
+    MODBUS_DMA_CLK_ENABLE();
 
     GPIO_InitStruct.Pin = MODBUS_UART_TX_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -259,7 +262,39 @@ void HAL_UART_MspInit_modbus(UART_HandleTypeDef *huart)
     GPIO_InitStruct.Pin = MODBUS_UART_DE_PIN;
     HAL_GPIO_Init(MODBUS_UART_GPIO_PORT, &GPIO_InitStruct);
 
-    HAL_NVIC_SetPriority(MODBUS_UART_IRQn, 8, 0);
+    tx_dma.Instance                 = MODBUS_DMA_TX_STREAM;
+    tx_dma.Init.Channel             = MODBUS_DMA_TX_CHANNEL;
+    tx_dma.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    tx_dma.Init.PeriphInc           = DMA_PINC_DISABLE;
+    tx_dma.Init.MemInc              = DMA_MINC_ENABLE;
+    tx_dma.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    tx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    tx_dma.Init.Mode                = DMA_NORMAL;
+    tx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    tx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
+    HAL_DMA_Init(&tx_dma);
+    __HAL_LINKDMA(huart, hdmatx, tx_dma);
+
+    rx_dma.Instance                 = MODBUS_DMA_RX_STREAM;
+    rx_dma.Init.Channel             = MODBUS_DMA_RX_CHANNEL;
+    rx_dma.Init.Direction           = DMA_PERIPH_TO_MEMORY;
+    rx_dma.Init.PeriphInc           = DMA_PINC_DISABLE;
+    rx_dma.Init.MemInc              = DMA_MINC_ENABLE;
+    rx_dma.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    rx_dma.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    rx_dma.Init.Mode                = DMA_NORMAL;
+    rx_dma.Init.Priority            = DMA_PRIORITY_LOW;
+    rx_dma.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
+    HAL_DMA_Init(&rx_dma);
+    __HAL_LINKDMA(huart, hdmarx, rx_dma);
+
+    HAL_NVIC_SetPriority(MODBUS_DMA_TX_IRQn, 8, 0);
+    HAL_NVIC_EnableIRQ(MODBUS_DMA_TX_IRQn);
+
+    HAL_NVIC_SetPriority(MODBUS_DMA_RX_IRQn, 8, 0);
+    HAL_NVIC_EnableIRQ(MODBUS_DMA_RX_IRQn);
+
+    HAL_NVIC_SetPriority(MODBUS_UART_IRQn, 8, 1);
     HAL_NVIC_EnableIRQ(MODBUS_UART_IRQn);
 }
 

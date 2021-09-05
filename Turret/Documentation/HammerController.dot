@@ -1,0 +1,153 @@
+digraph HammerController 
+{
+    node [shape=record,width=.1,height=.1];
+
+    Safe [label = "Safe | { <in> TP:C TV:O\nRP:C RV:O | <out> weapon_enabled}"];
+    Armed [label = "Armed | { <in> TP:C TV:O\nRP:C RV:O | { <fire> Fire | <retract> Retract | <disable> ! weapon_enabled} }"];
+
+    Safe:out -> Armed:in
+    Armed:fire:s -> ThrowSetup:in:n;
+    Armed:retract:s -> RetractSetup:in:n;
+    Armed:disable:e -> Safe:in:e;
+
+    ThrowSetup
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Throw Setup</td>
+                <td port="in" border="1">TP:C <font color='red'>TV:C</font><br/>RP:C <font color='red'>RV:C</font></td>
+            </tr>
+            <tr>
+                <td port="out" border="1">state_dt &ge; valve_change_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    ThrowPressurize
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Throw Pressurize</td>
+                <td port="in" border="1"><font color='red'>TP:O</font> TV:C<br/>RP:C RV:C</td>
+            </tr>
+            <tr>
+                <td port="out" border="1">hammer_angle &ge; desired_throw_angle ||<br/>state_dt &ge; max_throw_pressure_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    ThrowExpand
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Throw Expand</td>
+                <td port="in" border="1"><font color='red'>TP:C</font> TV:C<br/>RP:C RV:C</td>
+            </tr>
+            <tr>
+                <td port="out" border="1">hammer_angle &ge; max_throw_angle ||<br/>state_dt &ge; max_throw_expand_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    ThrowSetup:out -> ThrowPressurize:in;
+    ThrowPressurize:out -> ThrowExpand:in;
+
+    RetractSetup
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td port="sidein" rowspan="2" border="1">Retract Setup</td>
+                <td port="in" border="1">TP:C <font color='red'>TV:O</font><br/>RP:C <font color='red'>RV:C</font></td>
+            </tr>
+            <tr>
+                <td port="out" border="1">state_dt &ge; valve_change_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    RetractPressurize
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Retract Pressurize</td>
+                <td port="in" border="1">TP:C TV:O<br/><font color='red'>RP:O</font> RV:C</td>
+            </tr>
+            <tr>
+                <td port="out" border="1">hammer_retract_pressure &ge; retract_fill_pressure ||<br/> hammer_angle &le; emergency_brake_angle ||<br/> state_dt &ge; max_retract_pressure_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    RetractExpand
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Retract Expand</td>
+                <td port="in" border="1">TP:C TV:O<br/><font color='red'>RP:C</font> RV:C</td>
+            </tr>
+            <tr>
+                <td port="out" border="1">hammer_energy &ge; available_brake_energy || <br/> hammer_angle &le; emergency_brake_angle ||<br/> state_dt &ge; max_retract_expand_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    RetractBrake
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Retract Brake</td>
+                <td port="in" border="1">TP:C <font color='red'>TV:C</font><br/>RP:C RV:C</td>
+            </tr>
+            <tr>
+                <td port="out" border="1">hammer_velocity &le; brake_exit_velocity ||<br/> state_dt &ge; max_retract_break_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    RetractSettle
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Retract Settle</td>
+                <td port="in" border="1">TP:C <font color='red'>TV:O</font><br/>RP:C RV:C</td>
+            </tr>
+            <tr>
+                <td port="out" border="1">hammer_angle &le; min_retract_angle ||<br/>state_dt &ge; max_retract_settle_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    RetractComplete 
+    [
+        shape = none
+        label = <<table border="0" cellspacing="0" cellpadding="5">
+            <tr>
+                <td rowspan="2" border="1">Retract Complete</td>
+                <td port="in" border="1">TP:C TV:O<br/>RP:C <font color='red'>RV:O</font></td>
+            </tr>
+            <tr>
+                <td port="out" border="1">state_dt &ge; valve_change_dt</td>
+            </tr>
+        </table>>
+    ];
+
+    RetractSetup:out -> RetractPressurize:in;
+    RetractPressurize:out -> RetractExpand:in;
+    RetractExpand:out -> RetractBrake:in;
+    RetractBrake:out -> RetractSettle:in;
+    RetractSettle:out -> RetractComplete:in;
+
+    { rank=same ThrowSetup RetractSetup}
+    { rank=same ThrowPressurize RetractPressurize}
+    { rank=same ThrowExpand RetractExpand}
+
+    ThrowExpand:out -> RetractSetup:sidein:w;
+}
