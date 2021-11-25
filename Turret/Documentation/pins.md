@@ -8,10 +8,10 @@
 
 ## Individaul pin valve control
 
-* P8.33 (cape D4): Throw Pressure Valve
-* P8.34 (cape D3): Throw Vent Valve
-* P8.35 (cape D2): Retract Pressure Valve
-* P8.36 (cape D1): Retract Vent Valve
+* P8.35a (cape D2, gpio8_12): Throw Pressure Valve
+* P8.36a (cape D1, gpio8_10): Throw Vent Valve
+* P8.33a (cape D4, gpio8_13): Retract Pressure Valve
+* P8.34a (cape D3, gpio8_11): Retract Vent Valve
 
 ## Turret motor controller communications (UART10 - ttyS?)
 

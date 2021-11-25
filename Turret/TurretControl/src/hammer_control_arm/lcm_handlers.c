@@ -113,8 +113,27 @@ int hammer_trigger_handler_shutdown()
 
 static void hammer_trigger_handler(const lcm_recv_buf_t *rbuf, const char *channel, const stomp_hammer_trigger *msg, void *user)
 {
-    (void)rbuf;
-    (void)channel;
+    static struct timeval now;
+    static struct timeval last_msg;
+    gettimeofday(&now, 0);
+
+    double microsec = ((now.tv_sec - last_msg.tv_sec) / 1000000.0f) + (now.tv_usec - last_msg.tv_usec);
+
+    logm(SL4C_FINE, "%s msg received, dt = %f", channel, microsec);
+    last_msg = now;
+
+    // send the message down to the PRU
+
+    char fire_message_buff[k_message_buff_len];
+
+    sprintf(fire_message_buff, "FIRE:");
+
+    logm(SL4C_DEBUG, "SEND RPMSG: %s", fire_message_buff);
+
+    if (write(g_rpmsg_fd, fire_message_buff, strlen(fire_message_buff)) < 0)
+    {
+        logm(SL4C_ERROR, "Could not send pru fire message. Error %i from write(): %s", errno, strerror(errno));
+    }
 }
 
 

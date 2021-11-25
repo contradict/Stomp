@@ -40,6 +40,7 @@ extern int64_t g_max_retract_settle_dt;
 // -----------------------------------------------------------------------------
 
 void hammer_control_init();
+void hammer_control_fire();
 void hammer_control_update();
 void hammer_control_config_update();
 

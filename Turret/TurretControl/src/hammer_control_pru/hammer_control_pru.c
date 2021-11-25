@@ -59,6 +59,24 @@ int64_t g_max_retract_settle_dt;
 // file scope consts
 // -----------------------------------------------------------------------------
 
+// Hammer valves are controled by these pins
+//
+// P8.35a (gpio8_12): Throw Pressure Valve
+// P8.36a (gpio8_10): Throw Vent Valve
+// P8.33a (gpio8_13): Retract Pressure Valve
+// P8.34a (gpio8_11): Retract Vent Valve
+//
+// So, we need to get the control register address for gpio8
+// and for channel 10, 11, 12 and 13
+
+static uint32_t *k_gpio8ClearDataOut = (uint32_t *)0x48053190;
+static uint32_t *k_gpio8SetDataOut = (uint32_t *)0x48037194;
+
+static const uint32_t k_throwPressurePin = (0x1 << 12);
+static const uint32_t k_throwVentPin = (0x1 << 10);
+static const uint32_t k_retractPressurePin = (0x1 << 13);
+static const uint32_t k_retractVentPin = (0x1 << 11);
+
 // -----------------------------------------------------------------------------
 // states
 // -----------------------------------------------------------------------------
@@ -93,6 +111,7 @@ static uint32_t s_state_start_time;
 // -----------------------------------------------------------------------------
 
 void hammer_control_set_state(enum state new_state);
+void hammer_control_set_safe();
 
 // -----------------------------------------------------------------------------
 // public methods
@@ -102,6 +121,16 @@ void hammer_control_init()
 {
     s_state = invalid;
     hammer_control_set_state(init);
+}
+
+void hammer_control_fire()
+{
+    if (s_state != idle)
+    {
+        return;
+    }
+
+    hammer_control_set_state(throw_setup);
 }
 
 void hammer_control_config_update()
@@ -260,8 +289,160 @@ void hammer_control_set_state(enum state new_state)
     {
         case init:
             {
+                hammer_control_set_safe();
             }
             break;
+
+        case idle:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Open (signal low)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Open (signal low)
+
+                hammer_control_set_safe();
+            }
+            break;
+
+        case throw_setup:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Closed (signal high)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_throwVentPin | k_retractVentPin;
+                uint32_t pins_low = k_throwPressurePin | k_retractPressurePin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case throw_pressurize:
+            {
+                // Throw Pressure: Open (signal high)
+                // Throw Vent: Closed (signal high)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_throwPressurePin | k_throwVentPin | k_retractVentPin;
+                uint32_t pins_low = k_retractPressurePin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case throw_expand:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Closed (signal high)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_throwVentPin | k_retractVentPin;
+                uint32_t pins_low = k_throwPressurePin | k_retractPressurePin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case retract_setup:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Open (signal low)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_retractVentPin;
+                uint32_t pins_low = k_throwPressurePin | k_throwVentPin | k_retractPressurePin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case retract_pressurize:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Open (signal low)
+                // Retract Pressure: Open (signal high)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_retractPressurePin | k_retractVentPin;
+                uint32_t pins_low = k_throwPressurePin | k_throwVentPin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case retract_expand:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Open (signal low)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_retractVentPin;
+                uint32_t pins_low = k_throwPressurePin | k_throwVentPin | k_retractPressurePin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case retract_brake:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Closed (signal high)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_throwVentPin | k_retractVentPin;
+                uint32_t pins_low = k_throwPressurePin | k_retractPressurePin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case retract_settle:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Opened (signal low)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Closed (signal high)
+
+                uint32_t pins_high = k_retractVentPin;
+                uint32_t pins_low = k_throwPressurePin | k_throwVentPin | k_retractPressurePin;
+
+                (*k_gpio8ClearDataOut) = pins_low;
+                (*k_gpio8SetDataOut) = pins_high;
+            }
+            break;
+
+        case retract_complete:
+            {
+                // Throw Pressure: Closed (signal low)
+                // Throw Vent: Open (signal low)
+                // Retract Pressure: Closed (signal low)
+                // Retract Vent: Open (signal low)
+
+                hammer_control_set_safe();
+            }
+            break;
+
     };
+}
+
+void hammer_control_set_safe() 
+{
+    //  Turn all hammer control valves to off (low)
+
+    uint32_t pins_low = k_throwPressurePin | k_throwVentPin | k_retractPressurePin | k_retractVentPin;
+    (*k_gpio8ClearDataOut) = pins_low;
 }
 

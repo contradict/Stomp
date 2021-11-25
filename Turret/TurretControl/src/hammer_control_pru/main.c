@@ -78,6 +78,7 @@ static char* k_message_type_exit = "EXIT";
 static char* k_message_type_sync = "SYNC";
 static char* k_message_type_sens = "SENS";
 static char* k_message_type_conf = "CONF";
+static char* k_message_type_fire = "FIRE";
 static char* k_message_type_logm = "LOGM";
 
 #if LOGGING_ENABLED
@@ -147,6 +148,7 @@ int8_t is_comms_connected();
 int8_t is_weapon_enabled();
 
 void recv_sync_message(char *sync_message_buffer);
+void recv_fire_message(char *exit_message_buffer);
 void recv_exit_message(char *exit_message_buffer);
 void recv_conf_message(char *conf_message_buffer);
 void recv_sens_message(char *sens_message_buffer);
@@ -211,6 +213,10 @@ void update()
                     if (check_for_arm_exit())
                     {
                         set_state(sync);
+                    }
+                    else if (is_comms_connected() && is_weapon_enabled())
+                    {
+                        set_state(armed);
                     }
                 }
                 break;
@@ -302,6 +308,10 @@ void update_comms()
             else if (strncmp(s_recv_message_buffer, k_message_type_exit, k_message_type_strlen) == 0)
             {
                 recv_exit_message(s_recv_message_buffer);
+            }
+            else if (strncmp(s_recv_message_buffer, k_message_type_fire, k_message_type_strlen) == 0)
+            {
+                recv_fire_message(s_recv_message_buffer);
             }
         }
 
@@ -414,6 +424,13 @@ void set_state(enum state new_state)
             }
             break;
 
+        case active:
+            {
+                // fire the hammer
+
+                hammer_control_fire();
+            }
+
         default:
             break;
     }
@@ -426,6 +443,26 @@ void set_state(enum state new_state)
 void recv_sync_message(char *sens_message_buffer)
 {
     s_sync_message_received = 1;
+}
+
+void recv_fire_message(char *fire_message_buffer)
+{
+    // parse the fire message
+    
+    char* token = strtok(fire_message_buffer, ":");
+
+    // confirm it is FIRE message
+
+    if (strncmp(token, k_message_type_fire, k_message_type_strlen) != 0)
+    {
+        return;
+    }
+
+    //  If we are in armed state, that means we are ready and able to fire.
+    //  tell the hammer swing state machine to fire, but setting our
+    //  state to active
+
+    set_state(active);
 }
 
 void recv_exit_message(char *sens_message_buffer)
@@ -872,5 +909,7 @@ int8_t is_comms_connected()
 
 int8_t is_weapon_enabled()
 {
-    return s_radio_weapon_enabled;
+    // Need to really implement this
+    return 1; 
+    //return s_radio_weapon_enabled;
 }
