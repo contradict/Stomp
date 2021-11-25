@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <termios.h>
 #include <sys/select.h>
 #include <lcm/lcm.h>
 
@@ -25,6 +29,11 @@ struct radio_control_parameters_t g_radio_control_parameters;
 // -----------------------------------------------------------------------------
 // file scope consts
 // -----------------------------------------------------------------------------
+
+static int32_t k_turret_rotation_scale = 1000;
+static int32_t k_turret_rotation_min_threshold = 32;
+
+static int32_t k_roboteq_baud_rate = 115200;
 
 // -----------------------------------------------------------------------------
 // file scope statics
@@ -53,11 +62,14 @@ static enum turret_rotation_state s_turret_rotation_state = ROTATION_INVALID;
 
 static char *s_config_filename = "../turret_config.toml";
 
+static int s_roboteq_fd;
+
 // -----------------------------------------------------------------------------
 //  forward decl of internal methods
 // -----------------------------------------------------------------------------
 
 void init();
+void init_roboteq();
 
 void update();
 void update_turret_state();
@@ -65,6 +77,8 @@ void update_turret_rotation_state();
 
 void set_turret_state(enum turret_state state);
 void set_turret_rotation_state(enum turret_rotation_state state);
+
+void apply_turret_rotation(int32_t rotation);
 
 void message_hammer_throw();
 void message_hammer_retract();
@@ -161,6 +175,7 @@ void update()
             case ROTATION_MANUAL:
             case ROTATION_OVERRIDE:
                 {
+                    apply_turret_rotation(g_radio_control_parameters.rotation_intensity * k_turret_rotation_scale);
                 }
                 break;
 
@@ -416,11 +431,108 @@ void init()
         exit(2);
     }
   
-    //
-    // Setup LCM Handlers
-    //
-
     control_radio_handler_init();
+
+    //
+    // Setup roboteq controller
+    // 
+
+    init_roboteq();
+}
+
+void init_roboteq()
+{
+    //open UART10
+
+    s_roboteq_fd = open("/dev/ttyS1", O_RDWR | O_NONBLOCK | O_NOCTTY);
+
+    if (s_roboteq_fd < 0)
+    {
+        logm(SL4C_FATAL, "Error %i from open(): %s", errno, strerror(errno));
+        return;
+    } 
+
+    struct termios tty;
+    memset(&tty, 0, sizeof tty);
+
+    if (tcgetattr(s_roboteq_fd, &tty) != 0)
+    {
+        logm(SL4C_WARNING, "Error %i from tcgetattr: %s", errno, strerror(errno));
+    }
+
+    cfsetospeed (&tty, k_roboteq_baud_rate);
+    cfsetispeed (&tty, k_roboteq_baud_rate);
+
+    tty.c_cflag |= PARENB;  //E
+    tty.c_cflag |= CS8;     //8
+    tty.c_cflag |= CSTOPB;  //2
+    tty.c_cflag &= ~CRTSCTS; //disable hardware flow control
+    tty.c_cflag |= CREAD | CLOCAL; //Turn on READ $ ignore ctrl lines
+
+    tty.c_lflag &= ~ICANON; //non canonical
+    tty.c_lflag &= ~ECHO; //disable echo
+    tty.c_lflag &= ~ECHOE; //disable erasure
+    tty.c_lflag &= ~ECHONL; //disable new-line echo
+    tty.c_lflag &= ~ISIG; //disable interpretation of INTR, QUIT and SUSP
+
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY); //disable software flow control
+    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|ICRNL); //disable special chars
+
+    tty.c_oflag &= ~OPOST; //prevent special interpretation of output bytes
+    tty.c_oflag &= ~ONLCR; //prevent nl converstion to cr
+
+    tty.c_cc[VTIME] = 0; 
+    tty.c_cc[VMIN] = 0;
+
+    //try to set the configuration of the serial port
+
+    if (tcsetattr(s_roboteq_fd, TCSANOW, &tty) != 0)
+    {
+        logm(SL4C_WARNING, "Error %i from tcsetattr: %s", errno, strerror(errno));
+    }
+
+    char roboteq_msg[64];
+
+    // set serial priority first
+    sprintf(roboteq_msg, "@00^CPRI 1 0");
+    write(s_roboteq_fd, roboteq_msg, strlen(roboteq_msg));
+
+    // set RC priority second
+    sprintf(roboteq_msg, "@00^CPRI 2 1");
+    write(s_roboteq_fd, roboteq_msg, strlen(roboteq_msg));
+
+    // turn off command echo
+    sprintf(roboteq_msg, "@00^ECHOF 1");
+    write(s_roboteq_fd, roboteq_msg, strlen(roboteq_msg));
+
+    // set RS232 watchdog to 100 ms
+    sprintf(roboteq_msg, "@00^RWD 100");
+    write(s_roboteq_fd, roboteq_msg, strlen(roboteq_msg));
+}
+
+
+void apply_turret_rotation(int32_t rotation)
+{
+    char roboteq_msg[64];
+
+    if (s_roboteq_fd < 0)
+    {
+        return;
+    }
+
+    // Enforce a dead zone where for small values we just pass 0 rotation
+    
+    if (rotation >= -k_turret_rotation_min_threshold && 
+        rotation <= k_turret_rotation_min_threshold)
+    {
+        rotation = 0;
+    }
+
+    //  send "@nn!G mm" over software serial. mm is a command 
+    //  value, -1000 to 1000. nn is node number in RoboCAN network.
+
+    sprintf(roboteq_msg, "@01!G %d", rotation);
+    write(s_roboteq_fd, roboteq_msg, strlen(roboteq_msg));
 }
 
 void message_hammer_throw()

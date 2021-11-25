@@ -44,6 +44,8 @@ static int set_interface_attributes(int fd, int speed)
 
 void rfd900x_init()
 {
+    logm(SL4C_DEBUG, "Init RFD900x radio");
+
     g_serial_port = open("/dev/ttyS2", O_RDWR | O_NOCTTY | O_SYNC);
     if (g_serial_port < 0)
     {
@@ -58,6 +60,8 @@ void rfd900x_init()
         close(g_serial_port);
         g_serial_port = -1;
     }
+
+    logm(SL4C_DEBUG, "RFD900x init successful");
 }
 
 void rfd900x_write(const char* data, size_t size)
