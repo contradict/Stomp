@@ -4,11 +4,11 @@ enum SBUSChannels {
     WEAPONS_ENABLE = 0,
     AUTO_HAMMER_ENABLE = 1,
     HAMMER_CTRL = 2,
-    FLAME_RIGHT_CTRL = 3,
+    UNUSED_3 = 3,
     AUTO_SELF_RIGHT = 4,
     INTENSITY = 5,
     UNUSED_6 = 6,
-    UNUSED_7 = 7,
+    FLAME_RIGHT_CTRL = 7,
     RANGE = 8,
     TURRET_SPIN = 9,
     TURRET_CTL_MODE = 10

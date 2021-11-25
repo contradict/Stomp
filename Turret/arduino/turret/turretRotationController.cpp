@@ -132,7 +132,7 @@ void TurretRotationController::Update()
                 {
                     setState(ESafe);
                 }
-                else if (!isManualTurretEnabled() || isWeaponEnabled())
+                else if (!isManualTurretEnabled() || !isWeaponEnabled())
                 {
                     setState(EDisabled);
                 }
@@ -156,6 +156,10 @@ void TurretRotationController::Update()
                 if (!Radio.IsNominal())
                 {
                     setState(ESafe);
+                }
+                else if (!isWeaponEnabled())
+                {
+                    setState(EDisabled);
                 }
                 else if (!isAutoAimEnabled() || !Turret.IsNominal())
                 {
