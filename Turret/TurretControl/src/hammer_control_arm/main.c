@@ -49,6 +49,7 @@ static int k_message_type_strlen = 4;
 static char* k_message_type_sync = "SYNC";
 static char* k_message_type_exit = "EXIT";
 static char* k_message_type_logm = "LOGM";
+static char* k_message_type_swng = "SWNG";
 
 // -----------------------------------------------------------------------------
 // file scope statics
@@ -141,7 +142,7 @@ int main(int argc, char **argv)
     init_lcm();
 
     init_pru();
-    init_rpmsg();
+    // init_rpmsg();
     
     /*
     // Set our priority and scheduling algoritm.  Must be very aggressive to be able to
@@ -282,7 +283,6 @@ void init_lcm()
 
     sensors_control_handler_init();
     hammer_trigger_handler_init();
-
 }
 
 void init_pru()
@@ -358,6 +358,8 @@ void init_pru()
 
     write(pru_rproc_device_state_fd, "start", 5);
     close(pru_rproc_device_state_fd);
+
+    logm(SL4C_INFO, "Done with init_pru");
 
     // pause for 2 seconds before continuing
     usleep(2000000);
@@ -454,5 +456,9 @@ void rpmsg_handle(char *message)
     if (strncmp(message_type, k_message_type_logm, k_message_type_strlen) == 0)
     {
         logm(SL4C_INFO, "%s - %s", timestamp, body);
+    }
+    else if (strncmp(message_type, k_message_type_swng, k_message_type_strlen) == 0)
+    {
+        logm(SL4C_INFO, "%s - Swing Complete", timestamp);
     }
 }

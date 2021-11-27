@@ -1,8 +1,8 @@
 ### BeagleBone AI Pin inputs
 
 * P9.39 (cape A0): Hammer Angle Sensor
-* P9.37 (cape A2): Throw Pressure Sensor
-* P9.38 (cape A3): Retract Pressure Sensor
+* P9.38 (cape A3): Throw Pressure Sensor
+* P9.37 (cape A2): Retract Pressure Sensor
 
 ### BeagleBone AI Pin output
 

@@ -85,6 +85,11 @@ static char* k_message_type_logm = "LOGM";
 static char s_log_message_buffer[512];
 #endif
 
+static uint32_t *k_gpio8ClearDataOut = (uint32_t *)0x48053190;
+static uint32_t *k_gpio8SetDataOut = (uint32_t *)0x48053194;
+
+static const uint32_t k_heartbeatPin = (0x1 << 15);
+
 // -----------------------------------------------------------------------------
 // states
 // -----------------------------------------------------------------------------
@@ -135,7 +140,6 @@ void init_gpio();
 void init_heartbeat();
 
 void update();
-void update_hammer();
 void update_comms();
 void update_heartbeat();
 
@@ -148,7 +152,7 @@ int8_t is_comms_connected();
 int8_t is_weapon_enabled();
 
 void recv_sync_message(char *sync_message_buffer);
-void recv_fire_message(char *exit_message_buffer);
+void recv_fire_message(char *fire_message_buffer);
 void recv_exit_message(char *exit_message_buffer);
 void recv_conf_message(char *conf_message_buffer);
 void recv_sens_message(char *sens_message_buffer);
@@ -167,10 +171,12 @@ int8_t check_for_arm_exit();
 void main(void)
 {
     // set initial state and init
+
     s_state = invalid;
     set_state(init);
 
     // execute forever
+
     while (1) 
     {
         update();
@@ -256,22 +262,15 @@ void update()
 
     // now that state is updated, distribut the rest of the updates
     
-    update_hammer();
-    update_comms();
     update_heartbeat();
+    update_comms();
+
+    hammer_control_update();
 }
 
 // -----------------------------------------------------------------------------
 // Update Methods
 // -----------------------------------------------------------------------------
-
-void update_hammer()
-{
-    if (s_state == active)
-    {
-        hammer_control_update();
-    }
-}
 
 void update_comms()
 {
@@ -335,10 +334,7 @@ void update_comms()
 
 void update_heartbeat()
 {
-    if (s_state == sync || s_state == init)
-    {
-        return;
-    }
+    static uint8_t heartbeat_status = 0;
 
     uint32_t time = pru_time_gettime();
 
@@ -346,14 +342,22 @@ void update_heartbeat()
     {
         s_heartbeat_start_time = time;
 
-        if (__R30 & k_pr1_pru1_gpo9)
+        uint32_t pins_high = 0x00;
+        uint32_t pins_low = 0x00;
+
+        if (heartbeat_status == 0)
         {
-            __R30 &= ~(k_pr1_pru1_gpo9);
+            heartbeat_status = 1;
+            pins_high = k_heartbeatPin;
         }
         else
         {
-            __R30 |= k_pr1_pru1_gpo9;
+            heartbeat_status = 0;
+            pins_low = k_heartbeatPin;
         }
+
+        (*k_gpio8ClearDataOut) = pins_low;
+        (*k_gpio8SetDataOut) = pins_high;
     }
 }
 
@@ -379,6 +383,28 @@ void set_state(enum state new_state)
                 __R30 &= ~(k_pr1_pru1_gpo5);
                 __R30 &= ~(k_pr1_pru1_gpo9);
                 __R30 &= ~(k_pr1_pru1_gpo18);
+
+#if LOGGING_ENABLED
+
+                char* debug_message = s_log_message_buffer;
+
+                memset(debug_message, 0, 512);
+                memcpy(debug_message, "sync message received", 21); 
+                debug_message += 21;
+            
+                *debug_message = '\n';
+                debug_message++;
+                *debug_message = 0;
+            
+                send_log_message(s_log_message_buffer);
+
+#endif
+            }
+            break;
+
+        case active:
+            {
+                send_swng_message();
             }
             break;
 
@@ -397,6 +423,9 @@ void set_state(enum state new_state)
     {
         case init:
             {
+                uint32_t pins_low = k_heartbeatPin;
+                (*k_gpio8ClearDataOut) = pins_low;
+
                 // init the pru time module
 
                 pru_time_init();
@@ -409,7 +438,7 @@ void set_state(enum state new_state)
                 init_rpmsg();
                 init_gpio();
                 init_heartbeat();
-
+        
                 hammer_control_init();
             }
             break;
@@ -427,7 +456,6 @@ void set_state(enum state new_state)
         case active:
             {
                 // fire the hammer
-
                 hammer_control_fire();
             }
 
@@ -445,6 +473,11 @@ void recv_sync_message(char *sens_message_buffer)
     s_sync_message_received = 1;
 }
 
+void recv_exit_message(char *sens_message_buffer)
+{
+    s_exit_message_received = 1;
+}
+
 void recv_fire_message(char *fire_message_buffer)
 {
     // parse the fire message
@@ -459,15 +492,13 @@ void recv_fire_message(char *fire_message_buffer)
     }
 
     //  If we are in armed state, that means we are ready and able to fire.
-    //  tell the hammer swing state machine to fire, but setting our
+    //  tell the hammer swing state machine to fire, by setting our
     //  state to active
 
-    set_state(active);
-}
-
-void recv_exit_message(char *sens_message_buffer)
-{
-    s_exit_message_received = 1;
+    if (s_state == armed)
+    {
+        set_state(active);
+    }
 }
 
 void recv_conf_message(char *conf_message_buffer)
@@ -538,6 +569,34 @@ void recv_conf_message(char *conf_message_buffer)
     }
 
     hammer_control_config_update();
+
+#if LOGGING_ENABLED
+
+    char* debug_message = s_log_message_buffer;
+    char* number_string;
+    int number_string_len;
+
+    memset(debug_message, 0, 512);
+
+    memcpy(debug_message, "parsed conf message: ", 21); 
+    debug_message += 21;
+
+    memcpy(debug_message, "TA=", 3); 
+    debug_message += 3;
+
+    number_string = pru_util_itoa(g_max_throw_angle, 10);
+    number_string_len = strlen(number_string);
+
+    memcpy(debug_message, number_string, number_string_len);
+    debug_message += number_string_len;
+
+    *debug_message = '\n';
+    debug_message++;
+    *debug_message = 0;
+
+    send_log_message(s_log_message_buffer);
+
+#endif
 }
 
 void recv_sens_message(char *sens_message_buffer)
@@ -630,7 +689,7 @@ void recv_sens_message(char *sens_message_buffer)
     memcpy(debug_message, " PRD=", 5); 
     debug_message += 5;
 
-    number_string = pru_util_itoa(period, 10);
+    number_string = pru_util_itoa(g_hammer_angle, 10);
     number_string_len = strlen(number_string);
 
     memcpy(debug_message, number_string, number_string_len);
@@ -671,7 +730,7 @@ void send_swng_message()
     *message = ':';
     message++;
 
-    char* test_string = "TEST";
+    char* test_string = "SWNG:";
     int test_string_len = strlen(test_string);
     memcpy(message, test_string, test_string_len);
 
@@ -910,6 +969,6 @@ int8_t is_comms_connected()
 int8_t is_weapon_enabled()
 {
     // Need to really implement this
-    return 1; 
-    //return s_radio_weapon_enabled;
+    s_radio_weapon_enabled = 1;
+    return s_radio_weapon_enabled;
 }
