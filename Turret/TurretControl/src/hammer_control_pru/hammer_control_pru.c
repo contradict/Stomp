@@ -65,10 +65,9 @@ int64_t g_max_retract_settle_dt;
 // P8.36a (gpio8_10): Throw Vent Valve
 // P8.33a (gpio8_13): Retract Pressure Valve
 // P8.34a (gpio8_11): Retract Vent Valve
-// P8.32a (gpio8_15): Heartbeat
 //
 // So, we need to get the control register address for gpio8
-// and for channel 10, 11, 12, 13 and 15
+// for channel 10, 11, 12, and 13
 
 static uint32_t *k_gpio8OutputEnable = (uint32_t *)0x48053134;
 static uint32_t *k_gpio8ClearDataOut = (uint32_t *)0x48053190;
@@ -78,9 +77,7 @@ static const uint32_t k_throwPressurePin = (0x1 << 12);
 static const uint32_t k_throwVentPin = (0x1 << 10);
 static const uint32_t k_retractPressurePin = (0x1 << 13);
 static const uint32_t k_retractVentPin = (0x1 << 11);
-static const uint32_t k_heartbeatPin = (0x1 << 15);
 
-static const uint32_t k_heartbeat_dt = 500000;
 
 // -----------------------------------------------------------------------------
 // states
@@ -111,7 +108,6 @@ enum state
 static enum state s_state = invalid;
 static uint32_t s_state_start_time;
 static uint8_t s_initial_config_received = 0;
-static uint32_t s_heartbeat_start_time;
 
 // -----------------------------------------------------------------------------
 //  forward decl of internal methods
@@ -119,7 +115,6 @@ static uint32_t s_heartbeat_start_time;
 
 void hammer_control_set_state(enum state new_state);
 void hammer_control_set_safe();
-void hammer_control_update_heartbeat();
 
 // -----------------------------------------------------------------------------
 // public methods
@@ -260,8 +255,6 @@ void hammer_control_update()
             break;
         }
     }
-
-    hammer_control_update_heartbeat();
 }
 
 uint8_t hammer_control_is_swing_complete()
@@ -272,37 +265,6 @@ uint8_t hammer_control_is_swing_complete()
 // -----------------------------------------------------------------------------
 // private methods
 // -----------------------------------------------------------------------------
-
-void hammer_control_update_heartbeat()
-{
-    /*
-    static uint8_t heartbeat_status = 0;
-
-    uint32_t time = pru_time_gettime();
-
-    if (time - s_heartbeat_start_time > k_heartbeat_dt)
-    {
-        s_heartbeat_start_time = time;
-
-        uint32_t pins_high = 0x00;
-        uint32_t pins_low = 0x00;
-
-        if (heartbeat_status == 0)
-        {
-            heartbeat_status = 1;
-            pins_high = k_heartbeatPin;
-        }
-        else
-        {
-            heartbeat_status = 0;
-            pins_low = k_heartbeatPin;
-        }
-
-        (*k_gpio8ClearDataOut) = pins_low;
-        (*k_gpio8SetDataOut) = pins_high;
-    }
-    */
-}
 
 void hammer_control_set_state(enum state new_state)
 {
@@ -332,13 +294,11 @@ void hammer_control_set_state(enum state new_state)
     {
         case init:
             {
-                s_heartbeat_start_time = pru_time_gettime();
-
                 // For the output enable register, 0 means eanbled and 1 is disabled
                 // clear to zero just the 5 pins we need as output, leaving the rest 
                 // as they are
 
-                uint32_t enableOutput =  k_throwPressurePin | k_throwVentPin | k_retractPressurePin | k_retractVentPin | k_heartbeatPin;
+                uint32_t enableOutput =  k_throwPressurePin | k_throwVentPin | k_retractPressurePin | k_retractVentPin;
                 enableOutput = ~enableOutput;
                 (*k_gpio8OutputEnable) &= enableOutput;
 
@@ -499,7 +459,7 @@ void hammer_control_set_safe()
     // Retract Pressure: Closed (signal low)
     // Retract Vent: Open (signal low)
 
-    uint32_t pins_low = k_throwPressurePin | k_throwVentPin | k_retractPressurePin | k_retractVentPin | k_heartbeatPin;
+    uint32_t pins_low = k_throwPressurePin | k_throwVentPin | k_retractPressurePin | k_retractVentPin;
     (*k_gpio8ClearDataOut) = pins_low;
 }
 

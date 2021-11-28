@@ -142,7 +142,7 @@ int main(int argc, char **argv)
     init_lcm();
 
     init_pru();
-    // init_rpmsg();
+    init_rpmsg();
     
     /*
     // Set our priority and scheduling algoritm.  Must be very aggressive to be able to

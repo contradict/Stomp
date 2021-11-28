@@ -56,6 +56,8 @@ volatile register uint32_t __R31;
 static const uint32_t k_message_buffer_max_len = 496;
 static const uint32_t k_message_recv_delay_dt_max = 500000;
 
+static const uint32_t k_heartbeat_dt = 5000;
+
 // The PRU-ICSS system events used for RPMsg are defined in the Linux 
 // device tree
 //
@@ -65,7 +67,15 @@ static const uint32_t k_message_recv_delay_dt_max = 500000;
 static const uint32_t k_pru_to_host_event = 18;
 static const uint32_t k_pru_from_host_event = 19;
 
-static const uint32_t k_heartbeat_dt = 500000;
+// Host interrupt 0 is reported on pin 30 (of register __R31)
+// Host interrupt 1 is reported on pin 31 (of register __R31)
+//
+// PRU0 uses interrupt 0
+// PRU1 uses interrupt 1
+//
+// see 30.2.6.2 of AM572x SitaraTM Processors Silicon Revision 2.0, 1.1
+
+static const uint32_t k_host_interrupt_1_bit = (uint32_t)(0x1<<31);
 
 //  The output pins used to communicate status via connected LEDs
 
@@ -84,6 +94,8 @@ static char* k_message_type_logm = "LOGM";
 #if LOGGING_ENABLED
 static char s_log_message_buffer[512];
 #endif
+
+// directly write to gpio8_15 for heartbeat
 
 static uint32_t *k_gpio8ClearDataOut = (uint32_t *)0x48053190;
 static uint32_t *k_gpio8SetDataOut = (uint32_t *)0x48053194;
@@ -277,13 +289,10 @@ void update_comms()
     //  Check to see if we have an rpmsg.  Keep track of how long it has been
     //  and if we wait too long, then consider comms down
 
-    if (__R31 & k_pru_from_host_event)
+    if (__R31 & k_host_interrupt_1_bit)
     {
-        // TODO: Investigate - Seems this was being executed, even if there was not something
-        // sent down (no host interrupt
-        //
-        // Clear the host interrupt event
-
+        // Tell interrupt controller to clear interrupt from host 
+        
         CT_INTC.SICR_bit.STATUS_CLR_INDEX = k_pru_from_host_event;
 
         // Go through all the messages queued
@@ -821,7 +830,7 @@ void init_syscfg()
 
 void init_intc()
 {
-    // Clear the status of the PRU-ICSS system event that the ARM will use to 'kick' us
+    // Tell interrupt controller to clear interrupt from host 
     CT_INTC.SICR_bit.STATUS_CLR_INDEX = k_pru_from_host_event;
 }
 
