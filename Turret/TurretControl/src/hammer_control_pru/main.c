@@ -14,7 +14,7 @@
 //        Controller, initializing or updating global configuration
 //        values used in controlling the hammer state machine
 //
-// FIRE - Fire the hammer message
+// THRW - Throw the hammer message
 //
 // Output Pins
 //
@@ -82,8 +82,8 @@ static char* k_message_type_exit = "EXIT";
 static char* k_message_type_sync = "SYNC";
 static char* k_message_type_sens = "SENS";
 static char* k_message_type_conf = "CONF";
-static char* k_message_type_fire = "FIRE";
 static char* k_message_type_logm = "LOGM";
+static char* k_message_type_throw = "THRW";
 
 #if LOGGING_ENABLED
 static char s_log_message_buffer[512];
@@ -126,7 +126,7 @@ static char s_recv_message_buffer[496];
 static uint16_t s_rpmsg_arm_addr;
 static uint16_t s_rpmsg_pru_addr;
 
-static int32_t s_fire_message_desired_angle = 10;
+static int32_t s_throw_desired_intensity = 10;
 static uint32_t s_message_last_recv_time = 0;
 
 static uint32_t s_heartbeat_start_time;
@@ -159,10 +159,10 @@ int8_t is_comms_connected();
 int8_t is_weapon_enabled();
 
 void recv_sync_message(char *sync_message_buffer);
-void recv_fire_message(char *fire_message_buffer);
 void recv_exit_message(char *exit_message_buffer);
 void recv_conf_message(char *conf_message_buffer);
 void recv_sens_message(char *sens_message_buffer);
+void recv_throw_message(char *throw_message_buffer);
 
 void send_swng_message();
 void send_log_message(char *message);
@@ -312,9 +312,9 @@ void update_comms()
             {
                 recv_exit_message(s_recv_message_buffer);
             }
-            else if (strncmp(s_recv_message_buffer, k_message_type_fire, k_message_type_strlen) == 0)
+            else if (strncmp(s_recv_message_buffer, k_message_type_throw, k_message_type_strlen) == 0)
             {
-                recv_fire_message(s_recv_message_buffer);
+                recv_throw_message(s_recv_message_buffer);
             }
         }
 
@@ -419,9 +419,9 @@ void set_state(enum state new_state)
 
         case active:
             {
-                // fire the hammer!!!
+                // throw the hammer!!!
                 
-                hammer_control_trigger_throw(s_fire_message_desired_angle);
+                hammer_control_trigger_throw(s_throw_desired_intensity);
             }
 
         default:
@@ -459,36 +459,59 @@ void recv_exit_message(char *sens_message_buffer)
     s_exit_message_received = 1;
 }
 
-void recv_fire_message(char *fire_message_buffer)
+enum swing_type
 {
-    // parse the fire message
+    throw_retract,
+    retract_only,
+
+    swing_unknown,
+};
+
+void recv_throw_message(char *throw_message_buffer)
+{
+    enum swing_type type = swing_unknown;
+
+    // parse the throw message
     
-    char* token = strtok(fire_message_buffer, ":");
+    char* token = strtok(throw_message_buffer, ":");
 
+    // confirm it is throw message
 
-    // confirm it is FIRE message
-
-    if (strncmp(token, k_message_type_fire, k_message_type_strlen) != 0)
+    if (strncmp(token, k_message_type_throw, k_message_type_strlen) != 0)
     {
         return;
     }
 
     while (token != NULL)
     {
-        if (strcmp(token, "ANGLE") == 0)
+        if (strcmp(token, "INTENSITY") == 0)
         {
-            s_fire_message_desired_angle = atoi(strtok(NULL, ":"));
+            s_throw_desired_intensity = atoi(strtok(NULL, ":"));
+        }
+        else if (strcmp(token, "TYPE") == 0)
+        {
+            token = strtok(NULL, ":");
+
+            if (strcmp(token, "THROW") == 0)
+            {
+                type = throw_retract;
+            }
+            else if (strcmp(token, "RETRACT") == 0)
+            {
+                type = retract_only;
+            }
         }
 
         token = strtok(NULL, ":");
     }
 
-    //  If we are in armed state, that means we are ready and able to fire.
-    //  tell the hammer swing state machine to fire, by setting our
+    //  If we are in armed state, that means we are ready and able to throw.
+    //  tell the hammer swing state machine to throw, by setting our
     //  state to active
 
     if (s_state == armed)
     {
+        // TODO: Handle both types of swing
         set_state(active);
     }
 
@@ -503,7 +526,7 @@ void recv_fire_message(char *fire_message_buffer)
     memcpy(debug_message, "swing hammer with angle: ", 25); 
     debug_message += 25;
 
-    number_string = pru_util_itoa(s_fire_message_desired_angle, 10);
+    number_string = pru_util_itoa(s_throw_desired_intensity, 10);
     number_string_len = strlen(number_string);
 
     memcpy(debug_message, number_string, number_string_len);

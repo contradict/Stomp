@@ -13,6 +13,9 @@
 static const float k_hammer_throw_threshold = 0.8f;
 static const float k_hammer_retract_threshold = -0.8f;
 
+static const float k_hammer_intensity_angle_min = 5.0f;
+static const float k_hammer_intensity_angle_max = 50.0f;
+
 // -----------------------------------------------------------------------------
 // file scope statics
 // -----------------------------------------------------------------------------
@@ -47,6 +50,15 @@ int control_radio_handler_shutdown()
     return 0;
 }
 
+float hammer_intensity_to_angle(float intensity)
+{
+    // map [-1, 1] to [0. 1]
+    float t = (intensity + 1.0f) / 2.0f;
+
+    // basic lerp from min to max
+    return ((1.0f - t) * k_hammer_intensity_angle_min) + (t * k_hammer_intensity_angle_max);
+}
+
 static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, const stomp_control_radio *msg, void *user)
 {
     (void)rbuf;
@@ -68,9 +80,10 @@ static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channe
 
     //  Grab the intensities from the axis
     
+    g_radio_control_parameters.throw_intensity = hammer_intensity_to_angle(msg->axis[TURRET_THROW_INTENSITY]);
+    g_radio_control_parameters.retract_intensity = hammer_intensity_to_angle(msg->axis[TURRET_THROW_INTENSITY]);
+
     g_radio_control_parameters.rotation_intensity = msg->axis[TURRET_ROTATION_INTENSITY];
-    g_radio_control_parameters.throw_intensity = (msg->axis[TURRET_THROW_INTENSITY] + 1.0f) / 2.0f;
-    g_radio_control_parameters.retract_intensity = (msg->axis[TURRET_RETRACT_INTENSITY] + 1.0f) / 2.0f;
 
     //  Turret Enable
     
