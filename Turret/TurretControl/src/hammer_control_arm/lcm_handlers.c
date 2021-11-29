@@ -126,7 +126,7 @@ static void hammer_trigger_handler(const lcm_recv_buf_t *rbuf, const char *chann
 
     char fire_message_buff[k_message_buff_len];
 
-    sprintf(fire_message_buff, "FIRE:");
+    sprintf(fire_message_buff, "FIRE:ANGLE:20");
 
     logm(SL4C_DEBUG, "SEND RPMSG: %s", fire_message_buff);
 

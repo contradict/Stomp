@@ -44,7 +44,7 @@
 
 #include "hammer_control_pru/hammer_control_pru.h"
 
-#define LOGGING_ENABLED 0
+#define LOGGING_ENABLED 1
 
 volatile register uint32_t __R30;
 volatile register uint32_t __R31;
@@ -54,9 +54,9 @@ volatile register uint32_t __R31;
 // -----------------------------------------------------------------------------
 
 static const uint32_t k_message_buffer_max_len = 496;
-static const uint32_t k_message_recv_delay_dt_max = 500000;
+static const uint32_t k_message_recv_delay_dt_max = 50000000;
 
-static const uint32_t k_heartbeat_dt = 5000;
+static const uint32_t k_heartbeat_dt = 500000;
 
 // The PRU-ICSS system events used for RPMsg are defined in the Linux 
 // device tree
@@ -77,12 +77,6 @@ static const uint32_t k_pru_from_host_event = 19;
 
 static const uint32_t k_host_interrupt_1_bit = (uint32_t)(0x1<<31);
 
-//  The output pins used to communicate status via connected LEDs
-
-static const uint32_t k_pr1_pru1_gpo5  = 0x1 << 5;     // BBAI Header Pin P8.18
-static const uint32_t k_pr1_pru1_gpo9  = 0x1 << 9;     // BBAI Header Pin P8.14
-static const uint32_t k_pr1_pru1_gpo18 = 0x1 << 18;    // BBAI Header Pin P8.16
-
 static int k_message_type_strlen = 4;
 static char* k_message_type_exit = "EXIT";
 static char* k_message_type_sync = "SYNC";
@@ -97,6 +91,7 @@ static char s_log_message_buffer[512];
 
 // directly write to gpio8_15 for heartbeat
 
+static uint32_t *k_gpio8OutputEnable = (uint32_t *)0x48053134;
 static uint32_t *k_gpio8ClearDataOut = (uint32_t *)0x48053190;
 static uint32_t *k_gpio8SetDataOut = (uint32_t *)0x48053194;
 
@@ -131,7 +126,8 @@ static char s_recv_message_buffer[496];
 static uint16_t s_rpmsg_arm_addr;
 static uint16_t s_rpmsg_pru_addr;
 
-static uint32_t s_message_last_recv_time;
+static int32_t s_fire_message_desired_angle = 10;
+static uint32_t s_message_last_recv_time = 0;
 
 static uint32_t s_heartbeat_start_time;
 
@@ -146,7 +142,6 @@ static uint8_t s_exit_message_received;
 
 void init_syscfg();
 void init_intc();
-void init_ecap();
 void init_rpmsg();
 void init_gpio();
 void init_heartbeat();
@@ -385,32 +380,6 @@ void set_state(enum state new_state)
 
     switch (s_state)
     {
-        case sync:
-            {
-                // turn off all LED
-                
-                __R30 &= ~(k_pr1_pru1_gpo5);
-                __R30 &= ~(k_pr1_pru1_gpo9);
-                __R30 &= ~(k_pr1_pru1_gpo18);
-
-#if LOGGING_ENABLED
-
-                char* debug_message = s_log_message_buffer;
-
-                memset(debug_message, 0, 512);
-                memcpy(debug_message, "sync message received", 21); 
-                debug_message += 21;
-            
-                *debug_message = '\n';
-                debug_message++;
-                *debug_message = 0;
-            
-                send_log_message(s_log_message_buffer);
-
-#endif
-            }
-            break;
-
         case active:
             {
                 send_swng_message();
@@ -432,9 +401,6 @@ void set_state(enum state new_state)
     {
         case init:
             {
-                uint32_t pins_low = k_heartbeatPin;
-                (*k_gpio8ClearDataOut) = pins_low;
-
                 // init the pru time module
 
                 pru_time_init();
@@ -443,7 +409,6 @@ void set_state(enum state new_state)
                 
                 init_syscfg();
                 init_intc();
-                init_ecap();
                 init_rpmsg();
                 init_gpio();
                 init_heartbeat();
@@ -452,20 +417,11 @@ void set_state(enum state new_state)
             }
             break;
 
-        case sync:
-            {
-                // turn on all LED, indicating waiting for sync
-                
-                __R30 |= k_pr1_pru1_gpo5;
-                __R30 |= k_pr1_pru1_gpo9;
-                __R30 |= k_pr1_pru1_gpo18;
-            }
-            break;
-
         case active:
             {
-                // fire the hammer
-                hammer_control_fire();
+                // fire the hammer!!!
+                
+                hammer_control_trigger_throw(s_fire_message_desired_angle);
             }
 
         default:
@@ -480,6 +436,22 @@ void set_state(enum state new_state)
 void recv_sync_message(char *sens_message_buffer)
 {
     s_sync_message_received = 1;
+
+#if LOGGING_ENABLED
+
+    char* debug_message = s_log_message_buffer;
+
+    memset(debug_message, 0, 512);
+    memcpy(debug_message, "sync message received", 21); 
+    debug_message += 21;
+
+    *debug_message = '\n';
+    debug_message++;
+    *debug_message = 0;
+
+    send_log_message(s_log_message_buffer);
+
+#endif
 }
 
 void recv_exit_message(char *sens_message_buffer)
@@ -493,11 +465,22 @@ void recv_fire_message(char *fire_message_buffer)
     
     char* token = strtok(fire_message_buffer, ":");
 
+
     // confirm it is FIRE message
 
     if (strncmp(token, k_message_type_fire, k_message_type_strlen) != 0)
     {
         return;
+    }
+
+    while (token != NULL)
+    {
+        if (strcmp(token, "ANGLE") == 0)
+        {
+            s_fire_message_desired_angle = atoi(strtok(NULL, ":"));
+        }
+
+        token = strtok(NULL, ":");
     }
 
     //  If we are in armed state, that means we are ready and able to fire.
@@ -508,6 +491,31 @@ void recv_fire_message(char *fire_message_buffer)
     {
         set_state(active);
     }
+
+#if LOGGING_ENABLED
+
+    char* debug_message = s_log_message_buffer;
+    char* number_string;
+    int number_string_len;
+
+    memset(debug_message, 0, 512);
+
+    memcpy(debug_message, "swing hammer with angle: ", 25); 
+    debug_message += 25;
+
+    number_string = pru_util_itoa(s_fire_message_desired_angle, 10);
+    number_string_len = strlen(number_string);
+
+    memcpy(debug_message, number_string, number_string_len);
+    debug_message += number_string_len;
+
+    *debug_message = '\n';
+    debug_message++;
+    *debug_message = 0;
+
+    send_log_message(s_log_message_buffer);
+
+#endif
 }
 
 void recv_conf_message(char *conf_message_buffer)
@@ -555,11 +563,11 @@ void recv_conf_message(char *conf_message_buffer)
 	}
         else if (strcmp(token, "RPDT") == 0)
 	{
-            g_max_throw_expand_dt = atoi(strtok(NULL, ":"));
+            g_max_retract_pressure_dt = atoi(strtok(NULL, ":"));
 	}
         else if (strcmp(token, "TEDT") == 0)
         {
-            g_max_retract_pressure_dt = atoi(strtok(NULL, ":"));
+            g_max_throw_expand_dt = atoi(strtok(NULL, ":"));
 	}
         else if (strcmp(token, "REDT") == 0)
 	{
@@ -590,10 +598,10 @@ void recv_conf_message(char *conf_message_buffer)
     memcpy(debug_message, "parsed conf message: ", 21); 
     debug_message += 21;
 
-    memcpy(debug_message, "TA=", 3); 
-    debug_message += 3;
+    memcpy(debug_message, "RPDT=", 5); 
+    debug_message += 5;
 
-    number_string = pru_util_itoa(g_max_throw_angle, 10);
+    number_string = pru_util_itoa(g_max_retract_pressure_dt, 10);
     number_string_len = strlen(number_string);
 
     memcpy(debug_message, number_string, number_string_len);
@@ -652,26 +660,6 @@ void recv_sens_message(char *sens_message_buffer)
     g_hammer_energy = 0;
     g_available_break_energy = 0;
 
-    // Output sensor value on APWN pin
-
-    /*
-    uint32_t period = g_hammer_angle;
-    
-    CT_ECAP.CAP3 = period * 1000;
-    CT_ECAP.CAP4 = period * 500;
-    */
-
-    //  toggle the sensor values received led
-    
-    if (__R30 & k_pr1_pru1_gpo5)
-    {
-        __R30 &= ~(k_pr1_pru1_gpo5);
-    }
-    else
-    {
-        __R30 |= k_pr1_pru1_gpo5;
-    }
-
     // send a debug message back to ARM so we can debug what is going
     // on here
     
@@ -725,10 +713,6 @@ void send_swng_message()
     // Can't use sprintf beacuse it doesn't fit in PRU memory
     // so used an custom itoa impl
 
-    //
-    // TODO: Make sure to NOT overflow message buffer
-    //
-    
     char* message = s_send_message_buffer;
 
     char* timestamp_string = pru_util_itoa(timestamp, 10);
@@ -755,13 +739,6 @@ void send_swng_message()
 
 void send_log_message(char *log_message)
 {
-    /*
-    if (s_state == sync || s_state == init)
-    {
-        return;
-    }
-    */
-
     uint32_t timestamp = pru_time_gettime() - s_state_start_time;
 
     if (strlen(log_message) >= (k_message_buffer_max_len-20))
@@ -792,7 +769,6 @@ void send_log_message(char *log_message)
 
     pru_rpmsg_send(&s_transport, s_rpmsg_pru_addr, s_rpmsg_arm_addr, s_send_message_buffer, k_message_buffer_max_len);
 }
-
 
 int8_t check_for_arm_sync()
 {
@@ -825,57 +801,15 @@ int8_t check_for_arm_exit()
 void init_syscfg()
 {
     // Allow OCP master port access by the PRU so the PRU can read external memories
+
     CT_CFG.SYSCFG_bit.STANDBY_INIT = 0x0;
 }
 
 void init_intc()
 {
     // Tell interrupt controller to clear interrupt from host 
+
     CT_INTC.SICR_bit.STATUS_CLR_INDEX = k_pru_from_host_event;
-}
-
-void init_ecap()
-{
-    // Setup eCap for APWM output instead of capture input
-    
-    // ECAP Control Register 1
-    // Clear, which gets us everything we need
-    CT_ECAP.ECCTL1 = 0x00000000;
-
-    // ECAP Control Register 2
-    // reset, which gets us most of the setting we want
-    CT_ECAP.ECCTL2 = 0x00000000;
-
-    // Most important, set CAPTURE / APWM to APWM analog output
-    CT_ECAP.ECCTL2_bit.CAPAPWM = 0x1;
-
-    // TSCNT == PRD sync
-    CT_ECAP.ECCTL2_bit.SYNCO_SEL = 0x1;
-
-    // Free running TSCNT
-    CT_ECAP.ECCTL2_bit.TSCNTSTP = 0x1;
-
-    // Initialize an initial period
-
-    CT_ECAP.CAP1 = 20000; 
-    CT_ECAP.CAP2 = 10000;
-
-    // need to set the mux mode of the pad register to select the pru eCap mode.
-    // registers are named after muxmode 0.  This is the register name to our
-    // usage mapping
-    //
-    // ctrl_core_pad_vin2a_d2 in muxmod 11 = pr1_ecap0_ecap_capin_apwm_o;
-    //
-
-    uint32_t *ctrl_core_pad_pr1_ecap0_ecap_capin_apwm_o = (uint32_t *)0x4A003570;
-    uint32_t *ctrl_core_pad_vin2a_d19 = (uint32_t *)0x4A0035B4;
-
-    uint32_t pad_cfg_ecap = 0x0001000B; // no pull up / pull down and mode 11 (B)
-    uint32_t pad_cfg_disabled = 0x0001000F; // Driver off
-
-    //  Setup header pin P8.15 correctly for eCap input
-    (*ctrl_core_pad_vin2a_d19) = pad_cfg_disabled;
-    (*ctrl_core_pad_pr1_ecap0_ecap_capin_apwm_o) = pad_cfg_ecap;
 }
 
 void init_rpmsg()
@@ -925,30 +859,15 @@ void init_rpmsg()
 
 void init_gpio()
 {
-    // need to set the mux mode of the pad register to select the pru gpio mode.
-    // registers are named after muxmode 0.  This is the register name to our 
-    // usage mapping
-    //
-    // ctrl_core_pad_vin2a_d8 in muxmod 13 = pr1_pru1_gpio5
-    // ctrl_core_pad_vin2a_d12 in muxmod 13 = pr1_pru1_gpio9
-    // ctrl_core_pad_vin2a_d21 in muxmod 13 = pr1_pru1_gpio18
-    //
+    // For the output enable register, 0 means eanbled and 1 is disabled
+    // clear to zero just the 4 pins we need as output, leaving the rest 
+    // as they are
 
-    uint32_t *ctrl_core_pad_pr1_pru1_gpo5  = (uint32_t *)0x4A003588;
-    uint32_t *ctrl_core_pad_pr1_pru1_gpo9  = (uint32_t *)0x4A003598;
-    uint32_t *ctrl_core_pad_pr1_pru1_gpo18 = (uint32_t *)0x4A0035BC;
+    uint32_t enableOutput = ~k_heartbeatPin;
+    (*k_gpio8OutputEnable) &= enableOutput;
 
-    uint32_t pad_cfg_gpo = 0x0000000D; // fast slew, pull down enabled, mode 13
-
-    (*ctrl_core_pad_pr1_pru1_gpo5)  = pad_cfg_gpo;
-    (*ctrl_core_pad_pr1_pru1_gpo9)  = pad_cfg_gpo;
-    (*ctrl_core_pad_pr1_pru1_gpo18) = pad_cfg_gpo;
-
-    // turn off all LEDs to start with
-    
-    __R30 &= ~(k_pr1_pru1_gpo5);
-    __R30 &= ~(k_pr1_pru1_gpo9);
-    __R30 &= ~(k_pr1_pru1_gpo18);
+    uint32_t pins_low = k_heartbeatPin;
+    (*k_gpio8ClearDataOut) = pins_low;
 }
 
 void init_heartbeat()
