@@ -4,6 +4,10 @@
 // global variables
 // -----------------------------------------------------------------------------
 
+// remote control values, filled in from FIRE message from ARM
+
+extern int32_t g_throw_desired_intensity;
+
 // sensor values (and thier derivatives) filled in from a SENS message from ARM
 
 extern int32_t g_hammer_angle;
@@ -39,7 +43,7 @@ void hammer_control_init();
 void hammer_control_update();
 void hammer_control_config_update();
 
-void hammer_control_trigger_throw(int32_t desired_throw_angle);
+void hammer_control_trigger_throw();
 void hammer_control_trigger_retract();
 
 uint8_t hammer_control_is_swing_complete();

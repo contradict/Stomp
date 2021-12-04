@@ -21,20 +21,25 @@
 // global variables
 // -----------------------------------------------------------------------------
 
-// sensor values (and thier derivatives) filled in from a SENS message from ARM
-// in message handlling in main.c
+// remote control values, filled in from FIRE message from ARM in message
+// handelling in rpmsg_handlers.c
 
-int32_t g_hammer_angle;
-int32_t g_hammer_velocity;
-int32_t g_turret_angle;
-int32_t g_turret_velocity;
-int32_t g_throw_pressure;
-int32_t g_retract_pressure;
-int32_t g_hammer_energy;
-int32_t g_available_break_energy;
+int32_t g_throw_desired_intensity = 0;
+
+// sensor values (and thier derivatives) filled in from a SENS message from ARM
+// in message handlling in rpmsg_handlers.c
+
+int32_t g_hammer_angle = 0;
+int32_t g_hammer_velocity = 0;
+int32_t g_turret_angle = 0;
+int32_t g_turret_velocity = 0;
+int32_t g_throw_pressure = 0;
+int32_t g_retract_pressure = 0;
+int32_t g_hammer_energy = 0;
+int32_t g_available_break_energy = 0;
 
 // config values, filled in from a CONF message from ARM
-// in message handlling in main.c
+// in message handlling in rpmsg_handlers.c
 
 int64_t g_max_throw_angle;
 int64_t g_min_retract_angle;
@@ -102,8 +107,6 @@ enum state
 
 static enum state s_state = invalid;
 
-static int32_t s_desired_throw_angle; 
-
 static uint32_t s_state_start_time;
 static uint8_t s_initial_config_received = 0;
 
@@ -137,8 +140,6 @@ void hammer_control_trigger_throw(int32_t desired_throw_angle)
     {
         return;
     }
-
-    s_desired_throw_angle = desired_throw_angle; 
 
     hammer_control_set_state(throw_setup);
 }
@@ -185,7 +186,7 @@ void hammer_control_update()
 
             case throw_pressurize:
                 {
-                    if (g_hammer_angle >= s_desired_throw_angle ||
+                    if (g_hammer_angle >= g_throw_desired_intensity ||
                         time - s_state_start_time > g_max_throw_pressure_dt)
                     {
                         hammer_control_set_state(throw_expand);
@@ -195,7 +196,7 @@ void hammer_control_update()
 
             case throw_expand:
                 {
-                    if (g_hammer_angle >= s_desired_throw_angle ||
+                    if (g_hammer_angle >= g_throw_desired_intensity ||
                         time - s_state_start_time > g_max_throw_expand_dt)
                     {
                         hammer_control_set_state(retract_setup);
@@ -308,17 +309,6 @@ void hammer_control_set_state(enum state new_state)
     {
         case init:
             {
-                // Make sure global sensor valuse start in a good place
-
-                g_hammer_angle = 0;
-                g_hammer_velocity = 0;
-                g_turret_angle = 0;
-                g_turret_velocity = 0;
-                g_throw_pressure = 0;
-                g_retract_pressure = 0;
-                g_hammer_energy = 0;
-                g_available_break_energy = 0;
-
                 // For the output enable register, 0 means eanbled and 1 is disabled
                 // clear to zero just the 4 pins we need as output, leaving the rest 
                 // as they are
