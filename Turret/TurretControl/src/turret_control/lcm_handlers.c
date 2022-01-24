@@ -1,8 +1,11 @@
 #include <sys/types.h>
+#include <unistd.h>
+
 
 #include "sclog4c/sclog4c.h"
 
 #include "sbus_channels.h"
+#include "lcm/stomp_turret_telemetry.h"
 #include "turret_control/turret_control.h"
 #include "turret_control/lcm_handlers.h"
 
@@ -48,6 +51,11 @@ int control_radio_handler_shutdown()
 {
     stomp_control_radio_unsubscribe(g_lcm, s_control_radio_subscription);
     return 0;
+}
+
+void turret_telemetry_send(stomp_turret_telemetry *lcm_msg)
+{
+    stomp_turret_telemetry_publish(g_lcm, TURRET_TELEMETRY, lcm_msg);
 }
 
 float hammer_intensity_to_angle(float intensity)

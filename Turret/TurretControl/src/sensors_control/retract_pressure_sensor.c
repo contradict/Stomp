@@ -6,12 +6,24 @@
 
 #include "sensors_control/retract_pressure_sensor.h"
 
+// Retract Pressure Sensor is connected to BBAI P9.37 (Chomp BeagleCape A2)
+
 // -----------------------------------------------------------------------------
 // file scope consts
 // -----------------------------------------------------------------------------
 
 static const int8_t k_is_retract_pressure_sensor_present = 1;
-static const char *k_retract_pressure_sensor_device = "/sys/bus/iio/devices/iio:device0/in_voltage6_raw";
+static const char *k_retract_pressure_sensor_device = "/sys/bus/iio/devices/iio:device0/in_voltage2_raw";
+
+static const float k_min_pressure_kPa = 0.0f;
+static const float k_max_pressure_kPa = 2700.0f;
+
+// these voltages should be measured from the actual sensor (via multimeter) and entered here
+// TODO: Move these values to toml config file
+
+static const float k_reference_voltage = 5.0f;
+static const float k_measured_voltage_at_min_angle = 0.0f;
+static const float k_measured_voltage_at_max_angle = 4.97f;
 
 // -----------------------------------------------------------------------------
 // file scope statics

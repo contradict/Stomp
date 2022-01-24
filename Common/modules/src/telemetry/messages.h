@@ -19,12 +19,21 @@ typedef enum msg_id {
     GNRL,
     LEGSTAT,
     TANK_PSI,
+    CONTROL_RADIO,
     TURRET_GNRL,
     TURRET_SNS,
     HIGHEST_ID
 } msg_id;
+
 // Our msg_id has to be safely castable to a uint8_t
 static_assert(HIGHEST_ID <= 256, "Too many messages!");
+
+struct control_radio_cosmos {
+    float      axis[8];
+    int8_t     toggle[8];
+    int8_t     failsafe;
+    int8_t     no_data;
+} __attribute__((__packed__));
 
 struct gnrl_cosmos {
     uint8_t tank_psi;
@@ -55,13 +64,17 @@ struct tank_psi {
 } __attribute__((__packed__));
 
 struct turret_gnrl_cosmos {
-    uint8_t turret_state;
+    int8_t turret_state;
+    int8_t rotation_state;
 } __attribute__((__packed__));
 
 struct turret_sensors_cosmos {
     float hammer_angle;
+    float hammer_velocity;
+    float hammer_energy;
     float turret_angle;
+    float turret_velocity;
     float throw_pressure;
     float retract_pressure;
+    float break_energy;
 } __attribute__((__packed__));
-

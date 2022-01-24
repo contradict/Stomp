@@ -41,20 +41,20 @@ static int32_t k_roboteq_baud_rate = 115200;
 
 enum turret_state 
 {
-    TURRET_INVALID,
-    TURRET_INIT,
-    TURRET_SAFE,
-    TURRET_ACTIVE
+    TURRET_INVALID = -1,
+    TURRET_INIT = 0,
+    TURRET_SAFE = 1,
+    TURRET_ACTIVE = 2
 };
 
 enum turret_rotation_state 
 {
-    ROTATION_INVALID,
-    ROTATION_INIT,
-    ROTATION_SAFE,
-    ROTATION_MANUAL,
-    ROTATION_AUTO,
-    ROTATION_OVERRIDE
+    ROTATION_INVALID = -1,
+    ROTATION_INIT = 0,
+    ROTATION_SAFE = 1,
+    ROTATION_MANUAL = 2,
+    ROTATION_AUTO = 3,
+    ROTATION_OVERRIDE = 4
 };
 
 static enum turret_state s_turret_state = TURRET_INVALID;
@@ -202,6 +202,16 @@ void update()
             message_hammer_retract();
         }
     }
+    
+    //
+    // Send out Turret Telemetry
+    //
+
+    stomp_turret_telemetry lcm_msg;
+    lcm_msg.turret_state = s_turret_state;
+    lcm_msg.rotation_state = s_turret_rotation_state;
+
+    turret_telemetry_send(&lcm_msg);
 }
 
 void update_turret_state()
@@ -280,7 +290,7 @@ void update_turret_rotation_state()
         
             case ROTATION_MANUAL:
                 {
-                    if (s_turret_state != TURRET_ACTIVE)
+                    if (s_turret_state != TURRET_ACTIVE || g_radio_control_parameters.rotation_mode == ROTATION_MODE_DISABLED)
                     {
                         set_turret_rotation_state(ROTATION_SAFE);
                     }
@@ -293,7 +303,7 @@ void update_turret_rotation_state()
 
             case ROTATION_AUTO:
                 {
-                    if (s_turret_state != TURRET_ACTIVE)
+                    if (s_turret_state != TURRET_ACTIVE || g_radio_control_parameters.rotation_mode == ROTATION_MODE_DISABLED)
                     {
                         set_turret_rotation_state(ROTATION_SAFE);
                     }

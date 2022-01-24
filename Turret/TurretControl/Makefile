@@ -30,23 +30,26 @@ turret_control_srcs=$(shell find src/turret_control/*.c)
 turret_control_objs=$(turret_control_srcs:.c=.o)
 
 sensors_control_srcs=$(shell find src/sensors_control/*.c)
+sensors_control_srcs+=$(COMMON_MODULES_DIR)/src/utils/utils.c
 sensors_control_objs=$(sensors_control_srcs:.c=.o)
 
 sensors_speed_test_srcs=$(shell find src/sensors_speed_test/*.c)
+sensors_speed_test_srcs+=$(COMMON_MODULES_DIR)/src/utils/utils.c
 sensors_speed_test_objs=$(sensors_speed_test_srcs:.c=.o)
 
 hammer_control_arm_srcs=$(shell find src/hammer_control_arm/*.c)
 hammer_control_arm_objs=$(hammer_control_arm_srcs:.c=.o)
 
 sbus_radio_srcs=$(shell find $(COMMON_MODULES_DIR)/src/sbus_radio/*.c)
+sbus_radio_srcs+=$(COMMON_MODULES_DIR)/src/utils/utils.c
 sbus_radio_objs=$(sbus_radio_srcs:.c=.o)
 
-#telemetry_srcs=$(shell find $(COMMON_MODULES_DIR)/src/telemetry/*.c)
-
-telemetry_srcs= $(COMMON_MODULES_DIR)/src/telemetry/rfd900x.c $(COMMON_MODULES_DIR)/src/telemetry/telemetry.c $(COMMON_MODULES_DIR)/src/telemetry/main.c
+telemetry_srcs=$(shell find $(COMMON_MODULES_DIR)/src/telemetry ! -name "test_telem.c" -name "*.c") 
+telemetry_srcs+=$(COMMON_MODULES_DIR)/src/utils/utils.c
 telemetry_objs=$(telemetry_srcs:.c=.o)
 
-telem_test_srcs= $(COMMON_MODULES_DIR)/src/telemetry/rfd900x.c $(COMMON_MODULES_DIR)/src/telemetry/telemetry.c $(COMMON_MODULES_DIR)/src/telemetry/test_telem.c
+telem_test_srcs=$(shell find $(COMMON_MODULES_DIR)/src/telemetry ! -name "main.c" -name "*.c") 
+telem_test_srcs+=$(COMMON_MODULES_DIR)/src/utils/utils.c
 telem_test_objs=$(telem_test_srcs:.c=.o)
 
 TOML_DIR=../../Common/external/tomlc99
@@ -128,7 +131,7 @@ $(MESSAGELIB): $(message_objs)
 	ar rcs $@ $^
 
 $(BIN_DIR)/sbus_radio: $(sbus_radio_objs) $(MESSAGELIB)
-	gcc $(COMMON_MODULES_DIR)/src/sbus_radio/main.o $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
+	gcc $^ $(MESSAGELIB) -o $@ $(LDFLAGS) $(LCM_LDFLAGS)
 
 $(BIN_DIR)/fake_sbus_radio: $(COMMON_MODULES_DIR)/src/sbus_radio/fake/fake_radio.o $(MESSAGELIB)
 	gcc $^ -o $@ $(LDFLAGS) $(LCM_LDFLAGS)

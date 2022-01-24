@@ -3,4 +3,5 @@ package stomp;
 struct turret_telemetry
 {
     int32_t turret_state;
+    int32_t rotation_state;
 }

@@ -12,6 +12,8 @@
 
 #include "sclog4c/sclog4c.h"
 
+#include "utils/utils.h"
+
 #include "lcm_channels.h"
 #include "lcm/stomp_control_radio.h"
 #include "lcm/stomp_sensors_control.h"
@@ -44,11 +46,6 @@ static int s_max_fd = -1;
 
 static void init_lcm();
 static void init_sensors();
-
-int time_diff_msec(struct timeval t0, struct timeval t1)
-{
-    return (t1.tv_sec - t0.tv_sec)*1000 + (t1.tv_usec - t0.tv_usec)/1000;
-}
 
 // -----------------------------------------------------------------------------
 // main
@@ -84,12 +81,12 @@ int main(int argc, char **argv)
 
     while(true)
     {
-        static struct timeval now;
+        struct timeval now;
         static struct timeval last_send_time;
 
         gettimeofday(&now, 0);
-        int millis = time_diff_msec(last_send_time, now);
-        logm(SL4C_INFO, "%d msec since last analog read", millis);
+        int dt = time_diff_msec(last_send_time, now);
+        logm(SL4C_INFO, "%d msec since last analog read", dt);
         last_send_time = now;
 
         lcm_msg.hammer_angle = get_hammer_angle();
@@ -180,7 +177,7 @@ int main(int argc, char **argv)
             lcm_msg.turret_velocity,
             lcm_msg.throw_pressure,
             lcm_msg.retract_pressure);
-
+       
         stomp_sensors_control_publish(s_lcm, SENSORS_CONTROL, &lcm_msg);
     }
 

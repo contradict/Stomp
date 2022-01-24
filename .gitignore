@@ -1,6 +1,7 @@
 __pycache__
 .*.sw?
 scratch
+.vscode
 .ipynb_checkpoints
 *.*-bak
 *.bck

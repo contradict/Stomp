@@ -44,11 +44,6 @@ static int s_analog_03_selects = 0;
 void init_sig_handlers();
 static void init_sensors();
 
-float time_diff_msec(struct timeval t0, struct timeval t1)
-{
-    return (t1.tv_sec - t0.tv_sec)*1000 + ((float)(t1.tv_usec - t0.tv_usec))/1000.0f;
-}
-
 // -----------------------------------------------------------------------------
 // main
 // -----------------------------------------------------------------------------
