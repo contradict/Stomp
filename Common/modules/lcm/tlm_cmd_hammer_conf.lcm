@@ -1,0 +1,16 @@
+package stomp;
+
+struct tlm_cmd_hammer_conf
+{
+    float max_throw_angle;
+    float min_retract_angle;
+    float break_exit_velocity;
+    float emergency_break_angle;
+    int32_t valve_change_dt;
+    int32_t max_throw_pressure_dt;
+    int32_t max_throw_expand_dt;
+    int32_t max_retract_pressure_dt;
+    int32_t max_retract_expand_dt;
+    int32_t max_retract_break_dt;
+    int32_t max_retract_settle_dt;
+}

@@ -22,6 +22,7 @@ typedef enum msg_id {
     CONTROL_RADIO,
     TURRET_GNRL,
     TURRET_SNS,
+    TURRET_SWING,
     HIGHEST_ID
 } msg_id;
 
@@ -72,9 +73,18 @@ struct turret_sensors_cosmos {
     float hammer_angle;
     float hammer_velocity;
     float hammer_energy;
+    float available_break_energy;
     float turret_angle;
     float turret_velocity;
     float throw_pressure;
     float retract_pressure;
-    float break_energy;
+} __attribute__((__packed__));
+
+struct turret_hammer_swing_cosmos {
+    uint32_t swing_state_dt;
+    int32_t trigger_value;
+    int32_t trigger_limit;
+    int8_t trigger_reason;
+    int8_t swing_state_from;
+    int8_t swing_state_to;
 } __attribute__((__packed__));

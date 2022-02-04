@@ -67,9 +67,11 @@ static void sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *chan
 
     char sensors_message_buff[k_message_buff_len];
 
-    sprintf(sensors_message_buff, "SENS:HA:%d:%d:TA:%d:%d:TP:%d:RP:%d\n",
+    sprintf(sensors_message_buff, "SENS:HA:%d:HV:%d:HE:%d:BE:%d:TA:%d:TV:%d:TP:%d:RP:%d\n",
         (int32_t)msg->hammer_angle,
         (int32_t)msg->hammer_velocity,
+        (int32_t)msg->hammer_energy,
+        (int32_t)msg->available_break_energy,
         (int32_t)msg->turret_angle,
         (int32_t)msg->turret_velocity,
         (int32_t)msg->throw_pressure,
@@ -128,11 +130,11 @@ static void hammer_trigger_handler(const lcm_recv_buf_t *rbuf, const char *chann
 
     if (msg->trigger_type == STOMP_HAMMER_TRIGGER_THROW_RETRACT)
     {
-        sprintf(throw_message_buff, "THRW:TYPE:THROW:INTENSITY:%d\n", (int32_t)msg->throw_intensity);
+        sprintf(throw_message_buff, "THRW:TYPE:THROW:TINTENSITY:%d:RINTENSITY:%d\n", (int32_t)msg->throw_intensity, (int32_t)msg->retract_intensity);
     }
     else if (msg->trigger_type == STOMP_HAMMER_TRIGGER_RETRACT_ONLY)
     {
-        sprintf(throw_message_buff, "THRW:TYPE:RETRACT:INTENSITY:%d\n", (int32_t)msg->retract_intensity);
+        sprintf(throw_message_buff, "THRW:TYPE:RETRACT:RINTENSITY:%d\n", (int32_t)msg->retract_intensity);
     }
     else
     {

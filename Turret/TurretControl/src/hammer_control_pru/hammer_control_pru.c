@@ -15,6 +15,7 @@
 #include "pru_util.h"
 #include "pru_time.h"
 
+#include "hammer_control_pru/rpmsg_handlers.h"
 #include "hammer_control_pru/hammer_control_pru.h"
 
 // -----------------------------------------------------------------------------
@@ -25,6 +26,7 @@
 // handelling in rpmsg_handlers.c
 
 int32_t g_throw_desired_intensity = 0;
+int32_t g_retract_desired_intensity = 0;
 
 // sensor values (and thier derivatives) filled in from a SENS message from ARM
 // in message handlling in rpmsg_handlers.c
@@ -43,7 +45,6 @@ int32_t g_available_break_energy = 0;
 
 int64_t g_max_throw_angle;
 int64_t g_min_retract_angle;
-int64_t g_retract_fill_pressure;
 int64_t g_brake_exit_velocity;
 int64_t g_emergency_brake_angle;
 int64_t g_valve_change_dt;
@@ -99,6 +100,16 @@ enum state
     retract_complete,
 
     invalid = -1
+};
+
+enum state_change_reason
+{
+    timeout,
+    hammer_angel_greater,
+    hammer_angel_less,
+    hammer_energy_greater,
+    hammer_velocity_less,
+    retract_pressure_greater
 };
 
 // -----------------------------------------------------------------------------
@@ -158,11 +169,12 @@ void hammer_control_trigger_retract()
 
 void hammer_control_update()
 {
-    uint32_t time = pru_time_gettime();
-
     while (1)
     {
         enum state prev_state = s_state;
+
+        uint32_t time = pru_time_gettime();
+        int32_t state_dt = time - s_state_start_time;
 
         switch (s_state)
         {
@@ -177,89 +189,130 @@ void hammer_control_update()
 
             case throw_setup:
                 {
-                    if (time - s_state_start_time > g_valve_change_dt)
+                    if (state_dt > g_valve_change_dt)
                     {
                         hammer_control_set_state(throw_pressurize);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_valve_change_dt, timeout, throw_setup, throw_pressurize);
                     }
                 }
                 break;
 
             case throw_pressurize:
                 {
-                    if (g_hammer_angle >= g_throw_desired_intensity ||
-                        time - s_state_start_time > g_max_throw_pressure_dt)
+                    if (g_hammer_angle >= g_throw_desired_intensity)
                     {
                         hammer_control_set_state(throw_expand);
+                        rpmsg_send_swing_message(state_dt, g_hammer_angle, g_throw_desired_intensity, hammer_angel_greater, throw_pressurize, throw_expand);
+                    }
+                    else if (state_dt > g_max_throw_pressure_dt)
+                    {
+                        hammer_control_set_state(throw_expand);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_max_throw_pressure_dt, timeout, throw_pressurize, throw_expand);
                     }
                 }
                 break;
 
             case throw_expand:
                 {
-                    if (g_hammer_angle >= g_throw_desired_intensity ||
-                        time - s_state_start_time > g_max_throw_expand_dt)
+                    if (g_hammer_angle >= g_max_throw_angle)
                     {
                         hammer_control_set_state(retract_setup);
+                        rpmsg_send_swing_message(state_dt, g_hammer_angle, g_max_throw_angle, hammer_angel_greater, throw_expand, retract_setup);
+                    }
+                    else if (state_dt > g_max_throw_expand_dt)
+                    {
+                        hammer_control_set_state(retract_setup);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_max_throw_expand_dt, timeout, throw_expand, retract_setup);
                     }
                 }
                 break;
 
             case retract_setup:
                 {
-                    if (time - s_state_start_time > g_valve_change_dt)
+                    if (state_dt > g_valve_change_dt)
                     {
                         hammer_control_set_state(retract_pressurize);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_valve_change_dt, timeout, retract_setup, retract_pressurize);
                     }
                 }
                 break;
 
             case retract_pressurize:
                 {
-                    if (g_retract_pressure >= g_retract_fill_pressure ||
-                        g_hammer_angle <= g_emergency_brake_angle ||
-                        time - s_state_start_time > g_max_retract_pressure_dt)
+                    if (g_retract_pressure >= g_retract_desired_intensity)
                     {
                         hammer_control_set_state(retract_expand);
+                        rpmsg_send_swing_message(state_dt, g_retract_pressure, g_retract_desired_intensity, retract_pressure_greater, retract_pressurize, retract_expand);
+                    }
+                    else if (g_hammer_angle <= g_emergency_brake_angle)
+                    {
+                        hammer_control_set_state(retract_expand);
+                        rpmsg_send_swing_message(state_dt, g_hammer_angle, g_emergency_brake_angle, hammer_angel_less, retract_pressurize, retract_expand);
+                    }
+                    else if (state_dt > g_max_retract_pressure_dt)
+                    {
+                        hammer_control_set_state(retract_expand);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_valve_change_dt, timeout, retract_pressurize, retract_expand);
                     }
                 }
                 break;
 
             case retract_expand:
                 {
-                    if (g_hammer_energy >= g_available_break_energy ||
-                        g_hammer_angle <= g_emergency_brake_angle ||
-                        time - s_state_start_time > g_max_retract_expand_dt)
+                    if (g_hammer_energy >= g_available_break_energy)
                     {
                         hammer_control_set_state(retract_brake);
+                        rpmsg_send_swing_message(state_dt, g_hammer_energy, g_available_break_energy, hammer_energy_greater, retract_expand, retract_brake);
+                    }
+                    else if (g_hammer_angle <= g_emergency_brake_angle)
+                    {
+                        hammer_control_set_state(retract_brake);
+                        rpmsg_send_swing_message(state_dt, g_hammer_angle, g_emergency_brake_angle, hammer_angel_less, retract_expand, retract_brake);
+                    }
+                    else if (state_dt > g_max_retract_expand_dt)
+                    {
+                        hammer_control_set_state(retract_brake);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_max_retract_expand_dt, timeout, retract_expand, retract_brake);
                     }
                 }
                 break;
 
             case retract_brake:
                 {
-                    if (g_hammer_velocity <= g_brake_exit_velocity ||
-                        time - s_state_start_time > g_valve_change_dt)
+                    if (g_hammer_velocity <= g_brake_exit_velocity)
                     {
                         hammer_control_set_state(retract_settle);
+                        rpmsg_send_swing_message(state_dt, g_hammer_velocity, g_brake_exit_velocity, hammer_velocity_less, retract_brake, retract_settle);
+                    }
+                    else if (state_dt > g_max_retract_break_dt)
+                    {
+                        hammer_control_set_state(retract_settle);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_max_retract_break_dt, timeout, retract_brake, retract_settle);
                     }
                 }
                 break;
 
             case retract_settle:
                 {
-                    if (g_hammer_angle <= g_min_retract_angle ||
-                        time - s_state_start_time > g_valve_change_dt)
+                    if (g_hammer_angle <= g_min_retract_angle)
                     {
                         hammer_control_set_state(retract_complete);
+                        rpmsg_send_swing_message(state_dt, g_hammer_angle, g_min_retract_angle, timeout, retract_settle, retract_complete);
+                    }
+                    else if (state_dt > g_max_retract_settle_dt)
+                    {
+                        hammer_control_set_state(retract_complete);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_max_retract_settle_dt, timeout, retract_settle, retract_complete);
                     }
                 }
                 break;
 
             case retract_complete:
                 {
-                    if (time - s_state_start_time > g_valve_change_dt)
+                    if (state_dt > g_valve_change_dt)
                     {
                         hammer_control_set_state(idle);
+                        rpmsg_send_swing_message(state_dt, state_dt, g_valve_change_dt, timeout, retract_complete, idle);
                     }
                 }
                 break;

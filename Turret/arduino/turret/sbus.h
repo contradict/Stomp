@@ -6,7 +6,7 @@ enum SBUSChannels {
     HAMMER_CTRL = 2,
     UNUSED_3 = 3,
     AUTO_SELF_RIGHT = 4,
-    INTENSITY = 5,
+    THROW_INTENSITY = 5,
     UNUSED_6 = 6,
     FLAME_RIGHT_CTRL = 7,
     RANGE = 8,

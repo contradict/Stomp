@@ -10,7 +10,6 @@ halfwidth=0.600
 
 max_throw_angle = 170               # deg
 min_retract_angle = 5               # deg
-min_retract_fill_pressure = 448     # kPa
 break_exit_velocity = -872          # mrad/sec
 emergency_break_angle = 60          # deg
 valve_change_dt = 10

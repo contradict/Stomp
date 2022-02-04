@@ -10,6 +10,7 @@
 #ifdef TURRET
 #include "lcm/stomp_turret_telemetry.h"
 #include "lcm/stomp_sensors_control.h"
+#include "lcm/stomp_hammer_swing.h"
 #endif
 
 void sbus_handler(const lcm_recv_buf_t *rbuf, const char *channel,
@@ -27,4 +28,7 @@ void turret_telemetry_handler(const lcm_recv_buf_t *rbuf, const char *channel,
 
 void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *channel,
                        const stomp_sensors_control *msg, void *user);
+
+void turret_hammer_swing_handler(const lcm_recv_buf_t *rbuf, const char *channel,
+                       const stomp_hammer_swing *msg, void *user);
 #endif

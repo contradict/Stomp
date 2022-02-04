@@ -265,7 +265,7 @@ int16_t getSwingFillAngle()
 {
   uint16_t channel_val;
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-      channel_val = sbusChannels[INTENSITY];
+      channel_val = sbusChannels[THROW_INTENSITY];
   }
 
   channel_val = constrain(channel_val, 172, 1811);

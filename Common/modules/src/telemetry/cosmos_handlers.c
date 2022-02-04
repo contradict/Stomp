@@ -10,7 +10,6 @@
 #include "cosmos_handlers.h"
 #include "sclog4c/sclog4c.h"
 
-
 // -----------------------------------------------------------------------------
 // file scope consts
 // -----------------------------------------------------------------------------
@@ -43,12 +42,18 @@ void cosmos_handle()
 
     switch (message_id)
     {
+
+#ifdef HULL
+#endif 
+
+#ifdef TURRET
         case 1:
         {
-            logm(SL4C_DEBUG, "Received Cosmos Hammer Parameters CMD");   
-            hammer_parameters_handler(&s_message_buffer[1]);
+            logm(SL4C_DEBUG, "Received Cosmos Hammer Conf CMD");   
+            hammer_conf_handler(&s_message_buffer[1]);
         }
         break;
+#endif
 
         default:
         break;

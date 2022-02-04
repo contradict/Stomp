@@ -33,9 +33,9 @@ void sbus_handler(const lcm_recv_buf_t *rbuf, const char *channel,
 
     gettimeofday(&now, 0);
     int millis = time_diff_msec(last_send_time, now);
-    logm(SL4C_DEBUG, "%d msec since last %s msg received", millis, channel);
+    logm(SL4C_FINE, "%d msec since last %s msg received", millis, channel);
 
-    if (millis > sbus_period_msec)
+    if (millis < 0 || millis > sbus_period_msec)
     {
         gettimeofday(&last_send_time, 0);
         logm(SL4C_DEBUG, "Sending COSMOS SBUS Contol Radio packet");

@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <errno.h>
 
+#include "main.h"
 #include "messages.h"
 #include "telemetry.h"
 #include "lcm_channels.h"
@@ -17,10 +18,10 @@
 #include "rfd900x.h"
 
 // -----------------------------------------------------------------------------
-// file scope statics
+// global variables
 // -----------------------------------------------------------------------------
 
-static lcm_t *s_lcm;
+lcm_t *g_lcm;
 
 // -----------------------------------------------------------------------------
 // main
@@ -43,27 +44,28 @@ int main(int argc, char **argv)
 
     telem_init();
 
-    s_lcm = lcm_create(NULL);
-    if (!s_lcm)
+    g_lcm = lcm_create(NULL);
+    if (!g_lcm)
     {
         logm(SL4C_FATAL, "Failed to init LCM.");
         return 1;
     }
 
-    stomp_control_radio_subscribe(s_lcm, SBUS_RADIO_COMMAND, &sbus_handler, NULL);
+    stomp_control_radio_subscribe(g_lcm, SBUS_RADIO_COMMAND, &sbus_handler, NULL);
 
 #ifdef HULL
-    stomp_telemetry_leg_subscribe(s_lcm, LEG_TELEMETRY, &leg_handler, NULL);
+    stomp_telemetry_leg_subscribe(g_lcm, LEG_TELEMETRY, &leg_handler, NULL);
 #endif
 
 #ifdef TURRET
-    stomp_turret_telemetry_subscribe(s_lcm, TURRET_TELEMETRY, &turret_telemetry_handler, NULL);
-    stomp_sensors_control_subscribe(s_lcm, SENSORS_CONTROL, &turret_sensors_control_handler, NULL);
+    stomp_turret_telemetry_subscribe(g_lcm, TURRET_TELEMETRY, &turret_telemetry_handler, NULL);
+    stomp_sensors_control_subscribe(g_lcm, SENSORS_CONTROL, &turret_sensors_control_handler, NULL);
+    stomp_hammer_swing_subscribe(g_lcm, HAMMER_SWING, &turret_hammer_swing_handler, NULL); 
 #endif
 
     while (1)
     {
-        int lcm_fd = lcm_get_fileno(s_lcm);
+        int lcm_fd = lcm_get_fileno(g_lcm);
         int cosmons_fd = rfd900x_get_fileno();
 
         fd_set fds;
@@ -77,13 +79,13 @@ int main(int argc, char **argv)
         {
             if (FD_ISSET(lcm_fd, &fds))
             {
-                logm(SL4C_DEBUG, "Received LCM Message, forward to Cosmos");
-                lcm_handle(s_lcm);
+                logm(SL4C_FINE, "Received LCM Message, forward to Cosmos");
+                lcm_handle(g_lcm);
             }
 
             if (FD_ISSET(cosmons_fd, &fds))
             {
-                cosmos_handle(s_lcm);
+                cosmos_handle(g_lcm);
             }
         } 
         else 
@@ -92,6 +94,6 @@ int main(int argc, char **argv)
         }
     }
 
-    lcm_destroy(s_lcm);
+    lcm_destroy(g_lcm);
     return 0;
 }

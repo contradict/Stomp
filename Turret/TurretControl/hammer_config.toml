@@ -3,17 +3,16 @@
 [hammer_config.pru_config]
 max_throw_angle = 170               # deg
 min_retract_angle = 5               # deg
-min_retract_fill_pressure = 448     # kPa
-break_exit_velocity = -872          # mrad/sec
+break_exit_velocity = -10.0           # deg/sec
 emergency_break_angle = 60          # deg
-valve_change_dt = 10
+valve_change_dt = 0.00001           # sec
 
 [hammer_config.pru_config.state_time_limits]
 
-max_throw_pressure_dt = 750000      # us
-max_throw_expand_dt = 250000        # us
-max_retract_pressure_dt = 1000000   # us
-max_retract_expand_dt = 1000000     # us
-max_retract_break_dt = 1000000      # us
-max_retract_settle_dt = 500000      # us
+max_throw_pressure_dt = 0.75        # sec
+max_throw_expand_dt = 0.25          # sec
+max_retract_pressure_dt = 1.0       # sec
+max_retract_expand_dt = 1.0         # sec
+max_retract_break_dt = 1.0          # sec
+max_retract_settle_dt = 0.5         # sec
 

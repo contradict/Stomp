@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
         gettimeofday(&now, 0);
         int dt = time_diff_msec(last_send_time, now);
-        logm(SL4C_INFO, "%d msec since last analog read", dt);
+        logm(SL4C_FINE, "%d msec since last analog read", dt);
         last_send_time = now;
 
         lcm_msg.hammer_angle = get_hammer_angle();

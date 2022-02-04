@@ -16,8 +16,11 @@
 static const float k_hammer_throw_threshold = 0.8f;
 static const float k_hammer_retract_threshold = -0.8f;
 
-static const float k_hammer_intensity_angle_min = 5.0f;
-static const float k_hammer_intensity_angle_max = 50.0f;
+static const float k_hammer_intensity_angle_min = 0.0872665f; // 5 deg in radias;
+static const float k_hammer_intensity_angle_max = 0.872665f;  // 50 deg in radians
+
+static const float k_hammer_intensity_pressure_min = 68947.6f; // 10 PSI in Pascals
+static const float k_hammer_intensity_pressure_max = 1379000.0f; // 200 PSI in Pascals
 
 // -----------------------------------------------------------------------------
 // file scope statics
@@ -67,6 +70,16 @@ float hammer_intensity_to_angle(float intensity)
     return ((1.0f - t) * k_hammer_intensity_angle_min) + (t * k_hammer_intensity_angle_max);
 }
 
+float hammer_intensity_to_pressure(float intensity)
+{
+    // map [-1, 1] to [0. 1]
+    float t = (intensity + 1.0f) / 2.0f;
+
+    // basic lerp from min to max
+    return ((1.0f - t) * k_hammer_intensity_pressure_min) + (t * k_hammer_intensity_pressure_max);
+}
+
+
 static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channel, const stomp_control_radio *msg, void *user)
 {
     (void)rbuf;
@@ -89,7 +102,7 @@ static void control_radio_handler(const lcm_recv_buf_t *rbuf, const char *channe
     //  Grab the intensities from the axis
     
     g_radio_control_parameters.throw_intensity = hammer_intensity_to_angle(msg->axis[TURRET_THROW_INTENSITY]);
-    g_radio_control_parameters.retract_intensity = hammer_intensity_to_angle(msg->axis[TURRET_THROW_INTENSITY]);
+    g_radio_control_parameters.retract_intensity = hammer_intensity_to_pressure(msg->axis[TURRET_RETRACT_INTENSITY]);
 
     g_radio_control_parameters.rotation_intensity = msg->axis[TURRET_ROTATION_INTENSITY];
 

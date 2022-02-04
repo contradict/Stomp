@@ -82,8 +82,6 @@ static enum turret_state s_state;
 static uint32_t s_heartbeat_start_time;
 static uint8_t s_radio_weapon_enabled = 0;
 
-static uint8_t readyFor64BitTest = 0;
-
 // -----------------------------------------------------------------------------
 //  forward decl of internal methods
 // -----------------------------------------------------------------------------
@@ -116,43 +114,9 @@ void main(void)
     }
 }
 
-static char message_buffer[512];
-
 void update()
 {    
     pru_time_update();
-
-    if (readyFor64BitTest)
-    {
-        uint64_t testValue;
-        uint32_t fixedPointValue1 = 4294967295;
-        uint32_t fixedPointValue2 = 4;
-
-        testValue = (uint64_t)fixedPointValue1 * (uint64_t)fixedPointValue2;
-        testValue = testValue / 8;
-        
-        char *debug_message = message_buffer;
-
-        char* number_string;
-        int number_string_len;
-
-        memset(debug_message, 0, 512);
-
-        memcpy(debug_message, "64 Bit Test: ", 13); 
-        debug_message += 13;
-
-        number_string = pru_util_itoa((uint32_t)testValue, 10);
-        number_string_len = strlen(number_string);
-
-        memcpy(debug_message, number_string, number_string_len);
-        debug_message += number_string_len;
-
-        *debug_message = '\n';
-        debug_message++;
-        *debug_message = 0;
-
-        rpmsg_send_log_message(message_buffer);
-    }
 
     // update state
 
@@ -288,12 +252,6 @@ void set_state(enum turret_state new_state)
 
     switch (s_state)
     {
-        case turret_active:
-            {
-                rpmsg_send_swng_message();
-            }
-            break;
-
         default:
             break;
     }
@@ -322,13 +280,11 @@ void set_state(enum turret_state new_state)
 
         case turret_safe:
             {
-                readyFor64BitTest = 1;
             }
             break;
 
         case turret_sync:
             {
-                readyFor64BitTest = 0;
             }
             break;
             

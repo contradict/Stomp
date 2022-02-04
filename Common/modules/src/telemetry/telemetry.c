@@ -23,7 +23,7 @@ void telem_init()
 
 void telem_publish(msg_id id, char* data, size_t size)
 {
-    logm(SL4C_DEBUG, "Sending msg_id %d size %zu", id, size);
+    logm(SL4C_FINE, "Sending msg_id %d size %zu", id, size);
     // Construct a Cosmos terminated style packet. We assume/expect
     // that there is a matching Cosmos definition for every message
     // in messages.h

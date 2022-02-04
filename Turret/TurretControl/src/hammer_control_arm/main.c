@@ -21,6 +21,7 @@
 #include "sclog4c/sclog4c.h"
 #include "lcm_channels.h"
 
+#include "lcm/stomp_hammer_swing.h"
 #include "hammer_control_arm/lcm_handlers.h"
 #include "hammer_control_arm/toml_utils.h"
 #include "hammer_control_arm/hammer_control_arm.h"
@@ -393,10 +394,9 @@ void init_rpmsg()
 
     char config_message_buff[k_message_buff_len];
 
-    sprintf(config_message_buff, "CONF:TA:%d:RA:%d:RFP:%d:BEV:%d:EBA:%d:VCDT:%d:TPDT:%d:TEDT:%d:RPDT:%d:REDT:%d:RBDT:%d:RSDT:%d\n",
+    sprintf(config_message_buff, "CONF:TA:%d:RA:%d:BEV:%d:EBA:%d:VCDT:%d:TPDT:%d:TEDT:%d:RPDT:%d:REDT:%d:RBDT:%d:RSDT:%d\n",
         (int32_t)g_pru_config.max_throw_angle,
         (int32_t)g_pru_config.min_retract_angle,
-        (int32_t)g_pru_config.min_retract_fill_pressure,
         (int32_t)g_pru_config.break_exit_velocity,
         (int32_t)g_pru_config.emergency_break_angle,
         (int32_t)g_pru_config.valve_change_dt,
@@ -433,6 +433,8 @@ void rpmsg_handle(char *message)
 {
     char* current_char = message;
 
+    logm(SL4C_DEBUG, "Received RPMsg: %s", current_char);
+
     // pull out the timestamp
     
     char* timestamp = current_char;
@@ -449,8 +451,7 @@ void rpmsg_handle(char *message)
     *current_char = 0;
     current_char++;
 
-    // pull out the message body
-    
+    // pull out the message body        
     char* body = current_char;
 
     if (strncmp(message_type, k_message_type_logm, k_message_type_strlen) == 0)
@@ -459,6 +460,18 @@ void rpmsg_handle(char *message)
     }
     else if (strncmp(message_type, k_message_type_swng, k_message_type_strlen) == 0)
     {
-        logm(SL4C_INFO, "%s - Swing Complete", timestamp);
+        stomp_hammer_swing lcm_msg;
+
+        sscanf(body, "DT:%d:TV:%d:TL:%d:TR:%hhd:SF:%hhd:ST:%hhd", 
+            &lcm_msg.swing_state_dt,
+            &lcm_msg.trigger_value,
+            &lcm_msg.trigger_limit,
+            &lcm_msg.trigger_reason,
+            &lcm_msg.swing_state_from, 
+            &lcm_msg.swing_state_to);
+
+        logm(SL4C_INFO, "Swing State Change");
+
+        stomp_hammer_swing_publish(g_lcm, HAMMER_SWING, &lcm_msg);
     }
 }

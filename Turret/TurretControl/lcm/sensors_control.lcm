@@ -4,6 +4,8 @@ struct sensors_control
 {
     float hammer_angle;
     float hammer_velocity;
+    float hammer_energy;
+    float available_break_energy;
     float turret_angle;
     float turret_velocity;
     float throw_pressure;

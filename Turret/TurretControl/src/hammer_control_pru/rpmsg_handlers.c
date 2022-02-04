@@ -202,7 +202,7 @@ void rpmsg_update()
     }
 }
 
-void rpmsg_send_swng_message()
+void rpmsg_send_swing_message(int32_t swing_state_dt, int32_t trigger_value, int32_t trigger_limit, int8_t trigger_reason, int8_t swing_state_from, int8_t swing_state_to)
 {
     uint32_t timestamp = pru_time_gettime();
 
@@ -211,19 +211,104 @@ void rpmsg_send_swng_message()
 
     char* message = s_send_message_buffer;
 
+    // timestamp
     char* timestamp_string = pru_util_itoa(timestamp, 10);
     int timestamp_string_len = strlen(timestamp_string);
     memcpy(message, timestamp_string, timestamp_string_len);
-
     message += timestamp_string_len;
     *message = ':';
     message++;
 
-    char* test_string = "SWNG:";
-    int test_string_len = strlen(test_string);
-    memcpy(message, test_string, test_string_len);
+    // message kind
+    char* key_string = "SWNG:";
+    int key_string_len = strlen(key_string);
+    memcpy(message, key_string, key_string_len);
+    message += key_string_len;
 
-    message += test_string_len;
+    // swing state dt
+
+    key_string = "DT:";
+    key_string_len = strlen(key_string);
+    memcpy(message, key_string, key_string_len);
+    message += key_string_len;
+
+    char* value_string = pru_util_itoa(swing_state_dt, 10);
+    int value_string_len = strlen(value_string);
+    memcpy(message, value_string, value_string_len);
+    message += value_string_len;
+    *message = ':';
+    message++;
+
+    // trigger_value
+
+    key_string = "TV:";
+    key_string_len = strlen(key_string);
+    memcpy(message, key_string, key_string_len);
+    message += key_string_len;
+
+    value_string = pru_util_itoa(trigger_value, 10);
+    value_string_len = strlen(value_string);
+    memcpy(message, value_string, value_string_len);
+    message += value_string_len;
+    *message = ':';
+    message++;
+
+    // trigger_limit
+
+    key_string = "TL:";
+    key_string_len = strlen(key_string);
+    memcpy(message, key_string, key_string_len);
+    message += key_string_len;
+
+    value_string = pru_util_itoa(trigger_limit, 10);
+    value_string_len = strlen(value_string);
+    memcpy(message, value_string, value_string_len);
+    message += value_string_len;
+    *message = ':';
+    message++;
+
+    // trigger_reason
+
+    key_string = "TR:";
+    key_string_len = strlen(key_string);
+    memcpy(message, key_string, key_string_len);
+    message += key_string_len;
+
+    value_string = pru_util_itoa(trigger_reason, 10);
+    value_string_len = strlen(value_string);
+    memcpy(message, value_string, value_string_len);
+    message += value_string_len;
+    *message = ':';
+    message++;
+
+    // swing_state_from
+
+    key_string = "SF:";
+    key_string_len = strlen(key_string);
+    memcpy(message, key_string, key_string_len);
+    message += key_string_len;
+
+    value_string = pru_util_itoa(swing_state_from, 10);
+    value_string_len = strlen(value_string);
+    memcpy(message, value_string, value_string_len);
+    message += value_string_len;
+    *message = ':';
+    message++;
+
+    // swing_state_to
+
+    key_string = "ST:";
+    key_string_len = strlen(key_string);
+    memcpy(message, key_string, key_string_len);
+    message += key_string_len;
+
+    value_string = pru_util_itoa(swing_state_to, 10);
+    value_string_len = strlen(value_string);
+    memcpy(message, value_string, value_string_len);
+    message += value_string_len;
+    *message = ':';
+    message++;
+
     *message = '\n';
     message++;
     *message = 0;
@@ -350,7 +435,11 @@ void recv_throw_message(char *throw_message_buffer)
 
     while (token != NULL)
     {
-        if (strcmp(token, "INTENSITY") == 0)
+        if (strcmp(token, "TINTENSITY") == 0)
+        {
+            g_throw_desired_intensity = atoi(strtok(NULL, ":"));
+        }
+        else if (strcmp(token, "TINTENSITY") == 0)
         {
             g_throw_desired_intensity = atoi(strtok(NULL, ":"));
         }
@@ -419,49 +508,45 @@ void recv_conf_message(char *conf_message_buffer)
             g_max_throw_angle = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "RA") == 0)
-	{
+    	{
             g_min_retract_angle = atoi(strtok(NULL, ":"));
-	}
-        else if (strcmp(token, "RFP") == 0)
-	{
-    	    g_retract_fill_pressure = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "BEV") == 0)
-	{
+	    {
             g_brake_exit_velocity = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "EBA") == 0)
-	{
+	    {
             g_emergency_brake_angle = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "VCDT") == 0)
-	{
+	    {
             g_valve_change_dt = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "TPDT") == 0)
-	{
+	    {
             g_max_throw_pressure_dt = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "RPDT") == 0)
-	{
+	    {
             g_max_retract_pressure_dt = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "TEDT") == 0)
         {
             g_max_throw_expand_dt = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "REDT") == 0)
-	{
+	    {
             g_max_retract_expand_dt = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "RBDT") == 0)
-	{
+	    {
             g_max_retract_break_dt = atoi(strtok(NULL, ":"));
-	}
+	    }
         else if (strcmp(token, "RSDT") == 0)
-	{
+	    {
             g_max_retract_settle_dt = atoi(strtok(NULL, ":"));
-	}
+	    }
 
         token = strtok(NULL, ":");
     }
@@ -517,11 +602,25 @@ void recv_sens_message(char *sens_message_buffer)
         if (strcmp(token, "HA") == 0)
         {
             g_hammer_angle = atoi(strtok(NULL, ":"));
+        }
+        else if (strcmp(token, "HV") == 0)
+        {
             g_hammer_velocity = atoi(strtok(NULL, ":"));
+        }
+        else if (strcmp(token, "HE") == 0)
+        {
+            g_hammer_energy = atoi(strtok(NULL, ":"));
+        }
+        else if (strcmp(token, "BE") == 0)
+        {
+            g_available_break_energy = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "TA") == 0)
         {
             g_turret_angle = atoi(strtok(NULL, ":"));
+        }
+        else if (strcmp(token, "TV") == 0)
+        {
             g_turret_velocity = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "TP") == 0)
@@ -536,11 +635,6 @@ void recv_sens_message(char *sens_message_buffer)
         token = strtok(NULL, ":");
     }
     
-    // TODO: Add these variables to the message 
-   
-    g_hammer_energy = 0;
-    g_available_break_energy = 0;
-
     // send a debug message back to ARM so we can debug what is going
     // on here
     

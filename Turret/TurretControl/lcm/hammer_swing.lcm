@@ -1,0 +1,30 @@
+package stomp;
+
+struct hammer_swing 
+{
+    const int8_t init=0,
+        idle=1,
+        throw_setup=2,
+        throw_pressurize=3,
+        throw_expand=4,
+        retract_setup=5,
+        retract_pressurize=6,
+        retract_expand=7,
+        retract_brake=8,
+        retract_settle=9,
+        retract_complete=10;
+
+    const int8_t timeout=0,
+        hammer_angel_greater=1,
+        hammer_angel_less=2,
+        hammer_energy_greater=3,
+        hammer_velocity_less=4,
+        retract_pressure_greater=5;
+
+    int32_t swing_state_dt;
+    int32_t trigger_value;
+    int32_t trigger_limit;
+    int8_t trigger_reason;
+    int8_t swing_state_from;
+    int8_t swing_state_to;
+}
