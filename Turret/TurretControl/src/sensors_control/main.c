@@ -9,16 +9,17 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <lcm/lcm.h>
-
-#include "sclog4c/sclog4c.h"
+#include <toml.h>
 
 #include "utils/utils.h"
+#include "sclog4c/sclog4c.h"
 
 #include "lcm_channels.h"
 #include "lcm/stomp_control_radio.h"
 #include "lcm/stomp_sensors_control.h"
 
 #include "sensors_control/sensors_control.h"
+#include "sensors_control/sensors_control_config.h"
 #include "sensors_control/hammer_angle_sensor.h"
 #include "sensors_control/turret_angle_sensor.h"
 #include "sensors_control/throw_pressure_sensor.h"
@@ -27,6 +28,8 @@
 // -----------------------------------------------------------------------------
 // file scope consts
 // -----------------------------------------------------------------------------
+
+static char *s_config_filename = "../sensors_config.toml";
 
 // -----------------------------------------------------------------------------
 // file scope statics
@@ -44,6 +47,7 @@ static int s_max_fd = -1;
 //  forward decl of internal methods
 // -----------------------------------------------------------------------------
 
+static void init();
 static void init_lcm();
 static void init_sensors();
 
@@ -56,10 +60,13 @@ int main(int argc, char **argv)
     // parse command line
     
     int opt;
-    while((opt = getopt(argc, argv, "d:")) != -1)
+    while((opt = getopt(argc, argv, "c:d:")) != -1)
     {
         switch(opt)
         {
+            case 'c':
+                s_config_filename = strdup(optarg);
+                break;
             case 'd':
                 sclog4c_level = atoi(optarg);
                 logm(SL4C_FATAL, "Log level set to %d.", sclog4c_level);
@@ -67,8 +74,7 @@ int main(int argc, char **argv)
         }
     }
 
-    init_lcm();
-    init_sensors();
+    init();
 
     // Read Sensor Inputs, process, and then publish to LCM
 
@@ -91,6 +97,8 @@ int main(int argc, char **argv)
 
         lcm_msg.hammer_angle = get_hammer_angle();
         lcm_msg.hammer_velocity = get_hammer_velocity();
+        lcm_msg.hammer_energy = get_hammer_energy();
+        lcm_msg.available_break_energy = get_available_break_energy();
         lcm_msg.turret_angle = get_turret_angle();
         lcm_msg.turret_velocity = get_turret_velocity();
         lcm_msg.throw_pressure = get_throw_pressure();
@@ -119,8 +127,11 @@ int main(int argc, char **argv)
                 int32_t hammer_angle_raw = atoi(read_buff);
                 logm(SL4C_FINE, "hammer angle raw = %d", hammer_angle_raw);
 
-                lcm_msg.hammer_angle = calculate_hammer_angle(hammer_angle_raw);
-                lcm_msg.hammer_velocity = calculate_hammer_velocity(lcm_msg.hammer_angle);
+                calculate_hammer_values(hammer_angle_raw);
+                lcm_msg.turret_angle = get_turret_angle();
+                lcm_msg.hammer_velocity = get_hammer_velocity();
+                lcm_msg.hammer_energy = get_hammer_energy();
+                lcm_msg.available_break_energy = get_available_break_energy();
             }
 
             // read and process turret angle
@@ -135,8 +146,9 @@ int main(int argc, char **argv)
                 int32_t turret_angle_raw = atoi(read_buff);
                 logm(SL4C_FINE, "turret angle raw = %d", turret_angle_raw);
 
-                lcm_msg.turret_angle = calculate_turret_angle(turret_angle_raw);
-                lcm_msg.turret_velocity = calculate_turret_velocity(lcm_msg.turret_angle);
+                calculate_turret_values(turret_angle_raw);
+                lcm_msg.turret_angle = get_turret_angle();
+                lcm_msg.turret_velocity = get_turret_velocity();
             }
 
             // read and process throw pressure
@@ -151,7 +163,8 @@ int main(int argc, char **argv)
                 int32_t throw_pressure_raw = atoi(read_buff);
                 logm(SL4C_FINE, "throw pressure raw = %d", throw_pressure_raw);
 
-                lcm_msg.throw_pressure = calculate_throw_pressure(throw_pressure_raw);
+                calculate_throw_values(throw_pressure_raw);
+                lcm_msg.throw_pressure = get_throw_pressure();
             }
 
             // read and process retract pressure
@@ -166,7 +179,8 @@ int main(int argc, char **argv)
                 int32_t retract_pressure_raw = atoi(read_buff);
                 logm(SL4C_FINE, "retract pressure raw = %d", retract_pressure_raw);
 
-                lcm_msg.retract_pressure = calculate_retract_pressure(retract_pressure_raw);
+                calculate_retract_values(retract_pressure_raw);
+                lcm_msg.retract_pressure = get_retract_pressure();
             }
         }
 
@@ -183,6 +197,43 @@ int main(int argc, char **argv)
 
     lcm_destroy(s_lcm);
     return 0;
+}
+
+void init()
+{
+    //
+    // Read TOML config file
+    //
+
+    FILE* fp;
+    char errbuf[200];
+    if (0 == (fp = fopen(s_config_filename, "r")))
+    {
+        snprintf(errbuf, sizeof(errbuf),"Unable to open config file %s:", s_config_filename);
+        perror(errbuf);
+        exit(1);
+    }
+
+    toml_table_t *sensors_config = toml_parse_file(fp, errbuf, sizeof(errbuf));
+
+    if (sensors_config == 0)
+    {
+        logm(SL4C_FATAL, "Unable to parse %s: %s", s_config_filename, errbuf);
+        exit(1);
+    }
+
+    if (parse_toml_config(sensors_config) < 0)
+    {
+        logm(SL4C_FATAL, "Unable to parse %s", s_config_filename);
+        exit(1);
+    }
+
+    //
+    // Init all subsystems
+    //
+
+    init_lcm();
+    init_sensors();
 }
 
 void init_lcm()

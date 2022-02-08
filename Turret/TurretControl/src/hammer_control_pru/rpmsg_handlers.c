@@ -439,9 +439,9 @@ void recv_throw_message(char *throw_message_buffer)
         {
             g_throw_desired_intensity = atoi(strtok(NULL, ":"));
         }
-        else if (strcmp(token, "TINTENSITY") == 0)
+        else if (strcmp(token, "RINTENSITY") == 0)
         {
-            g_throw_desired_intensity = atoi(strtok(NULL, ":"));
+            g_retract_desired_intensity = atoi(strtok(NULL, ":"));
         }
         else if (strcmp(token, "TYPE") == 0)
         {
@@ -460,7 +460,14 @@ void recv_throw_message(char *throw_message_buffer)
         token = strtok(NULL, ":");
     }
 
-    request_hammer_swing();
+    if (type == throw_retract)
+    {
+        request_hammer_throw();
+    }
+    else if (type == throw_retract)
+    {
+        request_hammer_retract();
+    }
 
 #if LOGGING_ENABLED
 

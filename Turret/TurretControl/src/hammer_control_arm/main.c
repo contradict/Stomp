@@ -23,8 +23,8 @@
 
 #include "lcm/stomp_hammer_swing.h"
 #include "hammer_control_arm/lcm_handlers.h"
-#include "hammer_control_arm/toml_utils.h"
 #include "hammer_control_arm/hammer_control_arm.h"
+#include "hammer_control_arm/hammer_control_config.h"
 
 // -----------------------------------------------------------------------------
 // globals
@@ -242,6 +242,8 @@ void shutdown()
 
     sensors_control_handler_shutdown();
     hammer_trigger_handler_shutdown();
+    tlm_cmd_hammer_conf_handler_shutdown();
+
 
     lcm_destroy(g_lcm);
 
@@ -284,6 +286,7 @@ void init_lcm()
 
     sensors_control_handler_init();
     hammer_trigger_handler_init();
+    tlm_cmd_hammer_conf_handler_init();
 }
 
 void init_pru()
@@ -394,18 +397,38 @@ void init_rpmsg()
 
     char config_message_buff[k_message_buff_len];
 
+
+    // Convert all values from ARM representaion in float into format usable on PRU.  Jules and Pascals
+    // can be used as is without worry of loosing fractional parts.  Radians get converted (and used) as 
+    // milliradians.
+    //
+    // see: HammerControllerValues.md for definition of variable units and format
+    //
+
+    int32_t max_throw_angle = (int32_t)(g_pru_config.max_throw_angle * 1000.0f);
+    int32_t min_retract_angle = (int32_t)(g_pru_config.min_retract_angle * 1000.0f);
+    int32_t break_exit_velocity = (int32_t)(g_pru_config.break_exit_velocity * 1000.0f);
+    int32_t emergency_break_angle = (int32_t)(g_pru_config.emergency_break_angle * 1000.0f);
+    int32_t valve_change_dt = (int32_t)g_pru_config.valve_change_dt;
+    int32_t max_throw_pressure_dt = (int32_t)g_pru_config.max_throw_pressure_dt;
+    int32_t max_throw_expand_dt = (int32_t)g_pru_config.max_throw_expand_dt;
+    int32_t max_retract_pressure_dt = (int32_t)g_pru_config.max_retract_pressure_dt;
+    int32_t max_retract_expand_dt = (int32_t)g_pru_config.max_retract_expand_dt;
+    int32_t max_retract_break_dt = (int32_t)g_pru_config.max_retract_break_dt;
+    int32_t max_retract_settle_dt = (int32_t)g_pru_config.max_retract_settle_dt;
+    
     sprintf(config_message_buff, "CONF:TA:%d:RA:%d:BEV:%d:EBA:%d:VCDT:%d:TPDT:%d:TEDT:%d:RPDT:%d:REDT:%d:RBDT:%d:RSDT:%d\n",
-        (int32_t)g_pru_config.max_throw_angle,
-        (int32_t)g_pru_config.min_retract_angle,
-        (int32_t)g_pru_config.break_exit_velocity,
-        (int32_t)g_pru_config.emergency_break_angle,
-        (int32_t)g_pru_config.valve_change_dt,
-        (int32_t)g_pru_config.max_throw_pressure_dt,
-        (int32_t)g_pru_config.max_throw_expand_dt,
-        (int32_t)g_pru_config.max_retract_pressure_dt,
-        (int32_t)g_pru_config.max_retract_expand_dt,
-        (int32_t)g_pru_config.max_retract_break_dt,
-        (int32_t)g_pru_config.max_retract_settle_dt
+        max_throw_angle,
+        min_retract_angle,
+        break_exit_velocity,
+        emergency_break_angle,
+        valve_change_dt,
+        max_throw_pressure_dt,
+        max_throw_expand_dt,
+        max_retract_pressure_dt,
+        max_retract_expand_dt,
+        max_retract_break_dt,
+        max_retract_settle_dt
     );
 
     logm(SL4C_DEBUG, "SEND RPMSG: %s", config_message_buff);
@@ -461,14 +484,73 @@ void rpmsg_handle(char *message)
     else if (strncmp(message_type, k_message_type_swng, k_message_type_strlen) == 0)
     {
         stomp_hammer_swing lcm_msg;
+        int32_t trigger_value;
+        int32_t trigger_limit;
 
         sscanf(body, "DT:%d:TV:%d:TL:%d:TR:%hhd:SF:%hhd:ST:%hhd", 
             &lcm_msg.swing_state_dt,
-            &lcm_msg.trigger_value,
-            &lcm_msg.trigger_limit,
+            &trigger_value,
+            &trigger_limit,
             &lcm_msg.trigger_reason,
             &lcm_msg.swing_state_from, 
             &lcm_msg.swing_state_to);
+
+        //
+        // Based on the trigger reason, convert values from PRU format to more human
+        // readable format.  Need to do this conversion here, because this would be 
+        // more difficult to do conditional units conversion in Cosmos
+        //
+
+        switch (lcm_msg.trigger_reason)
+        {
+            case timeout:
+            {
+                //  convert from microseconds to seconds
+
+                lcm_msg.trigger_value = (float)trigger_value / 1000000.0f;
+                lcm_msg.trigger_limit = (float)trigger_limit / 1000000.0f;
+            }
+            break;
+
+            case hammer_angel_greater:
+            case hammer_angel_less:
+            {
+                //  convert from milliradians to degrees
+
+                lcm_msg.trigger_value = (float)trigger_value * 0.0572958f;
+                lcm_msg.trigger_limit = (float)trigger_limit * 0.0572958f;
+            }
+            break;
+
+            case hammer_velocity_less:
+            {
+                //  convert from milliradians/sec to degrees/sec
+
+                lcm_msg.trigger_value = (float)trigger_value * 0.0572958f;
+                lcm_msg.trigger_limit = (float)trigger_limit * 0.0572958f;
+            }
+            break;
+
+            case retract_pressure_greater:          
+            {
+                // convert from Pascals to PSI
+
+                lcm_msg.trigger_value = (float)trigger_value * 0.000145038f;
+                lcm_msg.trigger_limit = (float)trigger_limit * 0.000145038f;
+            }
+            break;
+
+            case hammer_energy_greater:
+            default:
+            {
+                // No conversion necessary for Joules
+
+                lcm_msg.trigger_value = (float)trigger_value;
+                lcm_msg.trigger_limit = (float)trigger_limit;
+            }
+            break;
+        }
+
 
         logm(SL4C_INFO, "Swing State Change");
 

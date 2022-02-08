@@ -8,4 +8,5 @@
 // public methods
 // -----------------------------------------------------------------------------
 
-void request_hammer_swing();
+void request_hammer_throw();
+void request_hammer_retract();

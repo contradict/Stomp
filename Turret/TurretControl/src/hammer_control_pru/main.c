@@ -224,7 +224,7 @@ void update_heartbeat()
     }
 }
 
-void request_hammer_swing()
+void request_hammer_throw()
 {   
     //  If we are in armed state, that means we are ready and able to throw.
     //  tell the hammer swing state machine to throw, by setting our
@@ -232,8 +232,19 @@ void request_hammer_swing()
 
     if (s_state == turret_armed)
     {
-        // TODO: Handle both types of swing
         set_state(turret_active);
+    }
+}
+
+void request_hammer_retract()
+{   
+    //  If we are in armed or active state, that means we are ready and able to retract.
+    //  tell the hammer swing state machine to throw, by setting our
+    //  state to active
+
+    if (s_state == turret_armed || s_state == turret_active)
+    {
+        // TODO: Handle RETRACT only
     }
 }
 

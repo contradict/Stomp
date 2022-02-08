@@ -68,6 +68,7 @@ LDFLAGS=-lm $(LCM_LDFLAGS) $(SCLOG4C_STATICLIB)
 
 $(BIN_DIR)/turret_control: CFLAGS+= $(TOMLC99_CFLAGS)
 $(BIN_DIR)/hammer_control_arm: CFLAGS+= $(TOMLC99_CFLAGS)
+$(BIN_DIR)/sensors_control: CFLAGS+= $(TOMLC99_CFLAGS)
 
 $(BIN_DIR)/fake_sbus_radio: CFLAGS+=$(NCURSES_CFLAGS)
 $(BIN_DIR)/fake_sbus_radio: LDFLAGS+=$(NCURSES_LDFLAGS)
@@ -109,7 +110,7 @@ $(BIN_DIR)/turret_control: $(turret_control_objs) $(MESSAGELIB) $(SCLOG4C_STATIC
 turret_control_cap: $(BIN_DIR)/turret_control
 	sudo setcap "cap_sys_nice=ep" $(BIN_DIR)/turret_control
 
-$(BIN_DIR)/sensors_control: $(sensors_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB)
+$(BIN_DIR)/sensors_control: $(sensors_control_objs) $(MESSAGELIB) $(SCLOG4C_STATICLIB) $(TOMLC99_STATICLIB)
 	gcc $^ -o $@ $(LDFLAGS)
 
 sensors_control_cap: $(BIN_DIR)/sensors_control

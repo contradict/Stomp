@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <lcm/lcm.h>
 
+#include "hammer_control/hammer_control.h"
+
 //  config values that we need to send down to the pru
 
 struct pru_config

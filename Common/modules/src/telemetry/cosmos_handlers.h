@@ -20,7 +20,6 @@ extern const char* TLM_CMD_HAMMER_CONF;
 typedef struct _cosmos_hammer_conf_msg cosmos_hammer_conf_msg;
 struct _cosmos_hammer_conf_msg
 {
-    int8_t msg_id;
     int32_t max_throw_angle;
     int32_t min_retract_angle;
     float break_exit_velocity;

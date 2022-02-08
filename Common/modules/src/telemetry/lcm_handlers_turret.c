@@ -82,7 +82,7 @@ void turret_sensors_control_handler(const lcm_recv_buf_t *rbuf, const char *chan
 void turret_hammer_swing_handler(const lcm_recv_buf_t *rbuf, const char *channel,
                        const stomp_hammer_swing *msg, void *user)
 {
-    logm(SL4C_DEBUG, "Sending COSMOS Turret Hammer Swing packet\n\tdt:%d, tv:%d, tl:%d, tr:%d, sf:%d, st:%d", 
+    logm(SL4C_DEBUG, "Sending COSMOS Turret Hammer Swing packet\n\tdt:%d, tv:%f, tl:%f, tr:%d, sf:%d, st:%d", 
         msg->swing_state_dt,
         msg->trigger_value,
         msg->trigger_limit,

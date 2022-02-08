@@ -1,0 +1,36 @@
+[sensors_config]
+cape_analog_opamp_scale = 0.348
+sensor_scale_device = "/sys/bus/iio/devices/iio:device0/in_voltage_scale"
+
+[sensors_config.hammer_angle_sensor]
+hammer_angle_sensor_present = true
+hammer_angle_sensor_device = "/sys/bus/iio/devices/iio:device0/in_voltage0_raw"
+hammer_angle_min_degrees = 0
+hammer_angle_min_sensor_volts = 0.0
+hammer_angle_max_degrees = 270
+hammer_angle_max_sensor_volts = 4.88
+
+[sensors_config.turret_angle_sensor]
+turret_angle_sensor_present = false
+turret_angle_sensor_device = ""
+turret_angle_min_degrees = 0 
+turret_angle_min_sensor_volts = 0.0
+turret_angle_max_degrees = 270
+turret_angle_max_sensor_volts = 5.0
+
+[sensors_config.throw_pressure_sensor]
+throw_pressure_sensor_present = true
+throw_pressure_sensor_device = "/sys/bus/iio/devices/iio:device0/in_voltage3_raw"
+throw_pressure_min_psi = 0 
+throw_pressure_min_sensor_volts = 0.0 # will be 0.5 for real pressure sensor
+throw_pressure_max_psi = 500
+throw_pressure_max_sensor_volts = 4.88 # will be 4.5 for real pressure sensor
+
+[sensors_config.retract_pressure_sensor]
+retract_pressure_sensor_present = true
+retract_pressure_sensor_device = "/sys/bus/iio/devices/iio:device0/in_voltage2_raw"
+retract_pressure_min_psi = 0 
+retract_pressure_min_sensor_volts = 0.0 # will be 0.5 for real pressure sensor
+retract_pressure_max_psi = 500
+retract_pressure_max_sensor_volts = 4.88 # will be 4.5 for real pressure sensor
+

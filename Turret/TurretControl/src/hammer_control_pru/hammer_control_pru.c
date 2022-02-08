@@ -102,16 +102,6 @@ enum state
     invalid = -1
 };
 
-enum state_change_reason
-{
-    timeout,
-    hammer_angel_greater,
-    hammer_angel_less,
-    hammer_energy_greater,
-    hammer_velocity_less,
-    retract_pressure_greater
-};
-
 // -----------------------------------------------------------------------------
 // file scope statics
 // -----------------------------------------------------------------------------
@@ -279,7 +269,7 @@ void hammer_control_update()
 
             case retract_brake:
                 {
-                    if (g_hammer_velocity <= g_brake_exit_velocity)
+                    if (abs(g_hammer_velocity) <= abs(g_brake_exit_velocity))
                     {
                         hammer_control_set_state(retract_settle);
                         rpmsg_send_swing_message(state_dt, g_hammer_velocity, g_brake_exit_velocity, hammer_velocity_less, retract_brake, retract_settle);

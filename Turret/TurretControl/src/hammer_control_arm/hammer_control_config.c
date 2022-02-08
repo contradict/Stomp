@@ -5,7 +5,7 @@
 #include "sclog4c/sclog4c.h"
 
 #include "hammer_control_arm/hammer_control_arm.h"
-#include "hammer_control_arm/toml_utils.h"
+#include "hammer_control_arm/hammer_control_config.h"
 
 int parse_toml_pru_config(toml_table_t *toml_pru_config)
 {

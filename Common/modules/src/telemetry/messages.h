@@ -82,8 +82,8 @@ struct turret_sensors_cosmos {
 
 struct turret_hammer_swing_cosmos {
     uint32_t swing_state_dt;
-    int32_t trigger_value;
-    int32_t trigger_limit;
+    float trigger_value;
+    float trigger_limit;
     int8_t trigger_reason;
     int8_t swing_state_from;
     int8_t swing_state_to;
