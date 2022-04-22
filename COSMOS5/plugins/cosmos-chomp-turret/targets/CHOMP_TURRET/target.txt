@@ -1,5 +1,0 @@
-# Ignored Parameters
-IGNORE_PARAMETER PKTID
-
-# Ignored Items
-IGNORE_ITEM PKTID

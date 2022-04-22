@@ -1,9 +1,0 @@
-# Set VARIABLEs here to allow variation in your plugin
-# See https://cosmosc2.com/docs/v5/plugins for more information
-VARIABLE chomp_turret_target_name CHOMP_TURRET
-
-# Modify this according to your actual target connection
-# See https://cosmosc2.com/docs/v5/interfaces for more information
-TARGET CHOMP_TURRET <%= chomp_turret_target_name %>
-INTERFACE <%= chomp_turret_target_name %>_INT serial_interface.rb /dev/ttyFTDI2 /dev/ttyFTDI2 57600 NONE 1 1.0 nil TERMINATED 0x6666 0x6666 true 0 nil false false
-  MAP_TARGET <%= chomp_turret_target_name %>
