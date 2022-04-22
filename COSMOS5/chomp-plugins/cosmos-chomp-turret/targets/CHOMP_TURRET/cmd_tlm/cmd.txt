@@ -1,0 +1,29 @@
+#
+#  HAMMER - Control Radio (Packet ID 1)
+#
+
+COMMAND CHOMP_TURRET SET_HAMMER_PARAMS LITTLE_ENDIAN "Set the hammer parameters"
+# Keyword           Name        BitSize Type   Min         Max     Default  Description
+APPEND_ID_PARAMETER ID           8      INT    1           1       1        "Identifier"
+APPEND_PARAMETER    TA_MAX      32      INT    5           270     170      "Maximum angle to throw hammer"
+    UNITS "Degrees" "deg"
+APPEND_PARAMETER    RA_MIN      32      INT    0           270     5        "Minimum angle to consider hammer retracted"
+    UNITS "Degrees" "deg"
+APPEND_PARAMETER    EV_BRK      32      FLOAT  -1000       1000    -10.0    "Break Exit Velocity"
+    UNITS "Degrees Per Second" "deg/sec"
+APPEND_PARAMETER    EA_BRK      32      INT    0           270     60       "Emergency Break Angle"
+    UNITS "Degrees" "deg"
+APPEND_PARAMETER    VSDT        32      FLOAT  0.000001    1.0     0.00001   "Valve Change dt"
+    UNITS "Second" "s"
+APPEND_PARAMETER    TPDT_MAX    32      FLOAT  0.001       15.00   0.75      "Max Throw Pressure dt"
+    UNITS "Second" "s"
+APPEND_PARAMETER    TEDT_MAX    32      FLOAT  0.001       15.00   1.50      "Max Throw Expand dt"
+    UNITS "Second" "s"
+APPEND_PARAMETER    RPDT_MAX    32      FLOAT  0.001       15.00   1.00      "Max Retract Pressure dt"
+    UNITS "Second" "s"
+APPEND_PARAMETER    REDT_MAX    32      FLOAT  0.001       15.00   1.00      "Max Retract Expand dt"
+    UNITS "Second" "s"
+APPEND_PARAMETER    RBDT_MAX    32      FLOAT  0.001       15.00   1.00      "Max Retract Break State dt"
+    UNITS "Second" "s"
+APPEND_PARAMETER    RSDT_MAX    32      FLOAT  0.001       15.00   0.50      "Max Retract Settle State dt"
+    UNITS "Second" "s"

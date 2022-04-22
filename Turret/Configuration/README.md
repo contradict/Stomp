@@ -109,7 +109,8 @@ are the important part, be sure not to overwrite any kernel version parameters
 earlier in the file.
 
     90-mikrobus-cape.rules -> /etc/udev/rules.d/
-
+    99-usb-serial.rules -> /etc/udev/rules.d/
+    
 ## Reboot
 
 Again. To use the new dtb overlays.

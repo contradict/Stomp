@@ -1,0 +1,10 @@
+Dockerfile
+.git
+.gitignore
+.vscode/
+coverage/
+spec/
+test/
+log/*
+tmp/*
+Gemfile.lock

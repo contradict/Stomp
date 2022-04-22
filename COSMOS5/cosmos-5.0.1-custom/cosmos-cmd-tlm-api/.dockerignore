@@ -1,0 +1,11 @@
+Dockerfile
+.git
+.gitignore
+.vscode/
+coverage/
+spec/
+test/
+# Keep the directories but no contents
+log/*
+tmp/*
+Gemfile.lock
