@@ -69,11 +69,15 @@ services:
   cosmos-operator:
     image: "ballaerospace/cosmosc2-operator:${COSMOS_TAG}"
     restart: "unless-stopped"
+    volumes:
+      - /dev:/dev
+    privileged: true
     depends_on:
       - "cosmos-redis"
       - "cosmos-minio"
     env_file:
       - ".env"
+
 
   cosmos-traefik:
     image: "ballaerospace/cosmosc2-traefik:${COSMOS_TAG}"

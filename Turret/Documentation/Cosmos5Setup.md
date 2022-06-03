@@ -99,6 +99,10 @@ $ ~/COSMOS-5.0.1/cosmos-control.sh cosmos rake build VERSION=1.0.0
   * Second is set ```rw``` access on the /dev/ttyFTDI device so that docker can mount it (also in the udev rules file)
   * Finally, needed to modify Cosmos ```compose.yml``` file so that docker would mount /dev from host machine to the docker container AND run in privlaged mode
 
+    volumes:
+      - /dev:/dev
+    privileged: true
+
 ## Perminatly Remove Demo Plugin
 
 ``` script

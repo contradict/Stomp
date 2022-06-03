@@ -34,42 +34,42 @@ TELEMETRY CHOMP_TURRET TGPKT LITTLE_ENDIAN "Turret General"
         STATE ROTATION_OVERRIDE   4
 
 #
-#  SNPKT - Turret Sensors (Packet ID 6)
+#  SENSE - Turret Sensors (Packet ID 6)
 #
 
-TELEMETRY CHOMP_TURRET SNPKT LITTLE_ENDIAN "Turret Sensors"
+TELEMETRY CHOMP_TURRET SENSE LITTLE_ENDIAN "Turret Sensors"
     APPEND_ID_ITEM    ID     8    INT    6  "Identifier"
-    APPEND_ITEM       SNHA  32    FLOAT     "Sensor Hammer Angle"
+    APPEND_ITEM       SENSE_HA  32    FLOAT     "Sensor Hammer Angle"
         UNITS "Degrees" "deg"
         POLY_READ_CONVERSION 0.0 57.296
         FORMAT_STRING "%.6f"
-    APPEND_ITEM       SNHV  32    FLOAT     "Sensor Hammer Velocity"
+    APPEND_ITEM       SENSE_HV  32    FLOAT     "Sensor Hammer Velocity"
         UNITS "Degrees Per Sec" "deg/s"
         POLY_READ_CONVERSION 0.0 57.296
         FORMAT_STRING "%.6f"
-    APPEND_ITEM       SNHE  32    FLOAT     "Sensor Hammer Energy"
+    APPEND_ITEM       SENSE_HE  32    FLOAT     "Sensor Hammer Energy"
         UNITS "Joule" "J"
-    APPEND_ITEM       SNBE  32    FLOAT     "Available Break Energy"
+    APPEND_ITEM       SENSE_BE  32    FLOAT     "Available Break Energy"
         UNITS "Joule" "J"
-    APPEND_ITEM       SNTA  32    FLOAT     "Sensor Turret Angle"
+    APPEND_ITEM       SENSE_TA  32    FLOAT     "Sensor Turret Angle"
         UNITS "Degrees" "deg"
         POLY_READ_CONVERSION 0.0 57.296
         FORMAT_STRING "%.6f"
-    APPEND_ITEM       SNTV  32    FLOAT     "Sensor Turret Velocity"
+    APPEND_ITEM       SENSE_TV  32    FLOAT     "Sensor Turret Velocity"
         UNITS "Degrees Per Sec" "deg/s"
         POLY_READ_CONVERSION 0.0 57.296
         FORMAT_STRING "%.6f"
-    APPEND_ITEM       SNTP  32    FLOAT     "Sensor Throw Pressure"
+    APPEND_ITEM       SENSE_TP  32    FLOAT     "Sensor Throw Pressure"
         UNITS "Pounds per Square Inch" "PSI"
         POLY_READ_CONVERSION 0.0 0.000145038
         FORMAT_STRING "%.6f"
-    APPEND_ITEM       SNRP  32    FLOAT     "Sensor Retract Pressure"
+    APPEND_ITEM       SENSE_RP  32    FLOAT     "Sensor Retract Pressure"
         UNITS "Pounds per Square Inch" "PSI"
         POLY_READ_CONVERSION 0.0 0.000145038
         FORMAT_STRING "%.6f"
 
 #
-#  SWING - Turret Sensors (Packet ID 8)
+#  SWING - Turret Swing (Packet ID 8)
 #
 
 TELEMETRY CHOMP_TURRET SWING LITTLE_ENDIAN "Turret Swing"
@@ -78,7 +78,7 @@ TELEMETRY CHOMP_TURRET SWING LITTLE_ENDIAN "Turret Swing"
     APPEND_ITEM       SWING_TV  32    FLOAT   	"trigger_value"
     APPEND_ITEM       SWING_LM  32    FLOAT   	"trigger_limit"
     APPEND_ITEM       SWING_TR   8    INT    	"trigger_reason"
-	STATE timeout 			0
+	    STATE timeout 			0
         STATE hammer_angel_greater 	1
         STATE hammer_angel_less 	2
         STATE hammer_energy_greater 	3

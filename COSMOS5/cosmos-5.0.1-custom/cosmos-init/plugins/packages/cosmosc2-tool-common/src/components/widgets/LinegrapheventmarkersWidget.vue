@@ -15,6 +15,7 @@
 # This program may also be used under the terms of a commercial or
 # enterprise edition license of COSMOS if purchased from the
 # copyright holder
+#
 -->
 
 <template>
@@ -49,22 +50,7 @@ export default {
     return {
       id: Math.floor(Math.random() * 100000000000), // Unique-ish
       state: 'start',
-      items: [
-        {
-          targetName: this.parameters[0],
-          packetName: this.parameters[1],
-          itemName: this.parameters[2],
-          plotType: 'LINEAR',
-          valueType,
-        },
-        {
-          targetName: this.parameters[3],
-          packetName: this.parameters[4],
-          itemName: this.parameters[5],
-          plotType: 'EVENT_MARKER',
-          valueType,
-        },
-      ],
+      items: [],
       secondsGraphed: 1000,
       pointsSaved: 1000000,
       pointsGraphed: 1000,
@@ -83,8 +69,10 @@ export default {
             packetName: setting[2],
             itemName: setting[3],
             plotType: setting[4],
+            scaleName: setting[5],
             valueType,
           })
+          break
         case 'SECONDSGRAPHED':
           this.secondsGraphed = parseInt(setting[1])
           break

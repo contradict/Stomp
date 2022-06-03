@@ -884,6 +884,8 @@ export default function uPlot(opts, data, then) {
 			s.label = s.label || (isTime ? timeSeriesLabel : numSeriesLabel);
 		}
 
+		console.log("uPlot initSeries");
+
 		if (i > 0) {
 			s.width  = s.width == null ? 1 : s.width;
 			s.paths  = s.paths || linearPath || retNull;

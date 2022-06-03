@@ -839,23 +839,31 @@ LINEGRAPH:
       required: true
       description: The item name
       values: .+
-    # TODO: This is how the old one worked ... current doesn't match
-    # - name: Num Samples
-    #   required: false
-    #   description: Number of samples to display on the graph (default = 100)
-    #   values: .*
-    # - name: Width
-    #   required: false
-    #   description: Width of the graph (default = 300)
-    #   values: .*
-    # - name: Height
-    #   required: false
-    #   description: Height of the graph (default = 200)
-    #   values: .*
-    # - name: Value type
-    #   required: false
-    #   description: The type of the value to display. Default is CONVERTED.
-    #   values: <%= %w(RAW CONVERTED FORMATTED WITH_UNITS) %>
+LINEGRAPHEVENTMARKERS:
+  summary: Displays a line graph of telemetry items value
+    verses sample number with additional event marker stream and
+    possibly multiple y scales
+  parameters:
+    - name: Target name
+      required: true
+      description: The target name
+      values: .+
+    - name: Packet name
+      required: true
+      description: The packet name
+      values: .+
+    - name: Item name
+      required: true
+      description: The item name
+      values: .+
+    - name: Plot Type
+      required: false
+      description: The type of plot
+      values: <%= %w(LINEAR EVENT_MARKER) %>
+    - name: Scale Name
+      required: false
+      description: Name of Y scale (can be unique per item)
+      values: .+
 PROGRESSBAR:
   summary: Displays a progress bar that is useful for displaying percentages
   parmeters:

@@ -1,5 +1,14 @@
+// New custom path type for uPlot
+
 function eventMarkers(opts) {
+
+    // eslint-disable-next-line no-console
+    console.log("EventMarkers::Debug 1");
+
 	opts = opts || {};
+
+	// eslint-disable-next-line no-console
+    console.log("EventMarkers::Debug 2");
 
 	let labels = [];
 	let textFill = "black";
@@ -8,6 +17,9 @@ function eventMarkers(opts) {
 
 	let showLabels = opts.showLabels == null ? true: opts.showLabels;
 	let labelsAlign = opts.labelsAlign == null ? "top" : opts.labelsAlign;
+
+	// eslint-disable-next-line no-console
+	console.log("EventMarkers::Debug 3");
 
 	function drawPathLabels(u, seriesIdx) {
 		let rectPadding = 7;
@@ -58,7 +70,10 @@ function eventMarkers(opts) {
 			u.ctx.fillText(label.text, textCenterX, textCenterY);
 		});
 	}
-	
+
+	// eslint-disable-next-line no-console
+	console.log("EventMarkers::Debug 4");
+
 	return (u, seriesIdx, idx0, idx1) => {
 		return uPlot.orient(u, seriesIdx, (series, dataX, dataY, scaleX, scaleY, valToPosX, valToPosY, xOff, yOff, xDim, yDim) => {
 			

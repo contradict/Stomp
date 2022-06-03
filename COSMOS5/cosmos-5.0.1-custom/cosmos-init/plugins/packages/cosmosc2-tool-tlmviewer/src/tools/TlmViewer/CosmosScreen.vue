@@ -489,10 +489,12 @@ export default {
         keyword = parameters[1].toUpperCase()
         parameters = parameters.slice(2, parameters.length)
       }
+      
       const componentName =
         keyword.charAt(0).toUpperCase() +
         keyword.slice(1).toLowerCase() +
         'Widget'
+  
       let settings = []
       if (widgetName !== null) {
         // Push a reference to the screen so the layout can register when it is created
