@@ -61,6 +61,13 @@ export default {
     }
   },
   created: function () {
+    // Look through the settings and see if we're a NAMED_WIDGET
+    this.settings.forEach((setting) => {
+      if (setting[0] === 'NAMED_WIDGET') {
+        setting[2].setNamedWidget(setting[1], this)
+      }
+    })
+
     this.settings.forEach((setting) => {
       switch (setting[0]) {
         case 'ITEM':
@@ -88,6 +95,16 @@ export default {
           break
       }
     })
+  },
+  methods: {
+    getState: function() {
+      let graphRef = "graph" + this.id;
+      return this.$refs[graphRef].state;
+    },
+    setState: function(new_state) {
+      let graphRef = "graph" + this.id;
+      this.$refs[graphRef].state = new_state;
+    },
   },
 }
 </script>

@@ -858,9 +858,9 @@ LINEGRAPHEVENTMARKERS:
       values: .+
     - name: Plot Type
       required: false
-      description: The type of plot
+      description: The type of plot (Default is LINEAR)
       values: <%= %w(LINEAR EVENT_MARKER) %>
-    - name: Scale Name
+    - name: Scale Name (Default is y)
       required: false
       description: Name of Y scale (can be unique per item)
       values: .+
