@@ -1,0 +1,118 @@
+# encoding: ascii-8bit
+
+# Copyright 2022 Ball Aerospace & Technologies Corp.
+# All Rights Reserved.
+#
+# This program is free software; you can modify and/or redistribute it
+# under the terms of the GNU Affero General Public License
+# as published by the Free Software Foundation; version 3 with
+# attribution addendums as found in the LICENSE.txt
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# This program may also be used under the terms of a commercial or
+# enterprise edition license of COSMOS if purchased from the
+# copyright holder
+
+version: "3.5"
+
+services:
+  cosmos-ruby:
+    build:
+      context: "cosmos-ruby"
+      network: host
+      args:
+        ALPINE_VERSION: ${ALPINE_VERSION}
+        ALPINE_BUILD: ${ALPINE_BUILD}
+        APK_URL: ${APK_URL}
+        RUBYGEMS_URL: ${RUBYGEMS_URL}
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+    image: "${COSMOS_REGISTRY}/ballaerospace/cosmosc2-ruby:${COSMOS_TAG}"
+
+  cosmos-node:
+    build:
+      context: "cosmos-node"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+        COSMOS_TAG: ${COSMOS_TAG}
+    image: "${COSMOS_REGISTRY}/ballaerospace/cosmosc2-node:${COSMOS_TAG}"
+    depends_on:
+      - "cosmos-ruby"
+
+  cosmos-base:
+    build:
+      context: "cosmos"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+        COSMOS_TAG: ${COSMOS_TAG}
+    image: "${COSMOS_REGISTRY}/ballaerospace/cosmosc2-base:${COSMOS_TAG}"
+    depends_on:
+      - "cosmos-ruby"
+
+  cosmos-minio-init:
+    build:
+      context: "cosmos-minio-init"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+
+  cosmos-redis:
+    build:
+      context: "cosmos-redis"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+
+  cosmos-cmd-tlm-api:
+    build:
+      context: "cosmos-cmd-tlm-api"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+        COSMOS_TAG: ${COSMOS_TAG}
+    depends_on:
+      - "cosmos-base"
+
+  cosmos-script-runner-api:
+    build:
+      context: "cosmos-script-runner-api"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+        COSMOS_TAG: ${COSMOS_TAG}
+    depends_on:
+      - "cosmos-base"
+
+  cosmos-operator:
+    build:
+      context: "cosmos-operator"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+        COSMOS_TAG: ${COSMOS_TAG}
+    depends_on:
+      - "cosmos-base"
+
+  cosmos-traefik:
+    build:
+      context: "cosmos-traefik"
+      network: host
+      args:
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+
+  cosmos-init:
+    build:
+      context: "cosmos-init"
+      network: host
+      args:
+        NPM_URL: ${NPM_URL}
+        COSMOS_REGISTRY: ${COSMOS_REGISTRY}
+        COSMOS_TAG: ${COSMOS_TAG}
+    depends_on:
+      - "cosmos-node"
+      - "cosmos-base"

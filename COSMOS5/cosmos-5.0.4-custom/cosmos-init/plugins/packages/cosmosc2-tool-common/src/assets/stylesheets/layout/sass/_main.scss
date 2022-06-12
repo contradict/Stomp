@@ -1,0 +1,33 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  font-family: 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: $fontSize;
+  color: $textColor;
+  /* background-color: $bodyBgColor; */
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+}
+
+.layout-wrapper {
+  padding: 0;
+}
+
+// Don't let the min-height be 100vh because it forces a scroll
+// with our header and footer
+.v-application--wrap {
+  min-height: 0 !important;
+}

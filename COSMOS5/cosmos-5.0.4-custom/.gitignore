@@ -1,0 +1,49 @@
+*.o
+*.def
+*.so
+*.bundle
+*.gem
+Makefile
+*Gemfile.lock
+.yardoc
+.DS_Store
+desktop.ini
+cacert.pem
+.idea
+.rubocop-http*
+.nyc_output
+cosmos/*_exception.txt
+cosmos/*_unexpected.txt
+cosmos/cosmos/
+cosmos/spec/install/outputs
+cosmos/spec/examples.txt
+coverage/
+profile/
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore bundler config.
+/.bundle
+
+# Ignore the default SQLite database.
+/db/*.sqlite3
+/db/*.sqlite3-journal
+
+# Ignore all logfiles and tempfiles.
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore Byebug command history file.
+.byebug_history
+
+# Ignore node modules
+node_modules
