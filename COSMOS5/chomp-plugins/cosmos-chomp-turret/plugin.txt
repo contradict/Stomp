@@ -7,3 +7,5 @@ VARIABLE chomp_turret_target_name CHOMP_TURRET
 TARGET CHOMP_TURRET <%= chomp_turret_target_name %>
 INTERFACE <%= chomp_turret_target_name %>_INT serial_interface.rb /dev/ttyFTDI2 /dev/ttyFTDI2 57600 NONE 1 1.0 nil TERMINATED 0x6666 0x6666 true 0 nil false false
   MAP_TARGET <%= chomp_turret_target_name %>
+
+WIDGET TESTLINEGRAPH
