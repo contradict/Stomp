@@ -1,12 +1,8 @@
 SCREEN AUTO AUTO 1.0
 
-TITLE "Turret Test"
+TITLE "Test Turret Hammer Screen"
 
-NAMED_WIDGET GRAPH_1 TESTLINEGRAPH
+NAMED_WIDGET GRAPH_1 LINEGRAPH
 	SETTING ITEM CHOMP_TURRET SENSE SENSE_HA
-	SETTING ITEM CHOMP_TURRET SENSE SENSE_HV
-	SETTING SIZE 1200 600
-	SETTING SECONDSGRAPHED 2.5
-
 
 BUTTON 'Pause' "screen.get_named_widget('GRAPH_1').getState() === 'start' ? screen.get_named_widget('GRAPH_1').setState('pause') : screen.get_named_widget('GRAPH_1').setState('start')" 

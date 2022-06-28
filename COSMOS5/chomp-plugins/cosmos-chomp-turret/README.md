@@ -1,10 +1,30 @@
-# COSMOS Configuration
+# Chomp Turret Plugin
 
-See the [COSMOS](cosmosc2.com) documentation for all things COSMOS.
+## Configuration
+
+Need to update node.  Easiest is to use NVM
+
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+nvm install node
+```
+
+To build the widgets, need npm and vue-cli
+
+```
+sudo apt install npm
+npm install
+```
+
+Now build the widgets
+
+```
+npm run build
+```
 
 ## Building the plugin
 
-1. <Path to COSMOS installation>\cosmos-control.bat cosmos rake VERSION=X.Y.Z
+1. <Path to COSMOS installation>\cosmos-control.sh cosmos rake build VERSION=X.Y.Z
    - VERSION is required
    - gem file will be built locally
 

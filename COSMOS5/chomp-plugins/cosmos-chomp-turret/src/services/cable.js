@@ -1,5 +1,4 @@
-# encoding: ascii-8bit
-
+/*
 # Copyright 2022 Ball Aerospace & Technologies Corp.
 # All Rights Reserved.
 #
@@ -16,27 +15,30 @@
 # This program may also be used under the terms of a commercial or
 # enterprise edition license of COSMOS if purchased from the
 # copyright holder
+*/
 
-# Create the overall gemspec
-spec = Gem::Specification.new do |s|
-  s.name = 'chomp-turret'
-  s.summary = 'Turret Telemetry'
-  s.description = <<-EOF
-    This plugin visualizes Chomp Turret Telemetry.
-  EOF
-  s.authors = ['Matthew Scott']
-  s.email = ['mjs@scottopia.net']
-  s.homepage = 'https://github.com/BallAerospace/COSMOS'
+import * as ActionCable from '@rails/actioncable'
+//ActionCable.logger.enabled = true
+ActionCable.ConnectionMonitor.staleThreshold = 60
 
-  s.platform = Gem::Platform::RUBY
-
-  if ENV['VERSION']
-    s.version = ENV['VERSION'].dup
-  else
-    time = Time.now.strftime("%Y%m%d%H%M%S")
-    s.version = '0.0.0' + ".#{time}"
-  end
-  s.licenses = ['AGPL-3.0-only', 'Nonstandard']
-
-  s.files = Dir.glob("{targets,lib,procedures,tools,microservices}/**/*") + %w(Rakefile LICENSE.txt README.md plugin.txt)
-end
+export default class Cable {
+  constructor(url = '/cosmos-api/cable') {
+    this._cable = ActionCable.createConsumer(url)
+  }
+  disconnect() {
+    this._cable.disconnect()
+  }
+  createSubscription(channel, scope, callbacks = {}, additionalOptions = {}) {
+    return CosmosAuth.updateToken(CosmosAuth.defaultMinValidity).then(() => {
+      return this._cable.subscriptions.create(
+        {
+          channel,
+          scope,
+          token: localStorage.cosmosToken,
+          ...additionalOptions,
+        },
+        callbacks
+      )
+    })
+  }
+}

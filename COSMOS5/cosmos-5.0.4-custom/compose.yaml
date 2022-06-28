@@ -88,6 +88,8 @@ services:
       - "cosmos-minio"
     volumes:
       - "cosmos-gems-v:/gems:ro"
+      - /dev:/dev
+    privileged: true
     environment:
       - "GEM_HOME=/gems"
     env_file:

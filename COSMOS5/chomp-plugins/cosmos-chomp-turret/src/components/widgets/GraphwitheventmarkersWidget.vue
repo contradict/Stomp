@@ -15,10 +15,11 @@
 # This program may also be used under the terms of a commercial or
 # enterprise edition license of COSMOS if purchased from the
 # copyright holder
+#
 -->
 
 <template>
-  <graph
+  <graph-base
     :ref="'graph' + id"
     :id="id"
     :state="state"
@@ -27,6 +28,8 @@
     :pointsSaved="pointsSaved"
     :pointsGraphed="pointsGraphed"
     :initialItems="items"
+    :axes="axes"
+    :axesScales="axesScales"
     :height="size.height"
     :width="size.width"
     hide-system-bar
@@ -35,27 +38,23 @@
 </template>
 
 <script>
-import Widget from './Widget'
-import Graph from '../Graph.vue'
+import Widget from '@cosmosc2/tool-common/src/components/widgets/Widget'
+import GraphBase from '../GraphBase.vue'
 
 const valueType = 'CONVERTED'
+
 export default {
   components: {
-    Graph,
+    GraphBase,
   },
   mixins: [Widget],
   data: function () {
     return {
       id: Math.floor(Math.random() * 100000000000), // Unique-ish
       state: 'start',
-      items: [
-        {
-          targetName: this.parameters[0],
-          packetName: this.parameters[1],
-          itemName: this.parameters[2],
-          valueType,
-        },
-      ],
+      items: [],
+      axes: [],
+      axesScale: {},
       secondsGraphed: 1000,
       pointsSaved: 1000000,
       pointsGraphed: 1000,
@@ -66,25 +65,50 @@ export default {
     }
   },
   created: function () {
+    // Look through the settings and see if we're a NAMED_WIDGET
+    this.settings.forEach((setting) => {
+      if (setting[0] === 'NAMED_WIDGET') {
+        setting[2].setNamedWidget(setting[1], this)
+      }
+    })
+
+    this.axesScales = {};
+
     this.settings.forEach((setting) => {
       switch (setting[0]) {
-        case 'ITEM':
+        case "ITEM":
           this.items.push({
             targetName: setting[1],
             packetName: setting[2],
             itemName: setting[3],
+            plotType: setting[4],
+            scaleName: setting[5],
             valueType,
           })
-        case 'SECONDSGRAPHED':
+          break
+        case "AXIS":
+          this.axes.push({
+            scale: setting[1],
+            side: parseInt(setting[2]),
+            stroke: setting[3],
+          })
+          break
+        case "SCALE":
+          this.axesScales[setting[1]] = {
+              auto: false,
+              range: [parseFloat(setting[2]), parseFloat(setting[3])],
+            }
+          break          
+        case "SECONDSGRAPHED":
           this.secondsGraphed = parseInt(setting[1])
           break
-        case 'POINTSSAVED':
+        case "POINTSSAVED":
           this.pointsSaved = parseInt(setting[1])
           break
-        case 'POINTSGRAPHED':
+        case "POINTSGRAPHED":
           this.pointsGraphed = parseInt(setting[1])
           break
-        case 'SIZE':
+        case "SIZE":
           this.size.width = parseInt(setting[1])
           this.size.height = parseInt(setting[2])
           break
@@ -93,14 +117,23 @@ export default {
   },
   methods: {
     getState: function() {
+      // eslint-disable-next-line no-console
+      console.log("getState");
+
       let graphRef = "graph" + this.id;
+
+      // eslint-disable-next-line no-console
+      console.log("return: " + this.$refs[graphRef].state);
+
       return this.$refs[graphRef].state;
     },
     setState: function(new_state) {
+      // eslint-disable-next-line no-console
+      console.log("setState" + new_state);
+
       let graphRef = "graph" + this.id;
       this.$refs[graphRef].state = new_state;
     },
   },
-
 }
 </script>
